@@ -130,7 +130,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
     triggerHaptic('medium');
     setIsProcessing(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         confetti({
           particleCount: 90,
