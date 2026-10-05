@@ -1,0 +1,551 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif;
+
+  --color-trip-primary: #00B074;
+  --color-trip-primary-hover: #009863;
+  --color-trip-emerald: #00D084;
+  --color-trip-darkteal: #00704A;
+  --color-trip-navy: #0B2545;
+  --color-trip-navy-dark: #07172C;
+  --color-trip-navy-light: #133966;
+  --color-trip-bg: #F8FAFC;
+  --color-trip-card: #FFFFFF;
+}
+
+/* Cross-platform safe area insets for iOS (11+) & Android (7-16 Edge-to-Edge) */
+:root {
+  color-scheme: light;
+  --sat: constant(safe-area-inset-top);
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: constant(safe-area-inset-bottom);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: constant(safe-area-inset-left);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: constant(safe-area-inset-right);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+button, a, input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Prevent iOS & Android browser auto-zoom on input focus while maintaining mobile layout integrity */
+@media screen and (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+
+html {
+  overflow-x: clip;
+  min-height: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:focus-within {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  min-height: 100%;
+  min-height: 100dvh;
+  font-family: var(--font-sans);
+  background-color: #F8FAFC;
+  color: #0F172A;
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Safe area padding utilities for iOS and Android notches & gesture bars */
+.pt-safe {
+  padding-top: var(--sat);
+}
+
+.pb-safe {
+  padding-bottom: max(0.5rem, var(--sab));
+}
+
+.pl-safe {
+  padding-left: max(0.5rem, var(--sal));
+}
+
+.pr-safe {
+  padding-right: max(0.5rem, var(--sar));
+}
+
+/* Leaflet Map fix */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  font-family: inherit;
+  border-radius: inherit;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Smooth glassmorphism */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.glass-panel-dark {
+  background: rgba(11, 37, 69, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* TripVerse primary gradient */
+.bg-trip-gradient {
+  background: linear-gradient(135deg, #00D084 0%, #00B074 50%, #008F68 100%);
+}
+
+.bg-trip-gradient-hover:hover {
+  background: linear-gradient(135deg, #00DE8D 0%, #00BD7C 50%, #009D72 100%);
+}
+
+.bg-trip-hero-gradient {
+  background: linear-gradient(180deg, rgba(7, 23, 44, 0.3) 0%, rgba(7, 23, 44, 0.75) 100%);
+}
+
+.text-trip-gradient {
+  background: linear-gradient(135deg, #00D084 0%, #00B074 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-trip-navy-gradient {
+  background: linear-gradient(135deg, #0B2545 0%, #1E3A8A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-trip-amber-gradient {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Typography Enhancements & Anti-Clipping Helpers */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+.badge-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+.heading-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.heading-sub {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+/* Prevent text clipping and flex overflow */
+.min-w-0-flex {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.truncate-safe {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Pulse glow for AI badges */
+@keyframes soft-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 176, 116, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(0, 176, 116, 0);
+  }
+}
+
+.animate-soft-pulse {
+  animation: soft-pulse 2.5s infinite;
+}
+
+/* View transitions and micro-animations */
+@keyframes fadeInView {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInView 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================================================
+   Apple Cupertino / macOS Liquid Curved Button & Glass Physics System
+   100% Cross-Platform Parity for Android, iOS, Windows, and macOS
+   ========================================================================== */
+
+/* Universal tactile button response */
+button, [role="button"], .btn-tap-target {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Liquid Primary Curved Emerald Button */
+.btn-liquid-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #00E590 0%, #00B074 52%, #00875A 100%);
+  color: #FFFFFF;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 
+    0 10px 25px -4px rgba(0, 176, 116, 0.42),
+    0 4px 12px -2px rgba(0, 176, 116, 0.28),
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.6),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transform: translateZ(0);
+  will-change: transform, box-shadow;
+  transition: all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.btn-liquid-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  pointer-events: none;
+}
+
+.btn-liquid-primary:hover {
+  background: linear-gradient(135deg, #00F099 0%, #00BD7D 52%, #009362 100%);
+  box-shadow: 
+    0 14px 32px -4px rgba(0, 176, 116, 0.52),
+    0 6px 16px -2px rgba(0, 176, 116, 0.35),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.7);
+  transform: translateY(-1.5px) scale(1.015);
+}
+
+.btn-liquid-primary:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: 
+    0 4px 12px -2px rgba(0, 176, 116, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.22);
+  transition-duration: 80ms;
+}
+
+/* Liquid Translucent Glass Button */
+.btn-liquid-glass {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #0F172A;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  box-shadow: 
+    0 10px 24px -4px rgba(11, 37, 69, 0.08),
+    0 2px 8px -1px rgba(11, 37, 69, 0.04),
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.95),
+    inset 0 -1.5px 2px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transform: translateZ(0);
+  will-change: transform, box-shadow;
+  transition: all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.btn-liquid-glass:hover {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(255, 255, 255, 1);
+  box-shadow: 
+    0 14px 30px -4px rgba(11, 37, 69, 0.12),
+    inset 0 2px 2px rgba(255, 255, 255, 1);
+  transform: translateY(-1.5px) scale(1.015);
+}
+
+.btn-liquid-glass:active {
+  transform: translateY(1px) scale(0.96);
+  background: rgba(241, 245, 249, 0.92);
+  box-shadow: 
+    0 2px 8px -2px rgba(11, 37, 69, 0.06),
+    inset 0 1.5px 3px rgba(15, 23, 42, 0.08);
+  transition-duration: 80ms;
+}
+
+/* Liquid Dark Navy Glass Button */
+.btn-liquid-navy {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #133966 0%, #0B2545 60%, #07172C 100%);
+  color: #FFFFFF;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 
+    0 12px 28px -4px rgba(7, 23, 44, 0.45),
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.35),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transform: translateZ(0);
+  will-change: transform, box-shadow;
+  transition: all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.btn-liquid-navy:hover {
+  background: linear-gradient(135deg, #18477F 0%, #0F325E 60%, #0A203E 100%);
+  box-shadow: 
+    0 16px 34px -4px rgba(7, 23, 44, 0.55),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.45);
+  transform: translateY(-1.5px) scale(1.015);
+}
+
+.btn-liquid-navy:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: 0 4px 14px -2px rgba(7, 23, 44, 0.35);
+  transition-duration: 80ms;
+}
+
+/* Ultra-smooth spring tap animation for all cards and buttons */
+.spring-tap {
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease-out;
+  transform: translateZ(0);
+}
+.spring-tap:active {
+  transform: scale(0.965);
+  transition-duration: 75ms;
+}
+
+/* Apple squircle continuous curvature tokens */
+.squircle-plate {
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.45);
+}
+
+/* Smooth active button tap feedback */
+button:active {
+  transition-duration: 75ms;
+}
+
+/* High-DPI Vector Logo & Graphic Sharpness for Android AMOLED & iOS Retina */
+img[src$=".svg"],
+svg {
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* ==========================================================================
+   OFFICIAL A4 PRINT & PDF EXPORT STYLES (TRIP DOSSIER & TRAVEL PASSES)
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm 10mm 10mm;
+  }
+
+  /* Force background colors, borders, gradients, and badges to render in PDF */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    font-size: 11pt;
+    line-height: 1.35;
+  }
+
+  /* When printing a dossier or voucher, hide ambient app chrome */
+  body.printing-dossier-active > #root > div > *:not(.printable-target-root),
+  body:has(.printable-target-root) > #root > div > *:not(.printable-target-root),
+  body.printing-dossier-active header,
+  body.printing-dossier-active nav,
+  body.printing-dossier-active main,
+  body.printing-dossier-active footer,
+  body:has(.printable-target-root) header,
+  body:has(.printable-target-root) nav,
+  body:has(.printable-target-root) main,
+  body:has(.printable-target-root) footer,
+  .print-hidden,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure the printable container pins cleanly to the top of the A4 canvas */
+  .printable-target-root {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #FFFFFF !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    z-index: 999999 !important;
+  }
+
+  .printable-target-container {
+    display: block !important;
+    position: static !important;
+    max-height: none !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #FFFFFF !important;
+  }
+
+  /* Prevent awkward page break cuts across cards, tables, and vouchers */
+  .print-avoid-break,
+  .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Force solid high-contrast borders for crisp print */
+  .print-border-solid {
+    border-color: #CBD5E1 !important;
+  }
+
+  /* Hide raw href URLs in printed links */
+  a[href]::after {
+    content: "" !important;
+  }
+}
+
+
+
+

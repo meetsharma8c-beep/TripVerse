@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 140" fill="none">
+  <defs>
+    <linearGradient id="tvGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D287" />
+      <stop offset="50%" stop-color="#00B074" />
+      <stop offset="100%" stop-color="#00885B" />
+    </linearGradient>
+    <linearGradient id="planeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E699" />
+      <stop offset="100%" stop-color="#00A86B" />
+    </linearGradient>
+    <filter id="subtleShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#00B074" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <!-- TripVerse Icon Symbol -->
+  <g transform="translate(15, 10)">
+    <!-- Main T / Shield / Location Pin Shape -->
+    <path d="M 45 28 
+             C 45 20, 52 14, 60 14 
+             L 120 14 
+             C 128 14, 135 20, 135 28 
+             C 135 34, 130 39, 123 40 
+             L 100 40 
+             L 98 75 
+             C 96 95, 90 108, 80 118 
+             C 78 120, 74 120, 72 118 
+             C 62 108, 56 95, 54 75 
+             L 52 40 
+             L 47 40 
+             C 40 39, 45 34, 45 28 Z" 
+          fill="url(#tvGrad)" 
+          filter="url(#subtleShadow)" />
+
+    <!-- Swoosh Orbit Track -->
+    <path d="M 38 68 
+             C 34 82, 48 94, 66 94 
+             C 90 94, 115 80, 132 58 
+             C 142 46, 150 34, 158 22" 
+          stroke="url(#tvGrad)" 
+          stroke-width="5.5" 
+          stroke-linecap="round" 
+          fill="none" />
+
+    <!-- Paper Airplane / Jet at end of swoosh -->
+    <g transform="translate(155, 16) rotate(15)">
+      <!-- Main body and wings -->
+      <polygon points="0,0 26,-8 18,18 9,8" fill="url(#planeGrad)" />
+      <polygon points="9,8 26,-8 14,3" fill="#00885B" opacity="0.35" />
+    </g>
+  </g>
+
+  <!-- Typography: TripVerse -->
+  <!-- "Trip" in Midnight Navy -->
+  <text x="180" y="82" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-size="58" font-weight="900" fill="#0B2545" letter-spacing="-1.5">Trip</text>
+  <!-- "Verse" in Emerald Teal -->
+  <text x="296" y="82" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-size="58" font-weight="900" fill="#00B074" letter-spacing="-1.5">Verse</text>
+
+  <!-- Tagline -->
+  <text x="183" y="112" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-size="18.5" font-weight="600" fill="#475569" letter-spacing="0.5">Plan Smarter. Travel Further.</text>
+</svg>

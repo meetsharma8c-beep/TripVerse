@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="70 2 168 138" width="100%" height="100%">
+  
+  <defs>
+    <!-- Brand Gradients -->
+    <linearGradient id="tvTGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00F5A0" />
+      <stop offset="35%" stop-color="#00D287" />
+      <stop offset="75%" stop-color="#00A86B" />
+      <stop offset="100%" stop-color="#008455" />
+    </linearGradient>
+
+    <linearGradient id="tvArrowGrad" x1="25%" y1="0%" x2="10%" y2="100%">
+      <stop offset="0%" stop-color="#00B574" />
+      <stop offset="45%" stop-color="#00965F" />
+      <stop offset="100%" stop-color="#006D44" />
+    </linearGradient>
+
+    <linearGradient id="tvSwoopGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#009E65" />
+      <stop offset="35%" stop-color="#00DE90" />
+      <stop offset="75%" stop-color="#22FFAE" />
+      <stop offset="100%" stop-color="#57FFC8" />
+    </linearGradient>
+
+    <!-- 3D Plane Facets -->
+    <linearGradient id="tvPlaneTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#47FFC7" />
+      <stop offset="100%" stop-color="#00E599" />
+    </linearGradient>
+    <linearGradient id="tvPlaneMid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D287" />
+      <stop offset="100%" stop-color="#00A86B" />
+    </linearGradient>
+    <linearGradient id="tvPlaneBot" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00965F" />
+      <stop offset="100%" stop-color="#006D44" />
+    </linearGradient>
+
+    <filter id="appIconShadow" x="-15%" y="-15%" width="135%" height="135%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35" />
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00F5A0" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  
+  <!-- 1. The "T" Shape -->
+  <path d="
+    M 96 6
+    L 174 6
+    C 184 6, 188 11, 188 18
+    C 188 25, 184 30, 174 30
+    L 153 30
+    L 153 66
+    C 144 68, 131 71, 117 72
+    L 117 30
+    L 96 30
+    C 86 30, 82 25, 82 18
+    C 82 11, 86 6, 96 6 Z
+  " fill="url(#tvTGrad)" />
+
+  <!-- 2. The Bottom Arrow / Downward Map Pin Shield -->
+  <path d="
+    M 111 102
+    L 134 133
+    C 137 136, 145 136, 148 133
+    C 158 120, 172 102, 186 84
+    C 196 72, 204 62, 212 54
+    C 176 74, 140 88, 111 102 Z
+  " fill="url(#tvArrowGrad)" />
+
+  <!-- 3. The Continuous Orbit Swoosh -->
+  <path d="
+    M 104 52
+    C 90 62, 74 72, 74 81
+    C 74 91, 86 98, 106 96
+    C 136 93, 172 76, 212 54
+    C 170 74, 132 86, 104 86
+    C 89 86, 83 81, 83 77
+    C 83 72, 92 64, 106 55
+    Z
+  " fill="url(#tvSwoopGrad)" />
+
+  <!-- 4. 3D Origami Supersonic Paper Airplane -->
+  <g id="plane" transform="translate(10, 0) scale(0.90)">
+    <polygon points="242,28 184,31 200,41" fill="url(#tvPlaneTop)" />
+    <polygon points="242,28 200,41 212,51" fill="url(#tvPlaneMid)" />
+    <polygon points="242,28 212,51 223,65" fill="url(#tvPlaneBot)" />
+  </g>
+
+</svg>

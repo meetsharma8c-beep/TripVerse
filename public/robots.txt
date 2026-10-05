@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tripverse-pied.vercel.app/sitemap.xml

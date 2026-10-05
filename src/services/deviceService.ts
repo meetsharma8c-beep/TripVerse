@@ -1,0 +1,195 @@
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { App as CapApp } from '@capacitor/app';
+
+let deferredInstallPrompt: any = null;
+
+// Eagerly listen for PWA install prompt at module load
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    window.dispatchEvent(new CustomEvent('tripverse-can-install', { detail: true }));
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    window.dispatchEvent(new CustomEvent('tripverse-can-install', { detail: false }));
+  });
+}
+
+export function isIos(): boolean {
+  if (typeof window === 'undefined') return false;
+  const ua = window.navigator.userAgent;
+  return /iPad|iPhone|iPod/.test(ua) || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+}
+
+export function isStandalone(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true ||
+    Capacitor.isNativePlatform()
+  );
+}
+
+export interface DeviceInfo {
+  platform: 'ios' | 'android' | 'web';
+  isNative: boolean;
+  isStandalone: boolean;
+  isMobile: boolean;
+  isTablet: boolean;
+}
+
+export function getDeviceInfo(): DeviceInfo {
+  const isIosDevice = isIos();
+  const isAndroid = typeof navigator !== 'undefined' ? /Android/.test(navigator.userAgent) : false;
+  const isNative = Capacitor.isNativePlatform();
+  const standalone = isStandalone();
+
+  const isMobile = isIosDevice || isAndroid || (typeof window !== 'undefined' && window.innerWidth < 768);
+  const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
+
+  let platform: 'ios' | 'android' | 'web' = 'web';
+  if (Capacitor.getPlatform() === 'ios' || isIosDevice) {
+    platform = 'ios';
+  } else if (Capacitor.getPlatform() === 'android' || isAndroid) {
+    platform = 'android';
+  }
+
+  return {
+    platform,
+    isNative,
+    isStandalone: standalone,
+    isMobile,
+    isTablet
+  };
+}
+
+export function initDeviceServices(onBackPress?: () => boolean) {
+  // 1. Native Capacitor initialization
+  if (Capacitor.isNativePlatform()) {
+    try {
+      StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: '#FFFFFF' }).catch(() => {});
+      StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+    } catch (e) {
+      console.warn('Status bar configuration error:', e);
+    }
+
+    try {
+      SplashScreen.hide().catch(() => {});
+    } catch (e) {
+      console.warn('Splash screen hide error:', e);
+    }
+
+    // Android hardware back button handler
+    CapApp.addListener('backButton', ({ canGoBack }) => {
+      // 1. Dispatch custom event allowing UI layers (modals, open drawers, active tabs) to handle
+      if (typeof window !== 'undefined') {
+        const backEvent = new CustomEvent('tripverse-hardware-back', { cancelable: true });
+        const wasHandled = !window.dispatchEvent(backEvent);
+        if (wasHandled) {
+          return;
+        }
+      }
+
+      if (onBackPress && onBackPress()) {
+        return;
+      }
+      if (canGoBack) {
+        window.history.back();
+      } else {
+        CapApp.exitApp();
+      }
+    });
+  }
+
+  // 2. Service Worker for PWA (Android / iOS Safari / Chrome / Edge)
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator && !Capacitor.isNativePlatform()) {
+    const registerSW = () => {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((reg) => {
+          reg.update();
+          console.log('[TripVerse] Service Worker registered & checked for updates:', reg.scope);
+        })
+        .catch((err) => {
+          console.log('[TripVerse] Service Worker registration failed:', err);
+        });
+    };
+
+    if (document.readyState === 'complete') {
+      registerSW();
+    } else {
+      window.addEventListener('load', registerSW);
+    }
+  }
+
+  // 3. Capture PWA beforeinstallprompt event (Android / Desktop Chrome)
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      window.dispatchEvent(new CustomEvent('tripverse-can-install', { detail: true }));
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      window.dispatchEvent(new CustomEvent('tripverse-can-install', { detail: false }));
+    });
+  }
+}
+
+export async function promptPWAInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'> {
+  if (!deferredInstallPrompt) {
+    return 'unavailable';
+  }
+  try {
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    return outcome;
+  } catch (e) {
+    return 'unavailable';
+  }
+}
+
+export function canInstallPWA(): boolean {
+  return deferredInstallPrompt !== null;
+}
+
+export function triggerHaptic(type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' = 'light') {
+  if (typeof window === 'undefined') return;
+
+  try {
+    // Only attempt vibration if user has interacted with the document (browser security requirement)
+    if ('userActivation' in navigator && !(navigator as any).userActivation.hasBeenActive) {
+      return;
+    }
+
+    if ('vibrate' in navigator) {
+      switch (type) {
+        case 'light':
+          navigator.vibrate(15);
+          break;
+        case 'medium':
+          navigator.vibrate(35);
+          break;
+        case 'heavy':
+          navigator.vibrate(60);
+          break;
+        case 'success':
+          navigator.vibrate([20, 50, 30]);
+          break;
+        case 'warning':
+          navigator.vibrate([40, 60, 40]);
+          break;
+      }
+    }
+  } catch (e) {
+    // Ignore unsupported environments
+  }
+}
+

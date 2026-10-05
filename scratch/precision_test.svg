@@ -1,0 +1,94 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background luxury glow -->
+    <radialGradient id="bgGlow" cx="50%" cy="48%" r="50%">
+      <stop offset="0%" stop-color="#113868" />
+      <stop offset="70%" stop-color="#0B2545" />
+      <stop offset="100%" stop-color="#06182E" />
+    </radialGradient>
+    
+    <!-- Ambient emerald backlight behind logo -->
+    <radialGradient id="logoBacklight" cx="48%" cy="46%" r="42%">
+      <stop offset="0%" stop-color="#00E599" stop-opacity="0.22" />
+      <stop offset="60%" stop-color="#00B074" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#00B074" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Main T & Arrow Gradient: Rich Luminous Mint to Emerald to Deep Forest Jade -->
+    <linearGradient id="mainGrad" x1="25%" y1="0%" x2="35%" y2="100%">
+      <stop offset="0%" stop-color="#00F5A0" />
+      <stop offset="25%" stop-color="#00D287" />
+      <stop offset="65%" stop-color="#00A86B" />
+      <stop offset="100%" stop-color="#00754A" />
+    </linearGradient>
+
+    <!-- Swoosh Arc Gradient -->
+    <linearGradient id="swoopGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#009E65" />
+      <stop offset="40%" stop-color="#00D88C" />
+      <stop offset="80%" stop-color="#05FFAA" />
+      <stop offset="100%" stop-color="#5CFFC7" />
+    </linearGradient>
+
+    <!-- Airplane Facet Gradients for 3D Origami Depth -->
+    <linearGradient id="planeTopWing" x1="0%" y1="0%" x2="100%" y2="80%">
+      <stop offset="0%" stop-color="#2EFEB3" />
+      <stop offset="100%" stop-color="#00DF8F" />
+    </linearGradient>
+    <linearGradient id="planeBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D287" />
+      <stop offset="100%" stop-color="#00A86B" />
+    </linearGradient>
+    <linearGradient id="planeBottomWing" x1="0%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#00A86B" />
+      <stop offset="100%" stop-color="#007348" />
+    </linearGradient>
+
+    <!-- Drop shadow for vector depth -->
+    <filter id="markShadow" x="-15%" y="-15%" width="135%" height="135%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35" />
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00F5A0" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="114" fill="url(#bgGlow)" />
+  <circle cx="246" cy="248" r="160" fill="url(#logoBacklight)" />
+
+  <!-- Geometric Vector Logo Group -->
+  <g transform="translate(52, 62) scale(1.98)" filter="url(#markShadow)">
+    
+    <!-- 1. Top "T" Shape: Crossbar with rounded corners + Centered Stem -->
+    <path d="
+      M 32 30
+      C 32 17, 43 8, 58 8
+      L 142 8
+      C 157 8, 168 17, 168 30
+      C 168 40, 159 48, 147 49
+      L 126 49
+      L 126 102
+      C 114 105, 96 109, 82 110
+      L 82 49
+      L 53 49
+      C 41 48, 32 40, 32 30 Z
+    " fill="url(#mainGrad)" />
+
+    <!-- 2. Bottom Arrow / Pin with Sweeping Right Flank -->
+    <path d="
+      M 82 134
+      L 82 142
+      C 82 152, 89 164, 98 175
+      L 100 177
+      C 103 181, 107 181, 110 177
+      L 112 175
+      C 126 158, 150 134, 172 108
+      C 188 89, 198 73, 204 58
+      C 198 68, 185 86, 170 102
+      C 150 123, 131 140, 114 153
+      C 107 146, 101 138, 97 128
+      C 93 118, 91 108, 91 97
+      L 82 134 Z
+    " fill="url(#mainGrad)" opacity="0" />
+
+  </g>
+</svg>

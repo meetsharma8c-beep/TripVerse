@@ -1,0 +1,92 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="60 -5 200 155" width="512" height="512">
+  <defs>
+    <!-- Brand Gradients -->
+    <linearGradient id="tGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00F29D" />
+      <stop offset="50%" stop-color="#00CE84" />
+      <stop offset="100%" stop-color="#009A62" />
+    </linearGradient>
+
+    <linearGradient id="arrowGrad" x1="20%" y1="0%" x2="10%" y2="100%">
+      <stop offset="0%" stop-color="#00B372" />
+      <stop offset="50%" stop-color="#009B63" />
+      <stop offset="100%" stop-color="#007348" />
+    </linearGradient>
+
+    <linearGradient id="swoopGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#008E5D" />
+      <stop offset="40%" stop-color="#00D88C" />
+      <stop offset="80%" stop-color="#05FFAA" />
+      <stop offset="100%" stop-color="#47FFC0" />
+    </linearGradient>
+
+    <!-- 3D Plane Facets -->
+    <linearGradient id="pTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38FFBE" />
+      <stop offset="100%" stop-color="#00E599" />
+    </linearGradient>
+    <linearGradient id="pMid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D287" />
+      <stop offset="100%" stop-color="#00A86B" />
+    </linearGradient>
+    <linearGradient id="pBot" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00965F" />
+      <stop offset="100%" stop-color="#007046" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. The "T" Shape -->
+  <!-- Top bar: x: 82 to 184, y: 4 to 28 with rounded pill caps -->
+  <!-- Stem: x: 118 to 150, y: 28 to 76, bottom contoured along swoosh arc -->
+  <path d="
+    M 94 4
+    L 172 4
+    C 180 4, 184 9, 184 16
+    C 184 23, 180 28, 172 28
+    L 150 28
+    L 150 72
+    C 142 75, 130 77, 118 78
+    L 118 28
+    L 94 28
+    C 86 28, 82 23, 82 16
+    C 82 9, 86 4, 94 4 Z
+  " fill="url(#tGrad)" />
+
+  <!-- 2. The Bottom Arrow / Downward Pin -->
+  <!-- Left edge: straight diagonal down from (118, 92) to apex at (134, 136) -->
+  <!-- Rounded apex at (134, 136) -->
+  <!-- Right edge: graceful concave sweep up to meet the swoosh trail at (212, 54) -->
+  <!-- Top edge: follows swoosh curve back to (118, 92) -->
+  <path d="
+    M 118 90
+    L 129 126
+    C 131 133, 137 136, 142 133
+    C 144 131, 146 128, 148 123
+    C 160 106, 180 82, 212 54
+    C 178 72, 145 86, 118 90 Z
+  " fill="url(#arrowGrad)" />
+
+  <!-- 3. The Continuous Orbit Swoosh -->
+  <!-- Starts left of T, loops under and in front of the stem, sweeps up toward the plane -->
+  <path d="
+    M 104 56
+    C 94 65, 80 72, 80 82
+    C 80 92, 90 98, 106 97
+    C 130 96, 166 84, 212 54
+    C 172 80, 128 92, 102 91
+    C 90 91, 86 86, 86 81
+    C 86 76, 96 68, 106 58
+    Z
+  " fill="url(#swoopGrad)" />
+
+  <!-- 4. 3D Origami Supersonic Paper Airplane -->
+  <g id="plane">
+    <!-- Upper wing -->
+    <polygon points="244.5,29.8 185.0,32.2 200.2,42.5" fill="url(#pTop)" />
+    <!-- Fuselage / Middle -->
+    <polygon points="244.5,29.8 200.2,42.5 212.8,53.2" fill="url(#pMid)" />
+    <!-- Lower wing fold / Underwing shadow -->
+    <polygon points="244.5,29.8 212.8,53.2 224.2,68.0" fill="url(#pBot)" />
+  </g>
+</svg>

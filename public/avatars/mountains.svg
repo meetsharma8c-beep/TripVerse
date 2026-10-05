@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D2B45" />
+      <stop offset="100%" stop-color="#06172D" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+  </defs>
+
+  <rect width="200" height="200" rx="56" fill="url(#bgGrad)" />
+  <circle cx="100" cy="100" r="86" fill="none" stroke="url(#accentGrad)" stroke-width="2" stroke-opacity="0.3" stroke-dasharray="6 4" />
+  <circle cx="100" cy="85" r="45" fill="#38BDF8" opacity="0.12" />
+
+  <!-- Head -->
+  <circle cx="100" cy="82" r="32" fill="#F1F5F9" />
+  <path d="M72 74 C72 60, 128 60, 128 74 C118 70, 82 70, 72 74 Z" fill="url(#accentGrad)" />
+
+  <!-- Body -->
+  <path d="M46 166 C46 128, 70 122, 100 122 C130 122, 154 128, 154 166 C140 178, 60 178, 46 166 Z" fill="#E2E8F0" />
+  <path d="M85 124 L100 148 L115 124" fill="none" stroke="#06172D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Persona Badge -->
+  <circle cx="145" cy="145" r="19" fill="#06172D" stroke="#38BDF8" stroke-width="2.5" />
+  <path d="M136 153 L145 137 L154 153 Z M144 153 L149 143 L154 153 Z" fill="url(#accentGrad)" />
+</svg>
