@@ -132,24 +132,24 @@ export const Logo: React.FC<LogoProps> = ({
 }) => {
   const sizeMap = {
     adaptive: {
-      imgHeight: 'h-6.5 max-[350px]:h-6 min-[380px]:h-7.5 sm:h-8 md:h-8.5 lg:h-9 xl:h-10',
-      textMain: 'text-[16.5px] max-[350px]:text-[15px] min-[380px]:text-[18px] sm:text-xl md:text-[22px] xl:text-2xl',
-      textSub: 'text-[9px] min-[400px]:text-[10px] xl:text-[11px]',
-      gap: 'gap-1 max-[350px]:gap-1 min-[380px]:gap-1.5 sm:gap-2 xl:gap-2.5',
+      imgHeight: 'h-8 max-[350px]:h-7 min-[380px]:h-8.5 sm:h-9 md:h-9.5 lg:h-10 xl:h-11',
+      textMain: 'text-[17px] max-[350px]:text-[15.5px] min-[380px]:text-[18.5px] sm:text-xl md:text-[22px] xl:text-2xl',
+      textSub: 'text-[9.5px] min-[400px]:text-[10.5px] xl:text-[11.5px]',
+      gap: 'gap-1.5 max-[350px]:gap-1 min-[380px]:gap-2 sm:gap-2.5 xl:gap-3',
       defaultTaglineClass: 'hidden md:block'
     },
     sm: { 
-      imgHeight: 'h-6.5 sm:h-7', 
-      textMain: 'text-[16px] sm:text-lg', 
-      textSub: 'text-[8.5px] sm:text-[9.5px]', 
-      gap: 'gap-1 sm:gap-1.5',
+      imgHeight: 'h-7 sm:h-8', 
+      textMain: 'text-[16.5px] sm:text-lg', 
+      textSub: 'text-[9px] sm:text-[10px]', 
+      gap: 'gap-1.5 sm:gap-2',
       defaultTaglineClass: 'hidden sm:block'
     },
     md: { 
-      imgHeight: 'h-7.5 sm:h-8.5 xl:h-9.5', 
+      imgHeight: 'h-8.5 sm:h-9.5 xl:h-10.5', 
       textMain: 'text-lg sm:text-xl xl:text-2xl', 
-      textSub: 'text-[9.5px] sm:text-[10px] xl:text-[11px]', 
-      gap: 'gap-1.5 sm:gap-2 xl:gap-2.5',
+      textSub: 'text-[10px] sm:text-[10.5px] xl:text-[11.5px]', 
+      gap: 'gap-2 sm:gap-2.5 xl:gap-3',
       defaultTaglineClass: 'hidden md:block'
     },
     lg: { 

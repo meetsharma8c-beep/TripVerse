@@ -29,25 +29,30 @@ function createMultiIco(pngItems) {
 }
 
 async function generateAllAssets() {
-  console.log('🚀 Starting Comprehensive HD Asset Pipeline for ALL OS & Devices...');
+  console.log('🚀 Starting Ultra-HD Bold Asset Pipeline for ALL OS & Devices...');
   
   const masterPath = 'public/tripverse-mark-cropped.png';
   if (!fs.existsSync(masterPath)) {
     throw new Error('Master mark public/tripverse-mark-cropped.png not found!');
   }
 
-  const markBuffer = fs.readFileSync(masterPath);
+  // Load and apply subtle micro-sharpening to retain razor-sharp edge contrast across all scales
+  const rawMarkBuffer = fs.readFileSync(masterPath);
+  const markBuffer = await sharp(rawMarkBuffer)
+    .sharpen({ sigma: 0.8, m1: 1.15, m2: 0.4 })
+    .toBuffer();
+
   const markMeta = await sharp(markBuffer).metadata();
-  console.log(`✅ Loaded Master Source: ${markMeta.width}x${markMeta.height} (${markMeta.channels} channels, transparent)`);
+  console.log(`✅ Loaded Master Source: ${markMeta.width}x${markMeta.height} (${markMeta.channels} channels, Ultra-HD Transparent)`);
 
   // ---------------------------------------------------------
   // 1. Ultra-HD Master Assets (2048x2048 & 1024x1024 Masters)
   // ---------------------------------------------------------
-  console.log('📦 1. Generating Ultra-HD 2048x2048 & 1024x1024 Master Assets...');
+  console.log('📦 1. Generating Ultra-HD 2048x2048 & 1024x1024 Bold Master Assets...');
 
-  // 1a. Ultra-HD 2048x2048 Transparent Master Mark
+  // 1a. Ultra-HD 2048x2048 Transparent Master Mark (Mark width: 1600px = 78% of canvas)
   const mark2048 = await sharp(markBuffer)
-    .resize(1560, 1230, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
+    .resize(1600, 1260, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
     .toBuffer();
 
   const transparent2048 = await sharp({
@@ -65,9 +70,9 @@ async function generateAllAssets() {
   fs.writeFileSync('public/tripverse-mark-2048.png', transparent2048);
   console.log('✅ Generated public/tripverse-mark-2048.png (2048x2048 Ultra-HD)');
 
-  // 1b. 1024x1024 Transparent Master Mark
+  // 1b. 1024x1024 Transparent Master Mark (Mark width: 800px = 78% of canvas)
   const mark1024 = await sharp(markBuffer)
-    .resize(780, 615, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
+    .resize(800, 630, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
     .toBuffer();
 
   const transparent1024 = await sharp({
@@ -84,7 +89,7 @@ async function generateAllAssets() {
 
   fs.writeFileSync('public/tripverse-mark-vibrant.png', transparent1024);
   fs.writeFileSync('public/tripverse-mark-exact.png', transparent1024);
-  console.log('✅ Generated public/tripverse-mark-vibrant.png & exact.png (1024x1024)');
+  console.log('✅ Generated public/tripverse-mark-vibrant.png & exact.png (1024x1024 Bold Master)');
 
   // 1c. 2x High-DPI Cropped Mark for In-App Retina 3x Displays
   const cropped2x = await sharp(markBuffer)
@@ -99,9 +104,9 @@ async function generateAllAssets() {
   fs.writeFileSync('public/tripverse-mark-cropped@2x.png', cropped2x);
   console.log(`✅ Generated public/tripverse-mark-cropped@2x.png (${Math.round(markMeta.width * 2)}x${Math.round(markMeta.height * 2)} Retina 2x)`);
 
-  // 1d. Master App Icon (2048x2048 on pure #FFFFFF)
+  // 1d. Master App Icon (2048x2048 on pure #FFFFFF with bold 78% mark)
   const appIconMark2048 = await sharp(markBuffer)
-    .resize(1160, 890, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
+    .resize(1600, 1260, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
     .toBuffer();
 
   const appIcon2048 = await sharp({
@@ -117,11 +122,11 @@ async function generateAllAssets() {
   .toBuffer();
 
   fs.writeFileSync('public/tripverse-app-icon-2048.png', appIcon2048);
-  console.log('✅ Generated public/tripverse-app-icon-2048.png (2048x2048 Ultra-HD App Icon)');
+  console.log('✅ Generated public/tripverse-app-icon-2048.png (2048x2048 Ultra-HD Bold App Icon)');
 
-  // 1e. Master App Icon (1024x1024 on pure #FFFFFF)
+  // 1e. Master App Icon (1024x1024 on pure #FFFFFF with bold 78% mark)
   const appIconMark1024 = await sharp(markBuffer)
-    .resize(580, 445, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
+    .resize(800, 630, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
     .toBuffer();
 
   const appIcon1024 = await sharp({
@@ -137,25 +142,25 @@ async function generateAllAssets() {
   .toBuffer();
 
   fs.writeFileSync('public/tripverse-app-icon.png', appIcon1024);
-  console.log('✅ Generated public/tripverse-app-icon.png (1024x1024 Master App Icon)');
+  console.log('✅ Generated public/tripverse-app-icon.png (1024x1024 Bold Master App Icon)');
 
   // ---------------------------------------------------------
-  // 2. Web & PWA App Icons (Full Suite with Pure White #FFFFFF)
+  // 2. Web & PWA App Icons (Full Suite with Bold 78% Mark Ratio)
   // ---------------------------------------------------------
-  console.log('📦 2. Generating Full Suite of Web & PWA App Icons...');
+  console.log('📦 2. Generating Full Suite of Web & PWA App Icons (Bold Proportion)...');
   fs.mkdirSync('public/icons', { recursive: true });
 
   const pwaIcons = [
-    { file: 'public/icons/icon-512.png', size: 512, iconSize: 295 }, // 57% safe ratio
-    { file: 'public/icons/icon-384.png', size: 384, iconSize: 220 },
-    { file: 'public/icons/icon-256.png', size: 256, iconSize: 148 },
-    { file: 'public/icons/icon-192.png', size: 192, iconSize: 110 },
-    { file: 'public/icons/icon-144.png', size: 144, iconSize: 84 },
-    { file: 'public/icons/icon-128.png', size: 128, iconSize: 74 },
-    { file: 'public/icons/icon-96.png', size: 96, iconSize: 56 },
-    { file: 'public/icons/icon-72.png', size: 72, iconSize: 42 },
-    { file: 'public/icons/icon-48.png', size: 48, iconSize: 28 },
-    { file: 'public/icons/icon-maskable.png', size: 512, iconSize: 240 }, // Safe zone for Android circular/squircle masking
+    { file: 'public/icons/icon-512.png', size: 512, iconSize: 400 }, // 78% bold canvas ratio
+    { file: 'public/icons/icon-384.png', size: 384, iconSize: 300 },
+    { file: 'public/icons/icon-256.png', size: 256, iconSize: 200 },
+    { file: 'public/icons/icon-192.png', size: 192, iconSize: 150 }, // 78% bold canvas ratio
+    { file: 'public/icons/icon-144.png', size: 144, iconSize: 112 },
+    { file: 'public/icons/icon-128.png', size: 128, iconSize: 100 },
+    { file: 'public/icons/icon-96.png', size: 96, iconSize: 75 },
+    { file: 'public/icons/icon-72.png', size: 72, iconSize: 56 },
+    { file: 'public/icons/icon-48.png', size: 48, iconSize: 38 },
+    { file: 'public/icons/icon-maskable.png', size: 512, iconSize: 340 }, // 66.5% safe zone for Android circular/squircle masking
   ];
 
   for (const item of pwaIcons) {
@@ -179,7 +184,7 @@ async function generateAllAssets() {
     .png({ compressionLevel: 9 })
     .toFile(item.file);
 
-    console.log(`✅ Generated ${item.file} (${item.size}x${item.size})`);
+    console.log(`✅ Generated ${item.file} (${item.size}x${item.size}, mark: ${item.iconSize}px)`);
   }
 
   // ---------------------------------------------------------
@@ -188,11 +193,11 @@ async function generateAllAssets() {
   console.log('📦 3. Generating Apple iOS / iPadOS Icons & Universal Startup Screens...');
 
   const appleIcons = [
-    { file: 'public/apple-touch-icon.png', size: 180, iconSize: 105 }, // iPhone 14/15/16 Pro Super Retina XDR
-    { file: 'public/apple-touch-icon-180x180.png', size: 180, iconSize: 105 },
-    { file: 'public/apple-touch-icon-167x167.png', size: 167, iconSize: 98 }, // iPad Pro
-    { file: 'public/apple-touch-icon-152x152.png', size: 152, iconSize: 88 }, // iPad Retina
-    { file: 'public/apple-touch-icon-120x120.png', size: 120, iconSize: 70 }, // iPhone 2x
+    { file: 'public/apple-touch-icon.png', size: 180, iconSize: 140 }, // 78% bold ratio for iPhone Super Retina XDR
+    { file: 'public/apple-touch-icon-180x180.png', size: 180, iconSize: 140 },
+    { file: 'public/apple-touch-icon-167x167.png', size: 167, iconSize: 130 }, // iPad Pro
+    { file: 'public/apple-touch-icon-152x152.png', size: 152, iconSize: 118 }, // iPad Retina
+    { file: 'public/apple-touch-icon-120x120.png', size: 120, iconSize: 94 }, // iPhone 2x
   ];
 
   for (const item of appleIcons) {
@@ -217,7 +222,7 @@ async function generateAllAssets() {
 
   // Apple Web App universal startup screen (iPhone 15/16 Pro standard 1179x2556)
   const appleSplashLogo = await sharp(markBuffer)
-    .resize(360, 360, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
+    .resize(480, 480, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
     .toBuffer();
 
   await sharp({
@@ -237,14 +242,14 @@ async function generateAllAssets() {
   const iosIconDir = 'ios/App/App/Assets.xcassets/AppIcon.appiconset';
   if (fs.existsSync(iosIconDir)) {
     fs.writeFileSync(path.join(iosIconDir, 'AppIcon-512@2x.png'), appIcon1024);
-    console.log('✅ Generated iOS AppIcon-512@2x.png (1024x1024 Universal iOS App Icon in Xcode Catalog)');
+    console.log('✅ Generated iOS AppIcon-512@2x.png (1024x1024 Bold Universal iOS App Icon in Xcode Catalog)');
   }
 
   // Native iOS Universal Launch Splash Screens (2732x2732 Ultra-HD iPad Pro & iPhone)
   const iosSplashDir = 'ios/App/App/Assets.xcassets/Splash.imageset';
   if (fs.existsSync(iosSplashDir)) {
     const splashLogo2732 = await sharp(markBuffer)
-      .resize(750, 750, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
+      .resize(1100, 1100, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
       .toBuffer();
 
     const iosSplash2732 = await sharp({
@@ -266,24 +271,26 @@ async function generateAllAssets() {
   }
 
   // ---------------------------------------------------------
-  // 4. Android Native Mipmap Icons & Adaptive Drawables
+  // 4. Android Native Mipmap Icons & Adaptive Drawables (BOLD)
   // ---------------------------------------------------------
-  console.log('📦 4. Generating Native Android Adaptive Mipmap Icons...');
+  console.log('📦 4. Generating Native Android Adaptive Mipmap Icons (Bold Proportion)...');
+  // Android Adaptive icon specs: canvas = 108dp, inner visible squircle = 72dp.
+  // We set fgMark to 70% of fgSize (~75dp wide), so the mark boldly and prominently fills the squircle!
   const mipmaps = [
-    { dir: 'mipmap-mdpi', iconSize: 48, fgSize: 108, markSize: 48 },
-    { dir: 'mipmap-hdpi', iconSize: 72, fgSize: 162, markSize: 72 },
-    { dir: 'mipmap-xhdpi', iconSize: 96, fgSize: 216, markSize: 96 },
-    { dir: 'mipmap-xxhdpi', iconSize: 144, fgSize: 324, markSize: 144 },
-    { dir: 'mipmap-xxxhdpi', iconSize: 192, fgSize: 432, markSize: 192 },
+    { dir: 'mipmap-mdpi', iconSize: 48, fgSize: 108, markFg: 60, markLeg: 38 },
+    { dir: 'mipmap-hdpi', iconSize: 72, fgSize: 162, markFg: 90, markLeg: 58 },
+    { dir: 'mipmap-xhdpi', iconSize: 96, fgSize: 216, markFg: 120, markLeg: 76 },
+    { dir: 'mipmap-xxhdpi', iconSize: 144, fgSize: 324, markFg: 180, markLeg: 115 },
+    { dir: 'mipmap-xxxhdpi', iconSize: 192, fgSize: 432, markFg: 240, markLeg: 154 },
   ];
 
   for (const m of mipmaps) {
     const targetDir = path.join('android/app/src/main/res', m.dir);
     if (!fs.existsSync(targetDir)) continue;
 
-    // A. Adaptive icon foreground (centered within 66dp safe circle zone)
+    // A. Adaptive icon foreground (boldly sized to fill the squircle without clipping)
     const fgMark = await sharp(markBuffer)
-      .resize(m.markSize, m.markSize, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
+      .resize(m.markFg, m.markFg, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
       .toBuffer();
 
     await sharp({
@@ -298,10 +305,9 @@ async function generateAllAssets() {
     .png({ compressionLevel: 9 })
     .toFile(path.join(targetDir, 'ic_launcher_foreground.png'));
 
-    // B. Legacy standard icon (pure white background, 56% mark size)
-    const legMarkSize = Math.round(m.iconSize * 0.56);
+    // B. Legacy standard icon (pure white background, bold 78% mark size)
     const legMark = await sharp(markBuffer)
-      .resize(legMarkSize, legMarkSize, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
+      .resize(m.markLeg, m.markLeg, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
       .toBuffer();
 
     await sharp({
@@ -316,7 +322,7 @@ async function generateAllAssets() {
     .png({ compressionLevel: 9 })
     .toFile(path.join(targetDir, 'ic_launcher.png'));
 
-    // C. Legacy round icon (white circle plate)
+    // C. Legacy round icon (white circle plate with bold mark)
     const circleSvg = Buffer.from(
       `<svg width="${m.iconSize}" height="${m.iconSize}"><circle cx="${m.iconSize / 2}" cy="${m.iconSize / 2}" r="${m.iconSize / 2}" fill="#FFFFFF"/></svg>`
     );
@@ -327,7 +333,7 @@ async function generateAllAssets() {
       .png({ compressionLevel: 9 })
       .toFile(path.join(targetDir, 'ic_launcher_round.png'));
 
-    console.log(`✅ Generated Android ${m.dir} icons (foreground, standard, round)`);
+    console.log(`✅ Generated Android ${m.dir} icons (foreground: ${m.markFg}px on ${m.fgSize}px, standard: ${m.markLeg}px)`);
   }
 
   // ---------------------------------------------------------
@@ -335,17 +341,17 @@ async function generateAllAssets() {
   // ---------------------------------------------------------
   console.log('📦 5. Generating Android Native Splash Screens for all densities...');
   const splashes = [
-    { file: 'android/app/src/main/res/drawable/splash.png', w: 480, h: 320, logo: 130 },
-    { file: 'android/app/src/main/res/drawable-port-mdpi/splash.png', w: 320, h: 480, logo: 120 },
-    { file: 'android/app/src/main/res/drawable-port-hdpi/splash.png', w: 480, h: 800, logo: 180 },
-    { file: 'android/app/src/main/res/drawable-port-xhdpi/splash.png', w: 720, h: 1280, logo: 260 },
-    { file: 'android/app/src/main/res/drawable-port-xxhdpi/splash.png', w: 960, h: 1600, logo: 350 },
-    { file: 'android/app/src/main/res/drawable-port-xxxhdpi/splash.png', w: 1280, h: 1920, logo: 440 },
-    { file: 'android/app/src/main/res/drawable-land-mdpi/splash.png', w: 480, h: 320, logo: 120 },
-    { file: 'android/app/src/main/res/drawable-land-hdpi/splash.png', w: 800, h: 480, logo: 180 },
-    { file: 'android/app/src/main/res/drawable-land-xhdpi/splash.png', w: 1280, h: 720, logo: 240 },
-    { file: 'android/app/src/main/res/drawable-land-xxhdpi/splash.png', w: 1600, h: 960, logo: 300 },
-    { file: 'android/app/src/main/res/drawable-land-xxxhdpi/splash.png', w: 1920, h: 1280, logo: 380 },
+    { file: 'android/app/src/main/res/drawable/splash.png', w: 480, h: 320, logo: 180 },
+    { file: 'android/app/src/main/res/drawable-port-mdpi/splash.png', w: 320, h: 480, logo: 160 },
+    { file: 'android/app/src/main/res/drawable-port-hdpi/splash.png', w: 480, h: 800, logo: 240 },
+    { file: 'android/app/src/main/res/drawable-port-xhdpi/splash.png', w: 720, h: 1280, logo: 360 },
+    { file: 'android/app/src/main/res/drawable-port-xxhdpi/splash.png', w: 960, h: 1600, logo: 480 },
+    { file: 'android/app/src/main/res/drawable-port-xxxhdpi/splash.png', w: 1280, h: 1920, logo: 620 },
+    { file: 'android/app/src/main/res/drawable-land-mdpi/splash.png', w: 480, h: 320, logo: 160 },
+    { file: 'android/app/src/main/res/drawable-land-hdpi/splash.png', w: 800, h: 480, logo: 240 },
+    { file: 'android/app/src/main/res/drawable-land-xhdpi/splash.png', w: 1280, h: 720, logo: 340 },
+    { file: 'android/app/src/main/res/drawable-land-xxhdpi/splash.png', w: 1600, h: 960, logo: 440 },
+    { file: 'android/app/src/main/res/drawable-land-xxxhdpi/splash.png', w: 1920, h: 1280, logo: 560 },
   ];
 
   for (const s of splashes) {
@@ -372,7 +378,7 @@ async function generateAllAssets() {
   }
 
   // ---------------------------------------------------------
-  // 6. Favicons & Multi-Resolution ICO for Desktop Browsers
+  // 6. Favicons & Multi-Resolution Desktop Browser ICO
   // ---------------------------------------------------------
   console.log('📦 6. Generating Favicons & Multi-Resolution Desktop Browser ICO...');
 
@@ -380,12 +386,12 @@ async function generateAllAssets() {
   const icoBuffers = [];
 
   for (const size of [16, 32, 48, 64, 192]) {
-    const markRatio = size <= 32 ? 0.72 : 0.60;
-    const innerSize = Math.max(10, Math.round(size * markRatio));
+    const markRatio = size <= 32 ? 0.82 : 0.76;
+    const innerSize = Math.max(12, Math.round(size * markRatio));
 
     const resized = await sharp(markBuffer)
       .resize(innerSize, innerSize, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
-      .sharpen(size <= 32 ? { sigma: 0.8, m1: 1.4, m2: 0.6 } : undefined)
+      .sharpen(size <= 32 ? { sigma: 0.9, m1: 1.5, m2: 0.7 } : undefined)
       .toBuffer();
 
     const iconBuf = await sharp({
@@ -402,11 +408,11 @@ async function generateAllAssets() {
 
     if (size === 16) {
       fs.writeFileSync('public/favicon-16x16.png', iconBuf);
-      console.log('✅ Generated public/favicon-16x16.png');
+      console.log('✅ Generated public/favicon-16x16.png (Sharpened Full HD)');
     }
     if (size === 32) {
       fs.writeFileSync('public/favicon-32x32.png', iconBuf);
-      console.log('✅ Generated public/favicon-32x32.png');
+      console.log('✅ Generated public/favicon-32x32.png (Sharpened Full HD)');
     }
     if (size === 192) {
       fs.writeFileSync('public/favicon.png', iconBuf);
@@ -421,9 +427,9 @@ async function generateAllAssets() {
   // Write multi-resolution favicon.ico containing 16x16, 32x32, 48x48
   const icoData = createMultiIco(icoBuffers);
   fs.writeFileSync('public/favicon.ico', icoData);
-  console.log('✅ Generated public/favicon.ico (Multi-Resolution ICO embedding 16x16, 32x32, 48x48 for Windows/macOS browsers)');
+  console.log('✅ Generated public/favicon.ico (Multi-Resolution ICO embedding 16x16, 32x32, 48x48)');
 
-  console.log('\n🎉 ALL HD Assets successfully generated for iOS, Android, macOS, Windows, ChromeOS, and Web!');
+  console.log('\n🎉 ALL Ultra-HD Bold Assets successfully generated for iOS, Android, macOS, Windows, ChromeOS, and Web!');
 }
 
 generateAllAssets().catch((err) => {
