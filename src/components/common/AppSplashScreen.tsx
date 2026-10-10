@@ -1,328 +1,149 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Compass, ShieldCheck, Plane, Check } from 'lucide-react';
-import { getDeviceInfo, triggerHaptic } from '../../services/deviceService';
+import { Sparkles } from 'lucide-react';
+import { triggerHaptic, hideNativeSplashScreen } from '../../services/deviceService';
 import { BrandIconMark } from './Logo';
-
-export type SplashPlatform = 'ios' | 'android';
 
 interface AppSplashScreenProps {
   onFinish?: () => void;
-  minDuration?: number; // duration in ms (default ~1350ms)
-  initialPlatform?: SplashPlatform;
+  minDuration?: number;
+  initialPlatform?: 'ios' | 'android';
 }
 
 export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
   onFinish,
-  minDuration = 1350,
-  initialPlatform
+  minDuration = 800
 }) => {
-  const [phase, setPhase] = useState<'enter' | 'ready' | 'exit'>('enter');
-  const [progress, setProgress] = useState<number>(0);
-  const [statusText, setStatusText] = useState<string>('Initializing ConCode travel engine...');
-  const [dragY, setDragY] = useState<number>(0);
-  const touchStartY = useRef<number | null>(null);
+  const [isExiting, setIsExiting] = useState(false);
   const onFinishRef = useRef(onFinish);
 
   useEffect(() => {
     onFinishRef.current = onFinish;
   }, [onFinish]);
-  
-  // Platform selection: detect real device, allow explicit override via prop or URL query param
-  const [activePlatform, setActivePlatform] = useState<SplashPlatform>(() => {
-    if (initialPlatform) return initialPlatform;
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const forced = params.get('platform') || params.get('os');
-      if (forced === 'ios' || forced === 'iphone') return 'ios';
-      if (forced === 'android') return 'android';
-    }
-    const info = getDeviceInfo();
-    return info.platform === 'ios' ? 'ios' : 'android';
-  });
 
   useEffect(() => {
-    // Listen for custom replay events that may specify platform
-    const handleReplayEvent = (e: any) => {
-      if (e.detail?.platform) {
-        setActivePlatform(e.detail.platform);
-      }
-    };
-    window.addEventListener('tripverse-show-splash', handleReplayEvent);
-    return () => window.removeEventListener('tripverse-show-splash', handleReplayEvent);
-  }, []);
-
-  useEffect(() => {
-    // Trigger initial subtle haptic
+    // 1. Light tactile feedback on launch
     triggerHaptic('light');
 
-    // Progress bar animation timeline
-    const startTime = performance.now();
-    let animationFrameId: number;
-    let exitTimer: any = null;
-    let finishTimer: any = null;
+    // 2. Smoothly dissolve native Capacitor splash screen into web splash
+    hideNativeSplashScreen(300);
 
-    const updateProgress = (now: number) => {
-      const elapsed = now - startTime;
-      const pct = Math.min(100, Math.round((elapsed / (minDuration - 250)) * 100));
-      setProgress(pct);
+    const timer = setTimeout(() => {
+      setIsExiting(true);
+      hideNativeSplashScreen(350);
 
-      if (elapsed > 200 && elapsed < 550) {
-        setStatusText('Connecting to ConCode AI Travel Brain...');
-      } else if (elapsed >= 550 && elapsed < 900) {
-        setStatusText('Mapping verified highway breakstops & fuel plazas...');
-      } else if (elapsed >= 900 && elapsed < 1150) {
-        setStatusText('Loading authentic local food trails & hidden spots...');
-      } else if (elapsed >= 1150) {
-        setStatusText('All travel facilities ready • Swipe up to enter');
-      }
+      const finishTimer = setTimeout(() => {
+        if (onFinishRef.current) onFinishRef.current();
+      }, 380);
 
-      if (elapsed < minDuration - 200) {
-        animationFrameId = requestAnimationFrame(updateProgress);
-      } else {
-        setPhase('ready');
-        triggerHaptic('success');
+      return () => clearTimeout(finishTimer);
+    }, minDuration);
 
-        // Smooth exit phase
-        exitTimer = setTimeout(() => {
-          setPhase('exit');
-          finishTimer = setTimeout(() => {
-            if (onFinishRef.current) onFinishRef.current();
-          }, 320);
-        }, 180);
-      }
-    };
+    return () => clearTimeout(timer);
+  }, [minDuration]);
 
-    animationFrameId = requestAnimationFrame(updateProgress);
-
-    return () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      if (exitTimer) clearTimeout(exitTimer);
-      if (finishTimer) clearTimeout(finishTimer);
-    };
-  }, [minDuration, activePlatform]);
-
-  const handleSkip = (e: React.MouseEvent) => {
-    // Don't skip if clicking platform toggle
-    if ((e.target as HTMLElement).closest('.splash-platform-toggle')) return;
-    
+  const handleDismiss = () => {
+    if (isExiting) return;
     triggerHaptic('light');
-    setPhase('exit');
+    setIsExiting(true);
+    hideNativeSplashScreen(300);
     setTimeout(() => {
       if (onFinishRef.current) onFinishRef.current();
-    }, 240);
+    }, 320);
   };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartY.current !== null) {
-      const delta = e.touches[0].clientY - touchStartY.current;
-      if (delta < 0) {
-        setDragY(delta);
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (dragY < -50) {
-      triggerHaptic('medium');
-      setPhase('exit');
-      setTimeout(() => {
-        if (onFinishRef.current) onFinishRef.current();
-      }, 220);
-    } else {
-      setDragY(0);
-    }
-    touchStartY.current = null;
-  };
-
-  const isIos = activePlatform === 'ios';
 
   return (
     <div
-      onClick={handleSkip}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-between select-none cursor-pointer overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-        phase === 'exit'
-          ? isIos
-            ? 'opacity-0 -translate-y-8 scale-105 pointer-events-none'
-            : 'opacity-0 -translate-y-6 scale-98 pointer-events-none'
-          : 'opacity-100 scale-100'
+      onClick={handleDismiss}
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none cursor-pointer overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        isExiting
+          ? 'opacity-0 scale-105 blur-[10px] pointer-events-none'
+          : 'opacity-100 scale-100 blur-0'
       }`}
       style={{
-        paddingTop: 'max(16px, env(safe-area-inset-top, 0px) + 8px)',
-        paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px) + 8px)',
-        transform: dragY < 0 ? `translateY(${dragY}px)` : undefined,
-        background: isIos
-          ? 'radial-gradient(140% 110% at 50% 10%, #113868 0%, #0B2545 55%, #051429 100%)'
-          : 'radial-gradient(130% 100% at 50% 12%, #0E3E61 0%, #08213D 50%, #041224 100%)'
+        background: '#FFFFFF',
+        willChange: 'transform, opacity, filter',
+        WebkitBackfaceVisibility: 'hidden',
+        backfaceVisibility: 'hidden'
       }}
       role="dialog"
-      aria-label={`TripVerse Opening Animation (${isIos ? 'iPhone iOS' : 'Android'})`}
+      aria-label="TripVerse Opening"
     >
-      {/* 1. Atmospheric Ambient Lighting & Particle Dust */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Pulsing Aurora Core */}
+      {/* 1. Subtle, Warm Luxury Emerald Ambient Bloom */}
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
         <div
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 sm:w-96 h-80 sm:h-96 rounded-full blur-[90px] transition-all duration-700 ${
-            isIos ? 'bg-emerald-500/25 animate-pulse' : 'bg-teal-400/25 animate-pulse'
-          }`}
+          className="w-[380px] sm:w-[480px] h-[380px] sm:h-[480px] rounded-full blur-[70px] animate-[tvAuraBreath_2.4s_ease-in-out_infinite]"
+          style={{
+            background: 'radial-gradient(circle, rgba(45,90,61,0.16) 0%, rgba(56,107,73,0.06) 50%, rgba(255,255,255,0) 75%)'
+          }}
         />
-        
-        {/* Secondary Bloom */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full bg-cyan-400/15 blur-[75px]" />
-
-        {/* Ambient Grid / Particle Accent */}
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px]" />
-
-        {/* Android Material Ripple Wave */}
-        {!isIos && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] rounded-full border border-emerald-400/20 animate-ping [animation-duration:3s]" />
-        )}
       </div>
 
-      {/* 2. Top Header & Device Status Simulation with Liquid Pill Capsule */}
-      <div className="w-full max-w-[480px] px-5 flex items-center justify-between z-20">
-        {/* Dynamic Island Liquid Capsule - Premium Experience for both iOS and Android */}
-        <div className="min-h-[36px] px-4 py-1.5 rounded-full bg-black/60 border border-white/15 backdrop-blur-xl shadow-lg flex items-center gap-2.5 transition-transform duration-300">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
-          <span className="text-[11px] font-semibold text-white/95 tracking-tight flex items-center gap-1">
-            <span>TripVerse Live Activity</span>
-          </span>
-          <span className="text-[10px] text-emerald-400 font-mono font-medium">GPS Ready</span>
-        </div>
-
-        {/* Right Controls: Platform Mode Switcher & Skip Hint */}
-        <div className="flex items-center gap-2.5">
-          <div className="splash-platform-toggle flex items-center bg-black/40 border border-white/15 rounded-full p-0.5 backdrop-blur-md text-[10px] font-semibold">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setActivePlatform('ios');
-                triggerHaptic('light');
-              }}
-              className={`min-h-[32px] px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${
-                isIos
-                  ? 'bg-white/25 text-white shadow-xs font-bold'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="Preview iOS Opening Experience"
-            >
-               iOS
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setActivePlatform('android');
-                triggerHaptic('light');
-              }}
-              className={`min-h-[32px] px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${
-                !isIos
-                  ? 'bg-emerald-500/35 text-emerald-300 shadow-xs font-bold'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="Preview Android Opening Experience"
-            >
-              🤖 Android
-            </button>
-          </div>
-
-          <span className="text-[11px] font-medium text-slate-400/80 hover:text-slate-200 transition-colors">
-            Tap to skip
-          </span>
-        </div>
-      </div>
-
-      {/* 3. Center Cinematic Logo Mark & Brand Presentation */}
-      <div className="flex w-full max-w-[440px] flex-col items-center justify-center z-10 px-4 text-center my-auto mx-auto">
-        {/* Logo Mark Container with Native Style */}
-        <div className="relative mb-6 group">
-          {/* Subtle Outer Glow */}
-          <div className="absolute -inset-4 rounded-3xl blur-2xl transition-all duration-700 bg-gradient-to-tr from-[#2D5A3D]/40 via-[#386B49]/30 to-[#1E3E2B]/20" />
-
-          {/* Elevated Brand Mark Plate - Pure white backdrop plate */}
-          <div className="relative w-28 h-28 sm:w-32 sm:h-32 p-5 sm:p-6 flex items-center justify-center transition-all duration-500 group-hover:scale-105 rounded-[32px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.35)] border border-white/80">
-            {/* The Authentic Exact Brand Mark - Razor-sharp pure vector */}
+      {/* 2. Central Brand Mark & Identity */}
+      <div className="relative z-10 flex flex-col items-center justify-center px-6 -mt-4 animate-[tvSplashPop_0.5s_cubic-bezier(0.16,1,0.3,1)]">
+        {/* Elevated Icon Plate */}
+        <div className="relative mb-5">
+          <div className="w-28 h-28 sm:w-32 sm:h-32 p-4 sm:p-5 rounded-[28px] sm:rounded-[32px] bg-white flex items-center justify-center shadow-[0_20px_50px_-10px_rgba(45,90,61,0.2),0_0_0_1px_rgba(45,90,61,0.08)]">
             <BrandIconMark className="w-full h-full" idPrefix="splash" />
           </div>
 
-          {/* Micro Flight Accent Badge */}
-          <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full shadow-lg flex items-center justify-center border-2 bg-gradient-to-tr from-[#386B49] to-[#2D5A3D] border-white">
-            <Sparkles className="w-3.5 h-3.5 text-white animate-spin [animation-duration:8s]" />
+          {/* Micro Flight Pin Sparkle */}
+          <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-gradient-to-tr from-[#2D5A3D] to-[#386B49] text-white shadow-md flex items-center justify-center border-2 border-white">
+            <Sparkles className="w-3.5 h-3.5 animate-spin [animation-duration:9s]" />
           </div>
         </div>
 
-        {/* Typography: "TripVerse" */}
-        <div className="flex items-center justify-center tracking-tight font-black text-3xl sm:text-4xl text-white drop-shadow-md">
-          <span className="text-white">Trip</span>
-          <span className="text-[#386B49] ml-0.5">Verse</span>
+        {/* Brand Name Typography */}
+        <div className="flex items-center justify-center tracking-tight font-display font-black text-3xl sm:text-4xl text-[#0B2545]">
+          <span>Trip</span>
+          <span className="text-[#2D5A3D]">Verse</span>
         </div>
 
-        {/* Tagline & Native Subtitle */}
-        <p className="text-xs sm:text-sm font-semibold text-slate-300 mt-1 tracking-wide">
+        {/* Tagline */}
+        <p className="text-xs sm:text-sm font-semibold text-slate-500 mt-1.5 tracking-wide">
           Plan Smarter. Travel Further.
         </p>
 
-        <div className="mt-1 text-[11px] font-bold text-emerald-400/90 tracking-wider uppercase flex items-center gap-1.5 justify-center">
-          <Sparkles className="w-3 h-3 text-emerald-400" />
-          <span>{isIos ? ' Optimized for iOS & iPadOS' : '🤖 Optimized for Android • Liquid Native UI'}</span>
-        </div>
-
-        {/* Feature Badges with Soft Stagger */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-[11px] font-medium text-slate-300/85">
-          <span className="flex items-center gap-1 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
-            <Sparkles className="w-3 h-3 text-emerald-400" /> ConCode AI Brain
-          </span>
-          <span className="hidden sm:inline text-slate-500">•</span>
-          <span className="flex items-center gap-1 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
-            <Plane className="w-3 h-3 text-teal-400" /> Highway Facilities
-          </span>
-          <span className="hidden sm:inline text-slate-500">•</span>
-          <span className="flex items-center gap-1 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
-            <Compass className="w-3 h-3 text-amber-300" /> Genuine Local Gems
-          </span>
-          <span className="hidden sm:inline text-slate-500">•</span>
-          <span className="flex items-center gap-1 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
-            <ShieldCheck className="w-3 h-3 text-cyan-400" /> Offline Ready
-          </span>
+        {/* 3. Whisper-Quiet Liquid Indicator */}
+        <div className="mt-7 w-28 sm:w-32 h-1 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/60 shadow-inner">
+          <div className="h-full rounded-full bg-gradient-to-r from-[#2D5A3D] via-[#386B49] to-[#2D5A3D] animate-[tvSplashShimmer_1.1s_ease-in-out_infinite]" />
         </div>
       </div>
 
-      {/* 4. Bottom Native Loading Bar & Native Safe Area Bars */}
-      <div className="w-full max-w-xs sm:max-w-sm px-6 pb-6 sm:pb-8 z-10 flex flex-col items-center">
-        {/* Dynamic Status message */}
-        <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-slate-300 tracking-wide text-center">
-          {progress >= 100 ? (
-            <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
-              <Check className="w-3.5 h-3.5" /> Ready for takeoff!
-            </span>
-          ) : (
-            <span className="animate-pulse">{statusText}</span>
-          )}
-        </div>
-
-        {/* Progress Track (Universal Liquid Pill Bar with Glow) */}
-        <div className="w-full h-2 bg-white/15 rounded-full border border-white/20 p-0.5 backdrop-blur-md overflow-hidden shadow-inner transition-all">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-300 transition-all duration-150 ease-out shadow-[0_0_14px_rgba(0,210,135,0.8)]"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
-        {/* Floating Safe-Area Gesture Pill Bar */}
-        <div className="mt-6 flex flex-col items-center">
-          <div className="w-36 h-1 rounded-full bg-white/40 shadow-sm" />
-          <span className="text-[10px] font-medium text-slate-400/80 mt-2 tracking-widest uppercase">
-            Swipe up or tap to enter
-          </span>
-        </div>
+      {/* 4. Bottom Safe Area Indicator */}
+      <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center justify-center pointer-events-none opacity-50">
+        <div className="w-28 h-1 rounded-full bg-slate-300" />
       </div>
+
+      <style>{`
+        @keyframes tvSplashPop {
+          0% {
+            opacity: 0.8;
+            transform: scale(0.96) translateY(6px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        @keyframes tvAuraBreath {
+          0%, 100% {
+            transform: scale(0.95);
+            opacity: 0.7;
+          }
+          50% {
+            transform: scale(1.08);
+            opacity: 1;
+          }
+        }
+        @keyframes tvSplashShimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+      `}</style>
     </div>
   );
 };

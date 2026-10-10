@@ -111,11 +111,10 @@ export function initDeviceServices(onBackPress?: () => boolean) {
       console.warn('Status bar configuration error:', e);
     }
 
-    try {
-      SplashScreen.hide().catch(() => {});
-    } catch (e) {
-      console.warn('Splash screen hide error:', e);
-    }
+    // Schedule safety fallback to hide splash after 3s if React unmounts or crashes
+    setTimeout(() => {
+      hideNativeSplashScreen(400);
+    }, 3000);
 
     // Android hardware back button handler
     CapApp.addListener('backButton', ({ canGoBack }) => {
@@ -225,3 +224,17 @@ export function triggerHaptic(type: 'light' | 'medium' | 'heavy' | 'success' | '
     // Ignore unsupported environments
   }
 }
+
+/**
+ * Programmatically and smoothly dismiss the native Capacitor splash screen with hardware alpha fade.
+ */
+export async function hideNativeSplashScreen(fadeOutDuration = 400): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await SplashScreen.hide({ fadeOutDuration });
+    } catch (e) {
+      console.warn('Splash screen hide error:', e);
+    }
+  }
+}
+

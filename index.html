@@ -84,19 +84,29 @@
   </head>
   <body class="bg-[#F4F6F2] text-[#152A1C] antialiased selection:bg-[#2D5A3D] selection:text-white font-sans overflow-x-clip">
     <div id="root">
-      <!-- Pre-hydration light splash fallback -->
-      <div style="position:fixed;inset:0;background:#F4F6F2;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;">
-        <div style="width:96px;height:96px;display:flex;align-items:center;justify-content:center;border-radius:24px;background:#FFFFFF;border:1px solid rgba(226,235,225,0.9);box-shadow:0 12px 32px rgba(45,90,61,0.08);animation:tvPrePulse 1.8s ease-in-out infinite;">
-          <img src="/tripverse-mark.svg" style="width:68px;height:auto;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;" alt="TripVerse" />
+      <!-- Pre-hydration luxury splash screen (pixel-identical match with native splash) -->
+      <div id="pre-app-splash" style="position:fixed;inset:0;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1);">
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+          <div style="position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle, rgba(45,90,61,0.12) 0%, rgba(45,90,61,0) 70%);filter:blur(16px);animation:tvPreAura 2s ease-in-out infinite;"></div>
+          <div style="position:relative;width:112px;height:112px;display:flex;align-items:center;justify-content:center;border-radius:28px;background:#FFFFFF;box-shadow:0 20px 48px -12px rgba(45,90,61,0.18), 0 0 0 1px rgba(45,90,61,0.06);animation:tvPrePulse 1.8s cubic-bezier(0.2,0.8,0.2,1) infinite;">
+            <img src="/tripverse-mark-cropped.png" style="width:82px;height:auto;image-rendering:-webkit-optimize-contrast;transform:translateZ(0);" alt="TripVerse" />
+          </div>
         </div>
-        <div style="margin-top:16px;font-family:'Sora',sans-serif;font-weight:800;font-size:26px;letter-spacing:-0.5px;color:#152A1C;">
+        <div style="margin-top:22px;font-family:'Sora',system-ui,sans-serif;font-weight:900;font-size:28px;letter-spacing:-0.5px;color:#0B2545;text-align:center;">
           <span>Trip</span><span style="color:#2D5A3D;">Verse</span>
+        </div>
+        <div style="margin-top:6px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:600;font-size:12px;letter-spacing:0.3px;color:#64748B;text-align:center;">
+          Plan Smarter. Travel Further.
         </div>
       </div>
       <style>
         @keyframes tvPrePulse {
-          0%, 100% { transform: scale(1); opacity: 0.95; }
-          50% { transform: scale(1.05); opacity: 1; }
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.035); }
+        }
+        @keyframes tvPreAura {
+          0%, 100% { transform: scale(0.9); opacity: 0.6; }
+          50% { transform: scale(1.15); opacity: 1; }
         }
       </style>
     </div>

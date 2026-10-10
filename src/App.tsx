@@ -884,13 +884,13 @@ export function App() {
     currentUser?.uid
   ]);
 
-  // Auto-launch Onboarding Tour for new users
+  // Auto-launch Onboarding Tour for new users (waits until splash transition completes)
   useEffect(() => {
-    if (!hasCompletedOnboarding()) {
-      const timer = setTimeout(() => setIsOnboardingOpen(true), 800);
+    if (!hasCompletedOnboarding() && !showSplash) {
+      const timer = setTimeout(() => setIsOnboardingOpen(true), 600);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [showSplash]);
 
   // Update notification counts in real-time
   useEffect(() => {
