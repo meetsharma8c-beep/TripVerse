@@ -741,20 +741,57 @@ export async function loadUserDataFromCloudBackend(userId: string): Promise<{
   }
 }
 
-// First-Time User Onboarding Flag
-const ONBOARDING_KEY = 'tripverse_onboarding_completed_v1';
+// First-Time User Onboarding & Visit Flags (cross-version backwards-compatible)
+const ONBOARDING_KEYS = [
+  'tripverse_onboarding_completed_v1',
+  'tripverse_onboarding_completed',
+  'tripverse_has_visited',
+  'tripverse_visited'
+];
 
 export function hasCompletedOnboarding(): boolean {
+  if (typeof window === 'undefined') return true;
   try {
-    return localStorage.getItem(ONBOARDING_KEY) === 'true';
-  } catch (e) {
+    // 1. Check all explicit onboarding completion and visit flags in localStorage and sessionStorage
+    for (const key of ONBOARDING_KEYS) {
+      if (window.localStorage.getItem(key) === 'true' || window.sessionStorage?.getItem(key) === 'true') {
+        return true;
+      }
+    }
+
+    // 2. Returning visitor check: If the user already has any existing app data, they are NOT visiting for the first time
+    const returningUserIndicators = [
+      'tripverse_trips',
+      'tripverse_user_profile',
+      'tripverse_saved_item_ids',
+      'tripverse_active_trip_id',
+      'tripverse_visited_states',
+      'tripverse_currency',
+      'tripverse_trips_guest',
+      'tripverse_saved_places'
+    ];
+    for (const key of returningUserIndicators) {
+      if (window.localStorage.getItem(key) || window.sessionStorage?.getItem(key)) {
+        setOnboardingCompleted(true);
+        return true;
+      }
+    }
+
     return false;
+  } catch (e) {
+    return true; // Fail safe: never annoy users if storage is blocked or throws
   }
 }
 
-export function setOnboardingCompleted(completed: boolean): void {
+export function setOnboardingCompleted(completed: boolean = true): void {
+  if (typeof window === 'undefined') return;
   try {
-    safeLocalStorageSet(ONBOARDING_KEY, completed ? 'true' : 'false');
+    for (const key of ONBOARDING_KEYS) {
+      safeLocalStorageSet(key, completed ? 'true' : 'false');
+      try {
+        window.sessionStorage?.setItem(key, completed ? 'true' : 'false');
+      } catch {}
+    }
   } catch (e) {
     console.error('Error setting onboarding completed', e);
   }

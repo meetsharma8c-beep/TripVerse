@@ -16,6 +16,7 @@ import {
   saveUserVisitedStates,
   migrateGuestCreatedTripsToUser,
   hasCompletedOnboarding,
+  setOnboardingCompleted,
   loadTripExpenses,
   saveTripExpenses,
   loadTripPacking,
@@ -884,9 +885,10 @@ export function App() {
     currentUser?.uid
   ]);
 
-  // Auto-launch Onboarding Tour for new users (waits until splash transition completes)
+  // Auto-launch Onboarding Tour strictly for first-time ever visitors once
   useEffect(() => {
     if (!hasCompletedOnboarding() && !showSplash) {
+      setOnboardingCompleted(true);
       const timer = setTimeout(() => setIsOnboardingOpen(true), 600);
       return () => clearTimeout(timer);
     }
