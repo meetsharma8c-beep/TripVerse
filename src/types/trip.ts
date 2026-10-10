@@ -30,19 +30,24 @@ export interface Coordinates {
   lng: number;
 }
 
+export type BreakStopSection = 'amenities' | 'fuel' | 'ev_charging' | 'medical';
+
 export interface BreakStop {
   id: string;
+  source?: 'geoapify_places' | 'user';
+  mapUrl?: string;
+  section?: BreakStopSection;
   name: string;
   category: 'highway_food_court' | 'dhaba' | 'scenic_rest_stop' | 'fuel_plaza';
-  rating: number;
-  reviewCount: number;
+  rating?: number;
+  reviewCount?: number;
   detourDistanceKm: number;
   distanceFromStartKm: number;
-  foodAvailable: boolean;
-  washroomAvailable: boolean;
-  parkingAvailable: boolean;
-  restAreaAvailable: boolean;
-  fuelStationAvailable: boolean;
+  foodAvailable?: boolean;
+  washroomAvailable?: boolean;
+  parkingAvailable?: boolean;
+  restAreaAvailable?: boolean;
+  fuelStationAvailable?: boolean;
   evChargingAvailable?: boolean;
   medicalFacilityAvailable?: boolean;
   openingHours: string;
@@ -56,6 +61,8 @@ export interface BreakStop {
 
 export interface ItineraryActivity {
   id: string;
+  source?: 'geoapify_places';
+  mapUrl?: string;
   dayNumber: number;
   time: string;
   title: string;
@@ -92,6 +99,7 @@ export interface Trip {
   id: string;
   name: string;
   origin: string;
+  originCoordinates?: Coordinates;
   destination: string;
   destinationDetails?: {
     image: string;
@@ -120,13 +128,23 @@ export interface Trip {
   routeType: RouteType;
   status: 'upcoming' | 'ongoing' | 'completed' | 'draft';
   createdAt: string;
+  startDate?: string;
   aiRationale?: string;
   bestTransportDeal?: TransportDeal;
   transportDeals?: TransportDeal[];
   routeDetails?: {
     distanceKm: number;
     durationHours: number;
+    source?: 'geoapify_routing' | 'estimate';
+    encodedPolyline?: string;
+    origin?: string;
+    destination?: string;
+    originCoordinates?: Coordinates;
+    destinationCoordinates?: Coordinates;
   };
+  travelDataStatus?: 'pending' | 'loading' | 'live' | 'estimate' | 'not_applicable';
+  travelDataError?: 'GEOAPIFY_API_KEY_NOT_CONFIGURED' | 'GEOAPIFY_API_KEY_REJECTED' | 'GEOAPIFY_LOCATION_NOT_FOUND' | 'GEOAPIFY_TRAVEL_DATA_UNAVAILABLE' | 'ORIGIN_NOT_SET';
+  travelDataWarnings?: BreakStopSection[];
   photos?: TripPhotoMemory[];
   review?: TripReview;
   isUserCreated?: boolean;
@@ -278,7 +296,7 @@ export interface ChatMessage {
   sender: 'user' | 'ai';
   text: string;
   timestamp: string;
-  engine?: 'concode_brain' | 'gemini' | 'offline';
+  engine?: 'concode_brain' | 'offline';
   guild?: string;
   guildIcon?: string;
   confidence?: number;
@@ -524,4 +542,3 @@ export interface CollaborationSession {
   suggestions: GroupSuggestion[];
   updatedAt: string;
 }
-

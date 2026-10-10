@@ -1,42 +1,42 @@
 import React from 'react';
-import { Satellite, Coffee, ShieldCheck, Navigation, Percent } from 'lucide-react';
+import { CloudRain, Coffee, ShieldCheck, Navigation, Percent } from 'lucide-react';
 
 export const FeaturePillars: React.FC = () => {
   const pillars = [
     {
-      id: 'satellite',
-      icon: Satellite,
-      badge: 'Live Radar',
-      title: 'Satellite Weather',
-      desc: 'Real-time rain & cloud radar powered by Open-Meteo'
+      id: 'weather',
+      icon: CloudRain,
+      badge: 'Forecast',
+      title: 'Weather forecast',
+      desc: 'Open-Meteo forecast when coordinates and provider coverage are available; not a road advisory'
     },
     {
       id: 'break-stops',
       icon: Coffee,
-      badge: '500+ Verified',
-      title: 'NHAI Rest Plazas',
-      desc: 'Clean washrooms, 24/7 food courts, EV & fuel stations'
+      badge: 'When available',
+      title: 'Route & place listings',
+      desc: 'Driving route geometry and nearby Geoapify/OpenStreetMap places; facilities are not confirmed'
     },
     {
       id: 'pricing',
       icon: Percent,
-      badge: 'Zero Markup',
-      title: '0% Commission',
-      desc: 'Instant UPI Intent & direct transparent bookings'
+      badge: 'Estimate',
+      title: 'Trip budgets',
+      desc: 'Draft budget estimates; confirm current prices with providers'
     },
     {
       id: 'navigation',
       icon: Navigation,
-      badge: 'Turn-by-Turn',
-      title: 'Live Highway HUD',
-      desc: 'Speed tracking, audio cues & upcoming pitstop radar'
+      badge: 'External app',
+      title: 'Get directions',
+      desc: 'Open a navigation provider for turn-by-turn directions and traffic'
     },
     {
       id: 'safety',
       icon: ShieldCheck,
-      badge: '24/7 Dispatch',
-      title: 'NHAI 1033 Emergency',
-      desc: 'Roadside rescue, crane assistance & hospital directory'
+      badge: 'Location-specific',
+      title: 'Emergency information',
+      desc: 'Use official local services; TripVerse does not verify nearby facilities'
     }
   ];
 
@@ -53,7 +53,7 @@ export const FeaturePillars: React.FC = () => {
               <span className="inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 mb-2.5">
                 {item.badge}
               </span>
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#00B074] flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-[#00B074] group-hover:text-white transition-all duration-300 shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#2D5A3D] flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-xs">
                 <Icon className="w-6 h-6 stroke-[1.8]" />
               </div>
               <h3 className="font-bold text-slate-800 text-sm sm:text-base leading-tight mb-1">
@@ -69,4 +69,3 @@ export const FeaturePillars: React.FC = () => {
     </section>
   );
 };
-

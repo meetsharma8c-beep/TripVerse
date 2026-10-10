@@ -3,44 +3,47 @@
   <defs>
     <!-- Brand Gradients -->
     <linearGradient id="tvTGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#00F5A0" />
-      <stop offset="35%" stop-color="#00D287" />
-      <stop offset="75%" stop-color="#00A86B" />
-      <stop offset="100%" stop-color="#008455" />
+      <stop offset="0%" stop-color="#386B49" />
+      <stop offset="35%" stop-color="#2D5A3D" />
+      <stop offset="70%" stop-color="#244931" />
+      <stop offset="100%" stop-color="#1E3E2B" />
     </linearGradient>
 
     <linearGradient id="tvArrowGrad" x1="25%" y1="0%" x2="10%" y2="100%">
-      <stop offset="0%" stop-color="#00B574" />
-      <stop offset="45%" stop-color="#00965F" />
-      <stop offset="100%" stop-color="#006D44" />
+      <stop offset="0%" stop-color="#386B49" />
+      <stop offset="45%" stop-color="#2D5A3D" />
+      <stop offset="100%" stop-color="#152A1C" />
     </linearGradient>
 
     <linearGradient id="tvSwoopGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#009E65" />
-      <stop offset="35%" stop-color="#00DE90" />
-      <stop offset="75%" stop-color="#22FFAE" />
-      <stop offset="100%" stop-color="#57FFC8" />
+      <stop offset="0%" stop-color="#244931" />
+      <stop offset="35%" stop-color="#2D5A3D" />
+      <stop offset="75%" stop-color="#386B49" />
+      <stop offset="100%" stop-color="#4A7C59" />
     </linearGradient>
 
     <!-- 3D Plane Facets -->
     <linearGradient id="tvPlaneTop" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#47FFC7" />
-      <stop offset="100%" stop-color="#00E599" />
+      <stop offset="0%" stop-color="#2D5A3D" />
+      <stop offset="100%" stop-color="#386B49" />
     </linearGradient>
     <linearGradient id="tvPlaneMid" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#00D287" />
-      <stop offset="100%" stop-color="#00A86B" />
+      <stop offset="0%" stop-color="#244931" />
+      <stop offset="100%" stop-color="#2D5A3D" />
     </linearGradient>
     <linearGradient id="tvPlaneBot" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#00965F" />
-      <stop offset="100%" stop-color="#006D44" />
+      <stop offset="0%" stop-color="#152A1C" />
+      <stop offset="100%" stop-color="#1E3E2B" />
     </linearGradient>
 
     <filter id="appIconShadow" x="-15%" y="-15%" width="135%" height="135%">
       <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35" />
-      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00F5A0" flood-opacity="0.2" />
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#2D5A3D" flood-opacity="0.2" />
     </filter>
   </defs>
+
+  <!-- Clean Pure White Background Plate -->
+  <rect x="70" y="2" width="168" height="138" rx="28" fill="#FFFFFF" />
 
   
   <!-- 1. The "T" Shape -->

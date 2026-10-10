@@ -110,7 +110,7 @@ export function ActivityModal({
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g., Explore Kumbhalgarh Fort Wall"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-[#00B074] focus:border-[#00B074] focus:outline-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-[#2D5A3D] focus:border-[#2D5A3D] focus:outline-none"
             />
           </div>
 
@@ -156,7 +156,7 @@ export function ActivityModal({
                   placeholder="e.g., Lake Pichola Ghat"
                   value={location}
                   onChange={e => setLocation(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-[#00B074] focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-[#2D5A3D] focus:outline-none"
                   required
                 />
                 <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -171,7 +171,7 @@ export function ActivityModal({
                   placeholder="e.g., 500"
                   value={cost}
                   onChange={e => setCost(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold focus:ring-2 focus:ring-[#00B074] focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold focus:ring-2 focus:ring-[#2D5A3D] focus:outline-none"
                 />
                 <Coins className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               </div>
@@ -205,7 +205,7 @@ export function ActivityModal({
               placeholder="Key tips: carry ID card, evening entry starts 6:30 PM, parking available..."
               value={description}
               onChange={e => setDescription(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-[#00B074] focus:outline-none resize-none"
+              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-[#2D5A3D] focus:outline-none resize-none"
             />
           </div>
 

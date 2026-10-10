@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { Trip, Destination, BreakStop, BudgetBreakdown, UserProfile, ItineraryActivity } from './types/trip';
+import { Trip, Destination, BreakStop, BudgetBreakdown, UserProfile, ItineraryActivity, Coordinates } from './types/trip';
 import {
   loadTrips,
   saveTrips,
@@ -22,7 +22,9 @@ import {
   saveTripPacking,
   resetGuestStorage
 } from './services/storageService';
-import { generateAITrip, PlannerInput } from './services/plannerEngine';
+import { type PlannerInput } from './services/plannerEngine';
+import { generatePersonalizedTrip } from './services/aiTripPlanner';
+import { applyGeoapifyTravelData, fetchGeoapifyTravelData, getBreakStopSection } from './services/travelDataService';
 import { getStoredCurrency, setActiveCurrency, Currency } from './services/currencyService';
 import { generateNotifications } from './services/notificationService';
 import { AIAppAction } from './services/aiAssistant';
@@ -62,7 +64,6 @@ import { ActivityModal } from './components/itinerary/ActivityModal';
 
 // Transport Deals & Views
 import { TransportDealsView } from './components/deals/TransportDealsView';
-import { generateTransportDeals } from './services/dealService';
 
 // Trips & Explore Views
 import { MyTripsView } from './components/trips/MyTripsView';
@@ -73,9 +74,9 @@ import { ProfileView } from './components/profile/ProfileView';
 import { AuthModal } from './components/profile/AuthModal';
 import { getCurrentUser, onAuthStateChanged, toUserProfile } from './services/authService';
 import { AuthUser } from './types/auth';
-import { 
-  loadUserTripsFromSupabase, 
-  loadUserProfileFromSupabase, 
+import {
+  loadUserTripsFromSupabase,
+  loadUserProfileFromSupabase,
   loadUserPassportFromSupabase,
   loadUserSavedItemsFromSupabase,
   loadUserActiveTripFromSupabase,
@@ -96,7 +97,6 @@ const PlannerWizard = lazy(() => import('./components/planner/PlannerWizard').th
 const TripReplanningModal = lazy(() => import('./components/replanning/TripReplanningModal').then(m => ({ default: m.TripReplanningModal })));
 const PrintTravelGuideModal = lazy(() => import('./components/itinerary/PrintTravelGuideModal').then(m => ({ default: m.PrintTravelGuideModal })));
 const LiveNavigationHUD = lazy(() => import('./components/navigation/LiveNavigationHUD').then(m => ({ default: m.LiveNavigationHUD })));
-const BestDealModal = lazy(() => import('./components/deals/BestDealModal').then(m => ({ default: m.BestDealModal })));
 const AIChatDrawer = lazy(() => import('./components/chat/AIChatDrawer').then(m => ({ default: m.AIChatDrawer })));
 const ShareTripModal = lazy(() => import('./components/trips/ShareTripModal').then(m => ({ default: m.ShareTripModal })));
 const TripPhotoJournalModal = lazy(() => import('./components/memories/TripPhotoJournalModal').then(m => ({ default: m.TripPhotoJournalModal })));
@@ -104,6 +104,8 @@ const NotificationCenterModal = lazy(() => import('./components/notifications/No
 const OnboardingModal = lazy(() => import('./components/onboarding/OnboardingModal').then(m => ({ default: m.OnboardingModal })));
 const TripReviewModal = lazy(() => import('./components/reviews/TripReviewModal').then(m => ({ default: m.TripReviewModal })));
 const TripCollaborationModal = lazy(() => import('./components/collaboration/TripCollaborationModal').then(m => ({ default: m.TripCollaborationModal })));
+
+import { TripPassesHubView } from './components/booking/TripPassesHubView';
 
 // Icons
 import {
@@ -117,7 +119,12 @@ import {
   CloudSun,
   Receipt,
   UtensilsCrossed,
-  Compass
+  Compass,
+  ChevronDown,
+  QrCode,
+  ArrowLeft,
+  Bookmark,
+  MoreVertical
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -134,7 +141,7 @@ function resolveRouteFromBrowser(loadedTrips: Trip[]) {
   if (pathname.startsWith('/destination/')) {
     const slug = pathname.replace('/destination/', '').trim();
     if (slug) {
-      const match = POPULAR_DESTINATIONS.find(d => 
+      const match = POPULAR_DESTINATIONS.find(d =>
         d.id.toLowerCase() === slug ||
         d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug ||
         d.name.toLowerCase() === slug
@@ -268,11 +275,16 @@ export function App() {
 
           if (cloudTrips && cloudTrips.length > 0) {
             // User has cloud trips for their account: display and cache locally
-            setTrips(cloudTrips);
-            saveTrips(cloudTrips, user.uid);
-            if (!cloudTrips.some(t => t.id === userActiveId)) {
-              setActiveTripIdState(cloudTrips[0].id);
-              setActiveTripId(cloudTrips[0].id, user.uid);
+            const tripsWithoutUnverifiedDeals = cloudTrips.map(trip => ({
+              ...trip,
+              bestTransportDeal: undefined,
+              transportDeals: []
+            }));
+            setTrips(tripsWithoutUnverifiedDeals);
+            saveTrips(tripsWithoutUnverifiedDeals, user.uid);
+            if (!tripsWithoutUnverifiedDeals.some(t => t.id === userActiveId)) {
+              setActiveTripIdState(tripsWithoutUnverifiedDeals[0].id);
+              setActiveTripId(tripsWithoutUnverifiedDeals[0].id, user.uid);
             }
           } else {
             // User has no cloud trips yet.
@@ -281,12 +293,12 @@ export function App() {
             if (migrated.length > 0) {
               const updatedTrips = loadTrips(user.uid);
               setTrips(updatedTrips);
-              saveAllUserTripsToSupabase(user.uid, migrated).catch(() => {});
+              saveAllUserTripsToSupabase(user.uid, migrated).catch(() => { });
             } else {
               // Only sync existing local user-created trips (NEVER unowned samples or other users' data)
               const userCreated = localUserTrips.filter(t => t.isUserCreated && t.userId === user.uid);
               if (userCreated.length > 0) {
-                saveAllUserTripsToSupabase(user.uid, userCreated).catch(() => {});
+                saveAllUserTripsToSupabase(user.uid, userCreated).catch(() => { });
               }
             }
           }
@@ -300,20 +312,20 @@ export function App() {
               setActiveCurrency(merged.preferredCurrency);
             }
           } else {
-            saveUserProfileToSupabase(user.uid, localProfile).catch(() => {});
+            saveUserProfileToSupabase(user.uid, localProfile).catch(() => { });
           }
 
           if (cloudStates && cloudStates.length > 0) {
             saveUserVisitedStates(cloudStates, user.uid);
           } else if (userStates.length > 0) {
-            saveUserPassportToSupabase(user.uid, userStates).catch(() => {});
+            saveUserPassportToSupabase(user.uid, userStates).catch(() => { });
           }
 
           if (cloudSavedItems && cloudSavedItems.length > 0) {
             setSavedItemIds(cloudSavedItems);
             saveSavedItemIds(cloudSavedItems, user.uid);
           } else if (userSaved.length > 0) {
-            saveUserSavedItemsToSupabase(user.uid, userSaved).catch(() => {});
+            saveUserSavedItemsToSupabase(user.uid, userSaved).catch(() => { });
           }
 
           if (cloudActiveTrip) {
@@ -343,8 +355,9 @@ export function App() {
 
   // Sub-tab inside Trip Detail view
   const [tripSubTab, setTripSubTab] = useState<
-    'itinerary' | 'packing' | 'expenses' | 'gems' | 'deals' | 'route' | 'breakstops' | 'budget' | 'safety'
+    'itinerary' | 'hub' | 'packing' | 'expenses' | 'gems' | 'deals' | 'route' | 'breakstops' | 'budget' | 'safety'
   >('itinerary');
+  const [tripsViewMode, setTripsViewMode] = useState<'passes' | 'portfolio'>('passes');
 
   // Modals & Drawers
   const [isPlannerOpen, setIsPlannerOpen] = useState(() => initialRoute.openPlanner || false);
@@ -458,25 +471,17 @@ export function App() {
         const updatedProfile = { ...userProfile, preferredCurrency: newCurrency };
         setUserProfile(updatedProfile);
         saveUserProfile(updatedProfile, currentUser.uid);
-        saveUserProfileToSupabase(currentUser.uid, updatedProfile).catch(() => {});
+        saveUserProfileToSupabase(currentUser.uid, updatedProfile).catch(() => { });
       }
     };
     window.addEventListener('tripverse_currency_change', handleCurrency);
     return () => window.removeEventListener('tripverse_currency_change', handleCurrency);
   }, [currentUser, userProfile]);
 
-  // Ensure default clean light theme
-  useEffect(() => {
-    try {
-      document.documentElement.classList.remove('dark');
-      localStorage.removeItem('tripverse_theme');
-    } catch {}
-  }, []);
-
   // URL Pathname & Dynamic Document Title Sync for Browser & History Navigation
   useEffect(() => {
     let targetPath = '/';
-    let targetTitle = 'TripVerse — AI Travel Planner & Highway Pitstop Engine';
+    let targetTitle = 'TripVerse — AI Trip Planner';
 
     if (selectedDestinationForDetails) {
       targetPath = `/destination/${selectedDestinationForDetails.id}`;
@@ -504,7 +509,7 @@ export function App() {
       targetTitle = 'Traveler Profile & Passport — TripVerse';
     } else {
       targetPath = '/';
-      targetTitle = 'TripVerse — AI Travel Planner & Highway Pitstop Engine';
+      targetTitle = 'TripVerse — AI Trip Planner';
     }
 
     document.title = targetTitle;
@@ -707,6 +712,177 @@ export function App() {
 
 
   const activeTrip = trips.find(t => t.id === activeTripIdState) || trips[0];
+  const tripsRef = React.useRef(trips);
+  const userIdRef = React.useRef(currentUser?.uid);
+  useEffect(() => {
+    tripsRef.current = trips;
+  }, [trips]);
+  useEffect(() => {
+    userIdRef.current = currentUser?.uid;
+  }, [currentUser?.uid]);
+
+  const activeTripId = activeTrip?.id;
+  const activeTripOrigin = activeTrip?.origin;
+  const activeTripDestination = activeTrip?.destination;
+  const activeTripTransportMode = activeTrip?.transportMode;
+  const activeTripRouteSource = activeTrip?.routeDetails?.source;
+  const activeTripRouteOrigin = activeTrip?.routeDetails?.origin;
+  const activeTripRouteDestination = activeTrip?.routeDetails?.destination;
+  const activeTripOriginLatitude = activeTrip?.originCoordinates?.lat;
+  const activeTripOriginLongitude = activeTrip?.originCoordinates?.lng;
+  const activeTripTravelDataStatus = activeTrip?.travelDataStatus;
+  const inFlightRouteRequestKeyRef = React.useRef<string | null>(null);
+  const retryActiveTripRoute = () => {
+    if (!activeTrip) return;
+    const retryTrip: Trip = {
+      ...activeTrip,
+      travelDataStatus: 'pending',
+      travelDataError: undefined,
+      travelDataWarnings: undefined
+    };
+    saveOrUpdateTrip(retryTrip, userIdRef.current);
+    setTrips(previous => previous.map(trip => trip.id === retryTrip.id ? retryTrip : trip));
+  };
+
+  useEffect(() => {
+    if (!activeTripId || !activeTripOrigin || !activeTripDestination ||
+      (activeTripTransportMode !== 'car' && activeTripTransportMode !== 'bike')) return;
+    const trip = tripsRef.current.find(item => item.id === activeTripId);
+    if (!trip) return;
+    if (activeTripRouteSource === 'geoapify_routing' &&
+      activeTripRouteOrigin === activeTripOrigin &&
+      activeTripRouteDestination === activeTripDestination) return;
+    const requestKey = JSON.stringify([
+      currentUser?.uid || 'guest',
+      activeTripId,
+      activeTripOrigin,
+      activeTripDestination,
+      activeTripTransportMode,
+      activeTripOriginLatitude,
+      activeTripOriginLongitude
+    ]);
+    if (trip.travelDataStatus &&
+      !(trip.travelDataStatus === 'live' && activeTripRouteSource !== 'geoapify_routing') &&
+      trip.travelDataStatus !== 'pending' &&
+      trip.travelDataStatus !== 'loading') return;
+    if (trip.travelDataStatus === 'loading' && inFlightRouteRequestKeyRef.current === requestKey) return;
+    if (inFlightRouteRequestKeyRef.current === requestKey) return;
+
+    const tripId = activeTripId;
+    inFlightRouteRequestKeyRef.current = requestKey;
+    let cancelled = false;
+    const updateTrip = (updatedTrip: Trip) => {
+      if (cancelled) return;
+      saveOrUpdateTrip(updatedTrip, userIdRef.current);
+      setTrips(previous => previous.map(trip => trip.id === tripId ? updatedTrip : trip));
+    };
+
+    const loadingTrip = { ...trip, travelDataStatus: 'loading' as const };
+    saveOrUpdateTrip(loadingTrip, userIdRef.current);
+    setTrips(previous => previous.map(item => item.id === tripId ? loadingTrip : item));
+
+    const routeOrigin = trip.originCoordinates ||
+      (trip.origin.toLowerCase().startsWith('current location') ? null : trip.origin);
+    if (!routeOrigin) {
+      const estimatedTrip: Trip = {
+        ...trip,
+        travelDataStatus: 'estimate',
+        travelDataError: 'ORIGIN_NOT_SET',
+        routeDetails: undefined
+      };
+      updateTrip(estimatedTrip);
+      inFlightRouteRequestKeyRef.current = null;
+      return;
+    }
+
+    fetchGeoapifyTravelData(routeOrigin, trip.destination)
+      .then(data => {
+        if (cancelled) return;
+        const currentTrip = tripsRef.current.find(item => item.id === tripId) || trip;
+        updateTrip(applyGeoapifyTravelData(currentTrip, data));
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        console.error('Live Geoapify travel data unavailable', error);
+        const errorCode = error instanceof Error ? error.message : 'GEOAPIFY_TRAVEL_DATA_UNAVAILABLE';
+        const currentTrip = tripsRef.current.find(item => item.id === tripId) || trip;
+        const estimatedTrip: Trip = {
+          ...currentTrip,
+          breakStops: currentTrip.breakStops.filter(stop => stop.source === 'user'),
+          travelDataStatus: 'estimate',
+          travelDataError: errorCode === 'GEOAPIFY_API_KEY_NOT_CONFIGURED'
+            ? 'GEOAPIFY_API_KEY_NOT_CONFIGURED'
+            : errorCode === 'GEOAPIFY_API_KEY_REJECTED'
+              ? 'GEOAPIFY_API_KEY_REJECTED'
+              : errorCode === 'GEOAPIFY_LOCATION_NOT_FOUND'
+                ? 'GEOAPIFY_LOCATION_NOT_FOUND'
+                : 'GEOAPIFY_TRAVEL_DATA_UNAVAILABLE',
+          routeDetails: currentTrip.routeDetails
+            ? { ...currentTrip.routeDetails, source: 'estimate' }
+            : undefined,
+          itinerary: currentTrip.itinerary.map(day => ({
+            ...day,
+            activities: day.activities.map(activity => {
+              if (activity.isCustom || !activity.id.startsWith('act-') || activity.source === 'geoapify_places') return activity;
+              if (activity.type === 'breakstop') return {
+                ...activity,
+                title: 'Plan a rest break',
+                location: 'Along the route — choose a suitable stop',
+                description: 'Live place data is unavailable. Select and verify a stop before travelling.',
+                tag: 'Suggested break'
+              };
+              if (activity.type === 'food') return {
+                ...activity,
+                title: `Choose a place to eat in ${currentTrip.destination}`,
+                location: `${currentTrip.destination} — choose a venue`,
+                description: 'Suggested meal time only; no restaurant or menu has been confirmed.',
+                tag: 'Dining suggestion'
+              };
+              if (activity.type === 'hotel') return {
+                ...activity,
+                title: `Choose accommodation in ${currentTrip.destination}`,
+                location: `${currentTrip.destination} — no property selected`,
+                description: 'Suggested check-in time only; accommodation is not selected or booked.',
+                tag: 'Stay suggestion'
+              };
+              if (activity.type === 'attraction' || activity.type === 'viewpoint') return {
+                ...activity,
+                title: `Choose an activity in ${currentTrip.destination}`,
+                location: `${currentTrip.destination} — choose a venue`,
+                description: 'Activity idea only; no place has been confirmed.',
+                tag: 'Activity suggestion'
+              };
+              return activity;
+            })
+          }))
+        };
+        updateTrip(estimatedTrip);
+      })
+      .finally(() => {
+        if (inFlightRouteRequestKeyRef.current === requestKey) {
+          inFlightRouteRequestKeyRef.current = null;
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      if (inFlightRouteRequestKeyRef.current === requestKey) {
+        inFlightRouteRequestKeyRef.current = null;
+      }
+    };
+  }, [
+    activeTripId,
+    activeTripOrigin,
+    activeTripDestination,
+    activeTripTransportMode,
+    activeTripRouteSource,
+    activeTripRouteOrigin,
+    activeTripRouteDestination,
+    activeTripOriginLatitude,
+    activeTripOriginLongitude,
+    activeTripTravelDataStatus,
+    currentUser?.uid
+  ]);
 
   // Auto-launch Onboarding Tour for new users
   useEffect(() => {
@@ -810,7 +986,20 @@ export function App() {
     setGenerationParams(finalParams);
     setIsGeneratingTrip(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
+      let originCoords: Coordinates | undefined;
+      if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        originCoords = await new Promise<Coordinates | undefined>(resolve => {
+          navigator.geolocation.getCurrentPosition(
+            position => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
+            error => {
+              console.warn('Current location unavailable for quick planning', error.message);
+              resolve(undefined);
+            },
+            { enableHighAccuracy: false, maximumAge: 60_000, timeout: 8_000 }
+          );
+        });
+      }
       const input: PlannerInput = {
         destination: finalParams.destination,
         destinationName: finalParams.destination.charAt(0).toUpperCase() + finalParams.destination.slice(1),
@@ -824,10 +1013,15 @@ export function App() {
         transportMode: 'car',
         accommodationType: 'hotel',
         foodPreference: 'all',
-        priorities: ['balanced', 'scenic', 'food']
+        priorities: ['balanced', 'scenic', 'food'],
+        originCoords
       };
 
-      const newTrip = generateAITrip(input);
+      const newTrip = await generatePersonalizedTrip(input);
+      if (!originCoords) {
+        newTrip.travelDataStatus = 'estimate';
+        newTrip.travelDataError = 'ORIGIN_NOT_SET';
+      }
       if (currentUser?.uid) {
         newTrip.userId = currentUser.uid;
         newTrip.isUserCreated = true;
@@ -839,7 +1033,7 @@ export function App() {
 
       try {
         localStorage.setItem(`tripverse_plan_generated_${currentUser?.uid || 'guest'}`, 'true');
-      } catch {}
+      } catch { }
 
       setIsGeneratingTrip(false);
       setCurrentTab('trip-detail');
@@ -852,27 +1046,31 @@ export function App() {
           particleCount: 65,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['#00D084', '#00B074', '#38BDF8', '#F59E0B']
+          colors: ['#2D5A3D', '#386B49', '#38BDF8', '#F59E0B']
         });
-      } catch {}
+      } catch { }
     }, 1800);
   };
 
-  const handleTripGenerated = (input: PlannerInput) => {
+  const handleTripGenerated = async (input: PlannerInput) => {
     triggerHaptic('success');
-    const newTrip = generateAITrip(input);
-    if (currentUser?.uid) {
-      newTrip.userId = currentUser.uid;
-      newTrip.isUserCreated = true;
+    setIsGeneratingTrip(true);
+    try {
+      const newTrip = await generatePersonalizedTrip(input);
+      if (currentUser?.uid) {
+        newTrip.userId = currentUser.uid;
+        newTrip.isUserCreated = true;
+      }
+      saveOrUpdateTrip(newTrip, currentUser?.uid);
+      setTrips(prev => [newTrip, ...prev]);
+      setActiveTripIdState(newTrip.id);
+      setIsPlannerOpen(false);
+      setCurrentTab('trip-detail');
+      setTripSubTab('itinerary');
+      setIsBestDealModalOpen(true);
+    } finally {
+      setIsGeneratingTrip(false);
     }
-    saveOrUpdateTrip(newTrip, currentUser?.uid);
-    setTrips(prev => [newTrip, ...prev]);
-    setActiveTripIdState(newTrip.id);
-    setIsPlannerOpen(false);
-    setCurrentTab('trip-detail');
-    setTripSubTab('itinerary');
-    // Open the celebratory Best Deal Modal immediately upon AI planner execution completion!
-    setIsBestDealModalOpen(true);
   };
 
   const handleSelectTrip = (id: string) => {
@@ -1048,7 +1246,7 @@ export function App() {
         particleCount: 50,
         spread: 60,
         origin: { y: 0.7 },
-        colors: ['#00D084', '#00B074', '#F59E0B']
+        colors: ['#2D5A3D', '#386B49', '#F59E0B']
       });
     } catch (e) {
       // safe fallback
@@ -1262,7 +1460,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900 selection:bg-[#00B074] selection:text-white antialiased">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900 selection:bg-[#2D5A3D] selection:text-white antialiased">
 
       {/* 0. Native iOS & Android App Opening Animation Splash Screen */}
       {showSplash && (
@@ -1303,474 +1501,666 @@ export function App() {
       <PullToRefresh onRefresh={handlePullRefresh} disabled={isAnyModalOpen}>
 
         {/* Main Content View Switcher */}
-        <main className="flex-1 pb-24 lg:pb-12">
+        <main className="flex-1 pb-28 lg:pb-12">
 
-        {/* VIEW 1: HOME */}
-        {currentTab === 'home' && (
-          <div key="home" className="animate-fade-in">
-            <HeroSection
-              activeTrip={activeTrip}
-              onQuickPlan={(params) => {
-                handleQuickPlanDirect(params);
-              }}
-              onExplore={() => setCurrentTab('explore')}
-            />
+          {/* VIEW 1: HOME */}
+          {currentTab === 'home' && (
+            <div key="home" className="animate-fade-in">
+              <HeroSection
+                activeTrip={activeTrip}
+                onQuickPlan={(params) => {
+                  handleQuickPlanDirect(params);
+                }}
+                onExplore={() => setCurrentTab('explore')}
+                onOpenPlanner={() => handleOpenPlannerWithPrefill()}
+                onSelectDestination={(dest) => setSelectedDestinationForDetails(dest)}
+              />
 
-            {/* Official Public Release 2.0 Spotlight & Viral Share */}
-            <PublicLaunchSpotlight
-              onOpenPlanner={() => handleOpenPlannerWithPrefill()}
-              onExplore={() => setCurrentTab('explore')}
-            />
+              {/* Official Public Release 2.0 Spotlight & Viral Share */}
+              <div className="hidden lg:block">
+                <PublicLaunchSpotlight
+                  onOpenPlanner={() => handleOpenPlannerWithPrefill()}
+                  onExplore={() => setCurrentTab('explore')}
+                />
+              </div>
 
-            {/* Verified Highway Corridor & Pitstop Engine Showcase (Differentiator) */}
-            <HighwayBreakstopsShowcase
-              onPlanCorridor={(destName) => {
-                handleQuickPlanDirect({
-                  destination: destName,
-                  duration: 3,
-                  travelers: 2,
-                  budget: 9500
-                });
-              }}
-            />
+              {/* Verified Highway Corridor & Pitstop Engine Showcase (Differentiator) */}
+              <HighwayBreakstopsShowcase
+                onPlanCorridor={(destName) => {
+                  handleQuickPlanDirect({
+                    destination: destName,
+                    duration: 3,
+                    travelers: 2,
+                    budget: 9500
+                  });
+                }}
+              />
 
-            {/* Brand 5 Feature Pillars */}
-            <FeaturePillars />
+              {/* Brand 5 Feature Pillars */}
+              <FeaturePillars />
 
-            {/* Popular Destinations Showcase */}
-            <PopularDestinations
-              onSelectDestination={(dest) => {
-                setSelectedDestinationForDetails(dest);
-              }}
-              onPlanTripForDestination={(destName) => {
-                handleQuickPlanDirect({
-                  destination: destName,
-                  duration: 3,
-                  travelers: 2,
-                  budget: 8500
-                });
-              }}
-              savedItemIds={savedItemIds}
-              onToggleSaved={handleToggleSaved}
-              onViewAllExplore={() => setCurrentTab('explore')}
-            />
-          </div>
-        )}
-
-        {/* VIEW 2: TRIP DETAILS & COMPLETE ITINERARY */}
-        {currentTab === 'trip-detail' && activeTrip && (
-          <div key="trip-detail" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-fade-in">
-
-            {/* Back Button */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setCurrentTab('trips')}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
-              >
-                <span>← Back to My Trips</span>
-              </button>
-
-              <button
-                onClick={() => setIsAIChatOpen(true)}
-                className="flex items-center gap-1.5 text-xs font-bold text-[#00B074] bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>AI Travel Assistant Available</span>
-              </button>
+              {/* Popular Destinations Showcase */}
+              <PopularDestinations
+                onSelectDestination={(dest) => {
+                  setSelectedDestinationForDetails(dest);
+                }}
+                onPlanTripForDestination={(destName) => {
+                  handleQuickPlanDirect({
+                    destination: destName,
+                    duration: 3,
+                    travelers: 2,
+                    budget: 8500
+                  });
+                }}
+                savedItemIds={savedItemIds}
+                onToggleSaved={handleToggleSaved}
+                onViewAllExplore={() => setCurrentTab('explore')}
+              />
             </div>
+          )}
 
-            {/* Disruption Alert Banner (Infographic Screen 1 Alert Flow) */}
-            {activeDisruption && !isDisruptionDismissed && (
-              <DisruptionBanner
-                disruption={activeDisruption}
+          {/* VIEW 2: TRIP DETAILS & COMPLETE ITINERARY */}
+          {currentTab === 'trip-detail' && activeTrip && (
+            <div key="trip-detail" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
+
+              {/* Desktop Back & AI Assistant Top Bar */}
+              <div className="hidden lg:flex items-center justify-between">
+                <button
+                  onClick={() => setCurrentTab('trips')}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                >
+                  <span>← Back to My Trips</span>
+                </button>
+
+                <button
+                  onClick={() => setIsAIChatOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-[#2D5A3D] bg-[#EAF0E9] px-3 py-1.5 rounded-full border border-[#8EA78D]/40 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>AI Travel Assistant Available</span>
+                </button>
+              </div>
+
+              {/* Screen 2: Dedicated Mobile Top Bar (Back, "Your Itinerary", Bookmark, Menu) */}
+              <div className="flex lg:hidden items-center justify-between pt-1 pb-1">
+                <button
+                  type="button"
+                  onClick={() => setCurrentTab('trips')}
+                  className="w-10 h-10 rounded-full bg-white border border-[#E2EBE1] text-[#2D5A3D] flex items-center justify-center shadow-2xs hover:bg-[#F8FAF7] active:scale-95 transition-all cursor-pointer"
+                  title="Back"
+                  aria-label="Back to trips"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+
+                <h1 className="text-base font-display font-bold text-[#152A1C] text-center">
+                  Your Itinerary
+                </h1>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleSaved(activeTrip.id)}
+                    className="w-10 h-10 rounded-full bg-white border border-[#E2EBE1] text-[#2D5A3D] flex items-center justify-center shadow-2xs hover:bg-[#F8FAF7] active:scale-95 transition-all cursor-pointer"
+                    title="Bookmark Itinerary"
+                    aria-label="Bookmark Itinerary"
+                  >
+                    <Bookmark className={`w-4 h-4 ${savedItemIds.includes(activeTrip.id) ? 'fill-[#2D5A3D]' : ''}`} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="w-10 h-10 rounded-full bg-white border border-[#E2EBE1] text-[#2D5A3D] flex items-center justify-center shadow-2xs hover:bg-[#F8FAF7] active:scale-95 transition-all cursor-pointer"
+                    title="Trip Options"
+                    aria-label="Trip Options"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Disruption Alert Banner (Infographic Screen 1 Alert Flow) */}
+              {activeDisruption && !isDisruptionDismissed && (
+                <DisruptionBanner
+                  disruption={activeDisruption}
+                  onOpenReplanning={() => {
+                    setReplanningInitialScreen(1);
+                    setIsReplanningOpen(true);
+                  }}
+                  onDismiss={() => setIsDisruptionDismissed(true)}
+                />
+              )}
+
+              {/* Trip Header & Budget Overview */}
+              <TripHeader
+                trip={activeTrip}
+                onOpenChat={() => setIsAIChatOpen(true)}
+                onOpenShare={() => setIsShareModalOpen(true)}
+                onOptimizeBudget={() => setTripSubTab('budget')}
+                onExportTrip={handleExportTrip}
+                onOpenLiveNav={() => setIsLiveNavOpen(true)}
+                onOpenDeals={() => setIsBestDealModalOpen(true)}
+                onOpenPrintDossier={() => setIsPrintModalOpen(true)}
+                onOpenBooking={() => setIsBookingModalOpen(true)}
                 onOpenReplanning={() => {
-                  setReplanningInitialScreen(1);
+                  setReplanningInitialScreen(2);
                   setIsReplanningOpen(true);
                 }}
-                onDismiss={() => setIsDisruptionDismissed(true)}
+                onOpenMemories={() => handleOpenMemories(activeTrip)}
+                onOpenReview={() => handleOpenReview(activeTrip)}
+                onOpenCollaboration={() => setIsCollabModalOpen(true)}
               />
-            )}
 
-            {/* Trip Header & Budget Overview */}
-            <TripHeader
-              trip={activeTrip}
-              onOpenChat={() => setIsAIChatOpen(true)}
-              onOpenShare={() => setIsShareModalOpen(true)}
-              onOptimizeBudget={() => setTripSubTab('budget')}
-              onExportTrip={handleExportTrip}
-              onOpenLiveNav={() => setIsLiveNavOpen(true)}
-              onOpenDeals={() => setIsBestDealModalOpen(true)}
-              onOpenPrintDossier={() => setIsPrintModalOpen(true)}
-              onOpenBooking={() => setIsBookingModalOpen(true)}
-              onOpenReplanning={() => {
-                setReplanningInitialScreen(2);
-                setIsReplanningOpen(true);
-              }}
-              onOpenMemories={() => handleOpenMemories(activeTrip)}
-              onOpenReview={() => handleOpenReview(activeTrip)}
-              onOpenCollaboration={() => setIsCollabModalOpen(true)}
-            />
+              {/* Sub-Navigation: Screen 2 Mobile 4-Pill Bar vs Desktop Grouped Navigation */}
+              {(() => {
+                const TRIP_GROUPS = [
+                  {
+                    id: 'journey',
+                    label: 'Journey & Passes',
+                    icon: Compass,
+                    subTabs: [
+                      { id: 'itinerary', label: 'Day Itinerary', icon: Calendar },
+                      { id: 'hub', label: 'Passes & Hub', icon: QrCode },
+                      { id: 'route', label: 'Route Map', icon: MapPin },
+                      { id: 'breakstops', label: `Pitstops (${activeTrip.breakStops.length})`, icon: Coffee }
+                    ]
+                  },
+                  {
+                    id: 'budget_deals',
+                    label: 'Budget & Deals',
+                    icon: Wallet,
+                    subTabs: [
+                      { id: 'expenses', label: 'TripSplit & Fuel', icon: Receipt },
+                      { id: 'deals', label: 'Transport Deals', icon: Tag },
+                      { id: 'budget', label: 'Budget Optimizer', icon: Sparkles }
+                    ]
+                  },
+                  {
+                    id: 'essentials',
+                    label: 'Essentials',
+                    icon: ShieldCheck,
+                    subTabs: [
+                      { id: 'packing', label: 'Packing & Weather', icon: CloudSun },
+                      { id: 'safety', label: 'Safety & SOS', icon: ShieldCheck }
+                    ]
+                  },
+                  {
+                    id: 'discover',
+                    label: 'Discover',
+                    icon: UtensilsCrossed,
+                    subTabs: [
+                      { id: 'gems', label: 'Food Trails & Gems', icon: UtensilsCrossed }
+                    ]
+                  }
+                ];
 
-            {/* Streamlined Sub-Navigation: 4 Curated Category Groups */}
-            {(() => {
-              const TRIP_GROUPS = [
-                {
-                  id: 'journey',
-                  label: 'Journey & Route',
-                  icon: Compass,
-                  subTabs: [
-                    { id: 'itinerary', label: 'Day Itinerary', icon: Calendar },
-                    { id: 'route', label: 'Route Map', icon: MapPin },
-                    { id: 'breakstops', label: `Pitstops (${activeTrip.breakStops.length})`, icon: Coffee }
-                  ]
-                },
-                {
-                  id: 'budget_deals',
-                  label: 'Budget & Deals',
-                  icon: Wallet,
-                  subTabs: [
-                    { id: 'expenses', label: 'TripSplit & Fuel', icon: Receipt },
-                    { id: 'deals', label: `Transit Deals (${activeTrip.transportDeals?.length || 3})`, icon: Tag },
-                    { id: 'budget', label: 'Budget Optimizer', icon: Sparkles }
-                  ]
-                },
-                {
-                  id: 'essentials',
-                  label: 'Essentials',
-                  icon: ShieldCheck,
-                  subTabs: [
-                    { id: 'packing', label: 'Packing & Weather', icon: CloudSun },
-                    { id: 'safety', label: 'Safety & SOS', icon: ShieldCheck }
-                  ]
-                },
-                {
-                  id: 'discover',
-                  label: 'Discover',
-                  icon: UtensilsCrossed,
-                  subTabs: [
-                    { id: 'gems', label: 'Food Trails & Gems', icon: UtensilsCrossed }
-                  ]
-                }
-              ];
+                const currentGroup = TRIP_GROUPS.find(g => g.subTabs.some(s => s.id === tripSubTab)) || TRIP_GROUPS[0];
 
-              const currentGroup = TRIP_GROUPS.find(g => g.subTabs.some(s => s.id === tripSubTab)) || TRIP_GROUPS[0];
-
-              return (
-                <div className="space-y-3">
-                  {/* Primary 4 Category Pills */}
-                  <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto scrollbar-none">
-                    {TRIP_GROUPS.map(group => {
-                      const isGroupActive = currentGroup.id === group.id;
-                      const GroupIcon = group.icon;
-
-                      return (
-                        <button
-                          key={group.id}
-                          onClick={() => {
-                            triggerHaptic('light');
-                            setTripSubTab(group.subTabs[0].id as any);
-                          }}
-                          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
-                            isGroupActive
-                              ? 'bg-[#00B074] text-white shadow-md shadow-emerald-500/20 scale-[1.02]'
-                              : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                          }`}
-                        >
-                          <GroupIcon className={`w-4 h-4 ${isGroupActive ? 'text-white' : 'text-slate-400'}`} />
-                          <span>{group.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Secondary Contextual Sub-Pills */}
-                  {currentGroup.subTabs.length > 1 && (
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none animate-fade-in">
-                      {currentGroup.subTabs.map(sub => {
-                        const isSubActive = tripSubTab === sub.id;
-                        const SubIcon = sub.icon;
-
+                return (
+                  <div className="space-y-3">
+                    {/* Screen 2: Mobile 4-pill Sub-Navigation Bar */}
+                    <div className="lg:hidden flex items-center justify-between gap-1.5 p-1 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] shadow-2xs">
+                      {[
+                        { id: 'itinerary', label: 'Itinerary' },
+                        { id: 'deals', label: 'Transport' },
+                        { id: 'hub', label: 'Stay' },
+                        { id: 'gems', label: 'Recommendations' }
+                      ].map(tab => {
+                        const isActive = tripSubTab === tab.id;
                         return (
                           <button
-                            key={sub.id}
+                            key={tab.id}
+                            type="button"
                             onClick={() => {
                               triggerHaptic('light');
-                              setTripSubTab(sub.id as any);
+                              setTripSubTab(tab.id as any);
                             }}
-                            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              isSubActive
-                                ? 'bg-[#00B074] text-white shadow-xs'
-                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            className={`flex-1 py-2 px-1 rounded-full text-xs font-bold transition-all text-center cursor-pointer ${
+                              isActive
+                                ? 'bg-[#2D5A3D] text-white shadow-xs'
+                                : 'text-[#57685D] hover:text-[#152A1C]'
                             }`}
                           >
-                            <SubIcon className="w-3.5 h-3.5" />
-                            <span>{sub.label}</span>
+                            {tab.label}
                           </button>
                         );
                       })}
                     </div>
-                  )}
-                </div>
-              );
-            })()}
 
-            {/* Sub-Tab 1: Day-Wise Itinerary Timeline with Custom Actions */}
-            {tripSubTab === 'itinerary' && (
-              <DayTimeline
-                itinerary={activeTrip.itinerary}
-                bestDeal={activeTrip.bestTransportDeal}
-                onOpenDeals={() => setIsBestDealModalOpen(true)}
-                onAddActivity={(dayNumber) => {
-                  setActivityModalState({ isOpen: true, dayNumber, activity: null });
-                }}
-                onEditActivity={(dayNumber, activity) => {
-                  setActivityModalState({ isOpen: true, dayNumber, activity });
-                }}
-                onDeleteActivity={handleDeleteActivity}
-                onMoveActivity={handleMoveActivity}
-                onToggleComplete={handleToggleActivityComplete}
-              />
-            )}
+                    {/* Desktop Sub-Navigation: 4 Curated Category Groups */}
+                    <div className="hidden lg:block space-y-3">
+                      <div className="flex items-center gap-2 border-b border-[#E2EBE1] pb-3 overflow-x-auto scrollbar-none">
+                        {TRIP_GROUPS.map(group => {
+                          const isGroupActive = currentGroup.id === group.id;
+                          const GroupIcon = group.icon;
 
-            {/* Sub-Tab: Packing Checklist & Live Weather Advisory */}
-            {tripSubTab === 'packing' && (
-              <PackingWeatherView trip={activeTrip} />
-            )}
+                          return (
+                            <button
+                              key={group.id}
+                              onClick={() => {
+                                triggerHaptic('light');
+                                setTripSubTab(group.subTabs[0].id as any);
+                              }}
+                              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${isGroupActive
+                                  ? 'bg-[#2D5A3D] text-white shadow-xs scale-[1.02]'
+                                  : 'bg-white text-[#5A7362] border border-[#E2EBE1] hover:border-[#8EA78D] hover:bg-[#F8FAF7]'
+                                }`}
+                            >
+                              <GroupIcon className={`w-4 h-4 ${isGroupActive ? 'text-white' : 'text-[#8EA78D]'}`} />
+                              <span>{group.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
 
-            {/* Sub-Tab: TripSplit Expenses & Highway Fuel/Tolls */}
-            {tripSubTab === 'expenses' && (
-              <TripSplitExpenses trip={activeTrip} />
-            )}
+                      {/* Secondary Contextual Sub-Pills */}
+                      {currentGroup.subTabs.length > 1 && (
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none animate-fade-in">
+                          {currentGroup.subTabs.map(sub => {
+                            const isSubActive = tripSubTab === sub.id;
+                            const SubIcon = sub.icon;
 
-            {/* Sub-Tab: Curated Local Food Trails & Hidden Gems */}
-            {tripSubTab === 'gems' && (
-              <LocalGemsView
-                trip={activeTrip}
-                onAddActivity={(dayNumber, act) => {
-                  handleAddOrUpdateActivity(dayNumber, act);
-                }}
-              />
-            )}
-
-            {/* Sub-Tab: Transit Deals & Fares */}
-            {tripSubTab === 'deals' && (
-              <TransportDealsView
-                trip={activeTrip}
-                onApplySavings={handleApplyBudgetSavings}
-              />
-            )}
-
-            {/* Sub-Tab 2: Smart Route Map */}
-            {tripSubTab === 'route' && (
-              <Suspense fallback={
-                <div className="h-96 rounded-3xl bg-white border border-slate-200 flex flex-col items-center justify-center p-6 text-center space-y-3 animate-pulse">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#00B074] flex items-center justify-center">
-                    <MapPin className="w-6 h-6 animate-bounce" />
+                            return (
+                              <button
+                                key={sub.id}
+                                onClick={() => {
+                                  triggerHaptic('light');
+                                  setTripSubTab(sub.id as any);
+                                }}
+                                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSubActive
+                                    ? 'bg-[#2D5A3D] text-white shadow-xs'
+                                    : 'bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D]'
+                                  }`}
+                              >
+                                <SubIcon className="w-3.5 h-3.5" />
+                                <span>{sub.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm font-bold text-slate-700">Loading Smart Highway Route Map...</p>
-                  <p className="text-xs text-slate-400">Plotting toll gates, waypoints and verified pitstops</p>
-                </div>
-              }>
-                <SmartRouteMap
-                  trip={activeTrip}
-                  onRouteChange={(routeType) => {
-                    const updated = { ...activeTrip, routeType };
-                    handleUpdateTrip(updated);
-                  }}
-                  onOpenLiveNav={() => setIsLiveNavOpen(true)}
-                />
-              </Suspense>
-            )}
+                );
+              })()}
 
-            {/* Sub-Tab 3: Break Stop Catalog */}
-            {tripSubTab === 'breakstops' && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                    <div>
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#00B074]">Differentiating Feature</span>
-                      <h2 className="text-xl font-bold text-[#0B2545]">Highway Break Stops & Waypoints</h2>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Handpicked rest areas verified for clean sanitised restrooms, food courts, and vehicle parking.
-                      </p>
+              {/* Sub-Tab 1: Day-Wise Itinerary Timeline with Custom Actions */}
+              {tripSubTab === 'itinerary' && (
+                <DayTimeline
+                  itinerary={activeTrip.itinerary}
+                  bestDeal={activeTrip.bestTransportDeal}
+                  onOpenDeals={() => setIsBestDealModalOpen(true)}
+                  onAddActivity={(dayNumber) => {
+                    setActivityModalState({ isOpen: true, dayNumber, activity: null });
+                  }}
+                  onEditActivity={(dayNumber, activity) => {
+                    setActivityModalState({ isOpen: true, dayNumber, activity });
+                  }}
+                  onDeleteActivity={handleDeleteActivity}
+                  onMoveActivity={handleMoveActivity}
+                  onToggleComplete={handleToggleActivityComplete}
+                  onOptimizeWithAI={() => setTripSubTab('hub')}
+                />
+              )}
+
+              {/* Sub-Tab: Digital Passes & Hub (Reference Screen 3) */}
+              {tripSubTab === 'hub' && (
+                <TripPassesHubView
+                  trip={activeTrip}
+                  onBack={() => setTripSubTab('itinerary')}
+                  onOpenBookingModal={() => setIsBookingModalOpen(true)}
+                  onOpenPacking={() => setTripSubTab('packing')}
+                  onExportTrip={handleExportTrip}
+                  onOpenShare={() => setIsShareModalOpen(true)}
+                />
+              )}
+
+              {/* Sub-Tab: Packing Checklist & Live Weather Advisory */}
+              {tripSubTab === 'packing' && (
+                <PackingWeatherView trip={activeTrip} />
+              )}
+
+              {/* Sub-Tab: TripSplit Expenses & Highway Fuel/Tolls */}
+              {tripSubTab === 'expenses' && (
+                <TripSplitExpenses trip={activeTrip} />
+              )}
+
+              {/* Sub-Tab: Curated Local Food Trails & Hidden Gems */}
+              {tripSubTab === 'gems' && (
+                <LocalGemsView
+                  trip={activeTrip}
+                  onAddActivity={(dayNumber, act) => {
+                    handleAddOrUpdateActivity(dayNumber, act);
+                  }}
+                />
+              )}
+
+              {/* Sub-Tab: Transit Deals & Fares */}
+              {tripSubTab === 'deals' && (
+                <TransportDealsView
+                  trip={activeTrip}
+                  onApplySavings={handleApplyBudgetSavings}
+                />
+              )}
+
+              {/* Sub-Tab 2: Smart Route Map */}
+              {tripSubTab === 'route' && (
+                <Suspense fallback={
+                  <div className="h-96 rounded-3xl bg-white border border-slate-200 flex flex-col items-center justify-center p-6 text-center space-y-3 animate-pulse">
+                    <div className="w-12 h-12 rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center">
+                      <MapPin className="w-6 h-6 animate-bounce" />
+                    </div>
+                    <p className="text-sm font-bold text-slate-700">Loading route map…</p>
+                    <p className="text-xs text-slate-400">Preparing route geometry and nearby place listings</p>
+                  </div>
+                }>
+                  <SmartRouteMap
+                    trip={activeTrip}
+                    onOpenLiveNav={() => setIsLiveNavOpen(true)}
+                  />
+                </Suspense>
+              )}
+
+              {/* Sub-Tab 3: Break Stop Catalog */}
+              {tripSubTab === 'breakstops' && (
+                <div className="space-y-6">
+                  <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Route-based listings</span>
+                        <h2 className="text-xl font-bold text-[#0B2545]">Highway Break Stops & Waypoints</h2>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Geoapify place listings based on OpenStreetMap data near the driving route. Facilities, opening hours, and current availability are not confirmed.
+                        </p>
+                      </div>
+
+                      <span className="text-xs font-bold text-[#2D5A3D] bg-[#EAF0E9] px-3 py-1.5 rounded-full border border-[#8EA78D]/40 self-start sm:self-auto">
+                        {activeTrip.breakStops.length} mapped listings
+                      </span>
                     </div>
 
-                    <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 self-start sm:self-auto">
-                      {activeTrip.breakStops.length} Pitstops on Route
-                    </span>
-                  </div>
+                    {activeTrip.travelDataStatus === 'loading' && (
+                      <p className="mb-4 text-sm text-slate-600" role="status">Loading a driving route and nearby OpenStreetMap listings via Geoapify…</p>
+                    )}
+                    {activeTrip.travelDataStatus === 'estimate' && (
+                      <p className="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3" role="status">
+                        Live route and place data is unavailable. The route and schedule are estimates; no pitstops or facilities are verified.
+                        {activeTrip.travelDataError === 'ORIGIN_NOT_SET' && ' Allow location access or enter a starting city in the full trip planner to request a live route.'}
+                        {activeTrip.travelDataError === 'GEOAPIFY_API_KEY_NOT_CONFIGURED' && ' The server Geoapify API key is not configured. Set GEOAPIFY_API_KEY in Vercel Production.'}
+                        {activeTrip.travelDataError === 'GEOAPIFY_API_KEY_REJECTED' && ' Geoapify rejected the server key. Check the key and plan limits in Geoapify.'}
+                        {activeTrip.travelDataError === 'GEOAPIFY_LOCATION_NOT_FOUND' && ' Geoapify could not resolve the origin or destination. Try a more specific location.'}
+                        {' '}<button
+                          type="button"
+                          onClick={retryActiveTripRoute}
+                          className="ml-1 font-bold underline decoration-amber-700 underline-offset-2 hover:text-amber-950"
+                        >
+                          Retry live route
+                        </button>
+                      </p>
+                    )}
+                    {activeTrip.travelDataWarnings && activeTrip.travelDataWarnings.length > 0 && (
+                      <p className="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3" role="status">
+                        Some map-provider category searches were unavailable: {activeTrip.travelDataWarnings.map(section =>
+                          section === 'amenities' ? 'food/washroom/parking/rest area'
+                            : section === 'ev_charging' ? 'EV charging'
+                              : section === 'medical' ? 'medical facilities' : 'fuel'
+                        ).join(', ')}. Other route results are still shown; check a maps provider for missing listings.
+                      </p>
+                    )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {activeTrip.breakStops.map(bs => (
-                      <BreakStopCard
-                        key={bs.id}
-                        breakStop={bs}
-                        isAdded={true}
-                        onToggleAdd={handleToggleBreakStop}
-                      />
-                    ))}
+                    {([
+                      { id: 'amenities', title: 'Food, Washroom, Parking & Rest Area', detail: 'These amenities may be available together at a stop; confirm each one with the provider.' },
+                      { id: 'fuel', title: 'Fuel Stations', detail: 'Fuel locations are listed separately from general rest stops.' },
+                      { id: 'ev_charging', title: 'EV Charging', detail: 'Charging locations are listed separately. Confirm connector type and live availability.' },
+                      { id: 'medical', title: 'Medical Facilities', detail: 'Clinics, hospitals, and pharmacies are listed separately. This is not emergency dispatch.' }
+                    ] as const).map(section => {
+                      const sectionStops = activeTrip.breakStops.filter(stop =>
+                        getBreakStopSection(stop) === section.id
+                      );
+                      return (
+                        <details key={section.id} className="group mt-3 first:mt-0 rounded-2xl border border-slate-200 bg-white open:border-emerald-200 open:bg-emerald-50/20">
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-4 outline-none transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-emerald-500 [&::-webkit-details-marker]:hidden">
+                            <span className="min-w-0">
+                              <span className="block text-sm font-bold text-[#0B2545]">{section.title}</span>
+                              <span className="mt-1 block text-xs text-slate-500">{section.detail}</span>
+                            </span>
+                            <span className="flex shrink-0 items-center gap-2">
+                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 group-open:bg-emerald-100 group-open:text-emerald-800">
+                                {sectionStops.length} {sectionStops.length === 1 ? 'listing' : 'listings'}
+                              </span>
+                              <ChevronDown aria-hidden="true" className="h-4 w-4 text-slate-500 transition-transform group-open:rotate-180" />
+                            </span>
+                          </summary>
+                          <div className="border-t border-slate-200 px-4 py-4">
+                            {sectionStops.length > 0 ? (
+                              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                                {sectionStops.map(bs => (
+                                  <BreakStopCard
+                                    key={bs.id}
+                                    breakStop={bs}
+                                    isAdded={true}
+                                    onToggleAdd={handleToggleBreakStop}
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              activeTrip.travelDataStatus !== 'loading' && (
+                                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                                  {activeTrip.travelDataStatus === 'estimate'
+                                    ? 'Listings were not searched because live route data is unavailable.'
+                                    : 'No map listings were returned for this section on the searched route. Check a maps provider before travelling.'}
+                                </p>
+                              )
+                            )}
+                          </div>
+                        </details>
+                      );
+                    })}
                   </div>
                 </div>
+              )}
+
+              {/* Sub-Tab 4: Budget Optimizer */}
+              {tripSubTab === 'budget' && (
+                <BudgetOptimizer
+                  trip={activeTrip}
+                  onApplySavings={handleApplyBudgetSavings}
+                />
+              )}
+
+              {/* Sub-Tab 5: Safety & Emergency */}
+              {tripSubTab === 'safety' && (
+                <SafetyEmergency />
+              )}
+
+            </div>
+          )}
+
+          {/* VIEW 2 EMPTY STATE: When trip-detail is opened but user has no active trip */}
+          {currentTab === 'trip-detail' && !activeTrip && (
+            <div key="trip-detail-empty" className="max-w-xl mx-auto px-4 py-20 text-center animate-fade-in">
+              <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-5 text-slate-400 border border-slate-200 shadow-sm">
+                <Compass className="w-8 h-8 text-[#2D5A3D]" />
               </div>
-            )}
+              <h2 className="text-xl font-bold text-slate-800 mb-2">No Trip Selected</h2>
+              <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                No itinerary is currently active. Create your first journey with our AI Trip Planner or select an existing trip from your trips library.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => handleOpenPlannerWithPrefill()}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold bg-[#2D5A3D] text-white hover:bg-[#244931] transition-colors flex items-center justify-center gap-2 text-sm shadow-md shadow-[#2D5A3D]/20"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Create New Trip
+                </button>
+                <button
+                  onClick={() => setCurrentTab('trips')}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-sm"
+                >
+                  View My Trips
+                </button>
+              </div>
+            </div>
+          )}
 
-            {/* Sub-Tab 4: Budget Optimizer */}
-            {tripSubTab === 'budget' && (
-              <BudgetOptimizer
-                trip={activeTrip}
-                onApplySavings={handleApplyBudgetSavings}
+          {/* VIEW 3: MY TRIPS & DIGITAL PASSES */}
+          {currentTab === 'trips' && (
+            <div key="trips" className="animate-fade-in space-y-5">
+              {activeTrip && (
+                <div className="flex items-center justify-center pt-2">
+                  <div className="inline-flex p-1 rounded-full bg-white border border-[#E2EBE1] shadow-xs">
+                    <button
+                      onClick={() => setTripsViewMode('passes')}
+                      className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                        tripsViewMode === 'passes'
+                          ? 'bg-[#2D5A3D] text-white shadow-xs'
+                          : 'text-[#5A7362] hover:text-[#152A1C] hover:bg-[#F8FAF7]'
+                      }`}
+                    >
+                      Digital Pass & Hub
+                    </button>
+                    <button
+                      onClick={() => setTripsViewMode('portfolio')}
+                      className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                        tripsViewMode === 'portfolio'
+                          ? 'bg-[#2D5A3D] text-white shadow-xs'
+                          : 'text-[#5A7362] hover:text-[#152A1C] hover:bg-[#F8FAF7]'
+                      }`}
+                    >
+                      All Saved Trips ({trips.length})
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeTrip && tripsViewMode === 'passes' ? (
+                <TripPassesHubView
+                  trip={activeTrip}
+                  onBack={() => setTripsViewMode('portfolio')}
+                  onOpenBookingModal={() => setIsBookingModalOpen(true)}
+                  onOpenPacking={() => {
+                    setCurrentTab('trip-detail');
+                    setTripSubTab('packing');
+                  }}
+                  onExportTrip={handleExportTrip}
+                  onOpenShare={() => setIsShareModalOpen(true)}
+                />
+              ) : (
+                <MyTripsView
+                  trips={trips}
+                  activeTripId={activeTripIdState}
+                  onSelectTrip={(id) => {
+                    handleSelectTrip(id);
+                    setTripsViewMode('passes');
+                  }}
+                  onOpenPlanner={() => handleOpenPlannerWithPrefill()}
+                  onDeleteTrip={handleDeleteTrip}
+                  onShareTrip={(t) => {
+                    setActiveTripIdState(t.id);
+                    setIsShareModalOpen(true);
+                  }}
+                  onOpenMemories={(t) => handleOpenMemories(t)}
+                  onOpenReview={(t) => handleOpenReview(t)}
+                />
+              )}
+            </div>
+          )}
+
+          {/* VIEW 4: EXPLORE */}
+          {currentTab === 'explore' && (
+            <div key="explore" className="animate-fade-in">
+              <ExploreView
+                userProfile={userProfile}
+                onPlanTripForDestination={(destName) => {
+                  handleOpenPlannerWithPrefill({ destination: destName });
+                }}
+                savedItemIds={savedItemIds}
+                onToggleSaved={handleToggleSaved}
               />
-            )}
-
-            {/* Sub-Tab 5: Safety & Emergency */}
-            {tripSubTab === 'safety' && (
-              <SafetyEmergency />
-            )}
-
-          </div>
-        )}
-
-        {/* VIEW 2 EMPTY STATE: When trip-detail is opened but user has no active trip */}
-        {currentTab === 'trip-detail' && !activeTrip && (
-          <div key="trip-detail-empty" className="max-w-xl mx-auto px-4 py-20 text-center animate-fade-in">
-            <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-5 text-slate-400 border border-slate-200 shadow-sm">
-              <Compass className="w-8 h-8 text-[#00B074]" />
             </div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2">No Trip Selected</h2>
-            <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-              No itinerary is currently active. Create your first journey with our AI Trip Planner or select an existing trip from your trips library.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button
-                onClick={() => handleOpenPlannerWithPrefill()}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold bg-[#00B074] text-white hover:bg-[#009260] transition-colors flex items-center justify-center gap-2 text-sm shadow-md shadow-emerald-500/10"
-              >
-                <Sparkles className="w-4 h-4" />
-                Create New Trip
-              </button>
-              <button
-                onClick={() => setCurrentTab('trips')}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-sm"
-              >
-                View My Trips
-              </button>
+          )}
+
+          {/* VIEW 5: SAVED */}
+          {currentTab === 'saved' && (
+            <div key="saved" className="animate-fade-in">
+              <SavedItemsView
+                savedItemIds={savedItemIds}
+                trips={trips}
+                onToggleSaved={handleToggleSaved}
+                onSelectTrip={handleSelectTrip}
+                onPlanTripForDestination={(destName) => {
+                  handleOpenPlannerWithPrefill({ destination: destName });
+                }}
+                onSelectDestination={(dest) => {
+                  setSelectedDestinationForDetails(dest);
+                }}
+              />
+            </div>
+          )}
+
+          {/* VIEW 6: PROFILE */}
+          {currentTab === 'profile' && (
+            <div key="profile" className="animate-fade-in">
+              <ProfileView
+                userProfile={userProfile}
+                trips={trips}
+                currentUser={currentUser}
+                onUpdateProfile={(updated) => {
+                  setUserProfile(updated);
+                  saveUserProfile(updated, currentUser?.uid);
+                }}
+                onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                onReplayTour={() => setIsOnboardingOpen(true)}
+                onOpenNotifications={() => setIsNotificationCenterOpen(true)}
+                unreadNotificationCount={unreadNotificationCount}
+                onSignOut={() => {
+                  setCurrentUser(null);
+                  resetGuestStorage();
+                  const cleanGuest = loadUserProfile(null);
+                  setUserProfile(cleanGuest);
+                  const guestTrips = loadTrips(null);
+                  setTrips(guestTrips);
+                  const guestActiveTripId = getActiveTripId(null);
+                  setActiveTripIdState(guestActiveTripId);
+                  const guestSaved = loadSavedItemIds(null);
+                  setSavedItemIds(guestSaved);
+                  const guestStates = loadUserVisitedStates(null);
+                  window.dispatchEvent(new CustomEvent('tripverse_visited_states_change', { detail: guestStates }));
+                  setIsAuthModalOpen(true);
+                }}
+                onOpenLegal={(tab) => setLegalModalState({ isOpen: true, tab })}
+              />
+            </div>
+          )}
+
+        </main>
+
+        {/* Modern Footer */}
+        <footer className="bg-white border-t border-slate-200 py-8 lg:py-10 mt-auto pb-24 lg:pb-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+              <Logo size="adaptive" showTagline={false} />
+              <span className="hidden sm:inline text-slate-300">|</span>
+              <span className="text-xs font-semibold text-slate-500">
+                "TripVerse plans the journey, not just the destination."
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-600">
+              <button onClick={() => setIsOnboardingOpen(true)} className="hover:text-[#2D5A3D] cursor-pointer">Interactive Tour</button>
+              <button onClick={() => setCurrentTab('explore')} className="hover:text-[#2D5A3D] cursor-pointer">Destinations</button>
+              <button onClick={() => handleOpenPlannerWithPrefill()} className="hover:text-[#2D5A3D] cursor-pointer">AI Engine</button>
+              <button onClick={() => setCurrentTab('trips')} className="hover:text-[#2D5A3D] cursor-pointer">My Routes</button>
+              <span className="text-slate-300">|</span>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'privacy' })} className="hover:text-[#2D5A3D] cursor-pointer">Privacy</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'terms' })} className="hover:text-[#2D5A3D] cursor-pointer">Terms</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'advisory' })} className="hover:text-[#2D5A3D] cursor-pointer">Advisory</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'feedback' })} className="text-[#2D5A3D] hover:text-[#1E3E2B] bg-[#EAF0E9] px-2.5 py-1 rounded-lg border border-[#8EA78D]/40 cursor-pointer">Feedback</button>
+              <span className="text-slate-400">© 2026 TripVerse</span>
             </div>
           </div>
-        )}
-
-        {/* VIEW 3: MY TRIPS */}
-        {currentTab === 'trips' && (
-          <div key="trips" className="animate-fade-in">
-            <MyTripsView
-              trips={trips}
-              activeTripId={activeTripIdState}
-              onSelectTrip={handleSelectTrip}
-              onOpenPlanner={() => handleOpenPlannerWithPrefill()}
-              onDeleteTrip={handleDeleteTrip}
-              onShareTrip={(t) => {
-                setActiveTripIdState(t.id);
-                setIsShareModalOpen(true);
-              }}
-              onOpenMemories={(t) => handleOpenMemories(t)}
-              onOpenReview={(t) => handleOpenReview(t)}
-            />
-          </div>
-        )}
-
-        {/* VIEW 4: EXPLORE */}
-        {currentTab === 'explore' && (
-          <div key="explore" className="animate-fade-in">
-            <ExploreView
-              userProfile={userProfile}
-              onPlanTripForDestination={(destName) => {
-                handleOpenPlannerWithPrefill({ destination: destName });
-              }}
-              savedItemIds={savedItemIds}
-              onToggleSaved={handleToggleSaved}
-            />
-          </div>
-        )}
-
-        {/* VIEW 5: SAVED */}
-        {currentTab === 'saved' && (
-          <div key="saved" className="animate-fade-in">
-            <SavedItemsView
-              savedItemIds={savedItemIds}
-              trips={trips}
-              onToggleSaved={handleToggleSaved}
-              onSelectTrip={handleSelectTrip}
-              onPlanTripForDestination={(destName) => {
-                handleOpenPlannerWithPrefill({ destination: destName });
-              }}
-              onSelectDestination={(dest) => {
-                setSelectedDestinationForDetails(dest);
-              }}
-            />
-          </div>
-        )}
-
-        {/* VIEW 6: PROFILE */}
-        {currentTab === 'profile' && (
-          <div key="profile" className="animate-fade-in">
-            <ProfileView
-              userProfile={userProfile}
-              trips={trips}
-              currentUser={currentUser}
-              onUpdateProfile={(updated) => {
-                setUserProfile(updated);
-                saveUserProfile(updated, currentUser?.uid);
-              }}
-              onOpenAuthModal={() => setIsAuthModalOpen(true)}
-              onReplayTour={() => setIsOnboardingOpen(true)}
-              onOpenNotifications={() => setIsNotificationCenterOpen(true)}
-              unreadNotificationCount={unreadNotificationCount}
-              onSignOut={() => {
-                setCurrentUser(null);
-                resetGuestStorage();
-                const cleanGuest = loadUserProfile(null);
-                setUserProfile(cleanGuest);
-                const guestTrips = loadTrips(null);
-                setTrips(guestTrips);
-                const guestActiveTripId = getActiveTripId(null);
-                setActiveTripIdState(guestActiveTripId);
-                const guestSaved = loadSavedItemIds(null);
-                setSavedItemIds(guestSaved);
-                const guestStates = loadUserVisitedStates(null);
-                window.dispatchEvent(new CustomEvent('tripverse_visited_states_change', { detail: guestStates }));
-                setIsAuthModalOpen(true);
-              }}
-              onOpenLegal={(tab) => setLegalModalState({ isOpen: true, tab })}
-            />
-          </div>
-        )}
-
-      </main>
-
-      {/* Modern Footer */}
-      <footer className="bg-white border-t border-slate-200 py-8 lg:py-10 mt-auto pb-24 lg:pb-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-            <Logo size="md" showTagline={false} />
-            <span className="hidden sm:inline text-slate-300">|</span>
-            <span className="text-xs font-semibold text-slate-500">
-              "TripVerse plans the journey, not just the destination."
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-600">
-            <button onClick={() => setIsOnboardingOpen(true)} className="hover:text-[#00B074] cursor-pointer">Interactive Tour</button>
-            <button onClick={() => setCurrentTab('explore')} className="hover:text-[#00B074] cursor-pointer">Destinations</button>
-            <button onClick={() => handleOpenPlannerWithPrefill()} className="hover:text-[#00B074] cursor-pointer">AI Engine</button>
-            <button onClick={() => setCurrentTab('trips')} className="hover:text-[#00B074] cursor-pointer">My Routes</button>
-            <span className="text-slate-300">|</span>
-            <button onClick={() => setLegalModalState({ isOpen: true, tab: 'privacy' })} className="hover:text-[#00B074] cursor-pointer">Privacy</button>
-            <button onClick={() => setLegalModalState({ isOpen: true, tab: 'terms' })} className="hover:text-[#00B074] cursor-pointer">Terms</button>
-            <button onClick={() => setLegalModalState({ isOpen: true, tab: 'advisory' })} className="hover:text-[#00B074] cursor-pointer">Advisory</button>
-            <button onClick={() => setLegalModalState({ isOpen: true, tab: 'feedback' })} className="text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/80 cursor-pointer">Feedback</button>
-            <span className="text-slate-400">© 2026 TripVerse</span>
-          </div>
-        </div>
-      </footer>
+        </footer>
 
       </PullToRefresh>
 
@@ -1852,27 +2242,13 @@ export function App() {
           />
         )}
 
-        {/* AI Best Transport Deal Modal */}
+        {/* Booking options opened from the former deal shortcut */}
         {activeTrip && isBestDealModalOpen && (
-          <BestDealModal
+          <TripBookingCheckoutModal
             trip={activeTrip}
-            deal={activeTrip.bestTransportDeal || generateTransportDeals({
-              mode: activeTrip.transportMode || 'car',
-              origin: activeTrip.origin,
-              destination: activeTrip.destination,
-              durationDays: activeTrip.durationDays,
-              travelersCount: activeTrip.travelersCount,
-              totalBudget: activeTrip.totalBudget,
-              priorities: activeTrip.priorities
-            }).bestDeal}
             isOpen={isBestDealModalOpen}
             onClose={() => setIsBestDealModalOpen(false)}
-            onApplySavings={(savings, reason) => {
-              handleApplyBudgetSavings(savings, 'transportation', reason);
-            }}
-            onViewAllDeals={() => {
-              setTripSubTab('deals');
-            }}
+            currency={currency}
           />
         )}
 
@@ -2030,4 +2406,3 @@ export function App() {
 }
 
 export default App;
-

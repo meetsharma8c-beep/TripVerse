@@ -390,11 +390,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Modal Top Bar */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-[#00B074] flex items-center justify-center font-black text-sm">
+            <div className="w-8 h-8 rounded-xl bg-[#2D5A3D]/10 text-[#2D5A3D] flex items-center justify-center font-black text-sm">
               <Compass className="w-4 h-4" />
             </div>
             <span className="text-xl font-black font-display text-[#0B2545]">
-              Trip<span className="text-[#00B074]">Verse</span>
+              Trip<span className="text-[#2D5A3D]">Verse</span>
             </span>
           </div>
 
@@ -418,11 +418,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }}
             className={`py-3.5 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-2 cursor-pointer ${
               authMethod === 'phone'
-                ? 'border-[#00B074] text-[#0B2545] bg-white shadow-2xs'
+                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Phone className="w-3.5 h-3.5 text-[#00B074]" />
+            <Phone className="w-3.5 h-3.5 text-[#2D5A3D]" />
             <span>Mobile OTP</span>
           </button>
 
@@ -435,11 +435,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }}
             className={`py-3.5 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-2 cursor-pointer ${
               authMethod === 'email'
-                ? 'border-[#00B074] text-[#0B2545] bg-white shadow-2xs'
+                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Mail className="w-3.5 h-3.5 text-[#00B074]" />
+            <Mail className="w-3.5 h-3.5 text-[#2D5A3D]" />
             <span>Email & Password</span>
           </button>
         </div>
@@ -465,7 +465,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {successMsg && (
             <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-2.5 text-xs text-emerald-800 animate-in fade-in">
-              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+              <Check className="w-4 h-4 text-[#2D5A3D] shrink-0" />
               <span className="font-medium leading-relaxed flex-1">{successMsg}</span>
             </div>
           )}
@@ -521,7 +521,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <select
                             value={countryCode}
                             onChange={(e) => setCountryCode(e.target.value)}
-                            className="appearance-none pl-3 pr-7 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 focus:outline-hidden focus:border-[#00B074] cursor-pointer"
+                            className="appearance-none pl-3 pr-7 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 focus:outline-hidden focus:border-[#2D5A3D] cursor-pointer"
                           >
                             {COUNTRY_CODES.map((c) => (
                               <option key={c.code} value={c.code}>
@@ -540,7 +540,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             value={phoneNumber}
                             onChange={(e) => setPhoneNumber(e.target.value)}
                             placeholder={selectedCountry.placeholder}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold tracking-wide text-slate-800 focus:outline-hidden focus:border-[#00B074]"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold tracking-wide text-slate-800 focus:outline-hidden focus:border-[#2D5A3D]"
                             required
                             autoFocus
                           />
@@ -561,7 +561,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             value={phoneUserName}
                             onChange={(e) => setPhoneUserName(e.target.value)}
                             placeholder="Enter your name"
-                            className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                            className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                           />
                         </div>
                       </div>
@@ -577,7 +577,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             value={phoneLocation}
                             onChange={(e) => setPhoneLocation(e.target.value)}
                             placeholder="e.g. Mumbai, India"
-                            className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                            className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                           />
                         </div>
                       </div>
@@ -596,7 +596,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             onClick={() => setPhoneTravelerStyle(style.id)}
                             className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                               phoneTravelerStyle === style.id
-                                ? 'bg-[#00B074] text-white shadow-2xs scale-102'
+                                ? 'bg-[#2D5A3D] text-white shadow-2xs scale-102'
                                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                           >
@@ -629,7 +629,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </form>
 
                   <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 pt-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3D]" />
                     <span>Secure Phone Authentication with carrier SMS</span>
                   </div>
                 </div>
@@ -653,7 +653,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </button>
 
                   <div className="text-center space-y-1">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#2D5A3D] mx-auto flex items-center justify-center">
                       <Phone className="w-6 h-6" />
                     </div>
                     <h3 className="text-xl font-bold text-[#0B2545]">Enter SMS Code</h3>
@@ -681,8 +681,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                         className={`w-11 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold font-mono rounded-xl border transition-all focus:outline-hidden ${
                           digit
-                            ? 'border-[#00B074] bg-emerald-50/40 text-[#0B2545] shadow-2xs'
-                            : 'border-slate-300 bg-white text-slate-800 focus:border-[#00B074] focus:ring-2 focus:ring-emerald-500/20'
+                            ? 'border-[#2D5A3D] bg-emerald-50/40 text-[#0B2545] shadow-2xs'
+                            : 'border-slate-300 bg-white text-slate-800 focus:border-[#2D5A3D] focus:ring-2 focus:ring-[#2D5A3D]/20'
                         }`}
                       />
                     ))}
@@ -720,7 +720,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         type="button"
                         onClick={() => handleSendPhoneOtp()}
                         disabled={isLoading}
-                        className="font-bold text-[#00B074] hover:underline cursor-pointer"
+                        className="font-bold text-[#2D5A3D] hover:underline cursor-pointer"
                       >
                         Resend SMS Code
                       </button>
@@ -818,7 +818,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="e.g. traveler@domain.com"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                           required
                         />
                       </div>
@@ -835,7 +835,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             setSuccessMsg(null); 
                             setResetEmailSent(false); 
                           }}
-                          className="text-[11px] text-[#00B074] hover:underline font-semibold cursor-pointer"
+                          className="text-[11px] text-[#2D5A3D] hover:underline font-semibold cursor-pointer"
                         >
                           Forgot Password?
                         </button>
@@ -847,7 +847,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="Enter your password"
-                          className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                          className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                           required
                         />
                         <button
@@ -866,7 +866,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         id="remember_me"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded border-slate-300 text-[#00B074] focus:ring-[#00B074] accent-[#00B074]"
+                        className="w-3.5 h-3.5 rounded border-slate-300 text-[#2D5A3D] focus:ring-[#2D5A3D] accent-[#2D5A3D]"
                       />
                       <label htmlFor="remember_me" className="text-xs text-slate-600 cursor-pointer">
                         Remember me for 30 days
@@ -935,7 +935,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder="Enter your full name"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                           required
                         />
                       </div>
@@ -950,7 +950,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="your.email@domain.com"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                           required
                         />
                       </div>
@@ -965,7 +965,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           value={emailLocation}
                           onChange={(e) => setEmailLocation(e.target.value)}
                           placeholder="e.g. Mumbai, India"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                         />
                       </div>
                     </div>
@@ -980,7 +980,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Min 6 chars"
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                             required
                           />
                         </div>
@@ -995,7 +995,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="Repeat password"
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                             required
                           />
                         </div>
@@ -1015,7 +1015,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             onClick={() => setEmailTravelerStyle(style.id)}
                             className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                               emailTravelerStyle === style.id
-                                ? 'bg-[#00B074] text-white shadow-2xs scale-102'
+                                ? 'bg-[#2D5A3D] text-white shadow-2xs scale-102'
                                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                           >
@@ -1107,7 +1107,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="you@domain.com"
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                             required
                             autoFocus
                           />

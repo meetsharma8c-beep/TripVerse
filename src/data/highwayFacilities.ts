@@ -1,149 +1,136 @@
 import { BreakStop } from '../types/trip';
 
-/**
- * Authentic, verified national highway break stops, plazas and wayside amenities.
- */
 export const HIGHWAY_BREAK_STOPS: BreakStop[] = [
   {
-    id: 'bs-highway-food-court-nh48',
-    name: 'Highway Express Food Court & Plaza',
+    id: 'bs-nh48-highway-king',
+    name: 'Hotel Highway King & EV Plaza',
     category: 'highway_food_court',
-    rating: 4.7,
-    reviewCount: 1420,
-    detourDistanceKm: 0.8,
-    distanceFromStartKm: 98,
-    foodAvailable: true,
-    washroomAvailable: true,
-    parkingAvailable: true,
-    restAreaAvailable: true,
-    fuelStationAvailable: true,
-    evChargingAvailable: true,
-    medicalFacilityAvailable: true,
-    openingHours: '24 Hours Open',
-    estimatedStopMinutes: 35,
-    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
-    description: 'Multi-cuisine highway plaza featuring Haldiram, Starbucks, Subway, spotless clean air-conditioned washrooms, and high-speed EV charging stations.',
-    recommendationReason: 'Recommended because it is 0.8 km from your route, has 5-star rated hygiene washrooms, ample secure parking, and matches your ₹250 meal budget.',
-    coordinates: { lat: 23.5937, lng: 73.0182 },
-    addedToTrip: true
-  },
-  {
-    id: 'bs-shree-nath-heritage-dhaba',
-    name: 'Shree Nath Pure Veg Highway Dhaba',
-    category: 'dhaba',
+    section: 'amenities',
     rating: 4.6,
-    reviewCount: 980,
-    detourDistanceKm: 0.4,
-    distanceFromStartKm: 165,
-    foodAvailable: true,
-    washroomAvailable: true,
-    parkingAvailable: true,
-    restAreaAvailable: true,
-    fuelStationAvailable: false,
-    evChargingAvailable: false,
-    medicalFacilityAvailable: false,
-    openingHours: '6:00 AM - 1:00 AM',
-    estimatedStopMinutes: 45,
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80',
-    description: 'Authentic Kathiyawadi & Rajasthani road dhaba with fresh churned chaas, sev tameta, tandoori rotis, charpai seating, and clean sanitised restrooms.',
-    recommendationReason: 'Top-rated authentic local meal on NH48. High traveler rating for hot vegetarian food at just ₹180 per person.',
-    coordinates: { lat: 23.9521, lng: 73.2814 },
-    addedToTrip: false
-  },
-  {
-    id: 'bs-aravalli-viewpoint-cafe',
-    name: 'Aravalli Valley Overlook & Chai Point',
-    category: 'scenic_rest_stop',
-    rating: 4.8,
-    reviewCount: 650,
-    detourDistanceKm: 1.2,
-    distanceFromStartKm: 215,
-    foodAvailable: true,
-    washroomAvailable: true,
-    parkingAvailable: true,
-    restAreaAvailable: true,
-    fuelStationAvailable: false,
-    evChargingAvailable: false,
-    medicalFacilityAvailable: false,
-    openingHours: '7:00 AM - 10:00 PM',
-    estimatedStopMinutes: 25,
-    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
-    description: 'Breathtaking panoramic hill viewpoint over the ancient Aravalli ghats. Serves hot kulhad ginger chai, fresh pakoras, and offers shaded mountain benches.',
-    recommendationReason: 'Ideal scenic rest point to stretch your legs after 3 hours driving. Perfect sunset & photography viewpoint with fresh chai.',
-    coordinates: { lat: 24.2150, lng: 73.5210 },
-    addedToTrip: true
-  },
-  {
-    id: 'bs-hpcl-speed-medical-oasis',
-    name: 'HPCL Comfort Point & 24/7 MedStop',
-    category: 'fuel_plaza',
-    rating: 4.5,
-    reviewCount: 420,
+    reviewCount: 3840,
     detourDistanceKm: 0.2,
-    distanceFromStartKm: 140,
+    distanceFromStartKm: 85,
     foodAvailable: true,
     washroomAvailable: true,
     parkingAvailable: true,
-    restAreaAvailable: false,
+    restAreaAvailable: true,
     fuelStationAvailable: true,
     evChargingAvailable: true,
     medicalFacilityAvailable: true,
-    openingHours: '24 Hours Open',
-    estimatedStopMinutes: 15,
-    image: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=800&q=80',
-    description: 'Full-service highway oasis equipped with high-speed petrol/diesel pumps, Tata Power 60kW DC charger, 24/7 emergency pharmacy, and nitrogen tyre air.',
-    recommendationReason: 'Crucial waypoint safety stop with emergency medical assistance, certified clean restrooms, and tyre pressure checks.',
-    coordinates: { lat: 23.8240, lng: 73.1890 },
-    addedToTrip: false
+    openingHours: 'Open 24 Hours',
+    estimatedStopMinutes: 35,
+    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80',
+    description: 'Premier NH-48 corridor rest stop featuring multi-cuisine food court, Costa Coffee, 60kW DC Fast EV chargers, clean restrooms, and children play zone.',
+    recommendationReason: 'Verified highway plaza with spotless washrooms and 24x7 security.',
+    coordinates: { lat: 27.6534, lng: 76.5412 }
+  },
+  {
+    id: 'bs-nh48-food-express',
+    name: 'Mannat Haveli Food Plaza',
+    category: 'dhaba',
+    section: 'amenities',
+    rating: 4.7,
+    reviewCount: 5210,
+    detourDistanceKm: 0.1,
+    distanceFromStartKm: 142,
+    foodAvailable: true,
+    washroomAvailable: true,
+    parkingAvailable: true,
+    restAreaAvailable: true,
+    fuelStationAvailable: true,
+    evChargingAvailable: true,
+    openingHours: 'Open 24 Hours',
+    estimatedStopMinutes: 40,
+    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80',
+    description: 'Heritage theme highway plaza serving authentic tandoori parathas, kulhad chai, south Indian snacks with air-conditioned dining halls.',
+    recommendationReason: 'Popular family pitstop known for fast service and regional cuisine.',
+    coordinates: { lat: 27.2145, lng: 76.1287 }
+  },
+  {
+    id: 'bs-nh48-hpcl-oasis',
+    name: 'HPCL COCO Fuel Oasis & Cafe',
+    category: 'fuel_plaza',
+    section: 'fuel',
+    rating: 4.5,
+    reviewCount: 1980,
+    detourDistanceKm: 0.0,
+    distanceFromStartKm: 210,
+    foodAvailable: true,
+    washroomAvailable: true,
+    parkingAvailable: true,
+    fuelStationAvailable: true,
+    evChargingAvailable: true,
+    openingHours: 'Open 24 Hours',
+    estimatedStopMinutes: 20,
+    image: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80',
+    description: 'Company-owned company-operated petrol & diesel station with guaranteed fuel purity, nitrogen tyre filling, automated air pumps, and convenience store.',
+    recommendationReason: 'COCO certified station for reliable fuel and quick nitrogen check.',
+    coordinates: { lat: 26.8912, lng: 75.8123 }
+  },
+  {
+    id: 'bs-nh48-tata-ev-hub',
+    name: 'Tata Power EZ Charge Fast Hub',
+    category: 'fuel_plaza',
+    section: 'ev_charging',
+    rating: 4.8,
+    reviewCount: 840,
+    detourDistanceKm: 0.3,
+    distanceFromStartKm: 175,
+    foodAvailable: true,
+    washroomAvailable: true,
+    parkingAvailable: true,
+    evChargingAvailable: true,
+    openingHours: 'Open 24 Hours',
+    estimatedStopMinutes: 45,
+    image: 'https://images.unsplash.com/photo-1558441719-8b8359781dc3?auto=format&fit=crop&w=600&q=80',
+    description: 'Dual-gun 120kW ultra-fast CCS2 DC chargers with shaded parking bays, lounge seating, high-speed WiFi, and snack bistro.',
+    recommendationReason: 'High reliability 120kW DC fast charging with minimal waiting times.',
+    coordinates: { lat: 26.4521, lng: 75.3214 }
   }
 ];
 
-/**
- * Authentic emergency facilities and trauma centers along the highway corridor.
- */
-export const EMERGENCY_FACILITIES = [
+export const EMERGENCY_FACILITIES: Array<{
+  id: string;
+  name: string;
+  type: string;
+  distanceKm: number;
+  highwayMarker: string;
+  phone: string;
+  address: string;
+  open24x7: boolean;
+  coordinates: { lat: number; lng: number };
+}> = [
   {
-    id: 'em-hospital-1',
-    name: 'Shamlaji Civil & Trauma Center',
-    type: 'Hospital & 24/7 Trauma',
-    distanceKm: 2.1,
-    highwayMarker: 'NH-48 KM 122',
-    phone: '108 / 02771-224411',
-    address: 'Near NH-48 Bypass, Shamlaji, Gujarat',
+    id: 'em-1',
+    name: 'NHAI Highway Patrol & Ambulance Base',
+    type: 'Highway Emergency / Medical Response',
+    distanceKm: 4.2,
+    highwayMarker: 'NH-48 KM 128',
+    phone: '1033',
+    address: 'NHAI Toll Plaza Command Unit, NH-48',
     open24x7: true,
-    coordinates: { lat: 23.6840, lng: 73.0820 }
+    coordinates: { lat: 27.4521, lng: 76.3214 }
   },
   {
-    id: 'em-police-1',
-    name: 'Ratanpur Border Police Assistance Booth',
-    type: 'Highway Police & Patrol',
-    distanceKm: 0.5,
-    highwayMarker: 'GJ-RJ Border Checkpost',
-    phone: '112 / 02967-222100',
-    address: 'National Highway 48, Ratanpur Border',
+    id: 'em-2',
+    name: 'District Trauma Hospital & Emergency Ward',
+    type: 'Hospital / Trauma Care',
+    distanceKm: 9.8,
+    highwayMarker: 'Exit 18B',
+    phone: '108',
+    address: 'Highway Bypass Junction',
     open24x7: true,
-    coordinates: { lat: 23.9010, lng: 73.2350 }
+    coordinates: { lat: 27.2145, lng: 76.1287 }
   },
   {
-    id: 'em-nhai-1',
-    name: 'NHAI 24/7 Emergency Highway Patrol & Towing',
-    type: 'Highway Helpline & Crane',
-    distanceKm: 0.1,
-    highwayMarker: 'All Toll Plazas on NH-48',
-    phone: '1033 (Toll-Free Nationwide)',
-    address: 'NHAI Emergency Assistance Vehicle Unit 4',
+    id: 'em-3',
+    name: '24x7 Highway Recovery & Towing Service',
+    type: 'Vehicle Breakdown & Crane',
+    distanceKm: 6.5,
+    highwayMarker: 'NH-48 Service Road',
+    phone: '1800-180-2222',
+    address: 'Near Indian Oil Plaza, NH-48',
     open24x7: true,
-    coordinates: { lat: 24.1100, lng: 73.4100 }
-  },
-  {
-    id: 'em-pharmacy-1',
-    name: 'Apollo 24/7 Highway Pharmacy & Clinic',
-    type: 'Pharmacy & First Aid',
-    distanceKm: 1.0,
-    highwayMarker: 'NH-48 Service Lane',
-    phone: '1860-500-0101',
-    address: 'Express Food Plaza complex, Shamlaji',
-    open24x7: true,
-    coordinates: { lat: 23.6010, lng: 73.0210 }
+    coordinates: { lat: 26.8912, lng: 75.8123 }
   }
 ];

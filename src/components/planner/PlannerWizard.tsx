@@ -43,7 +43,7 @@ import {
   ShieldCheck,
   LucideIcon
 } from 'lucide-react';
-import { TravelPreference, TravelerType, TransportMode, AccommodationType, FoodPreference, Priority } from '../../types/trip';
+import { TravelPreference, TravelerType, TransportMode, AccommodationType, FoodPreference, Priority, Coordinates } from '../../types/trip';
 import { PlannerInput } from '../../services/plannerEngine';
 import { GenerationLoader } from './GenerationLoader';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
@@ -71,6 +71,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
 
   // Step 1: Destination
   const [origin, setOrigin] = useState('Ahmedabad, Gujarat');
+  const [originCoords, setOriginCoords] = useState<Coordinates | undefined>();
   const [destination, setDestination] = useState(initialDestination);
 
   // Precision Spot Search & Geocoding State
@@ -129,6 +130,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           try {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
+            setOriginCoords({ lat, lng });
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
             if (res.ok) {
               const data = await res.json();
@@ -181,6 +183,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
     'food',
     'budget'
   ]);
+  const [specialRequests, setSpecialRequests] = useState('');
 
   // Step 6: Transportation
   const [transportMode, setTransportMode] = useState<TransportMode>('car');
@@ -233,6 +236,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   const handleFinalSubmit = () => {
     const input: PlannerInput = {
       origin,
+      originCoords,
       destinationName: destination,
       durationDays: duration,
       travelersCount,
@@ -240,6 +244,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
       budgetMode,
       budgetAmount,
       preferences,
+      specialRequests: specialRequests.trim(),
       transportMode,
       accommodationType,
       foodPreference,
@@ -277,17 +282,17 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         />
       )}
 
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200">
 
         {/* Top Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-trip-gradient text-white flex items-center justify-center shadow-xs">
+        <div className="px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-trip-gradient text-white flex items-center justify-center shadow-xs shrink-0">
               <Sparkles className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-base font-bold text-[#0B2545]">TripVerse AI Trip Planner</h2>
-              <span className="text-xs text-slate-500 font-semibold">
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-bold text-[#0B2545] truncate">TripVerse AI Trip Planner</h2>
+              <span className="text-[11px] sm:text-xs text-slate-500 font-semibold block">
                 Step {currentStep} of {totalSteps}
               </span>
             </div>
@@ -295,7 +300,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors shrink-0 cursor-pointer"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -303,7 +308,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         </div>
 
         {/* Step Progress Line */}
-        <div className="w-full bg-slate-100 h-1.5">
+        <div className="w-full bg-slate-100 h-1.5 shrink-0">
           <div
             className="bg-trip-gradient h-1.5 transition-all duration-300 ease-out"
             style={{ width: `${(currentStep / totalSteps) * 100}%` }}
@@ -311,13 +316,13 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         </div>
 
         {/* Step Content Area */}
-        <div className="p-6 sm:p-8 flex-1 overflow-y-auto">
+        <div className="p-4 sm:p-8 flex-1 overflow-y-auto overscroll-contain">
 
           {/* STEP 1: DESTINATION */}
           {currentStep === 1 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#00B074]">Step 1 — Journey Endpoints</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 1 — Journey Endpoints</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">Where do you want to go?</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
                   TripVerse can plan a trip for <strong>any precise spot anywhere</strong> — from major metropolises to mountain hamlets, historic forts, remote beaches, or hidden forest viewpoints worldwide.
@@ -335,9 +340,9 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       type="button"
                       onClick={handleUseCurrentLocation}
                       disabled={isDetectingOrigin}
-                      className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition-colors"
+                      className="text-[11px] font-bold text-[#2D5A3D] hover:text-[#2D5A3D] flex items-center gap-1 cursor-pointer transition-colors"
                     >
-                      <Crosshair className={`w-3.5 h-3.5 ${isDetectingOrigin ? 'animate-spin text-emerald-500' : ''}`} />
+                      <Crosshair className={`w-3.5 h-3.5 ${isDetectingOrigin ? 'animate-spin text-[#2D5A3D]' : ''}`} />
                       <span>{isDetectingOrigin ? 'Detecting GPS...' : 'Use My Current Location'}</span>
                     </button>
                   </div>
@@ -346,9 +351,12 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                     <input
                       type="text"
                       value={origin}
-                      onChange={(e) => setOrigin(e.target.value)}
+                      onChange={(e) => {
+                        setOrigin(e.target.value);
+                        setOriginCoords(undefined);
+                      }}
                       placeholder="e.g. Ahmedabad, Gujarat"
-                      className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 font-semibold text-sm focus:bg-white focus:outline-none focus:border-[#00B074] focus:ring-4 focus:ring-emerald-500/10"
+                      className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 font-semibold text-sm focus:bg-white focus:outline-none focus:border-[#2D5A3D] focus:ring-4 focus:ring-[#2D5A3D]/15"
                     />
                   </div>
                 </div>
@@ -360,14 +368,14 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       Primary Destination or Specific Spot
                     </label>
                     {selectedPreciseSpot && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2D5A3D] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                         <ShieldCheck className="w-3 h-3" />
                         <span>Precise GPS Active</span>
                       </span>
                     )}
                   </div>
                   <div className="relative">
-                    <MapPin className="w-4 h-4 text-[#00B074] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <MapPin className="w-4 h-4 text-[#2D5A3D] absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={destination}
@@ -377,11 +385,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       }}
                       onFocus={() => setShowDestDropdown(true)}
                       placeholder="Type any spot (e.g. Mansarovar in Jaipur, Polo Forest, Chopta)..."
-                      className="w-full pl-10 pr-10 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm focus:bg-white focus:outline-none focus:border-[#00B074] focus:ring-4 focus:ring-emerald-500/10 text-slate-900 shadow-xs"
+                      className="w-full pl-10 pr-10 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm focus:bg-white focus:outline-none focus:border-[#2D5A3D] focus:ring-4 focus:ring-[#2D5A3D]/15 text-slate-900 shadow-xs"
                     />
                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                       {isSearchingDest ? (
-                        <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
+                        <Loader2 className="w-4 h-4 text-[#2D5A3D] animate-spin" />
                       ) : destination.trim().length > 0 ? (
                         <button
                           type="button"
@@ -400,7 +408,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
 
                   {/* Autocomplete Dropdown */}
                   {showDestDropdown && destSuggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden divide-y divide-slate-100 max-h-72 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden divide-y divide-slate-100 max-h-56 sm:max-h-72 overflow-y-auto overscroll-contain animate-in fade-in slide-in-from-top-2 duration-150">
                       <div className="px-3.5 py-2 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
                         <span>Matching Precise Spots & Cities</span>
                         <span>OpenStreetMap Geocoded</span>
@@ -421,18 +429,18 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                             onClick={() => handleSelectSpot(spot)}
                             className="w-full px-4 py-3 text-left hover:bg-emerald-50/70 transition-colors flex items-start gap-3 cursor-pointer group"
                           >
-                            <div className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-emerald-500 group-hover:text-white text-slate-600 flex items-center justify-center shrink-0 transition-colors">
+                            <div className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-[#2D5A3D] group-hover:text-white text-slate-600 flex items-center justify-center shrink-0 transition-colors">
                               <IconComponent className="w-4 h-4" />
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm font-bold text-[#0B2545] group-hover:text-emerald-700">
+                                <span className="text-sm font-bold text-[#0B2545] group-hover:text-[#2D5A3D]">
                                   {spot.name}
                                 </span>
                                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                                   {spot.state || spot.country}
                                 </span>
-                                <span className="text-[10px] font-mono font-semibold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded-md">
+                                <span className="text-[10px] font-mono font-semibold text-[#2D5A3D] bg-emerald-100/70 px-1.5 py-0.5 rounded-md">
                                   {spot.coordinates.lat.toFixed(2)}°N, {spot.coordinates.lng.toFixed(2)}°E
                                 </span>
                               </div>
@@ -440,7 +448,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                                 {spot.fullName}
                               </p>
                               {spot.highlights && spot.highlights.length > 0 && (
-                                <p className="text-[11px] text-emerald-600 font-medium truncate mt-0.5">
+                                <p className="text-[11px] text-[#2D5A3D] font-medium truncate mt-0.5">
                                   ✨ {spot.highlights.slice(0, 2).join(' • ')}
                                 </p>
                               )}
@@ -457,7 +465,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                   <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-50/90 via-white to-slate-50 border border-emerald-300/80 shadow-xs space-y-2.5 animate-in fade-in">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-[#2D5A3D] text-white flex items-center justify-center shrink-0">
                           <Check className="w-4 h-4" />
                         </div>
                         <div>
@@ -494,8 +502,8 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       </div>
                     )}
 
-                    <div className="pt-1 flex items-center gap-1.5 text-[11px] font-medium text-emerald-700">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <div className="pt-1 flex items-center gap-1.5 text-[11px] font-medium text-[#2D5A3D]">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
                       <span>AI will dynamically calculate real highway routes, fuel/tolls, and activities for this spot.</span>
                     </div>
                   </div>
@@ -531,10 +539,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                           setSelectedPreciseSpot(resolvePreciseLocationSync(item.name));
                         }}
                         className={`text-xs px-3 py-1.5 rounded-full border transition-all font-semibold whitespace-nowrap cursor-pointer flex items-center gap-1 ${destination.toLowerCase() === item.name.toLowerCase()
-                            ? 'bg-[#00B074] text-white border-[#00B074] shadow-xs'
-                            : item.highlight
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-400 font-bold'
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'
+                          ? 'bg-[#2D5A3D] text-white border-[#2D5A3D] shadow-xs'
+                          : item.highlight
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-400 font-bold'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'
                           }`}
                       >
                         {item.highlight && <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />}
@@ -551,7 +559,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 2 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#00B074]">Step 2 — Trip Duration</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 2 — Trip Duration</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">How long is your trip?</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
                   TripVerse balances daily driving time with sightseeing so you never feel exhausted.
@@ -572,8 +580,8 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                     type="button"
                     onClick={() => setDuration(item.days)}
                     className={`p-4 rounded-2xl border text-left transition-all ${duration === item.days
-                        ? 'border-[#00B074] bg-emerald-50/70 shadow-xs scale-[1.02]'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                      ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs scale-[1.02]'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
                       }`}
                   >
                     <span className="text-lg font-black text-[#0B2545] block">{item.label}</span>
@@ -588,7 +596,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 3 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#00B074]">Step 3 — Travelers</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 3 — Travelers</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">Who are you traveling with?</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
                   We optimize room sharing, transport splitting, and suitable stops based on your group.
@@ -617,11 +625,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                         if (type.id === 'friends' && travelersCount < 3) setTravelersCount(3);
                       }}
                       className={`p-3.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-2 ${isSelected
-                          ? 'border-[#00B074] bg-emerald-50/70 text-slate-900 font-bold'
-                          : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
+                        ? 'border-[#2D5A3D] bg-emerald-50/70 text-slate-900 font-bold'
+                        : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
                         }`}
                     >
-                      <TypeIcon className={`w-5 h-5 ${isSelected ? 'text-[#00B074]' : 'text-slate-400'}`} />
+                      <TypeIcon className={`w-5 h-5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
                       <span className="text-xs sm:text-sm font-semibold">{type.label}</span>
                     </button>
                   );
@@ -663,10 +671,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 4 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#00B074]">Step 4 — Budget Target</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 4 — Budget Target</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">What is your total budget?</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  TripVerse guarantees your generated itinerary will stay strictly within this limit.
+                  This is a budget target. Generated costs are estimates and may exceed it; verify prices with providers before booking.
                 </p>
               </div>
 
@@ -692,7 +700,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
 
               {/* Budget Display Card */}
               <div className="p-6 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-50 rounded-2xl border border-emerald-200/80 text-center">
-                <span className="badge-caps text-[#00B074] block">
+                <span className="badge-caps text-[#2D5A3D] block">
                   {budgetMode === 'total' ? 'Total Group Budget' : 'Budget Per Person'}
                 </span>
                 <div className="text-4xl sm:text-5xl font-black text-[#0B2545] font-display my-2">
@@ -714,7 +722,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                   step={500}
                   value={budgetAmount}
                   onChange={(e) => setBudgetAmount(Number(e.target.value))}
-                  className="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#00B074]"
+                  className="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#2D5A3D]"
                 />
                 <div className="flex justify-between text-[10px] sm:text-xs font-semibold text-slate-400 gap-1 flex-wrap sm:flex-nowrap">
                   <span className="truncate">{formatCurrency(budgetMode === 'total' ? 3000 : 1500, currency)} (Budget)</span>
@@ -730,7 +738,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 5 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="badge-caps text-[#00B074]">Step 5 — Travel Style</span>
+                <span className="badge-caps text-[#2D5A3D]">Step 5 — Travel Style</span>
                 <h3 className="text-xl sm:text-2xl font-bold font-display text-[#0B2545] mt-1">What experiences excite you?</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
                   Select as many as you like. We will blend attractions according to these vibes.
@@ -747,16 +755,32 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       type="button"
                       onClick={() => togglePreference(opt.id)}
                       className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all min-w-0 ${isSelected
-                          ? 'border-[#00B074] bg-emerald-50 text-slate-900 font-bold shadow-2xs'
-                          : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
+                        ? 'border-[#2D5A3D] bg-emerald-50 text-slate-900 font-bold shadow-2xs'
+                        : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
                         }`}
                     >
-                      <PrefIcon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#00B074]' : 'text-slate-400'}`} />
+                      <PrefIcon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
                       <span className="text-xs sm:text-sm font-semibold truncate min-w-0 flex-1">{opt.label}</span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[#00B074] ml-auto shrink-0" />}
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[#2D5A3D] ml-auto shrink-0" />}
                     </button>
                   );
                 })}
+              </div>
+
+              <div>
+                <label htmlFor="trip-special-requests" className="block text-xs font-bold uppercase text-slate-600 mb-1.5">
+                  What matters most on this trip?
+                </label>
+                <textarea
+                  id="trip-special-requests"
+                  value={specialRequests}
+                  onChange={(event) => setSpecialRequests(event.target.value.slice(0, 500))}
+                  placeholder="For example: quiet places, easy walks for my parents, local vegetarian food, and no packed schedules."
+                  rows={3}
+                  maxLength={500}
+                  className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#2D5A3D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#2D5A3D]/15"
+                />
+                <p className="mt-1 text-right text-[11px] text-slate-400">{specialRequests.length}/500</p>
               </div>
             </div>
           )}
@@ -765,7 +789,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 6 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#00B074]">Step 6 — Transportation Mode</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 6 — Transportation Mode</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">How do you prefer to travel?</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
                   For road trips (Car/Bike), we calculate fuel, tolls, and automatic highway break stops.
@@ -789,11 +813,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       type="button"
                       onClick={() => setTransportMode(t.id as TransportMode)}
                       className={`p-3.5 rounded-2xl border text-left transition-all ${isSelected
-                          ? 'border-[#00B074] bg-emerald-50/70 shadow-xs'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                        ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
                     >
-                      <Icon className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#00B074]' : 'text-slate-400'}`} />
+                      <Icon className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
                       <span className="text-xs sm:text-sm font-bold text-slate-900 block">{t.label}</span>
                       <span className="text-[11px] text-slate-500">{t.desc}</span>
                     </button>
@@ -802,13 +826,13 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
               </div>
 
               <div className="flex items-center gap-3 p-3.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-200/80 rounded-2xl text-xs text-slate-700">
-                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#00B074] flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#2D5A3D] flex items-center justify-center shrink-0">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <strong className="text-slate-900 block font-bold">AI Best Deal Hunter Activated</strong>
+                  <strong className="text-slate-900 block font-bold">Transport planning estimates</strong>
                   <span className="text-slate-500 text-[11px]">
-                    After generating your itinerary, our AI will instantly unlock the #1 best verified deal & promo code for your selected mode of transportation.
+                    Transport options and prices are suggestions, not live offers or verified promo codes. Check schedules, fares, and terms directly with providers.
                   </span>
                 </div>
               </div>
@@ -819,10 +843,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 7 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#00B074]">Step 7 — Accommodation</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 7 — Accommodation</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">Where would you like to stay?</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  All properties are pre-screened for cleanliness, safety ratings, and verified reviews.
+                  This preference helps shape your plan only. TripVerse does not screen, select, or book properties.
                 </p>
               </div>
 
@@ -843,11 +867,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       type="button"
                       onClick={() => setAccommodationType(acc.id as AccommodationType)}
                       className={`p-3.5 rounded-2xl border text-left transition-all ${isSelected
-                          ? 'border-[#00B074] bg-emerald-50/70 shadow-xs'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                        ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
                     >
-                      <Icon className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#00B074]' : 'text-slate-400'}`} />
+                      <Icon className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
                       <span className="text-xs sm:text-sm font-bold text-slate-900 block">{acc.label}</span>
                       <span className="text-[11px] text-slate-500">{acc.desc}</span>
                     </button>
@@ -861,10 +885,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 8 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#00B074]">Step 8 — Dining & Food</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 8 — Dining & Food</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">What are your dietary preferences?</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  We verify kitchen hygiene standards and match local culinary delicacies.
+                  We use this preference to shape suggestions; confirm menus, preparation practices, and hygiene directly with each venue.
                 </p>
               </div>
 
@@ -885,11 +909,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       type="button"
                       onClick={() => setFoodPreference(food.id as FoodPreference)}
                       className={`p-3.5 rounded-2xl border text-left transition-all ${isSelected
-                          ? 'border-[#00B074] bg-emerald-50/70 shadow-xs'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                        ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
                     >
-                      <Icon className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#00B074]' : 'text-slate-400'}`} />
+                      <Icon className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
                       <span className="text-xs sm:text-sm font-bold text-slate-900 block">{food.label}</span>
                       <span className="text-[11px] text-slate-500">{food.desc}</span>
                     </button>
@@ -903,7 +927,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 9 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#00B074]">Step 9 — Core Priority</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 9 — Core Priority</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">What matters most to you?</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
                   Select your top priority. The AI algorithm will balance trade-offs in your favor.
@@ -925,13 +949,13 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       type="button"
                       onClick={() => togglePriority(p.id as Priority)}
                       className={`p-4 rounded-2xl border text-left transition-all ${isSelected
-                          ? 'border-[#00B074] bg-emerald-50/70 shadow-xs'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                        ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
-                        <Icon className={`w-5 h-5 ${isSelected ? 'text-[#00B074]' : 'text-slate-400'}`} />
-                        {isSelected && <Check className="w-4 h-4 text-[#00B074]" />}
+                        <Icon className={`w-5 h-5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
+                        {isSelected && <Check className="w-4 h-4 text-[#2D5A3D]" />}
                       </div>
                       <span className="text-sm font-bold text-slate-900 block">{p.label}</span>
                       <span className="text-xs text-slate-500 mt-0.5 block">{p.desc}</span>
@@ -945,14 +969,14 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         </div>
 
         {/* Bottom Navigation Controls */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
           <button
             type="button"
             onClick={handlePrev}
             disabled={currentStep === 1}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-colors ${currentStep === 1
-                ? 'text-slate-300 cursor-not-allowed'
-                : 'text-slate-700 hover:bg-slate-200/70'
+            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${currentStep === 1
+              ? 'text-slate-300 cursor-not-allowed opacity-50'
+              : 'text-slate-700 hover:bg-slate-200/70'
               }`}
           >
             <ArrowLeft className="w-4 h-4" />
@@ -962,7 +986,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           <button
             type="button"
             onClick={handleNext}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer shrink-0"
           >
             {currentStep === totalSteps ? (
               <>

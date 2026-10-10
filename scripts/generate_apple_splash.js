@@ -20,7 +20,7 @@ async function generateAppleSplash() {
       width,
       height,
       channels: 4,
-      background: { r: 11, g: 37, b: 69, alpha: 1 } // #0B2545 Midnight Navy
+      background: { r: 255, g: 255, b: 255, alpha: 1 } // #FFFFFF Pure White
     }
   })
   .composite([

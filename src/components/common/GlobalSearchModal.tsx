@@ -107,8 +107,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     },
     {
       id: 'live_nav',
-      label: 'Start Turn-by-Turn GPS Co-Pilot',
-      desc: 'Real-time highway pitstop & speed HUD',
+      label: 'Get Directions',
+      desc: 'Open your route in an external navigation app',
       icon: Navigation,
       iconColor: 'text-cyan-500',
       action: () => {
@@ -254,7 +254,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                         <p className="text-[11px] text-slate-500 truncate">{dest.tagline}</p>
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold text-[#00B074] shrink-0">
+                    <span className="text-[11px] font-bold text-[#2D5A3D] shrink-0">
                       ★ {dest.rating}
                     </span>
                   </button>
@@ -281,7 +281,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                     className="w-full flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-200 text-left transition-all cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B074] flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#2D5A3D] flex items-center justify-center shrink-0">
                         <MapPin className="w-4 h-4" />
                       </div>
                       <div className="min-w-0 flex-1">

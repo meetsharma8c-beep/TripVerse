@@ -171,7 +171,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
                   className={`p-2.5 rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer ${
                     isSaved 
                       ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
-                      : 'bg-white/90 text-slate-700 hover:bg-white hover:text-[#00B074]'
+                      : 'bg-white/90 text-slate-700 hover:bg-white hover:text-[#2D5A3D]'
                   }`}
                   title={isSaved ? 'Remove from Wishlist' : 'Save to Wishlist'}
                 >
@@ -182,7 +182,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
               <button
                 type="button"
                 onClick={handleShare}
-                className="p-2.5 rounded-full bg-white/90 text-slate-700 hover:bg-white hover:text-[#00B074] backdrop-blur-md transition-all shadow-md cursor-pointer"
+                className="p-2.5 rounded-full bg-white/90 text-slate-700 hover:bg-white hover:text-[#2D5A3D] backdrop-blur-md transition-all shadow-md cursor-pointer"
                 title="Share Destination"
               >
                 {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
@@ -221,7 +221,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
           <div className="grid grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/90 text-center">
             <div className="min-w-0">
               <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Starting Budget</span>
-              <span className="text-sm sm:text-base font-black text-[#00B074] font-display truncate block">
+              <span className="text-sm sm:text-base font-black text-[#2D5A3D] font-display truncate block">
                 {formatCurrency(destination.startBudget, currency)}
               </span>
               <span className="text-[10px] text-slate-500">per traveler</span>
@@ -258,7 +258,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
           <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <Wallet className="w-3.5 h-3.5 text-[#00B074]" />
+                <Wallet className="w-3.5 h-3.5 text-[#2D5A3D]" />
                 <span>Price Transparency & Inclusions</span>
               </span>
               <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
@@ -293,7 +293,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
             <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-xs text-emerald-950">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="font-medium text-[11px]">
-                <strong className="font-bold text-emerald-900">TripVerse Trust Promise:</strong> Free 24h cancellation on partner bookings + guaranteed baseline rates.
+                TripVerse does not make or guarantee bookings. Prices and cancellation terms must be confirmed with the provider.
               </span>
             </div>
           </div>
@@ -315,7 +315,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
                   key={idx}
                   className="p-3 rounded-2xl bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-xs transition-all flex items-center gap-2.5"
                 >
-                  <div className="w-7 h-7 rounded-xl bg-emerald-50 text-[#00B074] flex items-center justify-center shrink-0 font-bold text-xs">
+                  <div className="w-7 h-7 rounded-xl bg-emerald-50 text-[#2D5A3D] flex items-center justify-center shrink-0 font-bold text-xs">
                     {idx + 1}
                   </div>
                   <span className="text-xs font-bold text-slate-700 truncate">
@@ -329,7 +329,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
           {/* Highway & Road Trip Route Access */}
           <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-50 to-emerald-50/40 border border-slate-200 space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-[#0B2545]">
-              <Car className="w-4 h-4 text-[#00B074] shrink-0" />
+              <Car className="w-4 h-4 text-[#2D5A3D] shrink-0" />
               <span>Highway Route & Connectivity</span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed text-pretty">

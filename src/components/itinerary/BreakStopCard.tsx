@@ -1,9 +1,7 @@
 import React from 'react';
 import { BreakStop } from '../../types/trip';
 import { 
-  Star, 
   MapPin, 
-  Clock, 
   Check,
   X,
   Utensils, 
@@ -14,7 +12,6 @@ import {
   ShieldCheck, 
   Plus, 
   CheckCircle2,
-  Trash2,
   ExternalLink
 } from 'lucide-react';
 
@@ -29,34 +26,47 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
   isAdded,
   onToggleAdd
 }) => {
-  const facilityItems = [
+  const amenitiesItems = [
     { label: 'Food & Dining', available: breakStop.foodAvailable, icon: Utensils },
-    { label: 'Clean Washroom', available: breakStop.washroomAvailable, icon: Check },
-    { label: 'Secure Parking', available: breakStop.parkingAvailable, icon: Car },
+    { label: 'Washroom', available: breakStop.washroomAvailable, icon: Check },
+    { label: 'Parking', available: breakStop.parkingAvailable, icon: Car },
     { label: 'Rest Area', available: breakStop.restAreaAvailable, icon: Check },
-    { label: 'Fuel Station', available: breakStop.fuelStationAvailable, icon: Fuel },
-    { label: 'EV Fast Charge', available: breakStop.evChargingAvailable, icon: Zap },
-    { label: 'Medical Facility', available: breakStop.medicalFacilityAvailable, icon: ShieldCheck },
   ];
+  const section = breakStop.section ||
+    (breakStop.evChargingAvailable ? 'ev_charging' : breakStop.fuelStationAvailable ? 'fuel' : breakStop.medicalFacilityAvailable ? 'medical' : 'amenities');
+  const facilityItems = section === 'fuel'
+    ? [{ label: 'Fuel Station', available: breakStop.fuelStationAvailable, icon: Fuel }]
+    : section === 'ev_charging'
+      ? [{ label: 'EV Charging', available: breakStop.evChargingAvailable, icon: Zap }]
+      : section === 'medical'
+        ? [{ label: 'Medical Facility', available: breakStop.medicalFacilityAvailable, icon: ShieldCheck }]
+        : amenitiesItems;
+  const isGeoapifyListing = breakStop.source === 'geoapify_places';
+  const sectionLabel = section === 'fuel'
+    ? 'Fuel Station'
+    : section === 'ev_charging'
+      ? 'EV Charging'
+      : section === 'medical'
+        ? 'Medical Facility'
+        : 'Food, Washroom, Parking & Rest Area';
 
   return (
     <div className={`rounded-3xl border overflow-hidden transition-all duration-300 ${
       isAdded 
-        ? 'bg-white border-emerald-300 shadow-md ring-2 ring-emerald-500/20' 
-        : 'bg-white border-slate-200/90 hover:border-slate-300 shadow-xs'
+        ? 'bg-white border-[#2D5A3D] shadow-md ring-2 ring-[#2D5A3D]/20' 
+        : 'bg-white border-[#E2EBE1] hover:border-[#8EA78D] shadow-xs'
     }`}>
       
       {/* Top Banner Tag */}
-      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-5 py-2.5 border-b border-emerald-100 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-1.5 font-bold text-emerald-800">
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-          <span>TripVerse Recommended Break Stop</span>
+      <div className="bg-[#E8EFE7] px-5 py-2.5 border-b border-[#8EA78D]/30 flex items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-1.5 font-bold text-[#2D5A3D] min-w-0">
+          <Sparkles className="w-3.5 h-3.5 text-[#2D5A3D]" />
+          <span className="truncate">{sectionLabel}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs bg-emerald-100/60 px-2 py-0.5 rounded-md">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Highway Verified</span>
-        </div>
+        <span className="text-[10px] text-[#5A7362] shrink-0 font-medium">
+          {isGeoapifyListing ? 'Geoapify / OpenStreetMap' : 'Verified stop'}
+        </span>
       </div>
 
       <div className="p-5 sm:p-6 space-y-4">
@@ -64,26 +74,26 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
         {/* Title & Timing */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h3 className="text-base sm:text-lg font-display font-bold text-[#0B2545] leading-snug">{breakStop.name}</h3>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed text-pretty">{breakStop.description}</p>
+            <h3 className="text-base sm:text-lg font-display font-bold text-[#152A1C] leading-snug">{breakStop.name}</h3>
+            <p className="text-xs sm:text-sm text-[#5A7362] mt-1 leading-relaxed text-pretty">{breakStop.description}</p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto bg-slate-50 sm:bg-transparent px-3 py-1.5 sm:px-0 sm:py-0 rounded-xl sm:rounded-none border sm:border-0 border-slate-100">
+          <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto bg-[#F8FAF7] sm:bg-transparent px-3 py-1.5 sm:px-0 sm:py-0 rounded-xl sm:rounded-none border sm:border-0 border-[#E2EBE1]">
             <div className="text-left sm:text-right">
-              <span className="badge-caps text-slate-400 block">Detour</span>
-              <span className="text-xs font-bold text-slate-800 font-display">{breakStop.detourDistanceKm} km</span>
+              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Off route</span>
+              <span className="text-xs font-bold text-[#152A1C] font-display">{breakStop.detourDistanceKm} km</span>
             </div>
-            <div className="text-left sm:text-right border-l border-slate-200 pl-3">
-              <span className="badge-caps text-slate-400 block">Suggested Stop</span>
-              <span className="text-xs font-bold text-emerald-600 font-display">{breakStop.estimatedStopMinutes} mins</span>
+            <div className="text-left sm:text-right border-l border-[#E2EBE1] pl-3">
+              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Suggested Stop</span>
+              <span className="text-xs font-bold text-[#2D5A3D] font-display">{breakStop.estimatedStopMinutes} mins</span>
             </div>
           </div>
         </div>
 
         {/* Facilities Grid */}
         <div>
-          <span className="badge-caps text-slate-400 block mb-2">
-            Verified On-Site Facilities
+          <span className="text-[10px] uppercase font-bold text-[#8EA78D] block mb-2">
+            {isGeoapifyListing ? 'Categories listed by map provider · verify on site' : 'Verified route facilities'}
           </span>
 
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -91,60 +101,57 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
               <span
                 key={f.label}
                 className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-xl font-semibold border whitespace-nowrap ${
-                  f.available 
-                    ? 'bg-emerald-50/80 border-emerald-200 text-emerald-800' 
-                    : 'bg-slate-50 border-slate-200 text-slate-400 line-through opacity-60'
+                  (isGeoapifyListing && f.available)
+                    ? 'bg-[#E8EFE7] border-[#8EA78D]/40 text-[#2D5A3D]' 
+                    : 'bg-[#F8FAF7] border-[#E2EBE1] text-[#5A7362]'
                 }`}
               >
-                {f.available ? <Check className="w-3 h-3 text-emerald-600 shrink-0" /> : <X className="w-3 h-3 text-slate-400 shrink-0" />} <span>{f.label}</span>
+                {(isGeoapifyListing && f.available) ? <Check className="w-3 h-3 text-[#2D5A3D] shrink-0" /> : <X className="w-3 h-3 text-slate-400 shrink-0" />}
+                <span>{isGeoapifyListing && f.available ? f.label : `${f.label} · Unverified`}</span>
               </span>
             ))}
           </div>
         </div>
 
-        {/* AI Recommendation Reason (USP Section 24) */}
-        <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/70 border-l-4 border-l-emerald-500 text-xs sm:text-sm text-slate-600 leading-relaxed text-pretty">
-          <strong className="text-slate-800 font-bold block sm:inline mr-1">Why TripVerse recommended this:</strong>
+        {/* AI Recommendation Reason */}
+        <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE1] border-l-4 border-l-[#2D5A3D] text-xs sm:text-sm text-[#5A7362] leading-relaxed text-pretty">
+          <strong className="text-[#152A1C] font-bold block sm:inline mr-1">Pitstop details:</strong>
           <span>{breakStop.recommendationReason}</span>
         </div>
 
         {/* Bottom Bar: Action Buttons */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2 flex-wrap">
+        <div className="flex items-center justify-between pt-2 border-t border-[#E2EBE1] gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">
-              {breakStop.openingHours}
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-              <ShieldCheck className="w-3 h-3 text-emerald-600" />
-              Verified Plaza
+            <span className="text-xs font-semibold text-[#5A7362]">
+              {isGeoapifyListing ? `${breakStop.rating ? `${breakStop.rating.toFixed(1)}★${breakStop.reviewCount ? ` (${breakStop.reviewCount} reviews)` : ''} · ` : ''}${breakStop.openingHours}` : 'Highway route facility'}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             {/* Direct Google Maps Navigation */}
             <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${breakStop.coordinates.lat},${breakStop.coordinates.lng}`}
+              href={breakStop.mapUrl || `https://www.google.com/maps/dir/?api=1&destination=${breakStop.coordinates.lat},${breakStop.coordinates.lng}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-emerald-700 bg-slate-100 hover:bg-emerald-50 px-3 py-2 rounded-xl border border-slate-200 transition-colors shadow-xs"
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#152A1C] hover:text-[#2D5A3D] bg-white hover:bg-[#E8EFE7] px-3 py-2 rounded-xl border border-[#E2EBE1] transition-colors shadow-2xs"
               title="Open turn-by-turn navigation in Google Maps"
             >
-              <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <MapPin className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
               <span>Navigate</span>
-              <ExternalLink className="w-3 h-3 text-slate-400" />
+              <ExternalLink className="w-3 h-3 text-[#8EA78D]" />
             </a>
 
             <button
               onClick={() => onToggleAdd(breakStop)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-xs ${
                 isAdded
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-red-50 hover:text-red-700 hover:border-red-300'
-                  : 'bg-trip-gradient hover:bg-trip-gradient-hover text-white'
+                  ? 'bg-[#E8EFE7] text-[#2D5A3D] border border-[#8EA78D]/40 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300'
+                  : 'bg-[#2D5A3D] hover:bg-[#234730] text-white'
               }`}
             >
               {isAdded ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D]" />
                   <span>Added</span>
                 </>
               ) : (

@@ -12,7 +12,6 @@ import {
   Download, 
   Maximize2, 
   Image as ImageIcon,
-  Tag,
   Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -151,7 +150,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
         particleCount: 40,
         spread: 50,
         origin: { y: 0.6 },
-        colors: ['#00B074', '#00D084', '#F59E0B']
+        colors: ['#2D5A3D', '#386B49', '#F59E0B']
       });
     } catch {
       // safe fallback
@@ -190,7 +189,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between gap-4 bg-gradient-to-r from-emerald-50/50 via-teal-50/20 to-white">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-100 text-[#00B074] flex items-center justify-center shrink-0 shadow-xs">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-100 text-[#2D5A3D] flex items-center justify-center shrink-0 shadow-xs">
               <Camera className="w-6 h-6" />
             </div>
             <div className="min-w-0">
@@ -234,7 +233,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
               onClick={() => setSelectedDayFilter('all')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                 selectedDayFilter === 'all'
-                  ? 'bg-[#00B074] text-white shadow-xs'
+                  ? 'bg-[#2D5A3D] text-white shadow-xs'
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
               }`}
             >
@@ -248,7 +247,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
                   onClick={() => setSelectedDayFilter(dayNum)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                     selectedDayFilter === dayNum
-                      ? 'bg-[#00B074] text-white shadow-xs'
+                      ? 'bg-[#2D5A3D] text-white shadow-xs'
                       : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                   }`}
                 >
@@ -272,7 +271,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
             <div className="p-5 rounded-3xl bg-emerald-50/70 border border-emerald-200 space-y-5 animate-in slide-in-from-top-4 duration-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Camera className="w-4 h-4 text-[#00B074]" />
+                  <Camera className="w-4 h-4 text-[#2D5A3D]" />
                   <span>Attach a New Travel Photo</span>
                 </h3>
                 <span className="text-xs text-slate-500">Pick preset or upload custom image</span>
@@ -283,7 +282,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
                 <div className="flex flex-col sm:flex-row gap-3">
                   {/* File Upload Button */}
                   <label className="flex-1 flex flex-col items-center justify-center p-4 border-2 border-dashed border-emerald-300 rounded-2xl bg-white hover:bg-emerald-50/50 cursor-pointer transition-colors text-center">
-                    <ImageIcon className="w-6 h-6 text-[#00B074] mb-1" />
+                    <ImageIcon className="w-6 h-6 text-[#2D5A3D] mb-1" />
                     <span className="text-xs font-bold text-slate-800">Upload Photo from Device</span>
                     <span className="text-[10px] text-slate-500 mt-0.5">PNG, JPG, WEBP up to 5MB</span>
                     <input
@@ -312,7 +311,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
                 {/* Preset suggestions */}
                 <div className="space-y-1.5">
                   <span className="text-xs font-semibold text-slate-600 block">
-                    Or select a verified scenic preset:
+                    Or select a sample scenic image:
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                     {PHOTO_PRESETS.map((preset, idx) => (
@@ -326,7 +325,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
                         }}
                         className={`group relative h-20 rounded-xl overflow-hidden border transition-all text-left ${
                           photoUrl === preset.url
-                            ? 'ring-2 ring-[#00B074] border-transparent'
+                            ? 'ring-2 ring-[#2D5A3D] border-transparent'
                             : 'border-slate-200 hover:border-emerald-300'
                         }`}
                       >
@@ -351,7 +350,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
                     placeholder="e.g., Golden sunset overlooking the palace lake"
                     value={caption}
                     onChange={(e) => setCaption(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#00B074]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#2D5A3D]"
                   />
                 </div>
 
@@ -360,7 +359,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
                   <select
                     value={selectedDay}
                     onChange={(e) => setSelectedDay(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#00B074]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#2D5A3D]"
                   >
                     {daysArray.map(d => (
                       <option key={d} value={d}>Day {d}</option>
@@ -375,14 +374,14 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
                     placeholder="e.g., Lake Pichola or Highway KM 120"
                     value={locationTag}
                     onChange={(e) => setLocationTag(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#00B074]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#2D5A3D]"
                   />
                 </div>
 
                 <div className="flex items-end">
                   <button
                     type="submit"
-                    className="w-full py-2.5 rounded-xl bg-[#00B074] hover:bg-[#009863] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                    className="w-full py-2.5 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
                   >
                     Save to Journal
                   </button>
@@ -394,7 +393,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
           {/* PHOTO GRID */}
           {filteredPhotos.length === 0 ? (
             <div className="text-center py-16 px-4 bg-slate-50/80 rounded-3xl border border-dashed border-slate-300 space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-[#00B074] flex items-center justify-center mx-auto">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-[#2D5A3D] flex items-center justify-center mx-auto">
                 <Camera className="w-7 h-7" />
               </div>
               <h3 className="text-base font-bold text-slate-800">
@@ -405,7 +404,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
               </p>
               <button
                 onClick={() => setIsAddingPhoto(true)}
-                className="px-4 py-2 rounded-xl bg-[#00B074] text-white font-bold text-xs shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-[#2D5A3D] text-white font-bold text-xs shadow-xs cursor-pointer inline-flex items-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add Your First Photo</span>
@@ -478,7 +477,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
                       <Calendar className="w-3.5 h-3.5 text-slate-400" />
                       <span>{new Date(photo.takenAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
                     </span>
-                    <span className="text-[11px] font-semibold text-[#00B074] group-hover:underline">
+                    <span className="text-[11px] font-semibold text-[#2D5A3D] group-hover:underline">
                       View full photo →
                     </span>
                   </div>

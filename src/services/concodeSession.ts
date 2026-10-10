@@ -1,6 +1,7 @@
 import { StructuredItinerary, StructuredItineraryDay, Trip } from '../types/trip';
 
 export interface ConcodeSessionState {
+  sessionId?: string;
   destination?: string;
   destinationName?: string;
   durationDays?: number;

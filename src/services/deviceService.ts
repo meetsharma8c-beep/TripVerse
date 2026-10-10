@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
@@ -67,9 +68,41 @@ export function getDeviceInfo(): DeviceInfo {
   };
 }
 
+export function openExternalUrl(url: string): void {
+  const targetUrl = new URL(url, window.location.href);
+  if (!['http:', 'https:'].includes(targetUrl.protocol)) {
+    console.error('[TripVerse] Refusing to open an unsupported external URL:', url);
+    return;
+  }
+
+  if (Capacitor.isNativePlatform()) {
+    Browser.open({ url: targetUrl.toString() }).catch((error) => {
+      console.error('[TripVerse] Could not open external link:', error);
+      window.alert('Could not open this provider link. Please try again or copy the link into your browser.');
+    });
+    return;
+  }
+
+  window.open(targetUrl.toString(), '_blank', 'noopener,noreferrer');
+}
+
 export function initDeviceServices(onBackPress?: () => boolean) {
   // 1. Native Capacitor initialization
   if (Capacitor.isNativePlatform()) {
+    document.addEventListener('click', (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const link = target.closest<HTMLAnchorElement>('a[target="_blank"]');
+      if (!link) return;
+
+      const url = new URL(link.href, window.location.href);
+      if (!['http:', 'https:'].includes(url.protocol) || url.origin === window.location.origin) return;
+
+      event.preventDefault();
+      openExternalUrl(url.toString());
+    }, true);
+
     try {
       StatusBar.setStyle({ style: Style.Light }).catch(() => {});
       StatusBar.setBackgroundColor({ color: '#FFFFFF' }).catch(() => {});
@@ -192,4 +225,3 @@ export function triggerHaptic(type: 'light' | 'medium' | 'heavy' | 'success' | '
     // Ignore unsupported environments
   }
 }
-

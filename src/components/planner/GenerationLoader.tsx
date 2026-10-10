@@ -18,29 +18,29 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
   const getModeStepText = (mode: TransportMode) => {
     switch (mode) {
       case 'flight':
-        return 'Scanning airline carriers for non-stop super saver flight deals';
+        return 'Preparing flight budget estimate';
       case 'train':
-        return 'Checking Vande Bharat & Express trains for confirmed berth deals';
+        return 'Preparing train budget estimate';
       case 'bus':
-        return 'Finding luxury AC sleeper buses with verified highway lounges';
+        return 'Preparing a bus travel estimate';
       case 'car':
-        return 'Locking in self-drive SUV discounts, fuel cashback & FASTag passes';
+        return 'Estimating your driving itinerary';
       case 'bike':
-        return 'Securing touring motorcycle rentals with helmet & luggage gear packs';
+        return 'Preparing a motorcycle trip estimate';
       default:
-        return 'Comparing multi-modal transit options & exclusive booking deals';
+        return 'Preparing travel estimates';
     }
   };
 
   const steps = [
-    'Understanding your budget constraints',
+    'Connecting to ConCode AI Brain on GPU...',
+    'Analyzing your traveler choices & constraints...',
     getModeStepText(transportMode),
-    'Securing verified deals and maximum promo discounts',
-    'Calculating accurate travel & transit times',
-    'Finding top-rated verified accommodations',
-    'Curating regional food & culinary stops',
-    'Selecting iconic & hidden attractions',
-    'Optimizing itinerary for maximum comfort & value'
+    'Customizing food trails & dining preferences...',
+    'Curating signature landmarks & viewpoints...',
+    'Scheduling day-by-day timing & activities...',
+    'Optimizing budget allocation across your trip...',
+    'Finalizing personalized journey blueprint...'
   ];
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -58,7 +58,7 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
               particleCount: 80,
               spread: 70,
               origin: { y: 0.6 },
-              colors: ['#00D084', '#00B074', '#0B2545', '#38BDF8']
+              colors: ['#386B49', '#2D5A3D', '#0B2545', '#38BDF8']
             });
           } catch (e) {
             // ignore if confetti fails
@@ -86,11 +86,11 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
         </div>
 
         <h3 className="text-xl sm:text-2xl font-display font-black text-[#0B2545] tracking-tight">
-          TripVerse AI is creating your journey...
+          ConCode AI is creating your journey...
         </h3>
         
         <p className="text-xs sm:text-sm text-slate-500 mt-1 mb-6">
-          Tailoring custom experience for <span className="font-bold text-slate-800">{destinationName}</span>
+          Tailoring genuine experience for <span className="font-bold text-slate-800">{destinationName}</span>
         </p>
 
         {/* Progress Bar */}
@@ -121,7 +121,7 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
                 {isFinished ? (
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                 ) : isCurrent ? (
-                  <div className="w-4 h-4 rounded-full border-2 border-[#00B074] border-t-transparent animate-spin flex-shrink-0" />
+                  <div className="w-4 h-4 rounded-full border-2 border-[#2D5A3D] border-t-transparent animate-spin flex-shrink-0" />
                 ) : (
                   <div className="w-4 h-4 rounded-full border border-slate-300 flex-shrink-0" />
                 )}

@@ -85,7 +85,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-[#00B074] flex items-center justify-center border border-emerald-500/20">
+            <div className="w-8 h-8 rounded-xl bg-[#2D5A3D]/10 text-[#2D5A3D] flex items-center justify-center border border-emerald-500/20">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
@@ -107,7 +107,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
             onClick={() => setActiveTab('privacy')}
             className={`pb-3 px-3 text-xs font-bold transition-all flex items-center gap-1.5 border-b-2 whitespace-nowrap ${
               activeTab === 'privacy'
-                ? 'border-[#00B074] text-[#00B074]'
+                ? 'border-[#2D5A3D] text-[#2D5A3D]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -119,7 +119,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
             onClick={() => setActiveTab('terms')}
             className={`pb-3 px-3 text-xs font-bold transition-all flex items-center gap-1.5 border-b-2 whitespace-nowrap ${
               activeTab === 'terms'
-                ? 'border-[#00B074] text-[#00B074]'
+                ? 'border-[#2D5A3D] text-[#2D5A3D]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -131,7 +131,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
             onClick={() => setActiveTab('advisory')}
             className={`pb-3 px-3 text-xs font-bold transition-all flex items-center gap-1.5 border-b-2 whitespace-nowrap ${
               activeTab === 'advisory'
-                ? 'border-[#00B074] text-[#00B074]'
+                ? 'border-[#2D5A3D] text-[#2D5A3D]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -143,7 +143,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
             onClick={() => setActiveTab('feedback')}
             className={`pb-3 px-3 text-xs font-bold transition-all flex items-center gap-1.5 border-b-2 whitespace-nowrap ${
               activeTab === 'feedback'
-                ? 'border-[#00B074] text-[#00B074]'
+                ? 'border-[#2D5A3D] text-[#2D5A3D]'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -159,7 +159,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
           {activeTab === 'privacy' && (
             <div className="space-y-4">
               <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-900 flex items-start gap-2.5">
-                <Lock className="w-4 h-4 text-[#00B074] shrink-0 mt-0.5" />
+                <Lock className="w-4 h-4 text-[#2D5A3D] shrink-0 mt-0.5" />
                 <p className="text-[11px] leading-relaxed">
                   <strong>Local-First Privacy Architecture:</strong> TripVerse encrypts and stores your created itineraries, saved spots, and offline documents directly in your browser's private indexed sandbox. We do not sell or broker traveler data.
                 </p>
@@ -314,7 +314,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 focus:outline-hidden focus:border-[#00B074]"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 focus:outline-hidden focus:border-[#2D5A3D]"
                       >
                         <option value="suggestion">Feature Suggestion</option>
                         <option value="bug">Report a Bug / Glitch</option>
@@ -333,7 +333,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
                         value={feedbackEmail}
                         onChange={(e) => setFeedbackEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 focus:outline-hidden focus:border-[#00B074]"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 focus:outline-hidden focus:border-[#2D5A3D]"
                       />
                     </div>
                   </div>
@@ -348,7 +348,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="Tell us what you liked, what felt rough, or highway stops you'd like added..."
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 focus:outline-hidden focus:border-[#00B074] resize-none"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 focus:outline-hidden focus:border-[#2D5A3D] resize-none"
                     />
                   </div>
 
@@ -369,7 +369,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
         {/* Modal Footer */}
         <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-[11px] text-slate-500 shrink-0">
           <div className="flex items-center gap-1.5">
-            <Compass className="w-3.5 h-3.5 text-[#00B074]" />
+            <Compass className="w-3.5 h-3.5 text-[#2D5A3D]" />
             <span>TripVerse AI • Plan the journey, not just the destination.</span>
           </div>
           <button

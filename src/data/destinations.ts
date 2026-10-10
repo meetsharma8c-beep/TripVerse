@@ -2,6 +2,51 @@ import { Destination } from '../types/trip';
 
 export const POPULAR_DESTINATIONS: Destination[] = [
   {
+    id: 'bali',
+    name: 'Bali',
+    state: 'Indonesia',
+    category: 'nature',
+    tagline: 'Islands • Temples • Emerald Terraces',
+    description: 'Tropical paradise known for lush terraced rice fields, ancient volcanic temples, tranquil beaches, and vibrant cultural heritage.',
+    image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80',
+    startBudget: 6500,
+    rating: 4.9,
+    recommendedDuration: '7 Days',
+    bestTime: 'Apr - Oct',
+    popularActivities: ['Uluwatu Sunset Temple', 'Tegallalang Rice Terrace', 'Nusa Penida Boat Tour', 'Ubud Art Market'],
+    coordinates: { lat: -8.4095, lng: 115.1889 }
+  },
+  {
+    id: 'kyoto',
+    name: 'Kyoto',
+    state: 'Japan',
+    category: 'heritage',
+    tagline: 'Ancient Shrines • Bamboo Groves • Zen Gardens',
+    description: "Japan's cultural heart, adorned with thousands of classical Buddhist temples, serene Shinto shrines, traditional tea houses, and tranquil gardens.",
+    image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80',
+    startBudget: 7200,
+    rating: 4.9,
+    recommendedDuration: '5 Days',
+    bestTime: 'Mar - May & Oct - Nov',
+    popularActivities: ['Fushimi Inari Taisha', 'Arashiyama Bamboo Grove', 'Kinkaku-ji Golden Pavilion', 'Gion Evening Walk'],
+    coordinates: { lat: 35.0116, lng: 135.7681 }
+  },
+  {
+    id: 'swiss-alps',
+    name: 'Swiss Alps',
+    state: 'Switzerland',
+    category: 'mountain',
+    tagline: 'Snow Peaks • Glacier Express • Alpine Lakes',
+    description: 'Majestic mountain realm offering dramatic peaks like the Matterhorn, scenic cogwheel trains, sparkling glacial lakes, and charming chalets.',
+    image: 'https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=1200&q=80',
+    startBudget: 8900,
+    rating: 4.9,
+    recommendedDuration: '6 Days',
+    bestTime: 'Jun - Sep & Dec - Mar',
+    popularActivities: ['Glacier Express Journey', 'Jungfraujoch Top of Europe', 'Matterhorn Viewpoint', 'Lake Geneva Cruise'],
+    coordinates: { lat: 46.5590, lng: 8.5609 }
+  },
+  {
     id: 'udaipur',
     name: 'Udaipur',
     state: 'Rajasthan',

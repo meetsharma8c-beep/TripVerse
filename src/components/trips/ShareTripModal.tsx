@@ -71,7 +71,7 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-2">
-            <Share2 className="w-4 h-4 text-[#00B074]" />
+            <Share2 className="w-4 h-4 text-[#2D5A3D]" />
             <h3 className="font-bold text-sm text-[#0B2545]">Share Trip Itinerary</h3>
           </div>
           <button
@@ -85,7 +85,7 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
         {/* Shareable Card Canvas Preview */}
         <div className="p-6 space-y-5">
           
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#0B2545] via-[#102E54] to-[#00B074] text-white p-6 shadow-xl space-y-4">
+          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#0B2545] via-[#102E54] to-[#2D5A3D] text-white p-6 shadow-xl space-y-4">
             
             {/* Brand Watermark */}
             <div className="flex items-center justify-between">
@@ -139,7 +139,7 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
                     </span>
                   ))
                 ) : (
-                  <span>• Verified scenic route from {trip.origin || 'origin'} to {trip.destination} with live pitstop tracking</span>
+                  <span>• Suggested route from {trip.origin || 'origin'} to {trip.destination}; verify directions and place details in your maps app</span>
                 )}
               </p>
             </div>
@@ -194,7 +194,7 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
                 onClick={handleCopyLink}
                 className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
                   copied
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-[#2D5A3D] text-white'
                     : 'bg-slate-900 text-white hover:bg-slate-800 active:scale-95 shadow-xs'
                 }`}
               >

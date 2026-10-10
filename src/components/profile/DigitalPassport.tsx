@@ -24,7 +24,7 @@ import {
   Leaf
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { triggerHaptic } from '../../services/deviceService';
+import { openExternalUrl, triggerHaptic } from '../../services/deviceService';
 
 interface IndianRegion {
   name: string;
@@ -125,7 +125,7 @@ export const DigitalPassport: React.FC = () => {
           particleCount: 50,
           spread: 60,
           origin: { y: 0.7 },
-          colors: ['#00B074', '#38BDF8', '#F59E0B']
+          colors: ['#2D5A3D', '#38BDF8', '#F59E0B']
         });
       } catch (e) {}
     }
@@ -198,7 +198,7 @@ export const DigitalPassport: React.FC = () => {
       triggerHaptic('light');
     }
     const wa = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-    window.open(wa, '_blank');
+    openExternalUrl(wa);
   };
 
   return (
@@ -208,7 +208,7 @@ export const DigitalPassport: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="badge-caps text-[#00B074]">Gamified Travel Ledger</span>
+            <span className="badge-caps text-[#2D5A3D]">Gamified Travel Ledger</span>
             <span className="text-xs font-semibold text-slate-300">•</span>
             <span className="text-xs font-medium text-slate-500">Official Indian Travel Log</span>
           </div>
@@ -242,7 +242,7 @@ export const DigitalPassport: React.FC = () => {
           </div>
           <div className="w-full bg-emerald-200/80 h-2 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-[#00B074] rounded-full transition-all duration-500"
+              className="h-full bg-[#2D5A3D] rounded-full transition-all duration-500"
               style={{ width: `${percentUnlocked}%` }}
             />
           </div>
@@ -269,7 +269,7 @@ export const DigitalPassport: React.FC = () => {
           <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider block">
             Eco-Traveler Score
           </span>
-          <div className="text-2xl sm:text-3xl font-serif font-bold text-[#00B074]">
+          <div className="text-2xl sm:text-3xl font-serif font-bold text-[#2D5A3D]">
             94 / 100
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-slate-600 pt-1">
@@ -329,7 +329,7 @@ export const DigitalPassport: React.FC = () => {
                       </div>
 
                       <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                        isVisited ? 'bg-[#00B074] text-white' : 'border border-slate-300'
+                        isVisited ? 'bg-[#2D5A3D] text-white' : 'border border-slate-300'
                       }`}>
                         {isVisited && <Check className="w-3 h-3 stroke-[3]" />}
                       </div>

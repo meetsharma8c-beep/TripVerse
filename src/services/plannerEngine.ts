@@ -1,6 +1,5 @@
-import { Trip, BreakStop, DayPlan, RouteType, TravelPreference, Coordinates, Destination } from '../types/trip';
+import { Trip, DayPlan, RouteType, TravelPreference, Coordinates, Destination } from '../types/trip';
 import { POPULAR_DESTINATIONS } from '../data/destinations';
-import { HIGHWAY_BREAK_STOPS } from '../data/highwayFacilities';
 import { synthesizeDestination, resolveDestinationImage } from '../utils/destinationImages';
 import { generateTransportDeals } from './dealService';
 import { resolvePreciseLocationSync, PreciseLocation } from './locationService';
@@ -15,6 +14,7 @@ export interface PlannerInput {
   budgetMode: 'per_person' | 'total';
   budgetAmount: number;
   preferences: TravelPreference[];
+  specialRequests?: string;
   transportMode: any;
   accommodationType: any;
   foodPreference: any;
@@ -227,7 +227,7 @@ export function generateAITrip(input: PlannerInput): Trip {
   // Exact catalog match only if user typed exact name; otherwise synthesize to keep spot name
   let matchedDest: Destination | undefined = POPULAR_DESTINATIONS.find(
     d => d.name.toLowerCase() === rawDestName.toLowerCase() ||
-         d.id === preciseLoc.id
+      d.id === preciseLoc.id
   );
 
   if (!matchedDest) {
@@ -325,7 +325,7 @@ export function generateAITrip(input: PlannerInput): Trip {
             estimatedCost: 0,
             travelTimeMin: 0,
             distanceKm: 0,
-            description: `Morning departure towards ${spotName}. Navigation, FASTag and route waypoints cached.`,
+            description: `Suggested departure towards ${spotName}. Check a live navigation app for current routing and traffic.`,
             coordinates: originCoords,
             tag: 'Start Point'
           },
@@ -333,13 +333,13 @@ export function generateAITrip(input: PlannerInput): Trip {
             id: `act-1-bs`,
             dayNumber: 1,
             time: '10:00 AM',
-            title: 'Highway Oasis Pitstop & Refreshment',
+            title: 'Plan a rest break',
             type: 'breakstop',
-            location: `${spotName} Highway Expressway Rest Area (4.8 / 5)`,
+            location: 'Along the route — choose a suitable stop',
             estimatedCost: Math.round(250 * input.travelersCount),
             travelTimeMin: Math.round(routeHours * 30),
             distanceKm: Math.round(routeDistKm * 0.5),
-            description: `Fresh breakfast (${cuisine.breakfast.split('&')[0].trim()}), sanitized washroom halt, and fuel check.`,
+            description: 'Suggested break timing only; no rest stop or facilities have been confirmed yet.',
             coordinates: {
               lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.5,
               lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.5
@@ -350,13 +350,13 @@ export function generateAITrip(input: PlannerInput): Trip {
             id: `act-1-hotel`,
             dayNumber: 1,
             time: '1:00 PM',
-            title: `Arrival in ${spotName} & Check-in`,
+            title: `Arrive in ${spotName} & check in`,
             type: 'hotel',
-            location: `${spotName} Pre-booked Stay (${input.accommodationType} tier)`,
+            location: `${spotName} — accommodation to be selected`,
             estimatedCost: Math.round(stayCost / daysCount),
             travelTimeMin: Math.round(routeHours * 30),
             distanceKm: Math.round(routeDistKm * 0.5),
-            description: `Check into verified stay in ${spotName}. Freshen up and unpack with pleasant surroundings.`,
+            description: `Suggested check-in time in ${spotName}; accommodation is not booked or verified.`,
             coordinates: { lat: destCoords.lat + 0.002, lng: destCoords.lng - 0.002 },
             tag: 'Stay'
           },
@@ -505,11 +505,11 @@ export function generateAITrip(input: PlannerInput): Trip {
             time: '5:30 PM',
             title: 'Evening Highway Chai & Snack Halt',
             type: 'breakstop',
-            location: 'Expressway Highway Rest Area (Clean Washrooms & Fuel)',
+            location: 'Along the route — choose a suitable stop',
             estimatedCost: Math.round(100 * input.travelersCount),
             travelTimeMin: 120,
             distanceKm: Math.round(routeDistKm * 0.5),
-            description: 'Hot tea break, fuel check, and quick leg stretch.',
+            description: 'Suggested break timing only; confirm a suitable stop and its facilities before travel.',
             coordinates: {
               lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.35,
               lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.35
@@ -631,11 +631,59 @@ export function generateAITrip(input: PlannerInput): Trip {
     }
   }
 
+  const draftDays = days.map(day => ({
+    ...day,
+    title: `Day ${day.dayNumber} — ${spotName} trip suggestions`,
+    theme: 'Suggested timing and activities; confirm places and schedules before travel.',
+    activities: day.activities.map(activity => {
+      if (activity.type === 'breakstop') {
+        return {
+          ...activity,
+          title: 'Plan a rest break',
+          location: 'Along the route — choose a suitable stop',
+          description: 'Suggested break timing only; no stop or facilities have been confirmed.',
+          tag: 'Suggested break'
+        };
+      }
+      if (activity.type === 'food') {
+        return {
+          ...activity,
+          title: `Choose a place to eat in ${spotName}`,
+          location: `${spotName} — choose a venue`,
+          description: 'Suggested meal time only; no restaurant or menu has been confirmed.',
+          coordinates: destCoords,
+          tag: 'Dining suggestion'
+        };
+      }
+      if (activity.type === 'hotel') {
+        return {
+          ...activity,
+          title: `Choose accommodation in ${spotName}`,
+          location: `${spotName} — no property selected`,
+          description: 'Suggested check-in time only; accommodation is not selected or booked.',
+          coordinates: destCoords,
+          tag: 'Stay suggestion'
+        };
+      }
+      if (activity.type === 'attraction' || activity.type === 'viewpoint') {
+        return {
+          ...activity,
+          title: `Choose an activity in ${spotName}`,
+          location: `${spotName} — choose a venue`,
+          description: 'Activity idea only; no place has been confirmed.',
+          coordinates: destCoords,
+          tag: 'Activity suggestion'
+        };
+      }
+      return activity;
+    })
+  }));
+
   const routeType: RouteType = input.priorities?.includes('time')
     ? 'fastest'
     : input.priorities?.includes('experience')
-    ? 'scenic'
-    : 'cheapest';
+      ? 'scenic'
+      : 'cheapest';
 
   // Generate best transport deal and alternatives tailored to the selected transport mode
   const { bestDeal, allDeals } = generateTransportDeals({
@@ -648,52 +696,11 @@ export function generateAITrip(input: PlannerInput): Trip {
     priorities: input.priorities
   });
 
-  const isGujaratState = (state === 'Gujarat');
-  const isRajasthanState = (state === 'Rajasthan');
-  const isHimalayanState = (state === 'Himachal Pradesh' || state === 'Uttarakhand');
-
-  const stop1Name = isHimalayanState
-    ? 'Valley View Highway Oasis & Mountain Tea Stop'
-    : isRajasthanState
-    ? 'Royal Highway Midpoint Plaza & Desert Oasis'
-    : isGujaratState
-    ? 'Expressway Food Oasis (Clean Washrooms & Food Court)'
-    : `${spotName} Corridor Midpoint Rest Area`;
-
-  const stop2Name = isHimalayanState
-    ? 'Pine Ridge Food Plaza & Emergency Medical Post'
-    : isRajasthanState
-    ? 'Heritage Highway Food Court & EV Fast Charger'
-    : `${spotName} Highway Corridor Food Plaza & Fuel`;
-
-  // Dynamically place 2 highway break stops along the actual line between origin & destination
-  const breakStops: BreakStop[] = [
-    {
-      ...HIGHWAY_BREAK_STOPS[0],
-      id: `bs-dyn-1-${Date.now()}`,
-      name: stop1Name,
-      distanceFromStartKm: Math.round(routeDistKm * 0.38),
-      coordinates: {
-        lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.38,
-        lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.38
-      }
-    },
-    {
-      ...HIGHWAY_BREAK_STOPS[1],
-      id: `bs-dyn-2-${Date.now()}`,
-      name: stop2Name,
-      distanceFromStartKm: Math.round(routeDistKm * 0.72),
-      coordinates: {
-        lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.72,
-        lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.72
-      }
-    }
-  ];
-
   return {
     id: `trip-${Date.now()}`,
     name: `${input.origin || 'Origin'} → ${spotName} | ${daysCount} Days`,
     origin: input.origin || 'Ahmedabad, Gujarat',
+    originCoordinates: input.originCoords,
     destination: spotName,
     destinationDetails: {
       image: resolveDestinationImage(spotName, category) || matchedDest.image,
@@ -719,8 +726,8 @@ export function generateAITrip(input: PlannerInput): Trip {
     isUserCreated: true,
     isSample: false,
     createdAt: new Date().toISOString(),
-    aiRationale: `TripVerse AI has optimized this journey specifically to ${spotName} (${state}) around your ₹${totalBudget.toLocaleString('en-IN')} budget for ${input.travelersCount} traveler(s). Precise coordinates locked at ${destCoords.lat.toFixed(4)}°N, ${destCoords.lng.toFixed(4)}°E with verified highway route (~${routeDistKm} km), ${input.accommodationType} stays, and 2 midway break stops. Buffer: ₹${Math.max(0, totalBudget - estimatedTotal).toLocaleString('en-IN')}.`,
-    breakStops,
+    aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state}) for ${input.travelersCount} traveler(s). Driving distance and duration are estimates until a live route is available; activities, accommodation, and costs are suggestions, not bookings. Buffer estimate: ₹${Math.max(0, totalBudget - estimatedTotal).toLocaleString('en-IN')}.`,
+    breakStops: [],
     budgetBreakdown: {
       transportation: transportCost,
       accommodation: stayCost,
@@ -730,12 +737,14 @@ export function generateAITrip(input: PlannerInput): Trip {
     },
     estimatedTotal: estimatedTotal,
     routeType: routeType,
-    itinerary: days,
+    itinerary: draftDays,
     bestTransportDeal: bestDeal,
     transportDeals: allDeals,
     routeDetails: {
       distanceKm: routeDistKm,
-      durationHours: routeHours
-    }
+      durationHours: routeHours,
+      source: 'estimate'
+    },
+    travelDataStatus: input.transportMode === 'car' || input.transportMode === 'bike' ? 'pending' : 'not_applicable'
   };
 }

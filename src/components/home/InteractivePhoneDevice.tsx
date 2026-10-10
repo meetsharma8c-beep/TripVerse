@@ -53,7 +53,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
   const [currentTime, setCurrentTime] = useState('9:41');
   const [miniChatInput, setMiniChatInput] = useState('');
   const [miniChatMessages, setMiniChatMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string }>>([
-    { sender: 'ai', text: 'TripVerse Co-Pilot online. Your route to Udaipur via NH-48 has 2 verified fuel & food courts.' }
+    { sender: 'ai', text: 'TripVerse sample preview. Plan details and place data shown here are illustrative.' }
   ]);
   const [volumeLevel, setVolumeLevel] = useState(70);
   const [showVolumeHUD, setShowVolumeHUD] = useState(false);
@@ -204,7 +204,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                 <h1 className="text-6xl font-light tracking-tighter font-display drop-shadow-md">{currentTime}</h1>
               </div>
 
-              {/* Lock Screen Live Notification Widget */}
+              {/* Illustrative notification widget */}
               <div 
                 onClick={() => setIsLocked(false)}
                 className="relative z-10 bg-white/20 hover:bg-white/25 backdrop-blur-xl border border-white/25 p-3 rounded-2xl shadow-lg cursor-pointer transition-all active:scale-95 space-y-1"
@@ -212,12 +212,12 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                 <div className="flex items-center justify-between text-[10px]">
                   <div className="flex items-center gap-1.5 font-bold text-emerald-300">
                     <Navigation className="w-3 h-3 animate-spin text-emerald-300" />
-                    <span>TripVerse Live Route</span>
+                    <span>TripVerse Example</span>
                   </div>
-                  <span className="text-white/60">Now</span>
+                  <span className="text-white/60">Demo</span>
                 </div>
-                <p className="text-xs font-bold text-white leading-tight">Ahmedabad → Udaipur • Next Exit in 12 km</p>
-                <p className="text-[11px] text-white/80">Tap to unlock & open live journey dashboard</p>
+                <p className="text-xs font-bold text-white leading-tight">Ahmedabad → Udaipur • sample route</p>
+                <p className="text-[11px] text-white/80">Tap to explore the illustrative app preview</p>
               </div>
 
               {/* Bottom Quick Actions (Flashlight & Camera) */}
@@ -280,14 +280,14 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                   <div className="flex items-center justify-between w-full ml-2 text-[10px]">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-                      <span className="font-bold text-emerald-300 truncate">NH-48 Live Navigation</span>
+                      <span className="font-bold text-emerald-300 truncate">Example route</span>
                     </div>
-                    <span className="font-mono text-white/80 shrink-0">12 km to Stop</span>
+                    <span className="font-mono text-white/80 shrink-0">Sample stop</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1 text-[8px] text-emerald-400 font-bold pr-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>GPS</span>
+                    <span>Demo</span>
                   </div>
                 )}
               </div>
@@ -312,7 +312,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                       <div className="absolute top-12 left-4 z-10">
                         <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full shadow-md">
                           <span className="font-display font-black text-xs text-[#0B2545]">
-                            Trip<span className="text-[#00B074]">Verse</span>
+                            Trip<span className="text-[#2D5A3D]">Verse</span>
                           </span>
                         </div>
                       </div>
@@ -340,7 +340,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                               {activeTrip ? `${activeTrip.origin.split(',')[0]} → ${activeTrip.destination.split(',')[0]}` : 'Configure Your Journey'}
                             </span>
                             {activeTrip ? (
-                              <span className="font-black text-[#00B074] bg-emerald-50 px-2.5 py-0.5 rounded-full text-xs font-display shrink-0 border border-emerald-200">
+                              <span className="font-black text-[#2D5A3D] bg-[#EAF0E9] px-2.5 py-0.5 rounded-full text-xs font-display shrink-0 border border-[#8EA78D]/40">
                                 {formatCurrency(activeTrip.estimatedTotal || activeTrip.totalBudget, currency)}
                               </span>
                             ) : (
@@ -377,13 +377,13 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                               </span>
                             </div>
                             <span className="text-[11px] font-extrabold text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-200 shadow-2xs shrink-0">
-                              Verified
+                              Listing
                             </span>
                           </div>
                         ) : (
                           <div className="p-3 bg-slate-100/80 rounded-2xl border border-slate-200 flex items-center gap-2 text-slate-600 text-xs">
                             <Compass className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span>Verified pitstops sequenced automatically along your route</span>
+                            <span>Example preview; map listings load for your trip when available</span>
                           </div>
                         )}
 
@@ -399,7 +399,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                         })}
                         className="w-full py-3.5 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-display font-extrabold text-sm shadow-md hover:shadow-lg hover:shadow-emerald-500/25 text-center active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
-                        <span>{activeTrip ? 'View Active Journey Plan' : 'Plan Real Journey Now'}</span>
+                        <span>{activeTrip ? 'View Active Journey Plan' : 'Draft a Trip Plan'}</span>
                         <ArrowRight className="w-4 h-4 shrink-0" />
                       </button>
 
@@ -408,15 +408,15 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                   </div>
                 )}
 
-                {/* APP VIEW 2: LIVE GPS NAVIGATION HUD */}
+                {/* APP VIEW 2: illustrative navigation handoff */}
                 {activeScreen === 'navigation' && (
                   <div className="flex-1 flex flex-col p-3.5 space-y-3 bg-slate-900 text-white animate-in fade-in duration-200">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                       <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-400">
                         <Navigation className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                        <span>Live GPS Highway HUD</span>
+                        <span>Navigation preview</span>
                       </div>
-                      <span className="text-[10px] font-mono text-slate-400">NH-48 Corridor</span>
+                      <span className="text-[10px] font-mono text-slate-400">Illustrative only</span>
                     </div>
 
                     {/* Speedometer & Compass */}
@@ -439,7 +439,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                         <ArrowRight className="w-4 h-4" />
                         <span>Exit in 1.4 km: Shamlaji Food Court</span>
                       </div>
-                      <p className="text-[11px] text-slate-300">5-Star sanitized washrooms, pure veg dining & EV Fast Charger.</p>
+                      <p className="text-[11px] text-slate-300">Example place listing · facilities not confirmed.</p>
                     </div>
 
                     <button
@@ -456,7 +456,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                   <div className="flex-1 flex flex-col p-3.5 space-y-2.5 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                       <h4 className="font-extrabold text-xs text-[#0B2545] font-display">Udaipur 3-Day Highlights</h4>
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Verified Route</span>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Example schedule</span>
                     </div>
 
                     <div className="space-y-2 text-xs">
@@ -549,7 +549,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                     setActiveScreen('overview');
                   }}
                   className={`flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
-                    activeScreen === 'overview' ? 'text-[#00B074]' : 'text-slate-400 hover:text-slate-600'
+                    activeScreen === 'overview' ? 'text-[#2D5A3D]' : 'text-slate-400 hover:text-slate-600'
                   }`}
                   title="Phone Overview App"
                 >
@@ -566,10 +566,10 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                   className={`flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
                     activeScreen === 'navigation' ? 'text-cyan-500' : 'text-slate-400 hover:text-slate-600'
                   }`}
-                  title="Phone GPS Navigation App"
+                  title="Illustrative directions screen"
                 >
                   <Navigation className="w-4 h-4" />
-                  <span className="text-[9px] font-bold">GPS HUD</span>
+                  <span className="text-[9px] font-bold">Directions demo</span>
                 </button>
 
                 <button
@@ -579,7 +579,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                     setActiveScreen('itinerary');
                   }}
                   className={`flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
-                    activeScreen === 'itinerary' ? 'text-[#00B074]' : 'text-slate-400 hover:text-slate-600'
+                    activeScreen === 'itinerary' ? 'text-[#2D5A3D]' : 'text-slate-400 hover:text-slate-600'
                   }`}
                   title="Phone Day-Wise Itinerary App"
                 >

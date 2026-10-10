@@ -6,8 +6,8 @@
       <stop offset="100%" stop-color="#051429" />
     </linearGradient>
     <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#00D287" />
-      <stop offset="100%" stop-color="#00A86B" />
+      <stop offset="0%" stop-color="#386B49" />
+      <stop offset="100%" stop-color="#2D5A3D" />
     </linearGradient>
     <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25" />
@@ -22,7 +22,7 @@
   <circle cx="100" cy="100" r="86" fill="none" stroke="url(#accentGrad)" stroke-width="2" stroke-opacity="0.35" stroke-dasharray="6 4" />
 
   <!-- Ambient Glow -->
-  <circle cx="100" cy="85" r="45" fill="#00D287" opacity="0.15" filter="blur(20px)" />
+  <circle cx="100" cy="85" r="45" fill="#386B49" opacity="0.15" filter="blur(20px)" />
 
   <!-- Traveler Silhouette / Avatar Figure -->
   <!-- Head -->
@@ -39,6 +39,6 @@
   <path d="M85 124 L100 148 L115 124" fill="none" stroke="#0B2545" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
 
   <!-- Mini Emerald Compass Star Badge -->
-  <circle cx="145" cy="145" r="20" fill="#0B2545" stroke="#00D287" stroke-width="3" />
+  <circle cx="145" cy="145" r="20" fill="#0B2545" stroke="#386B49" stroke-width="3" />
   <path d="M145 133 L148 142 L157 145 L148 148 L145 157 L142 148 L133 145 L142 142 Z" fill="url(#accentGrad)" />
 </svg>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trip, ItineraryActivity, LocalFoodGem, HiddenGem } from '../../types/trip';
-import { getLocalGemsForDestination } from '../../data/localGems';
+import { fetchGenuineDestinationGems, DestinationGems } from '../../services/localGemsService';
 import { triggerHaptic } from '../../services/deviceService';
 import { getStoredCurrency, formatCurrency, Currency } from '../../services/currencyService';
 import confetti from 'canvas-confetti';
@@ -18,7 +18,8 @@ import {
   Coffee,
   CheckCircle2,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw
 } from 'lucide-react';
 
 interface LocalGemsViewProps {
@@ -27,12 +28,51 @@ interface LocalGemsViewProps {
 }
 
 export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
-  const gemsData = getLocalGemsForDestination(trip.destination);
+  const [gemsData, setGemsData] = useState<DestinationGems>({
+    destination: trip.destination,
+    foodGems: [],
+    hiddenGems: [],
+    isLiveGenerated: false
+  });
+  const [isLoadingGems, setIsLoadingGems] = useState(true);
   const [currency, setCurrency] = useState<Currency>(getStoredCurrency());
   const [activeTab, setActiveTab] = useState<'food' | 'secret'>('food');
   const [vegOnly, setVegOnly] = useState(false);
   const [targetDay, setTargetDay] = useState<number>(1);
   const [addedIds, setAddedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingGems(true);
+    fetchGenuineDestinationGems(trip.destination, {
+      coordinates: trip.destinationDetails?.coordinates,
+      foodPreference: trip.preferences?.join(', ')
+    }).then(data => {
+      if (isMounted) {
+        setGemsData(data);
+        setIsLoadingGems(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [trip.destination, trip.destinationDetails?.coordinates]);
+
+  const handleRefreshGems = async () => {
+    triggerHaptic('medium');
+    setIsLoadingGems(true);
+    try {
+      const freshData = await fetchGenuineDestinationGems(trip.destination, {
+        forceFresh: true,
+        coordinates: trip.destinationDetails?.coordinates,
+        foodPreference: trip.preferences?.join(', ')
+      });
+      setGemsData(freshData);
+    } finally {
+      setIsLoadingGems(false);
+    }
+  };
 
   useEffect(() => {
     const handleCurrency = () => setCurrency(getStoredCurrency());
@@ -66,7 +106,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
         particleCount: 45,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#00D084', '#F59E0B', '#38BDF8']
+        colors: ['#386B49', '#F59E0B', '#38BDF8']
       });
     } catch (e) {}
   };
@@ -82,14 +122,27 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
       <div className="bg-gradient-to-r from-[#0B2545] via-[#102E54] to-[#1E3A8A] rounded-3xl p-6 sm:p-8 text-white shadow-md border border-slate-700/50">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-              Curated Local Trail
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
+                <span>Live AI Regional Discovery</span>
+              </span>
+              <button
+                type="button"
+                onClick={handleRefreshGems}
+                disabled={isLoadingGems}
+                className="text-[10px] font-bold text-slate-200 hover:text-white bg-white/15 hover:bg-white/25 px-2.5 py-0.5 rounded-full border border-white/25 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                title="Re-scan destination for new authentic hidden spots"
+              >
+                <RefreshCw className={`w-2.5 h-2.5 ${isLoadingGems ? 'animate-spin' : ''}`} />
+                <span>{isLoadingGems ? 'Scanning AI...' : 'Discover Fresh Gems'}</span>
+              </button>
+            </div>
             <h2 className="text-xl sm:text-2xl font-bold font-display mt-2">
               Culinary Trails & Hidden Spots • {gemsData.destination}
             </h2>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              Authentic heritage food stalls, legendary highway dhabas, and secret sunrise viewpoints untouched by commercial crowds.
+              Authentic heritage food stalls, legendary neighborhood dhabas, and secret viewpoints tailored specifically to {gemsData.destination}.
             </p>
           </div>
 
@@ -148,13 +201,13 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
                 setVegOnly(!vegOnly);
                 triggerHaptic('light');
               }}
-              className={`ml-auto px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all ${
+              className={`w-full sm:w-auto sm:ml-auto px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center sm:justify-start gap-1.5 border transition-all cursor-pointer ${
                 vegOnly
                   ? 'bg-emerald-400/30 border-emerald-400 text-emerald-300'
                   : 'bg-white/5 border-white/20 text-slate-300 hover:bg-white/10'
               }`}
             >
-              <Leaf className="w-3.5 h-3.5 text-emerald-400" />
+              <Leaf className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span>100% Pure Vegetarian</span>
             </button>
           )}
@@ -162,7 +215,19 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
       </div>
 
       {/* FOOD TRAILS LIST */}
-      {activeTab === 'food' && (
+      {isLoadingGems && filteredFood.length === 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-pulse">
+          {[1, 2, 3, 4].map(idx => (
+            <div key={idx} className="bg-white rounded-3xl h-80 border border-slate-200/90 p-4 flex flex-col justify-between">
+              <div className="h-44 bg-slate-100 rounded-2xl w-full" />
+              <div className="space-y-2 mt-4">
+                <div className="h-4 bg-slate-100 rounded-full w-3/4" />
+                <div className="h-3 bg-slate-100 rounded-full w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : activeTab === 'food' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filteredFood.map(food => {
             const isAdded = addedIds.includes(food.id);
@@ -187,7 +252,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
                         {food.category.replace('_', ' ')}
                       </span>
                       {food.isVegetarian && (
-                        <span className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white text-[10px] font-bold flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-lg bg-[#2D5A3D] text-white text-[10px] font-bold flex items-center gap-1">
                           <Leaf className="w-2.5 h-2.5" /> Pure Veg
                         </span>
                       )}
@@ -257,7 +322,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
 
                       <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 ml-auto">
                         <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                        Verified Legacy
+                        Suggested listing · verify details
                       </span>
                     </div>
                   </div>
@@ -278,7 +343,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
                     className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                       isAdded
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
-                        : 'bg-[#00B074] hover:bg-[#00925e] text-white shadow-xs active:scale-95'
+                        : 'bg-[#2D5A3D] hover:bg-[#244931] text-white shadow-xs active:scale-95'
                     }`}
                   >
                     {isAdded ? (
@@ -388,7 +453,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
                     className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                       isAdded
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
-                        : 'bg-[#00B074] hover:bg-[#00925e] text-white shadow-xs active:scale-95'
+                        : 'bg-[#2D5A3D] hover:bg-[#244931] text-white shadow-xs active:scale-95'
                     }`}
                   >
                     {isAdded ? (

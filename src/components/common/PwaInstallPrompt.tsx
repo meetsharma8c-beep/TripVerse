@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrandIconMark } from './Logo';
 import { 
   Download, 
   X, 
@@ -136,20 +137,18 @@ export const PwaInstallPrompt: React.FC = () => {
       {/* 1. Floating Bottom Banner (Mobile & Desktop) */}
       {showBanner && (
         <div className="fixed bottom-20 lg:bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-40 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <div className="relative overflow-hidden rounded-2xl bg-[#0B2545]/95 backdrop-blur-xl border border-emerald-500/30 p-4 shadow-2xl text-white">
+          <div className="relative overflow-hidden rounded-2xl bg-[#0B2545]/95 backdrop-blur-xl border border-[#2D5A3D]/40 p-4 shadow-2xl text-white">
             
-            {/* Ambient emerald background glow */}
-            <div className="absolute -top-12 -right-12 w-28 h-28 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+            {/* Ambient forest green background glow */}
+            <div className="absolute -top-12 -right-12 w-28 h-28 bg-[#2D5A3D]/25 rounded-full blur-2xl pointer-events-none" />
 
             <div className="flex items-start gap-3.5">
               {/* App Icon */}
               <div className="relative shrink-0">
-                <img 
-                  src="/icons/icon-192.png" 
-                  alt="TripVerse" 
-                  className="w-12 h-12 rounded-xl shadow-md border border-white/20 object-cover"
-                />
-                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[#0B2545] flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-white p-2 flex items-center justify-center shadow-md border border-slate-200">
+                  <BrandIconMark className="w-full h-full" idPrefix="pwa-drawer" />
+                </div>
+                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#2D5A3D] border-2 border-white flex items-center justify-center shadow-xs">
                   <Sparkles className="w-2.5 h-2.5 text-white" />
                 </span>
               </div>
@@ -158,22 +157,22 @@ export const PwaInstallPrompt: React.FC = () => {
               <div className="flex-1 min-w-0 pr-6">
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-sm font-bold text-white tracking-tight">Install TripVerse</h4>
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#2D5A3D]/30 text-[#A3B8A2] border border-[#2D5A3D]/40">
                     Free
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 mt-0.5 line-clamp-2 leading-relaxed">
-                  Fast full-screen app with offline highway routes, verified break stops & GPS tools.
+                  Full-screen trip planning with saved itineraries and printable guides. Directions open in an external maps app.
                 </p>
 
                 {/* Benefits Pills */}
-                <div className="flex items-center gap-2 mt-2 text-[11px] text-emerald-300 font-medium">
+                <div className="flex items-center gap-2 mt-2 text-[11px] text-[#A3B8A2] font-medium">
                   <span className="flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-emerald-400" /> 0s Load
+                    <Zap className="w-3 h-3 text-[#8EA78D]" /> 0s Load
                   </span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
-                    <WifiOff className="w-3 h-3 text-emerald-400" /> Offline Mode
+                    <WifiOff className="w-3 h-3 text-[#8EA78D]" /> Offline Mode
                   </span>
                 </div>
               </div>
@@ -192,7 +191,7 @@ export const PwaInstallPrompt: React.FC = () => {
             <div className="mt-3.5 pt-3 border-t border-white/10 flex items-center gap-2">
               <button
                 onClick={handleInstallClick}
-                className="btn-liquid-primary flex-1 flex items-center justify-center gap-2 py-3 px-4 min-h-[44px] rounded-full text-white font-bold text-xs shadow-lg shadow-emerald-500/25"
+                className="btn-liquid-primary flex-1 flex items-center justify-center gap-2 py-3 px-4 min-h-[44px] rounded-full text-white font-bold text-xs shadow-lg shadow-[#2D5A3D]/30"
               >
                 <Download className="w-4 h-4 stroke-[2.5]" />
                 <span>{isIosDevice ? 'Add to iPhone / iPad' : 'Install Free App'}</span>
@@ -226,12 +225,8 @@ export const PwaInstallPrompt: React.FC = () => {
 
             {/* Header with App Logo */}
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-2xl p-0.5 bg-gradient-to-tr from-emerald-500 to-teal-500 shadow-xl shadow-emerald-500/20 mb-3">
-                <img 
-                  src="/icons/icon-192.png" 
-                  alt="TripVerse Logo" 
-                  className="w-full h-full rounded-2xl object-cover"
-                />
+              <div className="w-16 h-16 rounded-2xl p-2.5 bg-white shadow-xl shadow-slate-200/80 mb-3 flex items-center justify-center border border-slate-200">
+                <BrandIconMark className="w-full h-full" idPrefix="pwa-modal" />
               </div>
               <h3 className="text-lg font-black text-slate-900">
                 {isIosDevice ? 'Install on iPhone / iPad' : 'Install TripVerse App'}
@@ -264,7 +259,7 @@ export const PwaInstallPrompt: React.FC = () => {
 
               {/* Step 2 */}
               <div className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <div className="w-7 h-7 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm font-bold text-xs">
+                <div className="w-7 h-7 rounded-xl bg-[#2D5A3D] text-white flex items-center justify-center shrink-0 shadow-sm font-bold text-xs">
                   2
                 </div>
                 <div className="flex-1 text-xs">
@@ -273,7 +268,7 @@ export const PwaInstallPrompt: React.FC = () => {
                   </p>
                   <p className="text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
                     Scroll down the options list and tap 
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 font-bold border border-emerald-200">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#EAF0E9] text-[#2D5A3D] font-bold border border-[#8EA78D]/30">
                       <PlusSquare className="w-3 h-3" /> Add to Home Screen
                     </span>
                   </p>
@@ -282,7 +277,7 @@ export const PwaInstallPrompt: React.FC = () => {
 
               {/* Step 3 */}
               <div className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <div className="w-7 h-7 rounded-xl bg-teal-500 text-white flex items-center justify-center shrink-0 shadow-sm font-bold text-xs">
+                <div className="w-7 h-7 rounded-xl bg-slate-700 text-white flex items-center justify-center shrink-0 shadow-sm font-bold text-xs">
                   3
                 </div>
                 <div className="flex-1 text-xs">
@@ -300,19 +295,19 @@ export const PwaInstallPrompt: React.FC = () => {
             {/* Feature Highlights */}
             <div className="mt-4 pt-3 border-t border-slate-200 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
                 <span>Full Screen (No URL bar)</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
                 <span>Works Offline</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
                 <span>Lightweight (~10MB)</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
                 <span>Automatic Updates</span>
               </div>
             </div>

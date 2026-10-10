@@ -186,7 +186,7 @@ export function synthesizeDestination(
     state,
     category,
     tagline,
-    description: `TripVerse curated route and customizable smart itinerary for ${resolved.name || cleanName}, optimized with verified highway rest stops, split budgeting, and handpicked local experiences.`,
+    description: `TripVerse draft itinerary for ${resolved.name || cleanName}, with estimated budgeting and suggested local experiences. Verify places and travel details before booking.`,
     image,
     startBudget,
     rating: 4.8,

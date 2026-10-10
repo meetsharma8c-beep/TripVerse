@@ -3,19 +3,14 @@ import { Trip, CurrencyCode } from '../../types/trip';
 import { 
   DisruptionAlert, 
   DisruptionType, 
-  EmergencyStay, 
-  RefundGuidance, 
   ReplanOption 
 } from '../../types/replanning';
 import { 
   generateDisruptionForTrip, 
-  getEmergencyStays, 
   getCancellationPolicy, 
   getReplanOptions, 
   applyReplanToTrip 
 } from '../../services/replanningService';
-import { saveEmergencyEventToSupabase } from '../../services/supabaseSyncService';
-import { getCurrentUser } from '../../services/authService';
 import { formatCurrency, getActiveCurrency } from '../../services/currencyService';
 import { 
   AlertTriangle, 
@@ -23,21 +18,15 @@ import {
   ArrowRight, 
   ArrowLeft, 
   CheckCircle2, 
-  Home, 
+  Home,
   RotateCcw, 
   Receipt, 
   Bot, 
-  Sparkles, 
   MapPin, 
   Calendar, 
   Wallet, 
-  Phone, 
   ShieldCheck, 
-  Clock, 
-  Bed, 
-  Wifi, 
-  Utensils, 
-  Car, 
+  Wifi,
   ChevronRight,
   Plane,
   CloudRain,
@@ -46,8 +35,6 @@ import {
   Briefcase,
   UserCheck,
   Battery,
-  ShieldAlert,
-  Send,
   ExternalLink
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -84,7 +71,6 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
   // 5: Final Confirmation
   // 'refund': Cancellation / Refund Guidance View
   const [screen, setScreen] = useState<1 | 2 | 3 | 4 | 5 | 'refund'>(initialScreen);
-  const [showAllStays, setShowAllStays] = useState(false);
 
   // Active disruption alert
   const [disruption, setDisruption] = useState<DisruptionAlert>(() => 
@@ -101,19 +87,12 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
     }
   }, [isOpen, initialScreen, initialReason, trip]);
 
-  // Emergency stays
-  const [stays, setStays] = useState<EmergencyStay[]>(() => 
-    getEmergencyStays(trip.destination, trip.destinationDetails?.coordinates)
-  );
-  const [bookedStayId, setBookedStayId] = useState<string | null>(null);
-
   // Replan options
   const replanData = getReplanOptions(trip, selectedReason);
   const [replanTab, setReplanTab] = useState<'alternate_dates' | 'new_destination'>('alternate_dates');
   const [selectedReplanOption, setSelectedReplanOption] = useState<ReplanOption>(() => 
     replanData.alternateDates[0] || replanData.newDestinations[0]
   );
-  const [replannedTrip, setReplannedTrip] = useState<Trip | null>(null);
 
   // Refund guidance
   const refundInfo = getCancellationPolicy(trip, disruption);
@@ -129,40 +108,10 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
     setSelectedReplanOption(replanTab === 'alternate_dates' ? newOptions.alternateDates[0] : newOptions.newDestinations[0]);
   };
 
-  // Handle book emergency stay
-  const handleBookStay = (stay: EmergencyStay) => {
-    setBookedStayId(stay.id);
-    try {
-      confetti({
-        particleCount: 30,
-        spread: 50,
-        origin: { y: 0.6 }
-      });
-    } catch {
-      // ignore
-    }
-  };
-
   // Handle execute replan
   const handleConfirmReplan = () => {
     const updated = applyReplanToTrip(trip, selectedReplanOption);
-    setReplannedTrip(updated);
     onApplyReplannedTrip(updated);
-
-    // Persist real disruption event and emergency plan to cloud database (Supabase)
-    const user = getCurrentUser();
-    if (user?.uid) {
-      saveEmergencyEventToSupabase(user.uid, disruption, {
-        revisedSummary: selectedReplanOption.title || selectedReplanOption.destination,
-        alternativeTransport: selectedReplanOption.type,
-        budgetImpact: selectedReplanOption.costDelta,
-        timeImpact: selectedReplanOption.datesLabel,
-        refundGuidance: refundInfo,
-        actionSteps: selectedReplanOption.highlights
-      }).catch(err => {
-        console.warn('[Supabase] Emergency replan cloud persist warning:', err);
-      });
-    }
 
     setScreen(5);
     try {
@@ -170,7 +119,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
         particleCount: 60,
         spread: 70,
         origin: { y: 0.5 },
-        colors: ['#00B074', '#10B981', '#3B82F6', '#F59E0B']
+        colors: ['#2D5A3D', '#10B981', '#3B82F6', '#F59E0B']
       });
     } catch {
       // ignore
@@ -184,15 +133,15 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
         {/* Top App Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-[#00B074]">
+            <div className="w-8 h-8 rounded-xl bg-[#EAF0E9] flex items-center justify-center text-[#2D5A3D]">
               <RotateCcw className="w-4 h-4" />
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-[#0B2545] leading-tight">
-                Trip Replanning & Disruption Guard
+                Trip Replanning
               </h2>
               <span className="text-[11px] text-slate-500">
-                TripVerse 24/7 Journey Protection
+                Planning tools only · no live disruption monitoring
               </span>
             </div>
           </div>
@@ -217,7 +166,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
             }`}
           >
             <span className="w-4 h-4 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-[9px] font-black">1</span>
-            <span>Alert Notice</span>
+            <span>Scenario</span>
           </button>
           <span className="text-slate-300">›</span>
           <button
@@ -235,10 +184,10 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
             type="button"
             onClick={() => setScreen(3)}
             className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              screen === 3 ? 'bg-white text-emerald-700 font-bold shadow-xs ring-1 ring-emerald-200' : 'hover:text-slate-900'
+              screen === 3 ? 'bg-white text-[#2D5A3D] font-bold shadow-xs ring-1 ring-[#8EA78D]/40' : 'hover:text-slate-900'
             }`}
           >
-            <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] font-black">3</span>
+            <span className="w-4 h-4 rounded-full bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center text-[9px] font-black">3</span>
             <span>Emergency Stay</span>
           </button>
           <span className="text-slate-300">›</span>
@@ -257,11 +206,11 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
             type="button"
             onClick={() => setScreen(5)}
             className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              screen === 5 ? 'bg-white text-emerald-700 font-bold shadow-xs ring-1 ring-emerald-200' : 'hover:text-slate-900'
+              screen === 5 ? 'bg-white text-[#2D5A3D] font-bold shadow-xs ring-1 ring-[#8EA78D]/40' : 'hover:text-slate-900'
             }`}
           >
-            <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] font-black">5</span>
-            <span>Confirmation</span>
+            <span className="w-4 h-4 rounded-full bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center text-[9px] font-black">5</span>
+            <span>Draft Updated</span>
           </button>
         </div>
 
@@ -273,13 +222,13 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
             <div className="space-y-6 py-2">
               <div className="text-center">
                 <span className="text-[11px] font-extrabold uppercase tracking-widest text-red-600 bg-red-50 border border-red-200 px-3 py-1 rounded-full">
-                  Step 1: Real-Time Disruption Alert Notification
+                  Step 1: Example planning scenario
                 </span>
                 <h3 className="text-xl font-bold text-[#0B2545] mt-2">
-                  Live Disruption Notification Received
+                  Plan for a travel disruption
                 </h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
-                  TripVerse monitors real-time flight/train status and meteorological warnings 24/7 to safeguard your travels.
+                  TripVerse does not monitor live transport status, weather alerts, or emergencies. Choose a scenario to explore planning options.
                 </p>
               </div>
 
@@ -302,35 +251,35 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                       9:41
                     </div>
                     <div className="text-xs text-slate-300 font-medium">
-                      Mon, 21 Apr
+                      Example notification
                     </div>
                   </div>
 
                   {/* Native Push Notification Card */}
                   <div 
                     onClick={() => setScreen(2)}
-                    className="bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-2xl cursor-pointer hover:border-emerald-400/60 transition-all hover:scale-[1.02] active:scale-98 group"
+                    className="bg-slate-900/90 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-2xl cursor-pointer hover:border-[#2D5A3D]/70 transition-all hover:scale-[1.02] active:scale-98 group"
                   >
                     <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-lg bg-[#00B074] flex items-center justify-center text-white">
+                        <div className="w-5 h-5 rounded-lg bg-[#2D5A3D] flex items-center justify-center text-white">
                           <RotateCcw className="w-3 h-3 text-white" />
                         </div>
-                        <span className="font-bold text-white text-xs">TripVerse</span>
+                        <span className="font-bold text-white text-xs">TripVerse · Example</span>
                       </div>
-                      <span className="text-[11px] text-slate-400">now</span>
+                      <span className="text-[11px] text-slate-400">example</span>
                     </div>
 
                     <h4 className="text-xs font-bold text-red-400 flex items-center gap-1.5 mt-1">
                       <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                      <span>Trip Disruption Alert</span>
+                      <span>Planning scenario</span>
                     </h4>
 
                     <p className="text-xs text-slate-200 mt-1.5 leading-snug">
-                      Your flight to {trip.destination.split(',')[0]} ({disruption.flightOrTrainNumber || '6E 532'}) is cancelled due to bad weather. Tap to view options.
+                      {disruption.details}
                     </p>
 
-                    <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-emerald-400 font-semibold group-hover:text-emerald-300">
+                    <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-[#A3B8A2] font-semibold group-hover:text-white">
                       <span>Tap to view options</span>
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                     </div>
@@ -346,7 +295,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setScreen(2)}
-                  className="px-6 py-3 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-sm shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer inline-flex items-center gap-2"
+                  className="px-6 py-3 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-sm shadow-md shadow-[#2D5A3D]/25 active:scale-95 transition-all cursor-pointer inline-flex items-center gap-2"
                 >
                   <span>Proceed to Choose Reason & Action (Step 2)</span>
                   <ArrowRight className="w-4 h-4" />
@@ -355,7 +304,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
             </div>
           )}
 
-          {/* SCREEN 2: CHOOSE REASON / ACTION ("TRIP AFFECTED") */}
+          {/* SCREEN 2: CHOOSE REASON / ACTION */}
           {screen === 2 && (
             <div className="space-y-6">
               
@@ -366,13 +315,13 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-red-700 uppercase tracking-wide">Trip Affected</span>
+                    <span className="text-xs font-bold text-amber-800 uppercase tracking-wide">Planning scenario · not verified live</span>
                     <span className="text-[11px] text-red-500 bg-white px-2 py-0.5 rounded-full border border-red-200 font-semibold">
                       {disruption.timestamp}
                     </span>
                   </div>
                   <h4 className="text-sm sm:text-base font-bold text-red-900 mt-1">
-                    Your trip to {trip.destination.split(',')[0]} has been affected
+                    Scenario for {trip.destination.split(',')[0]}
                   </h4>
                   <p className="text-xs text-red-700 mt-1 leading-relaxed">
                     {disruption.details}
@@ -403,7 +352,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                         onClick={() => handleReasonChange(item.id as DisruptionType)}
                         className={`text-xs px-3 py-1.5 rounded-xl border font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                           isSelected 
-                            ? 'bg-[#00B074] text-white border-[#00B074] shadow-xs' 
+                            ? 'bg-[#2D5A3D] text-white border-[#2D5A3D] shadow-xs' 
                             : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                         }`}
                       >
@@ -427,25 +376,25 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setScreen(3)}
-                    className="w-full text-left p-4 sm:p-5 rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/40 hover:bg-emerald-50 hover:border-emerald-500 transition-all flex items-center justify-between group cursor-pointer shadow-xs"
+                    className="w-full text-left p-4 sm:p-5 rounded-2xl border-2 border-[#2D5A3D]/40 bg-[#EAF0E9]/50 hover:bg-[#EAF0E9] hover:border-[#2D5A3D] transition-all flex items-center justify-between group cursor-pointer shadow-xs"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                      <div className="w-12 h-12 rounded-2xl bg-[#2D5A3D] text-white flex items-center justify-center shadow-md shadow-[#2D5A3D]/25 group-hover:scale-105 transition-transform">
                         <Home className="w-6 h-6" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm sm:text-base text-emerald-950">Find Emergency Stay</span>
-                          <span className="text-[10px] uppercase font-extrabold bg-emerald-200/80 text-emerald-800 px-2 py-0.5 rounded-full">
+                          <span className="font-bold text-sm sm:text-base text-slate-900">Find Emergency Stay</span>
+                          <span className="text-[10px] uppercase font-extrabold bg-[#EAF0E9] text-[#2D5A3D] px-2 py-0.5 rounded-full border border-[#8EA78D]/30">
                             Immediate
                           </span>
                         </div>
-                        <p className="text-xs text-emerald-800/80 mt-0.5">
-                          Verified nearby safe hotels & homestays with 24/7 check-in (near your location)
+                        <p className="text-xs text-slate-600 mt-0.5">
+                          Search external listings and confirm safety, availability, and terms directly with the property.
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-emerald-600 group-hover:translate-x-1 transition-transform shrink-0" />
+                    <ChevronRight className="w-5 h-5 text-[#2D5A3D] group-hover:translate-x-1 transition-transform shrink-0" />
                   </button>
 
                   {/* Option 2: View Refund / Cancellation Info */}
@@ -461,7 +410,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                       <div>
                         <span className="font-bold text-sm sm:text-base text-[#0B2545]">View Refund / Cancellation Info</span>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          Carrier penalty waiver policies, instant claim docket & full fare refund status
+                          Check your actual provider for booking status, cancellation terms, and refund eligibility
                         </p>
                       </div>
                     </div>
@@ -481,7 +430,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                       <div>
                         <span className="font-bold text-sm sm:text-base text-[#0B2545]">Replan My Trip</span>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          Explore alternate travel dates or switch to guaranteed sunny alternative destinations
+                          Compare draft options; weather, availability, and prices are not checked
                         </p>
                       </div>
                     </div>
@@ -493,7 +442,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
 
               {/* Footer: Need Help with AI */}
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs text-slate-500 font-medium">Need immediate assistance?</span>
+                <span className="text-xs text-slate-500 font-medium">Need help with planning?</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -502,10 +451,10 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                       onOpenChatWithQuery(`My trip to ${trip.destination} is affected due to ${selectedReason}. Can you guide my options?`);
                     }
                   }}
-                  className="text-xs font-bold text-[#00B074] hover:text-emerald-700 flex items-center gap-1.5 cursor-pointer"
+                  className="text-xs font-bold text-[#2D5A3D] hover:text-[#1E3E2B] flex items-center gap-1.5 cursor-pointer"
                 >
                   <Bot className="w-4 h-4" />
-                  <span>Chat with 24/7 AI Travel Assistant</span>
+                  <span>Ask the AI Travel Assistant</span>
                 </button>
               </div>
 
@@ -527,219 +476,38 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                   </button>
                   <h3 className="text-xl font-bold text-[#0B2545]">Emergency Stay</h3>
                   <p className="text-xs text-slate-500">
-                    Nearby safe and affordable stays with verified 24/7 check-in assistance.
+                    TripVerse does not have verified live accommodation listings or availability.
                   </p>
                 </div>
               </div>
 
-              {/* Recommended Stay Featured Section */}
-              <div>
-                <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
-                  Recommended Stay
-                </span>
-
-                {stays[0] && (() => {
-                  const stay = stays[0];
-                  const isBooked = bookedStayId === stay.id;
-                  return (
-                    <div className="bg-white rounded-3xl border-2 border-emerald-500/50 overflow-hidden shadow-lg p-4 sm:p-5 flex flex-col md:flex-row gap-5 items-stretch md:items-center">
-                      <div className="relative w-full md:w-52 h-44 rounded-2xl overflow-hidden shrink-0">
-                        <img
-                          src={stay.image}
-                          alt={stay.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute top-2.5 left-2.5 bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
-                          Top Choice
-                        </div>
-                      </div>
-
-                      <div className="flex-1 min-w-0 space-y-2">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <h4 className="font-extrabold text-base sm:text-lg text-[#0B2545]">
-                            {stay.name}
-                          </h4>
-                          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                            Verified Safe Facility
-                          </span>
-                        </div>
-
-                        <p className="text-xs text-slate-500 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{trip.destination.split(',')[0]} • {stay.distanceKm} km away</span>
-                        </p>
-
-                        {/* Amenities: Free WiFi, Food, Parking */}
-                        <div className="flex items-center gap-4 text-xs text-slate-600 font-semibold py-1">
-                          <span className="flex items-center gap-1.5">
-                            <Wifi className="w-3.5 h-3.5 text-emerald-600" /> Free WiFi
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Utensils className="w-3.5 h-3.5 text-emerald-600" /> Food
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Car className="w-3.5 h-3.5 text-emerald-600" /> Parking
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 pt-1">
-                          <span className="text-xs text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-semibold inline-flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            Live room tariffs & availability verified directly via certified partner conduit
-                          </span>
-                        </div>
-
-                        <div className="pt-2 flex items-center gap-2.5 flex-wrap">
-                          {isBooked ? (
-                            <span className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs inline-flex items-center gap-2 shadow-sm">
-                              <CheckCircle2 className="w-4 h-4" />
-                              <span>Stay Confirmed</span>
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleBookStay(stay)}
-                              className="px-5 py-2.5 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer inline-flex items-center gap-1.5"
-                            >
-                              <span>Reserve Stay</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-
-                          <a
-                            href={`tel:${stay.contactPhone}`}
-                            className="px-3 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs inline-flex items-center gap-1.5 transition-colors"
-                          >
-                            <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Call Reception</span>
-                          </a>
-
-                          <a
-                            href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(stay.name + ' ' + trip.destination.split(',')[0])}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs inline-flex items-center gap-1.5 transition-colors"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
-                            <span>Booking.com</span>
-                          </a>
-
-                          <button
-                            type="button"
-                            onClick={() => setShowAllStays(!showAllStays)}
-                            className="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
-                          >
-                            {showAllStays ? 'Hide Additional' : 'View More Stays'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Collapsible Additional Stays */}
-              {showAllStays && (
-                <div className="space-y-3 pt-2">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                    Other Nearby Vetted Accommodation Options:
-                  </span>
-                  {stays.slice(1).map((stay) => {
-                    const isBooked = bookedStayId === stay.id;
-                    return (
-                      <div
-                        key={stay.id}
-                        className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                          isBooked 
-                            ? 'border-emerald-500 bg-emerald-50/50 shadow-md ring-2 ring-emerald-500/20' 
-                            : 'border-slate-200 bg-white hover:border-slate-300 shadow-xs'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <img
-                            src={stay.image}
-                            alt={stay.name}
-                            className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-100"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="font-bold text-sm text-[#0B2545] truncate">
-                                {stay.name}
-                              </h4>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                                {stay.distanceKm} km away
-                              </span>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                Verified Safe
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-0.5 truncate">{stay.address}</p>
-                            <div className="flex items-center gap-3 text-[11px] text-slate-600 font-medium mt-1.5">
-                              <span className="flex items-center gap-1"><Wifi className="w-3 h-3 text-emerald-600" /> WiFi</span>
-                              <span className="flex items-center gap-1"><Utensils className="w-3 h-3 text-emerald-600" /> Food</span>
-                              <span className="flex items-center gap-1"><Car className="w-3 h-3 text-emerald-600" /> Parking</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 shrink-0">
-                          <span className="text-xs font-semibold text-slate-500">
-                            Check Live Tariff
-                          </span>
-                          <div className="mt-1.5 flex items-center gap-1.5">
-                            <a
-                              href={`tel:${stay.contactPhone}`}
-                              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
-                              title="Call Stay Front Desk"
-                            >
-                              <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                            </a>
-                            <a
-                              href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(stay.name + ' ' + trip.destination.split(',')[0])}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
-                              title="View on Booking.com"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
-                            </a>
-                            {isBooked ? (
-                              <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Booked
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleBookStay(stay)}
-                                className="px-3 py-1.5 rounded-lg bg-[#00B074] hover:bg-emerald-600 text-white font-bold text-xs cursor-pointer"
-                              >
-                                Book Stay
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-950">
+                  TripVerse is free to use and does not have live accommodation inventory. Search the destination on a
+                  booking provider, then confirm the property, availability, safety, price, and cancellation terms there.
+                  Booking and payment happen directly with that provider.
                 </div>
-              )}
-
-              {bookedStayId && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-emerald-900 font-semibold">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Hotel reservation confirmed. Front desk has been notified for your priority check-in.</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setScreen(4)}
-                    className="text-xs font-bold text-emerald-700 hover:text-emerald-900 underline cursor-pointer shrink-0 ml-2"
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <a
+                    href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(trip.destination)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-[52px] items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 hover:border-[#2D5A3D] hover:bg-[#EAF0E9]"
                   >
-                    Next: Replan Trip →
-                  </button>
+                    Search stays on Booking.com
+                    <ExternalLink className="h-4 w-4 shrink-0" />
+                  </a>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`hotels in ${trip.destination}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-[52px] items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 hover:border-[#2D5A3D] hover:bg-[#EAF0E9]"
+                  >
+                    Find stays on Google Maps
+                    <ExternalLink className="h-4 w-4 shrink-0" />
+                  </a>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
@@ -757,7 +525,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                 </button>
                 <h3 className="text-xl font-bold text-[#0B2545]">Replan Your Trip</h3>
                 <p className="text-xs text-slate-500">
-                  We've found these options for you based on current availability and weather windows.
+                  These are generated planning suggestions, not live availability, prices, or weather information.
                 </p>
               </div>
 
@@ -804,14 +572,14 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold text-slate-800">{trip.destination.split(',')[0]} (Original)</span>
-                      <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.2 rounded font-bold">Disrupted</span>
+                      <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-bold">Current draft</span>
                     </div>
                     <span className="text-slate-500 text-[11px] block mt-0.5">{trip.durationDays} Days • Original Dates</span>
                   </div>
                 </div>
                 <div className="text-right">
                   <span className="font-bold text-slate-700 block">{formatCurrency(trip.estimatedTotal || trip.totalBudget, currency)}</span>
-                  <span className="text-[10px] text-slate-400">Current Cost</span>
+                  <span className="text-[10px] text-slate-400">Current estimate</span>
                 </div>
               </div>
 
@@ -825,7 +593,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                       onClick={() => setSelectedReplanOption(opt)}
                       className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 ${
                         isSelected 
-                          ? 'border-emerald-500 bg-emerald-50/40 ring-2 ring-emerald-500/20 shadow-xs' 
+                          ? 'border-[#2D5A3D] bg-[#EAF0E9]/50 ring-2 ring-[#2D5A3D]/20 shadow-xs' 
                           : 'border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
@@ -841,7 +609,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                               {opt.title}
                             </h4>
                             {opt.isRecommended && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EAF0E9] text-[#2D5A3D] border border-[#8EA78D]/30">
                                 Recommended
                               </span>
                             )}
@@ -860,8 +628,8 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                         <span className="text-sm sm:text-base font-extrabold text-[#0B2545]">
                           {formatCurrency(opt.estimatedCost, currency)}
                         </span>
-                        <span className={`text-[11px] font-bold ${opt.costDelta > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                          {opt.costDelta === 0 ? 'Exact Budget Match' : opt.costDelta > 0 ? `+${formatCurrency(opt.costDelta, currency)}` : `${formatCurrency(opt.costDelta, currency)} savings`}
+                        <span className={`text-[11px] font-bold ${opt.costDelta > 0 ? 'text-amber-600' : 'text-[#2D5A3D]'}`}>
+                          {opt.costDelta === 0 ? 'Estimate unchanged' : opt.costDelta > 0 ? `Estimate +${formatCurrency(opt.costDelta, currency)}` : `Estimate ${formatCurrency(opt.costDelta, currency)} lower`}
                         </span>
                       </div>
                     </div>
@@ -881,16 +649,16 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                   }}
                   className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Bot className="w-3.5 h-3.5 text-[#00B074]" />
+                  <Bot className="w-3.5 h-3.5 text-[#2D5A3D]" />
                   <span>Chat with AI</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleConfirmReplan}
-                  className="px-6 py-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+                  className="px-6 py-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md shadow-[#2D5A3D]/25 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
                 >
-                  <span>Select & Replan</span>
+                  <span>Update Draft Plan</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -902,19 +670,19 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
           {screen === 5 && (
             <div className="space-y-6 text-center py-4">
               {/* Graphic Icon: airplane flying over landscape */}
-              <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-400 text-white flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/20 ring-8 ring-emerald-50 animate-in zoom-in">
+              <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-tr from-[#1E3E2B] via-[#2D5A3D] to-[#386B49] text-white flex items-center justify-center mx-auto shadow-xl shadow-[#2D5A3D]/25 ring-8 ring-[#EAF0E9] animate-in zoom-in">
                 <Plane className="w-12 h-12 text-white drop-shadow-md -rotate-12 animate-pulse" />
-                <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-white text-[#00B074] flex items-center justify-center shadow-sm">
-                  <CheckCircle2 className="w-5 h-5 fill-emerald-100 text-[#00B074]" />
+                <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-white text-[#2D5A3D] flex items-center justify-center shadow-sm">
+                  <CheckCircle2 className="w-5 h-5 fill-[#EAF0E9] text-[#2D5A3D]" />
                 </div>
               </div>
 
               <div>
                 <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0B2545] tracking-tight">
-                  Your Trip Has Been Replanned!
+                  Draft Itinerary Updated
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-md mx-auto">
-                  We've updated your itinerary and saved your preferences.
+                  This updates the TripVerse draft only. No transport or accommodation reservation was changed.
                 </p>
               </div>
 
@@ -923,8 +691,8 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                 <div className="bg-slate-50/90 border border-slate-200 rounded-3xl p-5 max-w-md mx-auto text-left space-y-3.5 shadow-xs">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                     <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>New Destination</span>
+                      <MapPin className="w-3.5 h-3.5 text-[#2D5A3D]" />
+                      <span>Selected destination</span>
                     </span>
                     <span className="text-sm font-bold text-[#0B2545]">
                       {selectedReplanOption.destination.split(',')[0]}
@@ -933,7 +701,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
 
                   <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                     <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                      <Calendar className="w-3.5 h-3.5 text-[#2D5A3D]" />
                       <span>Duration</span>
                     </span>
                     <span className="text-sm font-bold text-[#0B2545]">
@@ -943,10 +711,10 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
 
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
-                      <Wallet className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Total Cost</span>
+                      <Wallet className="w-3.5 h-3.5 text-[#2D5A3D]" />
+                      <span>Budget estimate</span>
                     </span>
-                    <span className="text-lg font-black text-[#00B074]">
+                    <span className="text-lg font-black text-[#2D5A3D]">
                       {formatCurrency(selectedReplanOption.estimatedCost, currency)}
                     </span>
                   </div>
@@ -958,7 +726,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-3 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer"
+                  className="px-6 py-3 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md shadow-[#2D5A3D]/25 active:scale-95 transition-all cursor-pointer"
                 >
                   View Itinerary
                 </button>
@@ -992,55 +760,24 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Back to Options</span>
                 </button>
-                <h3 className="text-xl font-bold text-[#0B2545]">Trip Cancellation & Refund Support</h3>
+                <h3 className="text-xl font-bold text-[#0B2545]">Check cancellation and refund options</h3>
                 <p className="text-xs text-slate-500">
-                  Carrier policy guidance, cancellation fee waivers, and instant insurance claims.
+                  TripVerse cannot access your bookings or determine refund eligibility.
                 </p>
               </div>
 
-              {/* Refund Summary Card */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-blue-900 uppercase">Docket Reference</span>
-                  <span className="text-xs font-mono font-bold bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-800">
-                    {refundInfo.referenceNumber}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Original Booking Amount</span>
-                  <span className="text-sm font-semibold text-slate-800">
-                    {formatCurrency(refundInfo.originalFareAmount, currency)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Cancellation Fee Waiver</span>
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                    {refundInfo.cancellationFeeWaiverPercent}% Penalty Waived
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-blue-200">
-                  <span className="text-sm font-bold text-blue-950">Estimated Refund to Bank</span>
-                  <span className="text-lg font-extrabold text-blue-700">
-                    {formatCurrency(refundInfo.estimatedRefundAmount, currency)}
-                  </span>
-                </div>
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-950">
+                No cancellation has been submitted, and no refund has been requested. Any refund, fees, and processing time are set by your booking provider and policy.
               </div>
 
-              {/* Exemption Rule */}
-              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-1">
-                <span className="font-bold text-[#0B2545] block">Official Policy Rule:</span>
-                <p className="text-slate-600">{refundInfo.policyExemptionRule}</p>
-              </div>
-
-              {/* Next Steps List */}
               <div>
                 <span className="text-xs font-bold uppercase text-slate-500 tracking-wider block mb-2">
-                  Automated Claim Steps:
+                  Suggested next steps
                 </span>
                 <div className="space-y-2">
                   {refundInfo.claimSteps.map((step, idx) => (
                     <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-600">
-                      <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center shrink-0 text-[10px]">
+                      <span className="w-5 h-5 rounded-full bg-[#EAF0E9] text-[#2D5A3D] font-bold flex items-center justify-center shrink-0 text-[10px] border border-[#8EA78D]/30">
                         {idx + 1}
                       </span>
                       <span>{step}</span>
@@ -1049,19 +786,13 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
                 </div>
               </div>
 
-              {/* Helpline & Action */}
               <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-xs text-slate-600">
-                  <Phone className="w-4 h-4 text-[#00B074]" />
-                  <span>24/7 Helpline: <strong className="text-slate-800">{refundInfo.supportHelpline}</strong></span>
-                </div>
-
                 <button
                   type="button"
                   onClick={() => setScreen(4)}
-                  className="px-5 py-2.5 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer text-center"
+                  className="px-5 py-2.5 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-md shadow-[#2D5A3D]/25 active:scale-95 transition-all cursor-pointer text-center"
                 >
-                  Or Replan Trip Instead →
+                  Explore draft replanning options →
                 </button>
               </div>
 

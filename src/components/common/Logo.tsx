@@ -14,6 +14,7 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   className = 'w-auto h-full', 
   idPrefix 
 }) => {
+  const [imgFailed, setImgFailed] = React.useState(false);
   const generatedId = useId();
   const safeId = (idPrefix || generatedId).replace(/[^a-zA-Z0-9]/g, '');
 
@@ -23,41 +24,67 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   const pMid = `pMid-${safeId}`;
   const pBot = `pBot-${safeId}`;
 
+  if (!imgFailed) {
+    return (
+      <img
+        src="/tripverse-mark-cropped.png"
+        srcSet="/tripverse-mark-cropped.png 1x, /tripverse-mark-cropped@2x.png 2x, /tripverse-mark-vibrant.png 3x"
+        alt="TripVerse Logo"
+        onError={() => setImgFailed(true)}
+        style={{
+          imageRendering: '-webkit-optimize-contrast',
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden'
+        }}
+        className={`select-none pointer-events-none object-contain drop-shadow-2xs inline-block ${className}`}
+        draggable={false}
+        loading="eager"
+        decoding="async"
+      />
+    );
+  }
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="90 70 680 545"
+      preserveAspectRatio="xMidYMid meet"
       shapeRendering="geometricPrecision"
       textRendering="geometricPrecision"
-      className={`select-none pointer-events-none transform-gpu ${className}`}
+      style={{
+        imageRendering: 'crisp-edges',
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden'
+      }}
+      className={`select-none pointer-events-none transform-gpu drop-shadow-2xs ${className}`}
       aria-hidden="true"
     >
       <defs>
         <linearGradient id={tvTGrad} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#00F5A0" />
-          <stop offset="30%" stopColor="#00D287" />
-          <stop offset="70%" stopColor="#00A86B" />
-          <stop offset="100%" stopColor="#008455" />
+          <stop offset="0%" stopColor="#386B49" />
+          <stop offset="35%" stopColor="#2D5A3D" />
+          <stop offset="70%" stopColor="#244931" />
+          <stop offset="100%" stopColor="#1E3E2B" />
         </linearGradient>
 
         <linearGradient id={tvSwoopPinGrad} x1="15%" y1="30%" x2="55%" y2="95%">
-          <stop offset="0%" stopColor="#26FFB0" />
-          <stop offset="25%" stopColor="#00DE90" />
-          <stop offset="60%" stopColor="#00A368" />
-          <stop offset="100%" stopColor="#006D44" />
+          <stop offset="0%" stopColor="#386B49" />
+          <stop offset="25%" stopColor="#2D5A3D" />
+          <stop offset="60%" stopColor="#244931" />
+          <stop offset="100%" stopColor="#152A1C" />
         </linearGradient>
 
         <linearGradient id={pTop} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#00E599" />
-          <stop offset="100%" stopColor="#47FFC7" />
+          <stop offset="0%" stopColor="#2D5A3D" />
+          <stop offset="100%" stopColor="#386B49" />
         </linearGradient>
         <linearGradient id={pMid} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#00A86B" />
-          <stop offset="100%" stopColor="#00D287" />
+          <stop offset="0%" stopColor="#244931" />
+          <stop offset="100%" stopColor="#2D5A3D" />
         </linearGradient>
         <linearGradient id={pBot} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#00704A" />
-          <stop offset="100%" stopColor="#00965F" />
+          <stop offset="0%" stopColor="#152A1C" />
+          <stop offset="100%" stopColor="#1E3E2B" />
         </linearGradient>
       </defs>
 
@@ -78,14 +105,15 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
         <polygon points="658,257 647,268 675,333" fill={`url(#${pBot})`} />
         <polygon points="759,178 658,257 675,333" fill={`url(#${pMid})`} />
         <polygon points="759,178 572,235 658,257" fill={`url(#${pTop})`} />
-        <line x1="658" y1="257" x2="759" y2="178" stroke="#FFFFFF" strokeWidth="1.8" opacity="0.6" strokeLinecap="round" />
+        <line x1="658" y1="257" x2="759" y2="178" stroke="#FFFFFF" strokeWidth="1.8" opacity="0.6" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
       </g>
     </svg>
   );
 };
 
 interface LogoProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'adaptive';
+  layout?: 'horizontal' | 'stacked' | 'adaptive';
   showTagline?: boolean;
   taglineClassName?: string;
   variant?: 'dark' | 'light';
@@ -94,44 +122,89 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({
-  size = 'md',
+  size = 'adaptive',
+  layout = 'horizontal',
   showTagline = true,
-  taglineClassName = '',
+  taglineClassName,
   variant = 'dark',
   onClick,
   className = ''
 }) => {
   const sizeMap = {
-    sm: { imgHeight: 'h-8', textMain: 'text-xl', textSub: 'text-[10px]', gap: 'gap-2' },
-    md: { imgHeight: 'h-9 xl:h-10', textMain: 'text-xl xl:text-2xl', textSub: 'text-[10px] xl:text-[11px]', gap: 'gap-2 xl:gap-2.5' },
-    lg: { imgHeight: 'h-14', textMain: 'text-3xl', textSub: 'text-xs', gap: 'gap-3' },
-    xl: { imgHeight: 'h-18', textMain: 'text-4xl', textSub: 'text-sm', gap: 'gap-3.5' }
+    adaptive: {
+      imgHeight: 'h-6.5 max-[350px]:h-6 min-[380px]:h-7.5 sm:h-8 md:h-8.5 lg:h-9 xl:h-10',
+      textMain: 'text-[16.5px] max-[350px]:text-[15px] min-[380px]:text-[18px] sm:text-xl md:text-[22px] xl:text-2xl',
+      textSub: 'text-[9px] min-[400px]:text-[10px] xl:text-[11px]',
+      gap: 'gap-1 max-[350px]:gap-1 min-[380px]:gap-1.5 sm:gap-2 xl:gap-2.5',
+      defaultTaglineClass: 'hidden md:block'
+    },
+    sm: { 
+      imgHeight: 'h-6.5 sm:h-7', 
+      textMain: 'text-[16px] sm:text-lg', 
+      textSub: 'text-[8.5px] sm:text-[9.5px]', 
+      gap: 'gap-1 sm:gap-1.5',
+      defaultTaglineClass: 'hidden sm:block'
+    },
+    md: { 
+      imgHeight: 'h-7.5 sm:h-8.5 xl:h-9.5', 
+      textMain: 'text-lg sm:text-xl xl:text-2xl', 
+      textSub: 'text-[9.5px] sm:text-[10px] xl:text-[11px]', 
+      gap: 'gap-1.5 sm:gap-2 xl:gap-2.5',
+      defaultTaglineClass: 'hidden md:block'
+    },
+    lg: { 
+      imgHeight: 'h-11 sm:h-13 md:h-14', 
+      textMain: 'text-2xl sm:text-3xl', 
+      textSub: 'text-xs', 
+      gap: 'gap-2.5 sm:gap-3',
+      defaultTaglineClass: 'block'
+    },
+    xl: { 
+      imgHeight: 'h-14 sm:h-16 md:h-18', 
+      textMain: 'text-3xl sm:text-4xl md:text-5xl', 
+      textSub: 'text-xs sm:text-sm', 
+      gap: 'gap-3 sm:gap-3.5',
+      defaultTaglineClass: 'block'
+    }
   };
 
-  const current = sizeMap[size];
+  const current = sizeMap[size] || sizeMap.adaptive;
+  const isStacked = layout === 'stacked';
+  const effectiveTaglineClass = taglineClassName !== undefined 
+    ? taglineClassName 
+    : current.defaultTaglineClass;
 
   return (
     <div 
       onClick={onClick}
-      className={`inline-flex items-center select-none cursor-pointer group ${current.gap} ${className}`}
+      className={`inline-flex select-none cursor-pointer group shrink-0 ${
+        isStacked 
+          ? 'flex-col items-center text-center' 
+          : 'flex-row items-center'
+      } ${current.gap} ${className}`}
       role="banner"
       aria-label="TripVerse Logo"
+      style={{
+        WebkitFontSmoothing: 'antialiased',
+        MozOsxFontSmoothing: 'grayscale',
+        textRendering: 'geometricPrecision'
+      }}
     >
-      {/* Official Exact Brand Icon Mark from User Reference - Pure Native SVG Vector */}
+      {/* Official Exact Brand Icon Mark - Pure Native Vector SVG Rendered in HD at all pixel densities (Retina 2x/3x, OLED, 4K) */}
       <div className="relative flex-shrink-0 transition-transform duration-300 group-hover:scale-105 flex items-center justify-center">
         <BrandIconMark className={`${current.imgHeight} w-auto`} />
       </div>
 
-      {/* Brand Text */}
-      <div className="flex flex-col leading-none">
-        <div className={`font-display font-black tracking-tight ${current.textMain}`}>
+      {/* Brand Text - Fluid sub-pixel typography scaling per device screen width */}
+      <div className={`flex flex-col leading-none min-w-0 ${isStacked ? 'items-center mt-1.5' : 'justify-center'}`}>
+        <div className={`font-display font-black tracking-tight whitespace-nowrap ${current.textMain}`}>
           <span className={variant === 'light' ? 'text-white' : 'text-[#0B2545]'}>Trip</span>
-          <span className="text-[#00B074]">Verse</span>
+          <span className="text-[#2D5A3D]">Verse</span>
         </div>
         {showTagline && (
-          <span className={`font-semibold tracking-wide mt-0.5 ${current.textSub} ${
+          <span className={`font-semibold tracking-wide mt-0.5 truncate max-w-[190px] sm:max-w-none ${current.textSub} ${
             variant === 'light' ? 'text-slate-300' : 'text-slate-500'
-          } ${taglineClassName}`}>
+          } ${effectiveTaglineClass}`}>
             Plan Smarter. Travel Further.
           </span>
         )}

@@ -199,7 +199,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
             refreshState === 'success'
               ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-500/35 scale-105'
               : refreshState === 'ready'
-              ? 'bg-[#00B074] text-white border-[#009863] shadow-emerald-500/30 scale-105'
+              ? 'bg-[#2D5A3D] text-white border-[#244931] shadow-emerald-500/30 scale-105'
               : refreshState === 'refreshing'
               ? 'bg-white/95 text-slate-800 border-slate-200/90 shadow-slate-900/10 scale-100'
               : 'bg-white/95 text-slate-700 border-slate-200/90 shadow-slate-900/8'
@@ -213,7 +213,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
           {/* Circular Progress Arc & Icon */}
           <div className="relative w-5 h-5 flex items-center justify-center shrink-0">
             {refreshState === 'refreshing' ? (
-              <RefreshCw className="w-4 h-4 text-[#00B074] animate-spin" />
+              <RefreshCw className="w-4 h-4 text-[#2D5A3D] animate-spin" />
             ) : refreshState === 'success' ? (
               <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-emerald-600">
                 <Check className="w-3 h-3 stroke-[3]" />
@@ -230,7 +230,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                   <path
-                    className={refreshState === 'ready' ? 'text-white' : 'text-[#00B074]'}
+                    className={refreshState === 'ready' ? 'text-white' : 'text-[#2D5A3D]'}
                     strokeDasharray={`${strokeDash}, 100`}
                     strokeWidth="3.8"
                     strokeLinecap="round"

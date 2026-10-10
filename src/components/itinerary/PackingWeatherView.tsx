@@ -3,7 +3,7 @@ import { Trip, PackingItem, PackingCategory, WeatherDay, WeatherForecast } from 
 import { getDestinationWeather, fetchLiveDestinationWeather } from '../../services/weatherService';
 import { generateSmartPackingList } from '../../services/packingService';
 import { loadTripPacking, saveTripPacking } from '../../services/storageService';
-import { triggerHaptic } from '../../services/deviceService';
+import { openExternalUrl, triggerHaptic } from '../../services/deviceService';
 import confetti from 'canvas-confetti';
 import { 
   Sun, 
@@ -34,7 +34,7 @@ interface PackingWeatherViewProps {
 }
 
 export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
-  // Weather (Instant curated display + background real-time live satellite sync)
+  // Show a clearly marked seasonal estimate until the live forecast request succeeds.
   const [weather, setWeather] = useState<WeatherForecast>(() => 
     getDestinationWeather(trip.destination, trip.durationDays)
   );
@@ -96,7 +96,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
           particleCount: 70,
           spread: 80,
           origin: { y: 0.6 },
-          colors: ['#00D084', '#00B074', '#38BDF8']
+          colors: ['#386B49', '#2D5A3D', '#38BDF8']
         });
       } catch (e) {}
     }
@@ -197,7 +197,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
           particleCount: 50,
           spread: 60,
           origin: { y: 0.7 },
-          colors: ['#00B074', '#38BDF8', '#F59E0B']
+          colors: ['#2D5A3D', '#38BDF8', '#F59E0B']
         });
       } catch (e) {}
     }
@@ -220,7 +220,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
     }
 
     const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(fullText)}`;
-    window.open(waUrl, '_blank');
+    openExternalUrl(waUrl);
   };
 
   const packedCount = packingItems.filter(i => i.isPacked).length;
@@ -305,12 +305,12 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
                 {weather.isLive ? (
                   <>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Live Satellite Radar ({weather.lastUpdated || 'Real-Time'})</span>
+                    <span>Live Weather Forecast ({weather.lastUpdated || 'recently updated'})</span>
                   </>
                 ) : (
                   <>
                     <Compass className="w-3.5 h-3.5 text-sky-300" />
-                    <span>Expedition Climate Radar</span>
+                    <span>Seasonal Estimate · Not Live</span>
                   </>
                 )}
               </span>
@@ -347,7 +347,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
 
         {/* 5-Day Forecast Day Selector (Styled as Daily Journey Boarding Tokens) */}
         <div className="relative z-10 mt-5">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
             <span className="text-[11px] font-medium uppercase tracking-wider text-slate-300">
               Select Day for Climate Details:
             </span>
@@ -454,8 +454,8 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-medium tracking-wider uppercase text-[#00B074] bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200/80 inline-flex items-center gap-1.5">
-                <Luggage className="w-3.5 h-3.5 text-[#00B074]" />
+              <span className="text-[11px] font-medium tracking-wider uppercase text-[#2D5A3D] bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200/80 inline-flex items-center gap-1.5">
+                <Luggage className="w-3.5 h-3.5 text-[#2D5A3D]" />
                 <span>Luggage & Gear Hub</span>
               </span>
               <span className="text-xs text-slate-300 font-bold">•</span>
@@ -483,7 +483,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
 
             <button
               onClick={() => setIsAddingItem(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#00B074] hover:bg-[#00925e] text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-xs hover:shadow-sm cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-xs hover:shadow-sm cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>+ Add Gear</span>
@@ -563,7 +563,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
             </div>
             <div className="w-full bg-slate-200/80 h-2.5 rounded-full overflow-hidden p-0.5">
               <div 
-                className="h-full bg-gradient-to-r from-[#00B074] via-emerald-400 to-teal-400 transition-all duration-500 rounded-full"
+                className="h-full bg-gradient-to-r from-[#1E3E2B] via-[#2D5A3D] to-[#386B49] transition-all duration-500 rounded-full"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -646,7 +646,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
               placeholder="e.g., Drone battery pack, GoPro chest mount, Noise-cancelling pods..."
               value={newCustomItemName}
               onChange={e => setNewCustomItemName(e.target.value)}
-              className="flex-1 px-4 py-2 rounded-xl border border-slate-300 bg-white text-xs font-normal focus:ring-2 focus:ring-[#00B074] focus:outline-none"
+              className="flex-1 px-4 py-2 rounded-xl border border-slate-300 bg-white text-xs font-normal focus:ring-2 focus:ring-[#2D5A3D] focus:outline-none"
               autoFocus
             />
 
@@ -666,7 +666,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
             <div className="flex items-center gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 rounded-xl bg-[#00B074] text-white text-xs font-medium hover:bg-[#00925e] transition-colors"
+                className="px-4 py-2 rounded-xl bg-[#2D5A3D] text-white text-xs font-medium hover:bg-[#244931] transition-colors"
               >
                 Save Item
               </button>
@@ -716,9 +716,9 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
                   className="mt-0.5 shrink-0"
                 >
                   {item.isPacked ? (
-                    <CheckCircle2 className="w-5 h-5 text-[#00B074]" />
+                    <CheckCircle2 className="w-5 h-5 text-[#2D5A3D]" />
                   ) : (
-                    <Circle className="w-5 h-5 text-slate-300 group-hover:text-[#00B074] transition-colors" />
+                    <Circle className="w-5 h-5 text-slate-300 group-hover:text-[#2D5A3D] transition-colors" />
                   )}
                 </button>
 

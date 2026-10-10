@@ -105,7 +105,7 @@ export const TripReviewModal: React.FC<TripReviewModalProps> = ({
         particleCount: 50,
         spread: 60,
         origin: { y: 0.6 },
-        colors: ['#F59E0B', '#00B074', '#10B981']
+        colors: ['#F59E0B', '#2D5A3D', '#10B981']
       });
     } catch {
       // safe fallback
@@ -288,7 +288,7 @@ export const TripReviewModal: React.FC<TripReviewModalProps> = ({
               placeholder="e.g. Sunset point on Lake Pichola, Anjuna cliff cafe"
               value={favoriteSpot}
               onChange={(e) => setFavoriteSpot(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#00B074]"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#2D5A3D]"
             />
           </div>
 
@@ -302,7 +302,7 @@ export const TripReviewModal: React.FC<TripReviewModalProps> = ({
               placeholder="Share advice on road quality, food recommendations, or scenic stop tips..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#00B074] resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#2D5A3D] resize-none"
             />
           </div>
 

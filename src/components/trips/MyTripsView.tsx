@@ -81,34 +81,34 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#00B074]">Your Travel Portfolio</span>
-          <h1 className="text-2xl sm:text-3xl font-display font-black text-[#0B2545] tracking-tight">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Your Travel Portfolio</span>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#152A1C] tracking-tight">
             My Trips & Itineraries
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-[#5A7362] mt-0.5 font-medium">
             Manage your past and upcoming AI journeys with budget tracking.
           </p>
         </div>
 
         <button
           onClick={onOpenPlanner}
-          className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
+          className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-bold text-xs sm:text-sm shadow-[0_4px_16px_rgba(45,90,61,0.2)] active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-4 h-4 text-emerald-300" />
           <span>Plan New Trip</span>
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-2 border-b border-[#E2EBE1] pb-3 overflow-x-auto scrollbar-none">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === tab.id
-                ? 'bg-[#00B074] text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
+                ? 'bg-[#2D5A3D] text-white shadow-xs'
+                : 'bg-white text-[#5A7362] border border-[#E2EBE1] hover:border-[#8EA78D] hover:bg-[#F8FAF7]'
             }`}
           >
             {tab.label}
@@ -118,15 +118,15 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
 
       {/* Trip Cards Grid */}
       {filteredTrips.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-3xl border border-slate-200/80 p-8 space-y-5 shadow-xs max-w-md mx-auto animate-fade-in">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-100 to-teal-50 text-[#00B074] flex items-center justify-center mx-auto shadow-inner border border-emerald-200/60">
+        <div className="text-center py-16 bg-white rounded-3xl border border-[#E2EBE1] p-8 space-y-5 shadow-xs max-w-md mx-auto animate-fade-in">
+          <div className="w-20 h-20 rounded-3xl bg-[#E8EFE7] text-[#2D5A3D] flex items-center justify-center mx-auto shadow-inner border border-[#8EA78D]/30">
             <MapPin className="w-9 h-9 stroke-[1.8]" />
           </div>
           <div className="space-y-1.5">
-            <h3 className="text-xl font-bold font-display text-slate-800">
+            <h3 className="text-xl font-bold font-display text-[#152A1C]">
               {trips.length === 0 ? "No trips yet." : "No trips in this category"}
             </h3>
-            <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+            <p className="text-xs text-[#5A7362] max-w-xs mx-auto leading-relaxed">
               {trips.length === 0 
                 ? "Create your first trip to start planning." 
                 : "No saved journeys found for the selected filter."}
@@ -134,9 +134,9 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
           </div>
           <button
             onClick={onOpenPlanner}
-            className="px-6 py-2.5 rounded-2xl bg-trip-gradient text-white font-bold text-xs shadow-md shadow-emerald-500/20 hover:shadow-lg active:scale-95 transition-all inline-flex items-center gap-2 cursor-pointer"
+            className="px-6 py-2.5 rounded-2xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-bold text-xs shadow-md shadow-[#2D5A3D]/20 active:scale-95 transition-all inline-flex items-center gap-2 cursor-pointer"
           >
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="w-4 h-4 text-emerald-300" />
             <span>Plan a New Trip with AI</span>
           </button>
         </div>
@@ -183,7 +183,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                         )}
 
                         {trip.photos && trip.photos.length > 0 && (
-                          <span className="text-[10px] font-bold px-2 py-0.8 rounded-full border border-emerald-300 backdrop-blur-md bg-emerald-600/90 text-white flex items-center gap-1 shadow-2xs">
+                          <span className="text-[10px] font-bold px-2 py-0.8 rounded-full border border-emerald-300 backdrop-blur-md bg-[#2D5A3D]/90 text-white flex items-center gap-1 shadow-2xs">
                             <Camera className="w-3 h-3" />
                             <span>{trip.photos.length} Photos</span>
                           </span>
@@ -235,7 +235,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                       </div>
                       <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 min-w-0">
                         <span className="badge-caps text-slate-400 block">Est. Cost</span>
-                        <span className="font-extrabold text-[#00B074] font-display truncate block">
+                        <span className="font-extrabold text-[#2D5A3D] font-display truncate block">
                           {formatCurrency(trip.estimatedTotal, currency)}
                         </span>
                       </div>
@@ -246,7 +246,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="font-semibold text-slate-500">Plan Completeness</span>
-                          <span className="font-bold text-[#00B074]">{totalActivities} Activities</span>
+                          <span className="font-bold text-[#2D5A3D]">{totalActivities} Activities</span>
                         </div>
                         <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                           <div
@@ -280,7 +280,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                           e.stopPropagation();
                           onOpenMemories(trip);
                         }}
-                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#00B074] font-bold text-xs border border-emerald-200 transition-colors cursor-pointer"
+                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D] font-bold text-xs border border-[#8EA78D]/30 transition-colors cursor-pointer"
                       >
                         <Camera className="w-3.5 h-3.5" />
                         <span>Memories</span>
@@ -302,7 +302,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
 
                   <button
                     onClick={() => onSelectTrip(trip.id)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-bold text-xs transition-colors cursor-pointer active:scale-95 shadow-2xs"
                   >
                     <span>Open Itinerary & Map</span>
                     <ArrowRight className="w-4 h-4" />

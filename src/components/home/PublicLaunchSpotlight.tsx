@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   Sparkles, 
-  Satellite, 
   Radio, 
   CheckCircle2, 
   Share2, 
@@ -27,7 +26,7 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const launchUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tripverse-pied.vercel.app';
 
-  const shareText = "🚀 TripVerse is officially live! Plan smart road trips with live satellite weather, 500+ verified NHAI highway pitstops, and direct zero-commission bookings. Check it out:";
+  const shareText = "🚀 Plan a trip with TripVerse: create a draft itinerary and budget estimate, with driving routes and map listings when available. Check it out:";
 
   const handleCopyLink = () => {
     triggerHaptic('light');
@@ -81,7 +80,7 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
                 Welcome to the Future of <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Highway & Travel Intelligence</span>
               </h2>
               <p className="text-sm sm:text-base text-slate-300 max-w-2xl mt-2 font-normal leading-relaxed">
-                TripVerse is now officially live for travelers worldwide. Say goodbye to fake inflated tariffs, obsolete static data, and dirty rest stops. Every route, weather radar, and booking is 100% authentic and verified.
+                Create a draft itinerary and budget, then review live driving routes and nearby map listings when those services are configured. Confirm bookings and place details directly with providers.
               </p>
             </div>
 
@@ -111,14 +110,14 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
             
             <div className="p-4 sm:p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-emerald-400/40 transition-all space-y-2 group">
               <div className="w-10 h-10 rounded-xl bg-emerald-400/20 text-emerald-300 flex items-center justify-center font-bold">
-                <Satellite className="w-5 h-5 text-emerald-400" />
+                <Compass className="w-5 h-5 text-emerald-400" />
               </div>
-              <h3 className="font-bold text-white text-base">Live Satellite Radar</h3>
+              <h3 className="font-bold text-white text-base">Live Weather Forecast</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Powered by Open-Meteo satellite feed with live temperature, precipitation probability, and wind radar mapped to exact geo-coordinates.
+                Current and forecast weather from Open-Meteo when provider coverage and destination coordinates are available.
               </p>
               <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider block pt-1">
-                🟢 Live Stream Active
+                Forecast data; not a road-safety advisory
               </span>
             </div>
 
@@ -126,12 +125,12 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
               <div className="w-10 h-10 rounded-xl bg-blue-400/20 text-blue-300 flex items-center justify-center font-bold">
                 <Radio className="w-5 h-5 text-blue-400" />
               </div>
-              <h3 className="font-bold text-white text-base">NHAI 24/7 Highway Safety</h3>
+              <h3 className="font-bold text-white text-base">Emergency information</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Integrated with National Highway Authority helpline (1033), 108 trauma centers, and verified 24/7 towing assistance along all major expressways.
+                Emergency contacts vary by location. The app provides a small set of India helpline references; it does not locate or verify nearby services.
               </p>
               <span className="text-[10px] font-bold text-blue-300 uppercase tracking-wider block pt-1">
-                🛡️ Helpline 1033 Integrated
+                Check local official guidance
               </span>
             </div>
 
@@ -139,12 +138,12 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
               <div className="w-10 h-10 rounded-xl bg-teal-400/20 text-teal-300 flex items-center justify-center font-bold">
                 <CheckCircle2 className="w-5 h-5 text-teal-400" />
               </div>
-              <h3 className="font-bold text-white text-base">500+ Verified Pitstops</h3>
+              <h3 className="font-bold text-white text-base">Route-based map listings</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Every rest area has been vetted for 5-star hygiene washrooms, multi-cuisine highway food plazas, and rapid EV charging points.
+                Driving routes and nearby OpenStreetMap listings via Geoapify are requested for a trip when configured. Place listings do not verify facilities or current availability.
               </p>
               <span className="text-[10px] font-bold text-teal-300 uppercase tracking-wider block pt-1">
-                ⭐ 100% Hygiene Vetted
+                Geoapify / OpenStreetMap data
               </span>
             </div>
 
@@ -152,9 +151,9 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
               <div className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center font-bold">
                 <Zap className="w-5 h-5 text-amber-400" />
               </div>
-              <h3 className="font-bold text-white text-base">Direct 0% Commission Booking</h3>
+              <h3 className="font-bold text-white text-base">External booking links</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                1-click deep links directly into Booking.com, MakeMyTrip, Google Flights, IRCTC, and RedBus. Zero middlemen fees or artificial markups.
+                Booking and transport links open third-party providers. Confirm availability, prices, fees, and terms with them before purchase.
               </p>
               <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block pt-1">
                 ⚡ Direct Partner Handoff
@@ -171,7 +170,7 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
                 <h4 className="text-base font-bold text-white">Share TripVerse With Your Travel Buddies</h4>
               </div>
               <p className="text-xs text-slate-300">
-                Help friends and family plan smarter road trips with real highway rest stops and live satellite radar.
+                Help friends and family create draft trips with routes and map listings when available.
               </p>
             </div>
 

@@ -2,27 +2,27 @@
   <defs>
     <!-- Brand Vibrant Gradients -->
     <linearGradient id="tvTGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#00F5A0" />
-      <stop offset="30%" stop-color="#00D287" />
-      <stop offset="70%" stop-color="#00A86B" />
-      <stop offset="100%" stop-color="#008455" />
+      <stop offset="0%" stop-color="#4A7C59" />
+      <stop offset="30%" stop-color="#386B49" />
+      <stop offset="70%" stop-color="#2D5A3D" />
+      <stop offset="100%" stop-color="#1E3E2B" />
     </linearGradient>
 
     <linearGradient id="tvSwoopPinGrad" x1="15%" y1="30%" x2="55%" y2="95%">
-      <stop offset="0%" stop-color="#26FFB0" />
-      <stop offset="25%" stop-color="#00DE90" />
-      <stop offset="60%" stop-color="#00A368" />
-      <stop offset="100%" stop-color="#006D44" />
+      <stop offset="0%" stop-color="#558B65" />
+      <stop offset="25%" stop-color="#386B49" />
+      <stop offset="60%" stop-color="#2D5A3D" />
+      <stop offset="100%" stop-color="#152A1C" />
     </linearGradient>
 
     <!-- 3D Glider Facets -->
     <linearGradient id="pTop" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#00E599" />
-      <stop offset="100%" stop-color="#47FFC7" />
+      <stop offset="0%" stop-color="#386B49" />
+      <stop offset="100%" stop-color="#558B65" />
     </linearGradient>
     <linearGradient id="pMid" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#00A86B" />
-      <stop offset="100%" stop-color="#00D287" />
+      <stop offset="0%" stop-color="#2D5A3D" />
+      <stop offset="100%" stop-color="#386B49" />
     </linearGradient>
     <linearGradient id="pBot" x1="0%" y1="100%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#00704A" />

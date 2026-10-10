@@ -4,8 +4,8 @@
   "description": "AI-powered travel planning platform with smart routes, highway break stops, budget optimization, and day-wise itineraries.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0B2545",
-  "theme_color": "#0B2545",
+  "background_color": "#FFFFFF",
+  "theme_color": "#2D5A3D",
   "orientation": "portrait-primary",
   "categories": ["travel", "navigation", "lifestyle"],
   "icons": [

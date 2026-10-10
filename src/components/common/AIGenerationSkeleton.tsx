@@ -29,7 +29,7 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
     },
     {
       title: 'Selecting High-Hygiene Pitstops & Dhabas',
-      desc: 'Sequencing 100% sanitized restrooms, top-rated food courts & EV chargers...',
+      desc: 'Preparing a draft itinerary and route lookup...',
       icon: Coffee
     },
     {
@@ -53,14 +53,14 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
         {/* Animated Brand Glow Icon */}
         <div className="relative w-20 h-20 mx-auto">
           <div className="absolute inset-0 rounded-3xl bg-emerald-400 animate-ping opacity-25" />
-          <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#00B074] to-teal-400 text-white flex items-center justify-center shadow-xl shadow-emerald-500/30">
+          <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#2D5A3D] to-teal-400 text-white flex items-center justify-center shadow-xl shadow-emerald-500/30">
             <Sparkles className="w-10 h-10 animate-spin-slow" />
           </div>
         </div>
 
         {/* Title */}
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[#00B074] text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[#2D5A3D] text-xs font-bold uppercase tracking-wider">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>AI Route & Highway Engine</span>
           </div>
@@ -84,7 +84,7 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
                 key={idx}
                 className={`p-3.5 rounded-2xl border transition-all duration-300 flex items-center gap-3 ${
                   isCurrent
-                    ? 'bg-emerald-50/80 border-[#00B074] shadow-xs'
+                    ? 'bg-emerald-50/80 border-[#2D5A3D] shadow-xs'
                     : isDone
                       ? 'bg-slate-50 border-slate-200 opacity-90'
                       : 'bg-white border-slate-100 opacity-40'
@@ -92,7 +92,7 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
               >
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                   isCurrent
-                    ? 'bg-[#00B074] text-white animate-pulse'
+                    ? 'bg-[#2D5A3D] text-white animate-pulse'
                     : isDone
                       ? 'bg-emerald-100 text-emerald-700'
                       : 'bg-slate-100 text-slate-400'
@@ -114,7 +114,7 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
                 </div>
 
                 {isCurrent && (
-                  <span className="w-4 h-4 border-2 border-[#00B074] border-t-transparent rounded-full animate-spin shrink-0" />
+                  <span className="w-4 h-4 border-2 border-[#2D5A3D] border-t-transparent rounded-full animate-spin shrink-0" />
                 )}
               </div>
             );

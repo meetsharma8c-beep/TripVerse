@@ -140,7 +140,7 @@ export function supabaseUserToAuthUser(sbUser: SupabaseAuthUser, overrides?: Par
     overrides?.photoURL || 
     metadata.avatar_url || 
     metadata.picture || 
-    `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=00B074,0B2545`;
+    `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=2D5A3D,0B2545`;
 
   const provider = (sbUser.app_metadata?.provider as any) || (sbUser.phone ? 'phone' : 'supabase');
 
@@ -331,7 +331,7 @@ export async function signInWithGoogleCredential(credential: string): Promise<Au
       uid,
       email: emailNorm,
       displayName: payload.name || payload.given_name || emailNorm.split('@')[0],
-      photoURL: payload.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(payload.name || emailNorm)}&backgroundColor=00B074,0B2545`,
+      photoURL: payload.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(payload.name || emailNorm)}&backgroundColor=2D5A3D,0B2545`,
       travelerStyle: 'Budget explorer',
       travelStyleTag: 'Heritage & Food Hunter',
       location: 'India',
@@ -873,7 +873,7 @@ export async function verifyPhoneOtp(
       email: '',
       phoneNumber: cleanPhone,
       displayName: finalName,
-      photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(finalName)}&backgroundColor=00B074,0B2545`,
+      photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(finalName)}&backgroundColor=2D5A3D,0B2545`,
       travelerStyle: travelerStyle || 'Budget explorer',
       travelStyleTag: 'Phone Verified Explorer',
       location: location || 'India',

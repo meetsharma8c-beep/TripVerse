@@ -46,22 +46,22 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
       id: 'tip-hotel',
       category: 'accommodation' as keyof BudgetBreakdown,
       savings: 700,
-      title: 'Choose a Verified Heritage Haveli Stay',
-      desc: `Swap standard hotel for a high-rated heritage haveli. Saves ${formatCurrency(700, currency)} while maintaining 4.7/5 cleanliness and scenic rooftop views.`
+      title: 'Compare accommodation options',
+      desc: `Compare properties and confirm availability, facilities, and prices directly. Any displayed savings are estimates, not quotes.`
     },
     {
       id: 'tip-transport',
       category: 'transportation' as keyof BudgetBreakdown,
       savings: 300,
-      title: 'Shared FastTag Toll & Route Optimizer',
-      desc: `Optimize expressway speed, avoid congested city diversions and pool tolls on the highway corridor. Saves ${formatCurrency(300, currency)}.`
+      title: 'Review the estimated driving budget',
+      desc: `Fuel, tolls, and driving costs vary by route and date. Check current route and toll information before travel.`
     },
     {
       id: 'tip-dining',
       category: 'food' as keyof BudgetBreakdown,
       savings: 250,
-      title: 'Dine at Authentic Local Thali Dhabas',
-      desc: `Swap overpriced tourist rooftop cafes for authentic traditional unlimited thalis. Saves ${formatCurrency(250, currency)} with genuine regional flavor.`
+      title: 'Compare dining options',
+      desc: 'Search current place listings and confirm menus and prices directly with venues before visiting.'
     }
   ];
 
@@ -70,12 +70,20 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
     onApplySavings(tip.savings, tip.category, tip.title);
   };
 
+  const breakdown = trip.budgetBreakdown || {
+    transportation: 0,
+    accommodation: 0,
+    food: 0,
+    activities: 0,
+    miscellaneous: 0
+  };
+
   const categories = [
-    { key: 'transportation', label: 'Transportation', amount: trip.budgetBreakdown.transportation, icon: Car, color: '#0284C7' },
-    { key: 'accommodation', label: 'Stay & Hotels', amount: trip.budgetBreakdown.accommodation, icon: Bed, color: '#8B5CF6' },
-    { key: 'food', label: 'Food & Dining', amount: trip.budgetBreakdown.food, icon: Utensils, color: '#00B074' },
-    { key: 'activities', label: 'Attractions & Sightseeing', amount: trip.budgetBreakdown.activities, icon: Ticket, color: '#F59E0B' },
-    { key: 'miscellaneous', label: 'Buffer & Emergency', amount: trip.budgetBreakdown.miscellaneous, icon: Shield, color: '#64748B' },
+    { key: 'transportation' as keyof BudgetBreakdown, label: 'Transportation', amount: Number(breakdown.transportation) || 0, icon: Car, color: '#0284C7' },
+    { key: 'accommodation' as keyof BudgetBreakdown, label: 'Stay & Hotels', amount: Number(breakdown.accommodation) || 0, icon: Bed, color: '#8B5CF6' },
+    { key: 'food' as keyof BudgetBreakdown, label: 'Food & Dining', amount: Number(breakdown.food) || 0, icon: Utensils, color: '#2D5A3D' },
+    { key: 'activities' as keyof BudgetBreakdown, label: 'Attractions & Sightseeing', amount: Number(breakdown.activities) || 0, icon: Ticket, color: '#F59E0B' },
+    { key: 'miscellaneous' as keyof BudgetBreakdown, label: 'Buffer & Emergency', amount: Number(breakdown.miscellaneous) || 0, icon: Shield, color: '#64748B' },
   ];
 
   return (
@@ -84,7 +92,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#00B074] mb-1">
+          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#2D5A3D] mb-1">
             <Sparkles className="w-3.5 h-3.5" />
             <span>AI Cost Intelligence • CONCODE DB Guild</span>
           </div>
@@ -136,7 +144,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
           <span className="text-xs font-bold uppercase tracking-wider block opacity-75">
             {isOverBudget ? 'Budget Deficit' : 'Remaining Savings'}
           </span>
-          <div className={`text-2xl font-black mt-1 font-display truncate ${isOverBudget ? 'text-rose-600' : 'text-[#00B074]'}`}>
+          <div className={`text-2xl font-black mt-1 font-display truncate ${isOverBudget ? 'text-rose-600' : 'text-[#2D5A3D]'}`}>
             {isOverBudget ? `-${formatCurrency(Math.abs(buffer), currency)}` : `+${formatCurrency(buffer, currency)}`}
           </div>
           <span className="text-[11px] font-semibold opacity-80 truncate block">
@@ -189,14 +197,14 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
 
       {/* AI Recommendations for Cost Reduction */}
       <div className="pt-2 border-t border-slate-100">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
-            <TrendingDown className="w-4 h-4 text-[#00B074]" />
+            <TrendingDown className="w-4 h-4 text-[#2D5A3D] shrink-0" />
             <h3 className="text-sm font-bold text-[#0B2545]">
               AI 1-Click Optimization Suggestions
             </h3>
           </div>
-          <span className="text-xs font-bold text-[#00B074]">
+          <span className="text-xs font-bold text-[#2D5A3D] shrink-0">
             Total Potential Savings: {formatCurrency(1250, currency)}
           </span>
         </div>
@@ -212,7 +220,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-[#00B074] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+                    <span className="text-xs font-bold text-[#2D5A3D] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
                       Save {formatCurrency(tip.savings, currency)}
                     </span>
                     <h4 className="text-xs sm:text-sm font-bold text-slate-900 min-w-0">{tip.title}</h4>

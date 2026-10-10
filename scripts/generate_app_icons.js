@@ -33,7 +33,7 @@ async function generateAppIcons() {
         width: item.size,
         height: item.size,
         channels: 4,
-        background: { r: 11, g: 37, b: 69, alpha: 1 } // #0B2545 Midnight Navy
+        background: { r: 255, g: 255, b: 255, alpha: 1 } // #FFFFFF Pure White
       }
     })
     .composite([
@@ -90,7 +90,7 @@ async function generateAppIcons() {
         width: m.iconSize,
         height: m.iconSize,
         channels: 4,
-        background: { r: 11, g: 37, b: 69, alpha: 1 }
+        background: { r: 255, g: 255, b: 255, alpha: 1 } // #FFFFFF Pure White
       }
     })
     .composite([{ input: legMark, gravity: 'center' }])
@@ -99,7 +99,7 @@ async function generateAppIcons() {
 
     // Legacy round icon
     const circleSvg = Buffer.from(
-      `<svg width="${m.iconSize}" height="${m.iconSize}"><circle cx="${m.iconSize / 2}" cy="${m.iconSize / 2}" r="${m.iconSize / 2}" fill="#0B2545"/></svg>`
+      `<svg width="${m.iconSize}" height="${m.iconSize}"><circle cx="${m.iconSize / 2}" cy="${m.iconSize / 2}" r="${m.iconSize / 2}" fill="#FFFFFF"/></svg>`
     );
     const roundBg = await sharp(circleSvg).png().toBuffer();
 

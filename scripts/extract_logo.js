@@ -2,7 +2,7 @@ import sharp from 'sharp';
 import fs from 'fs';
 
 async function extractTransparentLogo() {
-  const inputPath = '/Users/ms/.gemini/antigravity-ide/brain/f7b178e8-6ea8-48d0-b47d-0901b363dc7b/.user_uploaded/media_1789797968210.png';
+  const inputPath = 'public/brand-logo-raw.jpg';
   const image = sharp(inputPath);
   const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
 
@@ -10,57 +10,130 @@ async function extractTransparentLogo() {
   const height = info.height;
   const channels = info.channels;
 
-  // Background color is approximately rgb(148, 148, 148)
-  // Let's compute color distance from background for each pixel.
+  // 1. Core Green Condition: Must have substantial green saturation
+  const isLogoCore = (x, y) => {
+    if (x < 125 || x > 925 || y < 205 || y > 835) return false;
+    const idx = (y * width + x) * channels;
+    const r = data[idx];
+    const g = data[idx + 1];
+    const b = data[idx + 2];
+    return (g > 35 && (g - r) >= 16 && (g - b) >= 6);
+  };
+
+  // 2. BFS Connected Component Analysis starting from guaranteed logo seeds
+  const connectedMask = new Uint8Array(width * height);
+  const queue = [];
+  const seeds = [
+    [400, 270], // T top horizontal bar
+    [410, 450], // T central stem
+    [415, 750], // Lower pin
+    [200, 580], // Left swoop arc
+    [550, 580], // Lower swoop arc
+    [780, 360], // Airplane body
+    [730, 350], // Airplane left wing
+    [800, 390], // Airplane tail
+  ];
+
+  for (const [sx, sy] of seeds) {
+    const sIdx = sy * width + sx;
+    if (isLogoCore(sx, sy) && !connectedMask[sIdx]) {
+      connectedMask[sIdx] = 1;
+      queue.push([sx, sy]);
+    }
+  }
+
+  while (queue.length > 0) {
+    const [cx, cy] = queue.pop();
+    const neighbors = [
+      [cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1],
+      [cx + 1, cy + 1], [cx + 1, cy - 1], [cx - 1, cy + 1], [cx - 1, cy - 1]
+    ];
+    for (const [nx, ny] of neighbors) {
+      if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+        const nIdx = ny * width + nx;
+        if (!connectedMask[nIdx] && isLogoCore(nx, ny)) {
+          connectedMask[nIdx] = 1;
+          queue.push([nx, ny]);
+        }
+      }
+    }
+  }
+
+  // 3. Proximity map: Only allow anti-aliasing within 3px of connected component
+  const proximity = new Uint8Array(width * height);
+  const R = 3;
+  for (let y = 205; y < 835; y++) {
+    for (let x = 125; x < 925; x++) {
+      if (connectedMask[y * width + x] === 1) {
+        for (let dy = -R; dy <= R; dy++) {
+          for (let dx = -R; dx <= R; dx++) {
+            proximity[(y + dy) * width + (x + dx)] = 1;
+          }
+        }
+      }
+    }
+  }
+
+  // 4. Alpha matting and color unmixing against pure white background
   const outBuffer = Buffer.alloc(width * height * 4);
 
-  // Background is neutral gray: R ≈ G ≈ B and saturation is near 0.
-  // The logo has green > red by at least 15-20.
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const idx = (y * width + x) * channels;
       const outIdx = (y * width + x) * 4;
 
-      const r = data[idx];
-      const g = data[idx + 1];
-      const b = data[idx + 2];
-
-      // Distance from gray (148, 148, 148)
-      const dist = Math.sqrt(
-        Math.pow(r - 148, 2) + 
-        Math.pow(g - 148, 2) + 
-        Math.pow(b - 148, 2)
-      );
-
-      // Chroma difference: logo has significant green vs red
-      const greenDiff = g - r;
-      const maxDiff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
-
-      let alpha = 0;
-      if (dist > 30 || greenDiff > 8 || maxDiff > 12) {
-        // Logo pixel
-        // Smooth feather near boundary
-        if (dist < 38 && greenDiff < 15) {
-          alpha = Math.min(255, Math.max(0, Math.round(((dist - 28) / 10) * 255)));
-        } else {
-          alpha = 255;
-        }
-
-        // Color enhancement: restore vibrant brand teal/emerald if the original image was slightly desaturated
-        outBuffer[outIdx] = r;
-        outBuffer[outIdx + 1] = g;
-        outBuffer[outIdx + 2] = b;
-        outBuffer[outIdx + 3] = alpha;
-      } else {
-        // Background pixel -> fully transparent
+      if (proximity[y * width + x] === 0) {
         outBuffer[outIdx] = 0;
         outBuffer[outIdx + 1] = 0;
         outBuffer[outIdx + 2] = 0;
         outBuffer[outIdx + 3] = 0;
+        continue;
+      }
+
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      const isCore = connectedMask[y * width + x] === 1;
+      const minVal = Math.min(r, g, b);
+
+      if (isCore && minVal < 210) {
+        // Solid logo interior
+        outBuffer[outIdx] = r;
+        outBuffer[outIdx + 1] = g;
+        outBuffer[outIdx + 2] = b;
+        outBuffer[outIdx + 3] = 255;
+      } else {
+        // Edge anti-aliasing: compute distance from clean white (254, 254, 254)
+        const greenDiffR = Math.max(0, g - r);
+        const distFromWhite = Math.sqrt(
+          Math.pow(254 - r, 2) + Math.pow(254 - g, 2) + Math.pow(254 - b, 2)
+        );
+
+        if (distFromWhite < 12 || greenDiffR < 4) {
+          outBuffer[outIdx] = 0;
+          outBuffer[outIdx + 1] = 0;
+          outBuffer[outIdx + 2] = 0;
+          outBuffer[outIdx + 3] = 0;
+        } else {
+          // Smooth alpha ramp
+          const alpha = Math.min(255, Math.max(0, Math.round(((distFromWhite - 8) / 95) * 255)));
+          const aNorm = Math.max(0.1, alpha / 255);
+
+          // Color unmix
+          const ur = Math.min(255, Math.max(0, Math.round((r - 254 * (1 - aNorm)) / aNorm)));
+          const ug = Math.min(255, Math.max(0, Math.round((g - 254 * (1 - aNorm)) / aNorm)));
+          const ub = Math.min(255, Math.max(0, Math.round((b - 254 * (1 - aNorm)) / aNorm)));
+
+          outBuffer[outIdx] = ur;
+          outBuffer[outIdx + 1] = ug;
+          outBuffer[outIdx + 2] = ub;
+          outBuffer[outIdx + 3] = alpha;
+        }
       }
     }
   }
 
+  // Save exact 1024x1024 transparent mark
   await sharp(outBuffer, {
     raw: {
       width,
@@ -68,55 +141,61 @@ async function extractTransparentLogo() {
       channels: 4
     }
   })
-  .png()
+  .png({ compressionLevel: 9 })
   .toFile('public/tripverse-mark-exact.png');
+  console.log('✅ Saved public/tripverse-mark-exact.png');
 
-  console.log('Saved public/tripverse-mark-exact.png');
+  // Trim tight
+  const trimmed = await sharp('public/tripverse-mark-exact.png')
+    .trim()
+    .toBuffer({ resolveWithObject: true });
+  console.log(`✅ Trimmed Mark: ${trimmed.info.width}x${trimmed.info.height}`);
 
-  // Also create a vibrant brand-colored version matching the official logo from the full brand image
-  // In the brand image, the gradient is vibrant emerald to teal:
-  // Top: #00D084, Bottom: #008F68
-  const vibrantBuffer = Buffer.alloc(width * height * 4);
-  for (let y = 0; y < height; y++) {
-    const t = y / height; // 0 at top, 1 at bottom
-    // Interpolate: top (#00D287 -> [0, 210, 135]) to bottom (#00885B -> [0, 136, 91])
-    const vr = Math.round(0 * (1 - t) + 0 * t);
-    const vg = Math.round(210 * (1 - t) + 136 * t);
-    const vb = Math.round(135 * (1 - t) + 91 * t);
+  await sharp(trimmed.data)
+    .png({ compressionLevel: 9 })
+    .toFile('public/tripverse-mark-cropped.png');
 
-    for (let x = 0; x < width; x++) {
-      const outIdx = (y * width + x) * 4;
-      const alpha = outBuffer[outIdx + 3];
-
-      if (alpha > 0) {
-        // preserve subtle shading from original
-        const origG = data[(y * width + x) * channels + 1];
-        const shadeFactor = origG / 125; // around 1.0
-
-        vibrantBuffer[outIdx] = Math.min(255, Math.round(vr * shadeFactor));
-        vibrantBuffer[outIdx + 1] = Math.min(255, Math.round(vg * shadeFactor));
-        vibrantBuffer[outIdx + 2] = Math.min(255, Math.round(vb * shadeFactor));
-        vibrantBuffer[outIdx + 3] = alpha;
-      } else {
-        vibrantBuffer[outIdx] = 0;
-        vibrantBuffer[outIdx + 1] = 0;
-        vibrantBuffer[outIdx + 2] = 0;
-        vibrantBuffer[outIdx + 3] = 0;
-      }
-    }
-  }
-
-  await sharp(vibrantBuffer, {
-    raw: {
-      width,
-      height,
-      channels: 4
+  // Master Centered Transparent Logo (1024x1024)
+  await sharp({
+    create: {
+      width: 1024,
+      height: 1024,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
     }
   })
-  .png()
+  .composite([
+    {
+      input: trimmed.data,
+      gravity: 'center'
+    }
+  ])
+  .png({ compressionLevel: 9 })
   .toFile('public/tripverse-mark-vibrant.png');
+  console.log('✅ Saved public/tripverse-mark-vibrant.png');
 
-  console.log('Saved public/tripverse-mark-vibrant.png');
+  // Master App Icon (1024x1024 with pure white background)
+  const appIconMark = await sharp(trimmed.data)
+    .resize(580, 445, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .toBuffer();
+
+  await sharp({
+    create: {
+      width: 1024,
+      height: 1024,
+      channels: 4,
+      background: { r: 255, g: 255, b: 255, alpha: 1 } // #FFFFFF Pure White
+    }
+  })
+  .composite([
+    {
+      input: appIconMark,
+      gravity: 'center'
+    }
+  ])
+  .png({ compressionLevel: 9 })
+  .toFile('public/tripverse-app-icon.png');
+  console.log('✅ Saved public/tripverse-app-icon.png');
 }
 
 extractTransparentLogo().catch(console.error);

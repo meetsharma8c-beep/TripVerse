@@ -10,7 +10,6 @@ import {
   ItineraryActivity 
 } from '../types/trip';
 import { queryConcodeBrain } from './concodeBrainService';
-import { getDestinationWeather } from './weatherService';
 import { generateAITrip } from './plannerEngine';
 import { generateTransportDeals } from './dealService';
 import { 
@@ -64,15 +63,12 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🧭 **Live Turn-by-Turn GPS Navigation Activated!**\n\n` +
-          `• **Route Corridor:** ${cleanOrigin} → ${cleanDest} (${currentTrip.routeType === 'scenic' ? 'Scenic Highway' : 'Expressway Corridor'})\n` +
-          `• **Estimated Distance:** 258 km • **Driving Time:** ~4h 35m\n` +
-          `• **Highway Guidance:** Speed radar active (100 km/h limit), automated FASTag lane guidance, and ${currentTrip.breakStops.length} verified pitstops.\n\n` +
-          `Launching the full-screen Turn-by-Turn GPS Navigation HUD now...`,
+        text: `🧭 **Open live navigation**\n\n` +
+          `TripVerse does not provide turn-by-turn directions, live traffic, speed-limit detection, or toll-lane guidance. Opening an external navigation app for ${cleanOrigin} → ${cleanDest}.`,
         timestamp,
         actionButtons: [
           { label: '🛡️ Highway Safety & SOS', action: 'SAFETY_CHECK' },
-          { label: '🥗 Verified Dhabas Along Route', action: 'VIEW_ITINERARY' }
+          { label: '🗺️ View mapped place listings', action: 'VIEW_ITINERARY' }
         ]
       },
       appAction: {
@@ -100,12 +96,11 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🛡️ **TripVerse Disruption Guard is Active for ${cleanDest}!**\n\n` +
-          `Life happens and travel disruptions occur, but we ensure zero stranded time and 100% policy protection:\n` +
-          `• 🏨 **Emergency Stays:** 24/7 check-in verified safe hotels and homestays nearby.\n` +
-          `• 📄 **100% DGCA Refund Waiver:** Direct automated claim docket for cancellations caused by weather or technical carrier delays.\n` +
-          `• 🔄 **Smart 1-Click Date/Destination Shift:** Push your dates forward or shift to clear-weather corridors without re-booking fees.\n\n` +
-          `Opening Trip Replanning & Emergency Center now...`,
+        text: `TripVerse can help draft alternative plans for ${cleanDest}, but it does not monitor live disruptions, make bookings, or submit refund claims.\n\n` +
+          `• Search external accommodation listings and verify safety, availability, price, and terms directly.\n` +
+          `• Contact the transport or booking provider shown on your confirmation for current status and refund eligibility.\n` +
+          `• Replanning suggestions are estimates; check weather and travel conditions with official sources before acting.\n\n` +
+          `Opening Trip Replanning options...`,
         timestamp,
         actionButtons: [
           { label: '🔄 Replan My Trip', action: 'OPEN_REPLANNING' },
@@ -366,8 +361,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🏷️ **Switching to Verified Transport Deals & Discounts:**\n\n` +
-          `Comparing verified fuel deals, car rental coupons, and train/flight ticket savings for ${cleanDest}.`,
+        text: `Opening external transport provider searches for ${cleanDest}. TripVerse does not have live fares, verified discounts, or booking inventory.`,
         timestamp,
         actionButtons: [
           { label: 'Make Trip Cheaper', action: 'MAKE_CHEAPER' },
@@ -524,28 +518,16 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
     normalized.includes('mist') ||
     normalized.includes('fog')
   ) {
-    const weatherData = getDestinationWeather(query, currentTrip.durationDays, currentTrip.destination);
-    const cleanCity = weatherData.destination;
-    const forecastSummary = weatherData.forecastDays
-      .map(d => `• ${d.date}: ${d.minTempC}°C to ${d.maxTempC}°C | ${d.condition} (Rain: ${d.rainProbPercent}%)`)
-      .join('\n');
-
     return {
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `⛅ **Live Weather & Climate Telemetry for ${cleanCity}:**\n\n` +
-          `• **Current Condition:** ${weatherData.currentCondition} (${weatherData.currentTempC}°C)\n` +
-          `• **Air Quality (AQI):** ${weatherData.forecastDays[0]?.aqi || 35} (Good) • **UV Index:** ${weatherData.forecastDays[0]?.uvi || 6}\n\n` +
-          `📅 **${currentTrip.durationDays}-Day Forecast:**\n${forecastSummary}\n\n` +
-          `🚗 **Road Advisory:** [${weatherData.roadConditionAdvisory.level.toUpperCase()}] ${weatherData.roadConditionAdvisory.title}\n` +
-          `${weatherData.roadConditionAdvisory.details}\n\n` +
-          `💡 **Packing Tip:** ${weatherData.forecastDays[0]?.clothingTip || 'Pack light layers and sun protection.'}`,
+        text: `I don't have a live forecast or verified road advisory in this chat response for ${currentTrip.destination}. Open the trip weather view to request a current forecast where coordinates and provider coverage are available. Check official weather and road-authority updates before travelling.`,
         timestamp,
         actionButtons: [
+          { label: 'Check Weather Forecast', action: 'CHECK_WEATHER' },
           { label: '🎒 View Packing Checklist', action: 'VIEW_PACKING' },
-          { label: '🛡️ Check Route Safety', action: 'SAFETY_CHECK' },
-          { label: '🧭 Start GPS Navigation', action: 'START_NAV' }
+          { label: '🛡️ Review Route Safety Guidance', action: 'SAFETY_CHECK' }
         ]
       }
     };
@@ -645,12 +627,12 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `💰 **Optimized Your Trip to Save ₹${totalSavings.toLocaleString('en-IN')}!**\n\n` +
-          `Here is the cost breakdown optimization applied:\n` +
-          `• 🏨 **Lodging:** Switched stay to high-rated heritage hostel/boutique haveli (Saved ₹${savedHotel})\n` +
-          `• 🍲 **Dining:** Replaced rooftop dining with top-rated local Rajasthani/Gujarati thali dhabas (Saved ₹${savedFood})\n` +
-          `• 🚗 **Transit:** Optimized highway tolls and fuel-efficient cruise windows (Saved ₹${savedTransport})\n\n` +
-          `**New Estimated Total:** ₹${updated.estimatedTotal.toLocaleString('en-IN')}`,
+        text: `💰 **Draft budget reduced by ₹${totalSavings.toLocaleString('en-IN')}**\n\n` +
+          `This offline rule updated the draft estimate; it did not find or book any live offer:\n` +
+          `• 🏨 **Lodging:** Uses a lower-cost stay assumption (Estimated reduction ₹${savedHotel})\n` +
+          `• 🍲 **Dining:** Uses a lower-cost local-meal assumption (Estimated reduction ₹${savedFood})\n` +
+          `• 🚗 **Transit:** Uses a lower transport-cost assumption (Estimated reduction ₹${savedTransport})\n\n` +
+          `**New draft estimate:** ₹${updated.estimatedTotal.toLocaleString('en-IN')}. Check provider prices before booking.`,
         timestamp,
         actionButtons: [
           { label: 'View Expense Breakdown', action: 'VIEW_EXPENSES' },
@@ -854,7 +836,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
           return {
             ...a,
             title: `Pure Veg: ${a.title.replace('Pure Veg: ', '')}`,
-            description: `${a.description} (100% verified pure vegetarian kitchen with separate prep stations)`
+            description: `${a.description} Dietary preference requested; confirm ingredients and cross-contamination directly with each venue.`
           };
         }
         return a;
@@ -865,9 +847,8 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🥗 **100% Pure Vegetarian & Jain Dietary Filter Activated!**\n\n` +
-          `• All dining stops and highway dhabas along ${cleanOrigin} → ${cleanDest} filtered to certified pure vegetarian havelis with separate prep stations.\n` +
-          `• Verified 4.8★ hygiene ratings.`,
+        text: `🥗 **Vegetarian preference noted**\n\n` +
+          `Trip suggestions reflect a vegetarian preference for ${cleanOrigin} → ${cleanDest}. This does not verify a venue's menu, preparation practices, or hygiene; confirm directly with each venue.`,
         timestamp,
         actionButtons: [
           { label: 'View Food Dhabas', action: 'VIEW_ITINERARY' },
@@ -915,11 +896,10 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
         id: `msg-${Date.now()}`,
         sender: 'ai',
         text: `🚗 **Switched Transport Mode to ${updated.transportMode.toUpperCase()}!**\n\n` +
-          `• Generated verified live transport deals and schedules for ${cleanOrigin} → ${cleanDest}.\n` +
-          `• Best available deal: **${deals.bestDeal.provider}** (${deals.bestDeal.title}) for ₹${deals.bestDeal.dealPrice.toLocaleString('en-IN')}.`,
+          `TripVerse does not have live fares or schedules. Check provider listings for current availability and prices.`,
         timestamp,
         actionButtons: [
-          { label: 'View Transport Deals', action: 'VIEW_DEALS' },
+          { label: 'Search Transport Providers', action: 'VIEW_DEALS' },
           { label: 'Start GPS Nav', action: 'START_NAV' }
         ]
       },
@@ -1406,13 +1386,9 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🛡️ **24x7 Highway Safety & Emergency SOS Directory for ${cleanDest}:**\n\n` +
-          `• 🚨 **National Unified Emergency:** **112** (Police, Fire & Medical SOS)\n` +
-          `• 🛣️ **NHAI Highway Emergency & Crane Patrol:** **1033** (24/7 Toll-Free on all National Highways)\n` +
-          `• 🚑 **Medical Ambulance Helpline:** **108**\n` +
-          `• 👮 **Police Patrol Direct:** **100**\n` +
-          `• 🚗 **Roadside Assistance (RSA):** Supported nationwide with 30-min highway arrival response.\n\n` +
-          `💡 **Corridor Advisory:** Maintain 100 km/h expressway limit, check tyre pressure before ghat sections, and use designated well-lit fuel plazas for rest stops.`,
+        text: `TripVerse does not monitor your location, contact emergency services, or dispatch roadside assistance.\n\n` +
+          `If you are in immediate danger, contact the local emergency service for your current location. In India, 112 is the national emergency number; emergency numbers and roadside support vary elsewhere. For highway assistance, use the number posted by the road authority or your vehicle-assistance provider and confirm it is current.\n\n` +
+          `Follow local authority instructions and check official route and weather updates before travelling.`,
         timestamp,
         actionButtons: [
           { label: '🧭 Start GPS Navigation', action: 'START_NAV' },
@@ -1471,157 +1447,45 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
   };
 }
 
-export type CoPilotEngine = 'concode_brain' | 'gemini' | 'offline';
-
-export async function processUserChatWithGemini(
+export async function processTravelCoPilotQuery(
   query: string,
-  currentTrip: Trip,
-  apiKey?: string
+  currentTrip: Trip
 ): Promise<AssistantResponse> {
   const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  if (!apiKey || !apiKey.trim()) {
-    const offlineRes = processUserChatQuery(query, currentTrip);
-    offlineRes.message.engine = 'offline';
-    return offlineRes;
-  }
-
   try {
-    const systemPrompt = `You are TripVerse Journey AI, an ultra-smart Indian travel and road trip co-pilot.
-Current Trip Context:
-- Trip Name: ${currentTrip.name}
-- Destination: ${currentTrip.destination} (${currentTrip.durationDays} Days, ${currentTrip.travelersCount} travelers)
-- Budget: ₹${currentTrip.estimatedTotal} (Total planned budget ₹${currentTrip.totalBudget})
-- Current Route Type: ${currentTrip.routeType}
-- Food Preference: ${currentTrip.foodPreference}
-- Transport: ${currentTrip.transportMode}
-
-Provide concise, highly actionable, friendly advice for India travel (mention specific highway routes like NH-48, dhabas, pitstops, local food, timings, entry tickets, and safety tips where relevant). Keep answers under 3-4 paragraphs.`;
-
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: `${systemPrompt}\n\nTraveler Question: "${query}"` }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 800
-        }
-      })
-    });
-
-    if (!res.ok) {
-      console.warn('Gemini API returned error, falling back to local engine', res.statusText);
-      const offlineRes = processUserChatQuery(query, currentTrip);
-      offlineRes.message.engine = 'offline';
-      return offlineRes;
-    }
-
-    const data = await res.json();
-    const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!candidateText) {
-      const offlineRes = processUserChatQuery(query, currentTrip);
-      offlineRes.message.engine = 'offline';
-      return offlineRes;
-    }
-
-    const localResult = processUserChatQuery(query, currentTrip);
+    const brainRes = await queryConcodeBrain(query, currentTrip);
+    const actionButtons = (brainRes.actionButtons && brainRes.actionButtons.length > 0)
+      ? brainRes.actionButtons
+      : [
+          { label: '🧭 Start GPS Navigation', action: 'START_NAV' },
+          { label: '💳 Audit Tolls & Fuel', action: 'MAKE_CHEAPER' },
+          { label: '🥗 Food Trails & Dhabas', action: 'EXPLORE_FOOD' }
+        ];
 
     return {
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: candidateText,
+        text: brainRes.response,
         timestamp,
-        engine: 'gemini',
-        actionButtons: (localResult.message.actionButtons && localResult.message.actionButtons.length > 0)
-          ? localResult.message.actionButtons
-          : [
-              { label: '💳 Optimize Budget', action: 'MAKE_CHEAPER' },
-              { label: '🥗 Explore Food Trails', action: 'EXPLORE_FOOD' },
-              { label: '🧭 GPS Navigation', action: 'START_NAV' }
-            ]
+        engine: 'concode_brain',
+        guild: brainRes.guild,
+        guildIcon: brainRes.guildIcon,
+        confidence: brainRes.confidence,
+        actionButtons,
+        structuredItinerary: brainRes.structuredItinerary,
+        budgetBreakdown: brainRes.budgetBreakdown,
+        modificationBadge: brainRes.modificationBadge
       },
-      updatedTrip: localResult.updatedTrip,
-      appAction: localResult.appAction
+      updatedTrip: brainRes.updatedTrip,
+      appAction: brainRes.appAction
     };
   } catch (err) {
-    console.warn('Gemini API fetch error, falling back to local engine:', err);
+    console.warn('[TripVerse] CONCODE unavailable; using clearly-labelled offline rules.', err);
     const offlineRes = processUserChatQuery(query, currentTrip);
     offlineRes.message.engine = 'offline';
+    offlineRes.message.text = `**Offline trip guidance — CONCODE is currently unavailable.**\n\n${offlineRes.message.text}`;
     return offlineRes;
   }
-}
-
-export async function processTravelCoPilotQuery(
-  query: string,
-  currentTrip: Trip,
-  options: {
-    engine?: CoPilotEngine;
-    apiKey?: string;
-  } = {}
-): Promise<AssistantResponse> {
-  const { engine = 'concode_brain', apiKey = '' } = options;
-  const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  // 1. If CONCODE Neural Brain is selected, run client-side neural brain
-  if (engine === 'concode_brain') {
-    try {
-      const brainRes = await queryConcodeBrain(query, currentTrip);
-      
-      // Determine action buttons
-      const actionButtons = (brainRes.actionButtons && brainRes.actionButtons.length > 0)
-        ? brainRes.actionButtons
-        : [
-            { label: '🧭 Start GPS Navigation', action: 'START_NAV' },
-            { label: '💳 Audit Tolls & Fuel', action: 'MAKE_CHEAPER' },
-            { label: '🥗 Food Trails & Dhabas', action: 'EXPLORE_FOOD' }
-          ];
-
-      return {
-        message: {
-          id: `msg-${Date.now()}`,
-          sender: 'ai',
-          text: brainRes.response,
-          timestamp,
-          engine: 'concode_brain',
-          guild: brainRes.guild,
-          guildIcon: brainRes.guildIcon,
-          confidence: brainRes.confidence,
-          actionButtons,
-          structuredItinerary: brainRes.structuredItinerary,
-          budgetBreakdown: brainRes.budgetBreakdown,
-          modificationBadge: brainRes.modificationBadge
-        },
-        updatedTrip: brainRes.updatedTrip,
-        appAction: brainRes.appAction
-      };
-    } catch (err) {
-      console.warn('[TripVerse] CONCODE Neural Brain offline, falling back...', err);
-      if (apiKey && apiKey.trim()) {
-        return processUserChatWithGemini(query, currentTrip, apiKey);
-      }
-      const offlineRes = processUserChatQuery(query, currentTrip);
-      offlineRes.message.engine = 'offline';
-      return offlineRes;
-    }
-  }
-
-  // 2. If Gemini is selected
-  if (engine === 'gemini') {
-    return processUserChatWithGemini(query, currentTrip, apiKey);
-  }
-
-  // 3. Built-in instant offline rules
-  const res = processUserChatQuery(query, currentTrip);
-  res.message.engine = 'offline';
-  return res;
 }

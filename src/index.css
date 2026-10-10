@@ -2,17 +2,23 @@
 
 @theme {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-serif: 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif;
 
-  --color-trip-primary: #00B074;
-  --color-trip-primary-hover: #009863;
-  --color-trip-emerald: #00D084;
-  --color-trip-darkteal: #00704A;
-  --color-trip-navy: #0B2545;
-  --color-trip-navy-dark: #07172C;
-  --color-trip-navy-light: #133966;
-  --color-trip-bg: #F8FAFC;
+  --color-trip-primary: #2D5A3D;
+  --color-trip-primary-hover: #244931;
+  --color-trip-emerald: #386B49;
+  --color-trip-darkteal: #1E3E2B;
+  --color-trip-forest: #2D5A3D;
+  --color-trip-forest-dark: #1E3E2B;
+  --color-trip-forest-light: #446E50;
+  --color-trip-sage: #8EA78D;
+  --color-trip-sage-light: #EAF0E9;
+  --color-trip-sage-pill: #E2EBE1;
+  --color-trip-navy: #152A1C;
+  --color-trip-navy-dark: #0D1A11;
+  --color-trip-navy-light: #254130;
+  --color-trip-bg: #F4F6F2;
   --color-trip-card: #FFFFFF;
 }
 
@@ -65,12 +71,400 @@ body {
   min-height: 100%;
   min-height: 100dvh;
   font-family: var(--font-sans);
-  background-color: #F8FAFC;
-  color: #0F172A;
+  background-color: #F4F6F2;
+  color: #152A1C;
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-overflow-scrolling: touch;
+}
+
+html.dark {
+  color-scheme: dark;
+  --color-trip-primary: #34D399;
+  --color-trip-primary-hover: #10B981;
+  --color-trip-emerald: #6EE7B7;
+  --color-trip-darkteal: #A7F3D0;
+  --color-trip-forest: #6EE7B7;
+  --color-trip-forest-dark: #A7F3D0;
+  --color-trip-forest-light: #A7F3D0;
+  --color-trip-sage: #94A3B8;
+  --color-trip-sage-light: #16382B;
+  --color-trip-sage-pill: #1E293B;
+  --color-trip-navy: #F8FAFC;
+  --color-trip-navy-dark: #FFFFFF;
+  --color-trip-navy-light: #E2E8F0;
+  --color-trip-bg: #0B1220;
+  --color-trip-card: #111C2E;
+}
+
+html.dark body,
+html.dark #root > div {
+  background-color: #0b1220 !important;
+  color: #e2e8f0;
+}
+
+/* ==========================================================================
+   NIGHT MODE TYPOGRAPHY & VISIBILITY (WCAG AAA High-Contrast Readability)
+   ========================================================================== */
+
+/* Main Headings, Titles, Durations, and Dark Green UI Copy */
+html.dark [class~="text-[#152A1C]"],
+html.dark [class*="text-[#152A1C]"],
+html.dark .text-\[\#152A1C\],
+html.dark [class~="text-slate-900"],
+html.dark [class~="text-slate-800"],
+html.dark [class~="text-slate-700"],
+html.dark [class~="text-[#0B2545]"],
+html.dark [class~="text-[#0F172A]"] {
+  color: #F8FAFC !important;
+}
+
+/* Brand Accent Text, Section Subtitles, Active Nav, Verified Badges */
+html.dark [class~="text-[#2D5A3D]"],
+html.dark [class*="text-[#2D5A3D]"],
+html.dark .text-\[\#2D5A3D\],
+html.dark [class~="text-[#00B074]"],
+html.dark [class~="text-emerald-800"],
+html.dark [class~="text-emerald-700"],
+html.dark [class~="text-emerald-600"] {
+  color: #6EE7B7 !important;
+}
+
+/* Deep Forest & Teal Text Elements */
+html.dark [class~="text-[#1E3E2B]"],
+html.dark [class~="text-[#1B3624]"],
+html.dark [class~="text-[#254130]"],
+html.dark [class~="text-[#0D1A11]"] {
+  color: #F1F5F9 !important;
+}
+
+/* Light Forest / Emerald Accent Text */
+html.dark [class~="text-[#446E50]"],
+html.dark [class~="text-[#386B49]"] {
+  color: #A7F3D0 !important;
+}
+
+/* Secondary & Muted Category Labels, Descriptions, Footnotes */
+html.dark [class~="text-[#57685D]"],
+html.dark [class*="text-[#57685D]"],
+html.dark [class~="text-[#5A7362]"],
+html.dark [class*="text-[#5A7362]"],
+html.dark [class~="text-slate-600"] {
+  color: #CBD5E1 !important;
+}
+
+html.dark [class~="text-[#8EA78D]"],
+html.dark [class*="text-[#8EA78D]"],
+html.dark [class~="text-slate-500"],
+html.dark [class~="text-slate-400"] {
+  color: #94A3B8 !important;
+}
+
+html.dark [class~="text-amber-800"] {
+  color: #fcd34d !important;
+}
+
+/* Hover text states */
+html.dark [class~="hover:text-[#152A1C]"]:hover,
+html.dark [class*="hover:text-[#152A1C]"]:hover {
+  color: #FFFFFF !important;
+}
+
+html.dark [class~="hover:text-[#2D5A3D]"]:hover,
+html.dark [class*="hover:text-[#2D5A3D]"]:hover,
+html.dark [class*="hover:text-[#244931]"]:hover {
+  color: #A7F3D0 !important;
+}
+
+/* Night Mode Text Gradients */
+html.dark .text-trip-navy-gradient {
+  background: linear-gradient(135deg, #FFFFFF 0%, #6EE7B7 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+html.dark .text-trip-gradient {
+  background: linear-gradient(135deg, #6EE7B7 0%, #A7F3D0 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* ==========================================================================
+   NIGHT MODE SURFACES & CARD CONTAINERS
+   ========================================================================== */
+
+/* Cards and panels */
+html.dark [class~="bg-white"],
+html.dark [class~="bg-white/95"],
+html.dark [class~="bg-white/90"],
+html.dark [class~="bg-white/80"] {
+  background-color: #111C2E !important;
+}
+
+html.dark [class~="bg-[#F8FAFC]"],
+html.dark [class~="bg-[#F4F6F2]"],
+html.dark [class*="bg-[#F4F6F2]"] {
+  background-color: #0B1220 !important;
+}
+
+/* Header and Navbar translucency in night mode */
+html.dark header[class*="bg-[#F4F6F2]"],
+html.dark header.bg-\[\#F4F6F2\]\/90 {
+  background-color: rgba(11, 18, 32, 0.92) !important;
+  border-bottom-color: #1E293B !important;
+}
+
+html.dark [class~="bg-[#F8FAF7]"],
+html.dark [class*="bg-[#F8FAF7]"],
+html.dark [class~="bg-slate-50"],
+html.dark [class~="bg-slate-50/90"] {
+  background-color: #162235 !important;
+}
+
+html.dark [class~="bg-slate-100"],
+html.dark [class~="bg-slate-100/90"] {
+  background-color: #1E293B !important;
+}
+
+html.dark [class~="bg-slate-200"] {
+  background-color: #334155 !important;
+}
+
+/* Glowing Emerald Pill Badges, Icon Badges & Tags */
+html.dark [class~="bg-[#E8EFE7]"],
+html.dark [class*="bg-[#E8EFE7]"],
+html.dark [class~="bg-[#EAF0E9]"],
+html.dark [class*="bg-[#EAF0E9]"],
+html.dark [class~="bg-emerald-50"],
+html.dark [class~="bg-emerald-50/80"],
+html.dark [class~="bg-teal-50"] {
+  background-color: rgba(45, 90, 61, 0.35) !important;
+}
+
+html.dark [class~="bg-[#E2EBE1]"],
+html.dark [class*="bg-[#E2EBE1]"],
+html.dark [class~="bg-[#DCE7DB]"],
+html.dark [class*="bg-[#DCE7DB]"] {
+  background-color: #1E293B !important;
+}
+
+html.dark [class~="bg-emerald-100"],
+html.dark [class~="bg-teal-100"] {
+  background-color: #164E3B !important;
+}
+
+html.dark [class~="bg-amber-50"] {
+  background-color: #422006 !important;
+}
+
+html.dark [class~="bg-blue-50"],
+html.dark [class~="bg-sky-50"] {
+  background-color: #172F4B !important;
+}
+
+/* Nature Card & Boarding Pass Utilities */
+html.dark .nature-card {
+  background-color: #111C2E !important;
+  border-color: #234233 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .nature-card-hover:hover {
+  border-color: #34D399 !important;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.7) !important;
+}
+
+html.dark .ticket-divider {
+  border-top-color: #234233 !important;
+}
+
+html.dark .ticket-divider::before,
+html.dark .ticket-divider::after {
+  background-color: #0B1220 !important;
+  box-shadow: inset -2px 0 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Scroll Fade Masks in Night Mode */
+html.dark [class*="from-[#F4F6F2]"] {
+  --tw-gradient-from: #0B1220 !important;
+}
+
+html.dark [class*="to-[#F4F6F2]"] {
+  --tw-gradient-to: #0B1220 !important;
+}
+
+/* ==========================================================================
+   NIGHT MODE BUTTONS & CALL-TO-ACTIONS
+   ========================================================================== */
+
+/* Primary Action Buttons */
+html.dark [class~="bg-[#2D5A3D]"],
+html.dark [class*="bg-[#2D5A3D]"] {
+  background-color: #059669 !important;
+  color: #FFFFFF !important;
+}
+
+html.dark [class~="hover:bg-[#2D5A3D]"]:hover,
+html.dark [class*="hover:bg-[#2D5A3D]"]:hover {
+  background-color: #10B981 !important;
+}
+
+html.dark .bg-trip-gradient,
+html.dark .btn-liquid-primary,
+html.dark [class~="bg-[#2D5A3D]"],
+html.dark [class*="bg-[#2D5A3D]"],
+html.dark [class~="bg-[#00B074]"] {
+  background: linear-gradient(135deg, #059669 0%, #047857 52%, #065F46 100%) !important;
+  color: #FFFFFF !important;
+}
+
+html.dark .btn-liquid-primary:hover {
+  background: linear-gradient(135deg, #10B981 0%, #059669 52%, #047857 100%) !important;
+  box-shadow: 0 14px 32px -4px rgba(5, 150, 105, 0.55), 0 6px 16px -2px rgba(5, 150, 105, 0.35) !important;
+}
+
+html.dark .btn-liquid-glass {
+  background: #263449 !important;
+  border-color: #475569 !important;
+  color: #F8FAFC !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08);
+}
+
+html.dark .btn-liquid-glass * {
+  color: #F8FAFC !important;
+}
+
+html.dark .btn-liquid-glass:hover {
+  background: #334155 !important;
+  border-color: #64748B !important;
+}
+
+html.dark .btn-liquid-glass:active {
+  background: #1E293B !important;
+}
+
+html.dark [class~="bg-emerald-500"],
+html.dark [class~="bg-emerald-600"],
+html.dark [class~="bg-emerald-600/90"],
+html.dark [class~="bg-emerald-700"] {
+  background-color: #047857 !important;
+  color: #FFFFFF !important;
+}
+
+html.dark [class~="bg-amber-500"] {
+  background-color: #92400e !important;
+  color: #FFFFFF !important;
+}
+
+html.dark [class~="bg-blue-500"],
+html.dark [class~="bg-blue-600"] {
+  background-color: #1d4ed8 !important;
+  color: #FFFFFF !important;
+}
+
+html.dark [class~="bg-red-500"],
+html.dark [class~="bg-red-600"] {
+  background-color: #b91c1c !important;
+  color: #FFFFFF !important;
+}
+
+/* ==========================================================================
+   NIGHT MODE BORDERS & HOVERS
+   ========================================================================== */
+
+html.dark [class~="border-[#E2EBE1]"],
+html.dark [class*="border-[#E2EBE1]"],
+html.dark [class~="border-[#DCE7DB]"],
+html.dark [class*="border-[#DCE7DB]"],
+html.dark [class~="border-[#C4D9C3]"],
+html.dark [class*="border-[#C4D9C3]"],
+html.dark [class~="border-[#DCE6DA]"],
+html.dark [class~="border-[#C5D9C8]"],
+html.dark [class~="border-slate-100"],
+html.dark [class~="border-slate-200"],
+html.dark [class~="border-slate-200/80"],
+html.dark [class~="border-slate-200/90"],
+html.dark [class~="border-slate-300"] {
+  border-color: #1E293B !important;
+}
+
+html.dark [class*="border-[#8EA78D]"] {
+  border-color: rgba(78, 124, 93, 0.45) !important;
+}
+
+html.dark [class~="border-[#2D5A3D]"],
+html.dark [class*="border-[#2D5A3D]"],
+html.dark [class~="border-emerald-200"],
+html.dark [class~="border-emerald-200/80"],
+html.dark [class~="border-emerald-300"] {
+  border-color: #059669 !important;
+}
+
+html.dark [class~="hover:bg-slate-50"]:hover,
+html.dark [class~="hover:bg-slate-100"]:hover,
+html.dark [class~="hover:bg-slate-100/70"]:hover,
+html.dark [class~="hover:bg-[#F4F6F2]"]:hover,
+html.dark [class*="hover:bg-[#F4F6F2]"]:hover,
+html.dark [class~="hover:bg-[#F8FAF7]"]:hover,
+html.dark [class*="hover:bg-[#F8FAF7]"]:hover {
+  background-color: #1E293B !important;
+}
+
+html.dark [class~="hover:bg-[#E8EFE7]"]:hover,
+html.dark [class*="hover:bg-[#E8EFE7]"]:hover,
+html.dark [class*="hover:bg-[#dce7db]"]:hover,
+html.dark [class*="hover:bg-[#d9e5d8]"]:hover {
+  background-color: rgba(45, 90, 61, 0.55) !important;
+}
+
+/* Avatar rings in night mode */
+html.dark [class~="ring-white"] {
+  --tw-ring-color: #111C2E !important;
+}
+
+/* ==========================================================================
+   NIGHT MODE FORM INPUTS & INTERACTIVE CONTROLS
+   ========================================================================== */
+
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark textarea,
+html.dark select {
+  background-color: #162235 !important;
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder,
+html.dark [class*="placeholder:text-[#5A7362]"]::placeholder,
+html.dark [class*="placeholder:text-slate-400"]::placeholder,
+html.dark [class*="placeholder:text-[#57685D]"]::placeholder {
+  color: #94A3B8 !important;
+}
+
+html.dark .leaflet-control,
+html.dark .leaflet-bar a {
+  background-color: #111C2E !important;
+  color: #E2E8F0 !important;
+  border-color: #334155 !important;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #0B1220;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
 }
 
 /* Safe area padding utilities for iOS and Android notches & gesture bars */
@@ -133,35 +527,79 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* TripVerse primary gradient */
+/* TripVerse nature-inspired primary gradient */
 .bg-trip-gradient {
-  background: linear-gradient(135deg, #00D084 0%, #00B074 50%, #008F68 100%);
+  background: linear-gradient(135deg, #386B49 0%, #2D5A3D 52%, #1E3E2B 100%);
 }
 
 .bg-trip-gradient-hover:hover {
-  background: linear-gradient(135deg, #00DE8D 0%, #00BD7C 50%, #009D72 100%);
+  background: linear-gradient(135deg, #3F7552 0%, #316243 52%, #244932 100%);
 }
 
 .bg-trip-hero-gradient {
-  background: linear-gradient(180deg, rgba(7, 23, 44, 0.3) 0%, rgba(7, 23, 44, 0.75) 100%);
+  background: linear-gradient(180deg, rgba(21, 42, 28, 0.25) 0%, rgba(21, 42, 28, 0.75) 100%);
 }
 
 .text-trip-gradient {
-  background: linear-gradient(135deg, #00D084 0%, #00B074 100%);
+  background: linear-gradient(135deg, #2D5A3D 0%, #4E7C5D 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .text-trip-navy-gradient {
-  background: linear-gradient(135deg, #0B2545 0%, #1E3A8A 100%);
+  background: linear-gradient(135deg, #152A1C 0%, #2D5A3D 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .text-trip-amber-gradient {
-  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Nature Card & Boarding Pass Utilities */
+.nature-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2EBE1;
+  box-shadow: 0 4px 20px -2px rgba(45, 90, 61, 0.05);
+  border-radius: 1.5rem;
+}
+
+.nature-card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nature-card-hover:hover {
+  border-color: #B2CEB0;
+  box-shadow: 0 12px 32px -4px rgba(45, 90, 61, 0.12);
+  transform: translateY(-2px);
+}
+
+.ticket-divider {
+  position: relative;
+  border-top: 2px dashed #E2EBE1;
+}
+
+.ticket-divider::before,
+.ticket-divider::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background-color: #F4F6F2;
+}
+
+.ticket-divider::before {
+  left: -24px;
+  box-shadow: inset -2px 0 3px rgba(45, 90, 61, 0.06);
+}
+
+.ticket-divider::after {
+  right: -24px;
+  box-shadow: inset 2px 0 3px rgba(45, 90, 61, 0.06);
 }
 
 /* Typography Enhancements & Anti-Clipping Helpers */
@@ -219,10 +657,10 @@ body {
 /* Pulse glow for AI badges */
 @keyframes soft-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(0, 176, 116, 0.4);
+    box-shadow: 0 0 0 0 rgba(45, 90, 61, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(0, 176, 116, 0);
+    box-shadow: 0 0 0 8px rgba(45, 90, 61, 0);
   }
 }
 
@@ -274,21 +712,21 @@ button, [role="button"], .btn-tap-target {
   -webkit-user-select: none;
 }
 
-/* Liquid Primary Curved Emerald Button */
+/* Liquid Primary Curved Forest Green Button */
 .btn-liquid-primary {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #00E590 0%, #00B074 52%, #00875A 100%);
+  background: linear-gradient(135deg, #386B49 0%, #2D5A3D 52%, #1E3E2B 100%);
   color: #FFFFFF;
   font-weight: 700;
   border: 1px solid rgba(255, 255, 255, 0.45);
   box-shadow: 
-    0 10px 25px -4px rgba(0, 176, 116, 0.42),
-    0 4px 12px -2px rgba(0, 176, 116, 0.28),
-    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.6),
+    0 10px 25px -4px rgba(45, 90, 61, 0.38),
+    0 4px 12px -2px rgba(45, 90, 61, 0.22),
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.5),
     inset 0 -2px 3px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -306,25 +744,25 @@ button, [role="button"], .btn-tap-target {
   left: 0;
   right: 0;
   height: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 100%);
   border-top-left-radius: inherit;
   border-top-right-radius: inherit;
   pointer-events: none;
 }
 
 .btn-liquid-primary:hover {
-  background: linear-gradient(135deg, #00F099 0%, #00BD7D 52%, #009362 100%);
+  background: linear-gradient(135deg, #3F7552 0%, #336444 52%, #224530 100%);
   box-shadow: 
-    0 14px 32px -4px rgba(0, 176, 116, 0.52),
-    0 6px 16px -2px rgba(0, 176, 116, 0.35),
-    inset 0 1.5px 2px rgba(255, 255, 255, 0.7);
+    0 14px 32px -4px rgba(45, 90, 61, 0.48),
+    0 6px 16px -2px rgba(45, 90, 61, 0.3),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.6);
   transform: translateY(-1.5px) scale(1.015);
 }
 
 .btn-liquid-primary:active {
   transform: translateY(1px) scale(0.96);
   box-shadow: 
-    0 4px 12px -2px rgba(0, 176, 116, 0.3),
+    0 4px 12px -2px rgba(45, 90, 61, 0.3),
     inset 0 2px 4px rgba(0, 0, 0, 0.22);
   transition-duration: 80ms;
 }
@@ -545,7 +983,3 @@ svg {
     content: "" !important;
   }
 }
-
-
-
-

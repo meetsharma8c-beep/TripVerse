@@ -108,9 +108,7 @@ export function calculateCountdown(trip: Trip): TripCountdownInfo {
 }
 
 /**
- * Generates rich, contextual notifications for users.
- * For fresh users: provides official, professional platform intelligence, safety guard status, and AI planner access.
- * For users with active journeys: attaches live trip countdowns, weather advisories, and packing reminders.
+ * Generates trip-specific countdown and planning reminders; this does not monitor live conditions.
  */
 export function generateNotifications(trips: Trip[], activeTrip?: Trip): TripNotification[] {
   const readIds = getStoredReadNotificationIds();
@@ -131,7 +129,7 @@ export function generateNotifications(trips: Trip[], activeTrip?: Trip): TripNot
         id: `notif-countdown-${activeTrip.id}`,
         tripId: activeTrip.id,
         title: `Departure Countdown: ${countdown.daysRemaining}d ${countdown.hoursRemaining}h to ${activeTrip.destination.split(',')[0]}!`,
-        message: `Your journey to ${activeTrip.destination} is upcoming. Route conditions and weather look optimal.`,
+        message: `Your journey to ${activeTrip.destination} is upcoming. Check current route conditions and weather before departure.`,
         type: 'countdown',
         timestamp: 'Active Trip',
         read: readIds.includes(`notif-countdown-${activeTrip.id}`),
@@ -141,16 +139,16 @@ export function generateNotifications(trips: Trip[], activeTrip?: Trip): TripNot
       });
     }
 
-    // Weather advisory for active trip
+    // Prompt the traveler to check a forecast; no live weather is fetched here.
     notifs.push({
       id: `notif-weather-${activeTrip.id}`,
       tripId: activeTrip.id,
-      title: `Weather Advisory: ${activeTrip.destination.split(',')[0]}`,
-      message: 'Pleasant travel weather forecasted along the driving corridor. Route visibility is clear.',
-      type: 'weather_alert',
-      timestamp: 'Trip Forecast',
+      title: `Weather check reminder: ${activeTrip.destination.split(',')[0]}`,
+      message: 'No weather or route conditions have been checked for this trip. Review current forecasts and official advisories before travelling.',
+      type: 'system',
+      timestamp: 'Planning reminder',
       read: readIds.includes(`notif-weather-${activeTrip.id}`),
-      priority: 'medium',
+      priority: 'low',
       actionLabel: 'Check Weather',
       actionTarget: 'weather'
     });
@@ -160,7 +158,7 @@ export function generateNotifications(trips: Trip[], activeTrip?: Trip): TripNot
       id: `notif-packing-${activeTrip.id}`,
       tripId: activeTrip.id,
       title: 'Smart Packing Checklist Ready',
-      message: `Curated essentials prepared for your trip to ${activeTrip.destination.split(',')[0]}.`,
+      message: `Review and adjust the suggested packing checklist for your trip to ${activeTrip.destination.split(',')[0]}.`,
       type: 'packing',
       timestamp: 'Trip Assistant',
       read: readIds.includes(`notif-packing-${activeTrip.id}`),
@@ -169,20 +167,6 @@ export function generateNotifications(trips: Trip[], activeTrip?: Trip): TripNot
       actionTarget: 'packing'
     });
 
-    if (activeTrip.bestTransportDeal) {
-      notifs.push({
-        id: `notif-deal-${activeTrip.id}`,
-        tripId: activeTrip.id,
-        title: `Exclusive Deal: Save ₹${activeTrip.bestTransportDeal.savingsAmount.toLocaleString('en-IN')}`,
-        message: `${activeTrip.bestTransportDeal.title} — ${activeTrip.bestTransportDeal.subtitle}. Verified discount ready to redeem.`,
-        type: 'deal',
-        timestamp: 'Trip Savings',
-        read: readIds.includes(`notif-deal-${activeTrip.id}`),
-        priority: 'medium',
-        actionLabel: 'View Deal',
-        actionTarget: 'deals'
-      });
-    }
   }
 
   // 3. User reviews (Only for user-completed trips that have not been reviewed yet)

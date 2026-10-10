@@ -109,33 +109,33 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
       {/* Search and Header Banner */}
-      <div className="bg-gradient-to-r from-[#0B2545] to-[#133966] rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-[#152A1C] via-[#2D5A3D] to-[#1B3624] rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
         <div className="max-w-2xl relative z-10 space-y-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#A8C7A5]">
             TripVerse Destination Discovery
           </span>
-          <h1 className="text-2xl sm:text-4xl font-display font-black tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl font-display font-bold tracking-tight leading-tight">
             Explore Handpicked Getaways
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 font-normal">
-            Discover verified routes, estimated road trip budgets, and authentic experiences tailored for young travelers and road-trippers.
+          <p className="text-xs sm:text-sm text-[#E8EFE7] font-normal leading-relaxed">
+            Discover verified routes, estimated road trip budgets, and authentic experiences tailored for travelers seeking nature, culture, and adventure.
           </p>
 
           {/* Search Input */}
           <div className="pt-2 relative">
-            <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+            <Search className="w-5 h-5 text-[#8EA78D] absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by destination (e.g. Udaipur, Manali, beaches, forts)..."
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white text-slate-900 placeholder:text-slate-400 font-semibold text-sm focus:outline-none focus:ring-4 focus:ring-emerald-500/20 shadow-md"
+              placeholder="Search by destination (e.g. Bali, Kyoto, Udaipur, Manali)..."
+              className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white text-[#152A1C] placeholder:text-[#5A7362] font-semibold text-sm focus:outline-none focus:ring-4 focus:ring-[#8EA78D]/30 shadow-md"
             />
           </div>
         </div>
 
         {/* Decorative background glow */}
-        <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-emerald-500/20 to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-[#8EA78D]/20 to-transparent pointer-events-none" />
       </div>
 
       {/* Filter Tabs with Clear Scroll Affordance */}
@@ -147,8 +147,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               onClick={() => setSelectedTag(tab.id)}
               className={`min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center justify-center shrink-0 ${
                 selectedTag === tab.id
-                  ? 'bg-[#00B074] text-white shadow-xs'
-                  : 'bg-white text-slate-700 border border-slate-200 hover:border-emerald-300 hover:bg-slate-50'
+                  ? 'bg-[#2D5A3D] text-white shadow-xs'
+                  : 'bg-white text-[#5A7362] border border-[#E2EBE1] hover:border-[#8EA78D] hover:bg-[#F8FAF7]'
               }`}
             >
               {tab.label}
@@ -156,27 +156,27 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           ))}
         </div>
         {/* Right Fade & Scroll Hint */}
-        <div className="absolute right-0 top-0 bottom-3 w-10 bg-gradient-to-l from-slate-50 to-transparent pointer-events-none md:hidden" />
+        <div className="absolute right-0 top-0 bottom-3 w-10 bg-gradient-to-l from-[#F4F6F2] to-transparent pointer-events-none md:hidden" />
       </div>
 
-      {/* Personalized Recommendations Section (When viewing all places without active text query) */}
+      {/* Personalized Recommendations Section */}
       {selectedTag === 'all' && !searchQuery.trim() && recommendedDestinations.length > 0 && (
-        <div className="bg-gradient-to-br from-emerald-50/70 via-white to-slate-50 rounded-3xl p-5 sm:p-6 border border-emerald-200/80 shadow-xs space-y-4">
+        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E2EBE1] shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-trip-gradient text-white flex items-center justify-center shadow-xs">
-                <Sparkles className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-[#2D5A3D] text-white flex items-center justify-center shadow-xs">
+                <Sparkles className="w-4 h-4 text-emerald-300" />
               </div>
               <div>
-                <h3 className="text-base sm:text-lg font-bold font-display text-[#0B2545]">
+                <h3 className="text-base sm:text-lg font-bold font-display text-[#152A1C]">
                   Recommended for Your Style
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[#5A7362]">
                   Tailored to your {userProfile?.travelerStyle || 'explorer'} profile & budget preference
                 </p>
               </div>
             </div>
-            <span className="text-xs font-bold text-emerald-800 bg-emerald-100/70 px-3 py-1 rounded-full border border-emerald-200 self-start sm:self-auto">
+            <span className="text-xs font-bold text-[#2D5A3D] bg-[#E8EFE7] px-3 py-1 rounded-full border border-[#8EA78D]/30 self-start sm:self-auto">
               ✨ 98% AI Match
             </span>
           </div>
@@ -220,7 +220,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                     </div>
                     <p className="text-[11px] text-slate-500 truncate">{dest.tagline}</p>
                     <div className="flex items-center justify-between text-xs pt-0.5">
-                      <span className="font-bold text-[#00B074] text-xs">
+                      <span className="font-bold text-[#2D5A3D] text-xs">
                         From {formatCurrency(dest.startBudget, currency)}
                       </span>
                       <button
@@ -354,7 +354,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                     className="w-full h-full object-cover"
                     onError={handleImageError}
                   />
-                  <div className="absolute top-2 left-2 bg-[#00B074] text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs">
+                  <div className="absolute top-2 left-2 bg-[#2D5A3D] text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs">
                     <Sparkles className="w-3 h-3" />
                     <span>AI Tailored Destination</span>
                   </div>
@@ -390,7 +390,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                   )}
 
                   <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-700 pt-1">
-                    <span>Est. Budget: <strong className="text-[#00B074] font-display">{formatCurrency(synthesized.startBudget, currency)}</strong>/person</span>
+                    <span>Est. Budget: <strong className="text-[#2D5A3D] font-display">{formatCurrency(synthesized.startBudget, currency)}</strong>/person</span>
                     <span>Duration: <strong>{synthesized.recommendedDuration}</strong></span>
                     <span>Best Season: <strong>{synthesized.bestTime}</strong></span>
                   </div>

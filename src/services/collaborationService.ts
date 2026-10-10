@@ -24,7 +24,7 @@ const COLLAB_STORAGE_KEY_PREFIX = 'tripverse_collab_v1_';
 const COLLAB_EVENT_KEY = 'tripverse_collaboration_update';
 
 const AVATAR_COLORS = [
-  '#00B074', // Emerald
+  '#2D5A3D', // Emerald
   '#0284c7', // Sky Blue
   '#8b5cf6', // Violet
   '#f59e0b', // Amber
@@ -64,7 +64,7 @@ export function getOrInitializeCollaborationSession(
   }
 
   const ownerName = currentUser?.displayName || 'Trip Leader';
-  const ownerAvatar = currentUser?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(ownerName)}&backgroundColor=00B074,0B2545`;
+  const ownerAvatar = currentUser?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(ownerName)}&backgroundColor=2D5A3D,0B2545`;
   const ownerId = currentUser?.uid || `user-owner-${Date.now()}`;
 
   const owner: TripCollaborator = {
@@ -73,7 +73,7 @@ export function getOrInitializeCollaborationSession(
     avatar: ownerAvatar,
     email: currentUser?.email || undefined,
     role: 'owner',
-    color: '#00B074',
+    color: '#2D5A3D',
     joinedAt: new Date().toISOString(),
     lastActiveAt: new Date().toISOString(),
     isOnline: true

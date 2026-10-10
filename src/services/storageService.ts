@@ -1,6 +1,5 @@
 import { Trip, UserProfile, TripPhotoMemory, TripReview, ExpenseItem, PackingItem } from '../types/trip';
 import { DEFAULT_USER_PROFILE } from '../data/initialTrips';
-import { generateTransportDeals } from './dealService';
 import { getCurrentUser, toUserProfile } from './authService';
 import {
   saveTripToSupabase,
@@ -147,27 +146,11 @@ export function loadTrips(userId?: string | null): Trip[] {
       trips = JSON.parse(raw);
     }
 
-    // Hydrate deals if needed
-    const hydrated = trips.map(trip => {
-      if (!trip.bestTransportDeal || !trip.transportDeals || trip.transportDeals.length === 0) {
-        const dealsResult = generateTransportDeals({
-          mode: trip.transportMode || 'car',
-          origin: trip.origin,
-          destination: trip.destination,
-          durationDays: trip.durationDays,
-          travelersCount: trip.travelersCount,
-          totalBudget: trip.totalBudget,
-          priorities: trip.priorities
-        });
-        return {
-          ...trip,
-          transportDeals: dealsResult.allDeals,
-          bestTransportDeal: dealsResult.bestDeal
-        };
-      }
-      return trip;
-    });
-    return hydrated;
+    return trips.map(trip => ({
+      ...trip,
+      bestTransportDeal: undefined,
+      transportDeals: []
+    }));
   } catch (e) {
     console.error('Error loading trips from storage', e);
     return [];
@@ -497,26 +480,6 @@ export function saveTripPacking(tripId: string, items: PackingItem[], userId?: s
     }
   } catch (e) {
     console.error('Error saving trip packing list', e);
-  }
-}
-
-export function loadGeminiApiKey(): string {
-  try {
-    return localStorage.getItem('tripverse_gemini_api_key') || '';
-  } catch (e) {
-    return '';
-  }
-}
-
-export function saveGeminiApiKey(key: string): void {
-  try {
-    if (key.trim()) {
-      localStorage.setItem('tripverse_gemini_api_key', key.trim());
-    } else {
-      localStorage.removeItem('tripverse_gemini_api_key');
-    }
-  } catch (e) {
-    console.error('Error saving Gemini API key', e);
   }
 }
 

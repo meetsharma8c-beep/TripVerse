@@ -7,18 +7,20 @@ export type SplashPlatform = 'ios' | 'android';
 
 interface AppSplashScreenProps {
   onFinish?: () => void;
-  minDuration?: number; // duration in ms (default ~2000ms)
+  minDuration?: number; // duration in ms (default ~1350ms)
   initialPlatform?: SplashPlatform;
 }
 
 export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
   onFinish,
-  minDuration = 2000,
+  minDuration = 1350,
   initialPlatform
 }) => {
   const [phase, setPhase] = useState<'enter' | 'ready' | 'exit'>('enter');
   const [progress, setProgress] = useState<number>(0);
-  const [statusText, setStatusText] = useState<string>('Initializing travel engine...');
+  const [statusText, setStatusText] = useState<string>('Initializing ConCode travel engine...');
+  const [dragY, setDragY] = useState<number>(0);
+  const touchStartY = useRef<number | null>(null);
   const onFinishRef = useRef(onFinish);
 
   useEffect(() => {
@@ -61,18 +63,20 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
 
     const updateProgress = (now: number) => {
       const elapsed = now - startTime;
-      const pct = Math.min(100, Math.round((elapsed / (minDuration - 350)) * 100));
+      const pct = Math.min(100, Math.round((elapsed / (minDuration - 250)) * 100));
       setProgress(pct);
 
-      if (elapsed > 400 && elapsed < 900) {
-        setStatusText(activePlatform === 'ios' ? 'Connecting to Apple CoreLocation & Routes...' : 'Syncing Google Play Services & Navigation...');
-      } else if (elapsed >= 900 && elapsed < 1450) {
-        setStatusText('Mapping verified highway food & fuel stops...');
-      } else if (elapsed >= 1450) {
-        setStatusText('Ready for takeoff!');
+      if (elapsed > 200 && elapsed < 550) {
+        setStatusText('Connecting to ConCode AI Travel Brain...');
+      } else if (elapsed >= 550 && elapsed < 900) {
+        setStatusText('Mapping verified highway breakstops & fuel plazas...');
+      } else if (elapsed >= 900 && elapsed < 1150) {
+        setStatusText('Loading authentic local food trails & hidden spots...');
+      } else if (elapsed >= 1150) {
+        setStatusText('All travel facilities ready • Swipe up to enter');
       }
 
-      if (elapsed < minDuration - 250) {
+      if (elapsed < minDuration - 200) {
         animationFrameId = requestAnimationFrame(updateProgress);
       } else {
         setPhase('ready');
@@ -83,8 +87,8 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
           setPhase('exit');
           finishTimer = setTimeout(() => {
             if (onFinishRef.current) onFinishRef.current();
-          }, 380);
-        }, 220);
+          }, 320);
+        }, 180);
       }
     };
 
@@ -105,7 +109,33 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
     setPhase('exit');
     setTimeout(() => {
       if (onFinishRef.current) onFinishRef.current();
-    }, 280);
+    }, 240);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current !== null) {
+      const delta = e.touches[0].clientY - touchStartY.current;
+      if (delta < 0) {
+        setDragY(delta);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragY < -50) {
+      triggerHaptic('medium');
+      setPhase('exit');
+      setTimeout(() => {
+        if (onFinishRef.current) onFinishRef.current();
+      }, 220);
+    } else {
+      setDragY(0);
+    }
+    touchStartY.current = null;
   };
 
   const isIos = activePlatform === 'ios';
@@ -113,14 +143,20 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
   return (
     <div
       onClick={handleSkip}
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-between select-none cursor-pointer overflow-hidden transition-all duration-[350ms] ease-out ${
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-between select-none cursor-pointer overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         phase === 'exit'
           ? isIos
-            ? 'opacity-0 scale-110 pointer-events-none'
-            : 'opacity-0 scale-95 pointer-events-none'
+            ? 'opacity-0 -translate-y-8 scale-105 pointer-events-none'
+            : 'opacity-0 -translate-y-6 scale-98 pointer-events-none'
           : 'opacity-100 scale-100'
       }`}
       style={{
+        paddingTop: 'max(16px, env(safe-area-inset-top, 0px) + 8px)',
+        paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px) + 8px)',
+        transform: dragY < 0 ? `translateY(${dragY}px)` : undefined,
         background: isIos
           ? 'radial-gradient(140% 110% at 50% 10%, #113868 0%, #0B2545 55%, #051429 100%)'
           : 'radial-gradient(130% 100% at 50% 12%, #0E3E61 0%, #08213D 50%, #041224 100%)'
@@ -150,9 +186,9 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
       </div>
 
       {/* 2. Top Header & Device Status Simulation with Liquid Pill Capsule */}
-      <div className="w-full pt-4 sm:pt-6 px-5 flex items-center justify-between z-20">
+      <div className="w-full max-w-[480px] px-5 flex items-center justify-between z-20">
         {/* Dynamic Island Liquid Capsule - Premium Experience for both iOS and Android */}
-        <div className="px-4 py-1.5 rounded-full bg-black/60 border border-white/15 backdrop-blur-xl shadow-lg flex items-center gap-2.5 transition-transform duration-300">
+        <div className="min-h-[36px] px-4 py-1.5 rounded-full bg-black/60 border border-white/15 backdrop-blur-xl shadow-lg flex items-center gap-2.5 transition-transform duration-300">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
           <span className="text-[11px] font-semibold text-white/95 tracking-tight flex items-center gap-1">
             <span>TripVerse Live Activity</span>
@@ -170,7 +206,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
                 setActivePlatform('ios');
                 triggerHaptic('light');
               }}
-              className={`px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${
+              className={`min-h-[32px] px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${
                 isIos
                   ? 'bg-white/25 text-white shadow-xs font-bold'
                   : 'text-slate-400 hover:text-white'
@@ -186,7 +222,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
                 setActivePlatform('android');
                 triggerHaptic('light');
               }}
-              className={`px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${
+              className={`min-h-[32px] px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${
                 !isIos
                   ? 'bg-emerald-500/35 text-emerald-300 shadow-xs font-bold'
                   : 'text-slate-400 hover:text-white'
@@ -204,20 +240,20 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
       </div>
 
       {/* 3. Center Cinematic Logo Mark & Brand Presentation */}
-      <div className="flex flex-col items-center justify-center z-10 px-4 text-center my-auto">
+      <div className="flex w-full max-w-[440px] flex-col items-center justify-center z-10 px-4 text-center my-auto mx-auto">
         {/* Logo Mark Container with Native Style */}
         <div className="relative mb-6 group">
           {/* Subtle Outer Glow */}
-          <div className="absolute -inset-4 rounded-3xl blur-2xl transition-all duration-700 bg-gradient-to-tr from-emerald-500/35 via-teal-400/25 to-cyan-400/20" />
+          <div className="absolute -inset-4 rounded-3xl blur-2xl transition-all duration-700 bg-gradient-to-tr from-[#2D5A3D]/40 via-[#386B49]/30 to-[#1E3E2B]/20" />
 
-          {/* Elevated Brand Mark Plate (Cupertino Liquid Glass for all platforms) */}
-          <div className="relative w-28 h-28 sm:w-32 sm:h-32 p-5 sm:p-6 flex items-center justify-center transition-all duration-500 group-hover:scale-105 rounded-[32px] bg-gradient-to-b from-white/20 via-white/10 to-white/5 backdrop-blur-2xl border border-white/35 shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1.5px_1.5px_rgba(255,255,255,0.45)]">
+          {/* Elevated Brand Mark Plate - Pure white backdrop plate */}
+          <div className="relative w-28 h-28 sm:w-32 sm:h-32 p-5 sm:p-6 flex items-center justify-center transition-all duration-500 group-hover:scale-105 rounded-[32px] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.35)] border border-white/80">
             {/* The Authentic Exact Brand Mark - Razor-sharp pure vector */}
             <BrandIconMark className="w-full h-full" idPrefix="splash" />
           </div>
 
           {/* Micro Flight Accent Badge */}
-          <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full shadow-lg flex items-center justify-center border-2 bg-gradient-to-tr from-emerald-500 to-teal-400 border-[#0B2545]">
+          <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full shadow-lg flex items-center justify-center border-2 bg-gradient-to-tr from-[#386B49] to-[#2D5A3D] border-white">
             <Sparkles className="w-3.5 h-3.5 text-white animate-spin [animation-duration:8s]" />
           </div>
         </div>
@@ -225,7 +261,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
         {/* Typography: "TripVerse" */}
         <div className="flex items-center justify-center tracking-tight font-black text-3xl sm:text-4xl text-white drop-shadow-md">
           <span className="text-white">Trip</span>
-          <span className="text-[#00D287] ml-0.5">Verse</span>
+          <span className="text-[#386B49] ml-0.5">Verse</span>
         </div>
 
         {/* Tagline & Native Subtitle */}
@@ -239,17 +275,21 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
         </div>
 
         {/* Feature Badges with Soft Stagger */}
-        <div className="flex items-center gap-2 mt-4 text-[11px] font-medium text-slate-300/85">
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-[11px] font-medium text-slate-300/85">
           <span className="flex items-center gap-1 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
-            <Compass className="w-3 h-3 text-emerald-400" /> Smart Routes
+            <Sparkles className="w-3 h-3 text-emerald-400" /> ConCode AI Brain
           </span>
-          <span className="text-slate-500">•</span>
+          <span className="hidden sm:inline text-slate-500">•</span>
           <span className="flex items-center gap-1 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
-            <Plane className="w-3 h-3 text-teal-400" /> Highway Breaks
+            <Plane className="w-3 h-3 text-teal-400" /> Highway Facilities
           </span>
-          <span className="text-slate-500">•</span>
+          <span className="hidden sm:inline text-slate-500">•</span>
           <span className="flex items-center gap-1 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
-            <ShieldCheck className="w-3 h-3 text-emerald-400" /> Offline Ready
+            <Compass className="w-3 h-3 text-amber-300" /> Genuine Local Gems
+          </span>
+          <span className="hidden sm:inline text-slate-500">•</span>
+          <span className="flex items-center gap-1 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
+            <ShieldCheck className="w-3 h-3 text-cyan-400" /> Offline Ready
           </span>
         </div>
       </div>
@@ -286,4 +326,3 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
     </div>
   );
 };
-

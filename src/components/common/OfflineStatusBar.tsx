@@ -37,7 +37,7 @@ export const OfflineStatusBar: React.FC = () => {
       <div className="fixed top-18 sm:top-20 inset-x-0 z-40 flex justify-center pointer-events-none px-4 animate-in fade-in slide-in-from-top-2 duration-300">
         <div className="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-xl flex items-center gap-2 pointer-events-auto border border-emerald-400">
           <Wifi className="w-3.5 h-3.5 animate-pulse" />
-          <span>Back Online • Live Deals & Navigation Synced</span>
+          <span>Back online</span>
         </div>
       </div>
     );

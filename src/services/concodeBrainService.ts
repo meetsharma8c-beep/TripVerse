@@ -23,6 +23,67 @@ export interface BrainStatus {
   modelLoaded?: boolean;
   activeGuilds?: string[];
   latencyMs?: number;
+  gpu?: string;
+}
+
+export interface ConcodeConfig {
+  url: string;
+  apiKey?: string;
+}
+
+const STORAGE_KEY_CONCODE = 'tripverse_concode_config_v1';
+
+export function getStoredConcodeConfig(): ConcodeConfig | null {
+  const envUrl = import.meta.env.VITE_CONCODE_API_URL;
+  const envKey = import.meta.env.VITE_CONCODE_API_KEY;
+  if (envUrl && envUrl.startsWith('http') && !envUrl.includes('api.concode.ai')) {
+    return {
+      url: envUrl.trim().replace(/\/$/, ''),
+      apiKey: envKey ? envKey.trim() : undefined
+    };
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_CONCODE);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.url && parsed.url.startsWith('http')) {
+          return {
+            url: parsed.url.trim().replace(/\/$/, ''),
+            apiKey: parsed.apiKey ? parsed.apiKey.trim() : undefined
+          };
+        }
+      }
+    } catch {}
+  }
+
+  if (envUrl && envUrl.startsWith('http')) {
+    return {
+      url: envUrl.trim().replace(/\/$/, ''),
+      apiKey: envKey ? envKey.trim() : undefined
+    };
+  }
+
+  return null;
+}
+
+export function saveConcodeConfig(config: ConcodeConfig): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY_CONCODE, JSON.stringify(config));
+    window.dispatchEvent(new CustomEvent('tripverse_concode_config_updated'));
+  }
+}
+
+export function removeConcodeConfig(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(STORAGE_KEY_CONCODE);
+    window.dispatchEvent(new CustomEvent('tripverse_concode_config_updated'));
+  }
+}
+
+export function isConcodeConfigured(): boolean {
+  return getStoredConcodeConfig() !== null;
 }
 
 export interface ConcodeBrainResponse {
@@ -93,9 +154,9 @@ function getDynamicOpener(category: 'explaining' | 'greeting' | 'food' | 'sights
       "The top cultural and scenic destinations for your journey:"
     ],
     road: [
-      "Here is the verified highway corridor telemetry:",
+      "Here are estimated route notes; check a live navigation service:",
       "For your drive, here is the real road condition & pitstop breakdown:",
-      "Highway navigation telemetry verified for this route:"
+      "Route suggestions are estimates until confirmed in a navigation app:"
     ],
     budget: [
       "Here is a realistic, transparent cost allocation:",
@@ -113,14 +174,70 @@ function getDynamicOpener(category: 'explaining' | 'greeting' | 'food' | 'sights
 }
 
 export async function checkBrainStatus(): Promise<BrainStatus> {
-  return {
-    online: true,
-    status: 'ready',
-    version: '12.0.0-concode-neural-brain',
-    modelLoaded: true,
-    activeGuilds: ['ai_ml', 'performance', 'database', 'security', 'fullstack', 'devops', 'ui_ux'],
-    latencyMs: 12
-  };
+  const customConfig = getStoredConcodeConfig();
+  const startTime = Date.now();
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6_000);
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
+      'User-Agent': 'TripVerse-Client/1.0'
+    };
+
+    if (customConfig?.apiKey) {
+      headers['X-API-Key'] = customConfig.apiKey;
+      headers['Authorization'] = `Bearer ${customConfig.apiKey}`;
+    }
+
+    let isOnline = false;
+    let data: any = {};
+
+    if (customConfig?.url) {
+      // Direct ping to configured Kaggle tunnel / custom URL
+      const res = await fetch(`${customConfig.url}/health`, {
+        method: 'GET',
+        headers,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      data = await res.json().catch(() => ({}));
+      isOnline = res.ok && (data.status === 'online' || data.ok === true || data.status === 'ok');
+    } else {
+      // Query local or serverless proxy /api/chat
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'health', query: '__ping__' }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      data = await res.json().catch(() => ({}));
+      isOnline = res.ok && (data.ok === true || data.status === 'online');
+    }
+
+    const elapsed = Date.now() - startTime;
+    const gpuName = data.gpu || data.details?.gpu || data.details?.device;
+
+    return {
+      online: isOnline,
+      status: isOnline ? (gpuName ? `Online (${gpuName})` : 'Online (Kaggle GPU)') : (data.status || 'Offline'),
+      modelLoaded: isOnline,
+      latencyMs: elapsed,
+      gpu: gpuName,
+      version: data.version || data.details?.version || '1.0.0'
+    };
+  } catch (err: any) {
+    const elapsed = Date.now() - startTime;
+    return {
+      online: false,
+      status: err?.name === 'AbortError' ? 'Timeout (Host unreachable)' : 'Offline (Not connected)',
+      modelLoaded: false,
+      latencyMs: elapsed
+    };
+  }
 }
 
 export function resetBrainSession() {
@@ -286,81 +403,103 @@ function buildCuratedDays(
 }
 
 // ═════════════════════════════════════════════════════════════════════════
-// UPSTREAM NEURAL AND CLOUD CLIENT (CONCODE_BRAIN & Vercel API Gateway)
+// UPSTREAM CONCODE CLIENT (Vercel API Gateway)
 // ═════════════════════════════════════════════════════════════════════════
 
-async function tryQueryNeuralBrain(query: string, trip: Trip): Promise<ConcodeBrainResponse | null> {
+async function tryQueryServerlessAPI(
+  query: string,
+  trip: Trip,
+  session: any,
+  mode: 'text' | 'itinerary' | 'budget' | 'safety'
+): Promise<ConcodeBrainResponse | null> {
   if (typeof window === 'undefined') return null;
-  const gatewayUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_AI_GATEWAY_URL) || '';
-  if (!gatewayUrl) return null;
+
+  const customConfig = getStoredConcodeConfig();
+  const targetUrl = customConfig?.url ? `${customConfig.url}/api/v1/travel` : '/api/chat';
+
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1200);
-    const res = await fetch(`${gatewayUrl}/api/v1/cognitive`, {
+    const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
+      'User-Agent': 'TripVerse-Client/1.0',
+      ...(customConfig?.apiKey ? { 'X-API-Key': customConfig.apiKey, 'Authorization': `Bearer ${customConfig.apiKey}` } : {})
+    };
+
+    const tripContextPayload = {
+      destination: trip.destination,
+      durationDays: trip.durationDays,
+      totalBudget: trip.totalBudget,
+      origin: trip.origin,
+      travelersCount: trip.travelersCount,
+      travelerType: trip.travelerType,
+      preferences: trip.preferences?.length ? trip.preferences : (session.preferences || []),
+      transportMode: trip.transportMode,
+      accommodationType: trip.accommodationType,
+      foodPreference: trip.foodPreference,
+      priorities: trip.priorities,
+      knownDestinationHighlights: trip.destinationDetails?.highlights || [],
+      transportDeals: trip.transportDeals || []
+    };
+
+    const bodyPayload = customConfig?.url
+      ? JSON.stringify({
+          query,
+          trip_context: tripContextPayload,
+          session_id: session.sessionId,
+          mode
+        })
+      : JSON.stringify({
+          query,
+          tripContext: tripContextPayload,
+          sessionState: session,
+          mode
+        });
+
+    const res = await fetch(targetUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query,
-        trip_context: {
-          destination: trip.destination,
-          origin: trip.origin,
-          duration: trip.durationDays,
-          budget: trip.totalBudget
-        },
-        mode: 'text'
-      }),
+      headers,
+      body: bodyPayload,
       signal: controller.signal
     });
+
     clearTimeout(timeoutId);
     if (!res.ok) return null;
-    const data = await res.json();
-    if (data && (data.reply || data.response)) {
-      return {
-        guild: data.guild || 'ai_ml',
-        guildIcon: '🧠',
-        confidence: data.confidence || 0.98,
-        response: data.reply || data.response
-      };
-    }
-  } catch (_) {
-    // Offline or unreachable — fallback gracefully
-  }
-  return null;
-}
 
-async function tryQueryServerlessAPI(query: string, trip: Trip, session: any): Promise<ConcodeBrainResponse | null> {
-  if (typeof window === 'undefined') return null;
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1200);
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query,
-        tripContext: {
+    const data = await res.json();
+    const rawReply = typeof data.reply === 'string' ? data.reply : (typeof data.response === 'string' ? data.response : '');
+
+    if (data && (rawReply || data.itinerary || data.structuredItinerary)) {
+      if (typeof data.sessionId === 'string' || typeof data.session_id === 'string') {
+        updateConcodeSession({ sessionId: data.sessionId || data.session_id });
+      }
+
+      let structuredItinerary = data.structuredItinerary || data.structured_itinerary;
+      if (!structuredItinerary && Array.isArray(data.itinerary)) {
+        structuredItinerary = {
           destination: trip.destination,
           durationDays: trip.durationDays,
-          totalBudget: trip.totalBudget,
-          origin: trip.origin
-        },
-        sessionState: session
-      }),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data && data.ok && data.reply) {
+          days: data.itinerary
+        };
+      }
+
       return {
-        guild: 'fullstack',
-        guildIcon: '🚀',
-        confidence: 0.97,
-        response: data.reply
+        guild: data.guild || 'ai_ml',
+        guildIcon: data.guildIcon || (data.guild && GUILD_LABELS[data.guild]?.icon) || '🧠',
+        confidence: data.confidence || 0.98,
+        response: rawReply || 'Here is your travel blueprint generated by ConCode AI:',
+        structuredItinerary,
+        budgetBreakdown: data.budgetBreakdown || data.budget_breakdown,
+        actionButtons: data.actionButtons || data.action_buttons,
+        modificationBadge: data.modificationBadge || data.modification_badge,
+        appAction: data.appAction,
+        updatedTrip: data.updatedTrip
       };
     }
-  } catch (_) {
-    // Serverless proxy error or not configured — fall back
+  } catch (err) {
+    console.warn('[TripVerse] Upstream query error:', err);
   }
   return null;
 }
@@ -393,13 +532,15 @@ export async function queryConcodeBrain(
     session.preferences = Array.from(new Set([...(session.preferences || []), ...extractedPrefs]));
   }
 
-  // 1. Check local Bare-Metal Neural Brain
-  const neuralResult = await tryQueryNeuralBrain(query, tripContext);
-  if (neuralResult) return neuralResult;
-
-  // 2. Check Cloud Serverless API
-  const cloudResult = await tryQueryServerlessAPI(query, tripContext, session);
+  // The client only calls its own Vercel route. That route owns the private
+  // CONCODE key and forwards the request to the configured CONCODE travel model.
+  const cloudResult = await tryQueryServerlessAPI(query, tripContext, session, mode);
   if (cloudResult) return cloudResult;
+
+  // Never present scripted client-side text as if it were a CONCODE model answer.
+  // The caller shows a clearly labelled offline rule-based fallback instead.
+  const allowLegacyScriptedFallback = false;
+  if (!allowLegacyScriptedFallback) throw new Error('CONCODE_TRAVEL_UNAVAILABLE');
 
   // Small delay for natural human feel
   await new Promise(r => setTimeout(r, 90));
@@ -433,7 +574,7 @@ export async function queryConcodeBrain(
       travelerType: tripContext.travelerType || 'couple',
       budgetMode: 'total',
       budgetAmount: targetBudget,
-      preferences: session.preferences && session.preferences.length > 0 ? (session.preferences as any) : ['nature', 'scenic'],
+      preferences: session.preferences?.length ? (session.preferences as any) : ['nature', 'scenic'],
       transportMode: tripContext.transportMode || 'car',
       accommodationType: tripContext.accommodationType || 'hotel',
       foodPreference: tripContext.foodPreference || 'all',
@@ -449,8 +590,8 @@ export async function queryConcodeBrain(
       response: `💾 **Itinerary Saved Successfully!**\n\n` +
         `Your **${targetDays}-Day journey to ${targetDest}** has been securely saved to **My Trips** and set as your active expedition.\n\n` +
         `• **Target Budget:** ₹${targetBudget.toLocaleString('en-IN')}\n` +
-        `• **Schedule:** ${targetDays} day-wise plans with verified stops & transit arrangements.\n` +
-        `• **Features Active:** Turn-by-Turn GPS, Budget Ledger, Live Weather Alerts, and Printable Dossier.\n\n` +
+        `• **Schedule:** ${targetDays} day-wise draft schedule with estimated transit arrangements.\n` +
+        `• **Features:** External directions handoff, budget estimates, forecast lookup where available, and a printable itinerary.\n\n` +
         `Explore your full itinerary below or print your travel guide!`,
       modificationBadge: {
         type: 'saved',
@@ -461,7 +602,7 @@ export async function queryConcodeBrain(
         { label: '📅 View Day Itinerary', action: 'VIEW_ITINERARY', primary: true },
         { label: '🗺️ View Route Map', action: 'VIEW_ROUTE' },
         { label: '📄 Print Travel Guide (PDF)', action: 'OPEN_PRINT' },
-        { label: '🧭 Start GPS Navigation', action: 'START_NAV' }
+        { label: '🧭 Get Directions', action: 'START_NAV' }
       ],
       appAction: {
         type: 'GENERATE_NEW_TRIP',
@@ -556,7 +697,7 @@ export async function queryConcodeBrain(
               estimatedCost: isSunset ? 450 : 800,
               travelTimeMin: 30,
               distanceKm: 8,
-              description: `Added via ConCode AI Co-Pilot: Verified sunset viewpoint overlooking the Aravali range with golden hour photography opportunities.`
+              description: `Suggested viewpoint idea; confirm the place and access details before travelling.`
             }
           ]
         };
@@ -583,7 +724,7 @@ export async function queryConcodeBrain(
       },
       actionButtons: [
         { label: `📅 View Day ${targetDayNum} Schedule`, action: 'VIEW_ITINERARY', primary: true },
-        { label: '🧭 Check Route in GPS HUD', action: 'START_NAV' }
+        { label: '🧭 Get Directions', action: 'START_NAV' }
       ],
       updatedTrip,
       appAction: {
@@ -621,7 +762,7 @@ export async function queryConcodeBrain(
               return {
                 ...a,
                 estimatedCost: Math.round(a.estimatedCost * 0.4),
-                description: `${a.description} (Optimized with free public access viewpoints and verified budget dining).`
+                description: `${a.description} (Suggested activity; verify access, venue details, and current prices before travelling).`
               };
             }
             return a;
@@ -706,7 +847,7 @@ export async function queryConcodeBrain(
       },
       actionButtons: [
         { label: '🔄 Swap Outdoor with Rainy-Day Stops', action: 'VIEW_ITINERARY', primary: true },
-        { label: '⛅ Check Live Weather Radar', action: 'CHECK_WEATHER' }
+        { label: '⛅ Check Weather Forecast', action: 'CHECK_WEATHER' }
       ]
     };
   }
@@ -796,7 +937,7 @@ export async function queryConcodeBrain(
         { label: '💾 Save This Itinerary', action: 'VIEW_ITINERARY', primary: true },
         { label: '📉 Make Day 3 Cheaper', action: 'MAKE_CHEAPER' },
         { label: '💳 View Estimated Budget Breakdown', action: 'CHECK_BUDGET' },
-        { label: '☔ Rainy-Day Alternative', action: 'CHECK_WEATHER' }
+        { label: '☔ Rainy-Day Alternative', action: 'RAINY_DAY_ALT' }
       ]
     };
   }
@@ -804,7 +945,7 @@ export async function queryConcodeBrain(
   // =========================================================================
   // SCENARIO 2: USER PROVIDES BUDGET (e.g. "I have ₹1,00,000")
   // =========================================================================
-  if (extractedBudget && !extractedDest) {
+  if (extractedBudget !== null && !extractedDest) {
     const targetDest = session.destination || currentDest || 'Dubai';
     const targetDays = session.durationDays || tripContext.durationDays || 5;
 
@@ -889,10 +1030,10 @@ export async function queryConcodeBrain(
         `• **Romantic Waterfront Dining at Ambrai (Amet Haveli):** Situated directly on Lake Pichola with candle-lit views of the illuminated City Palace and Jagmandir. Reserve 2 days ahead!\n` +
         `• **Lakeside Morning Chai at Jheel’s Ginger Coffee:** Sip fresh brewed ginger coffee and wood-fired breakfast pizza right over the water edge.\n` +
         `• **Street Food at Sukhadia Circle:** Famous for spicy Pav Bhaji, Bhel Puri, and rich Kulhad Kulfi Falooda in the evening.\n` +
-        `• **Shamlaji Highway Plaza (En Route NH-48):** Stop at Shamlaji food court for hot parathas, South Indian breakfast, and verified clean washrooms.`
+        `• **Route stop:** Search Google Maps for current food and rest-stop listings along your route; confirm facilities and hours directly.`
       : `🍽️ **Curated Dining & Flavors for ${activeDest}:**\n\n` +
         `• **Signature Regional Dishes:** Must-try local delicacies and traditional breakfast specialties.\n` +
-        `• **Top-Rated Local Kitchens:** Verified by TripVerse travel community for freshness, authentic preparation, and hygienic certification.\n` +
+        `• **Local dining:** Search current map listings and confirm menus, food preparation, and hygiene directly with each venue.\n` +
         `• **Scenic Dining:** Open-air viewpoints and atmospheric evening spots suitable for your group budget.`;
 
     return {
@@ -948,7 +1089,7 @@ export async function queryConcodeBrain(
       actionButtons: [
         { label: '📅 View Day-Wise Breakdown', action: 'VIEW_ITINERARY', primary: true },
         { label: '✨ Add Sunset at Monsoon Palace', action: 'VIEW_ITINERARY' },
-        { label: '🧭 Start GPS Route Guide', action: 'START_NAV' }
+        { label: '🧭 Get Directions', action: 'START_NAV' }
       ]
     };
   }
@@ -971,28 +1112,19 @@ export async function queryConcodeBrain(
     norm.includes('traffic')
   ) {
     const opener = getDynamicOpener('road');
-    const isAhdToUdr = (currentOrigin.toLowerCase().includes('ahmedabad') || norm.includes('ahmedabad')) && activeDest.toLowerCase().includes('udaipur');
-
-    const roadDetails = isAhdToUdr
-      ? `🚗 **Ahmedabad → Udaipur Highway Dossier (NH-48):**\n\n` +
-        `• **Distance & Time:** ~260 km (4 hours 30 mins via smooth 4-to-6 lane National Highway 48).\n` +
-        `• **Tolls:** 3 Toll Plazas (Kathpur, Shamlaji, and Ratanpur border). Total toll expense is ~₹270 via FASTag.\n` +
-        `• **Road Quality:** Excellent tarmac with scenic Aravali hills starting right past the Gujarat-Rajasthan border.\n` +
-        `• **Recommended Food & Bio Stop:** **Shamlaji Food Court / Highway Plaza** (approx 125 km from Ahmedabad). Spot features clean western washrooms, EV fast chargers, hot tea, and pure-veg restaurant.\n` +
-        `• **Speed Guidance:** 90 km/h expressway speed limit; radar speed cameras active near Himatnagar bypass.`
-      : `🚗 **Highway Route & Road Conditions for ${activeDest}:**\n\n` +
-        `• **Corridor:** Well-connected arterial highways with verified toll lanes and regular fuel facilities.\n` +
-        `• **Pitstop Strategy:** Plan a 20-minute refreshment break every 2 hours to avoid driver fatigue.\n` +
-        `• **Navigation Guidance:** Real-time speed radar and turn-by-turn guidance available in TripVerse GPS HUD.`;
+    const roadDetails = `🚗 **Route planning for ${activeDest}:**\n\n` +
+      `• TripVerse can hand the route off to an external navigation app; it does not provide turn-by-turn directions or live traffic.\n` +
+      `• Check current tolls, road closures, speed limits, fuel/charging availability, and facility details with official or provider sources.\n` +
+      `• Map listings are suggestions and do not verify a facility's safety, hours, or availability.`;
 
     return {
       guild: 'devops',
       guildIcon: '🛣️',
       confidence: 0.98,
-      response: `${opener}\n\n${roadDetails}\n\nReady to start? Launch the Live GPS HUD to monitor your driving speed, exits, and pitstops on the road!`,
+      response: `${opener}\n\n${roadDetails}`,
       actionButtons: [
-        { label: '🧭 Launch Live GPS HUD', action: 'START_NAV', primary: true },
-        { label: '⛽ Shamlaji Stop Details (4.7★)', action: 'VIEW_ITINERARY' },
+        { label: '🧭 Get Directions', action: 'START_NAV', primary: true },
+        { label: '🗺️ View Place Listings', action: 'VIEW_ITINERARY' },
         { label: '💳 Estimate Fuel & Toll Cost', action: 'CHECK_BUDGET' }
       ]
     };
@@ -1068,7 +1200,7 @@ export async function queryConcodeBrain(
       confidence: 0.98,
       response: `${weatherDetails}\n\nWould you like me to inspect rainy-day backups or optimize activities for cooler morning hours?`,
       actionButtons: [
-        { label: '☔ Rainy-Day Alternatives', action: 'CHECK_WEATHER', primary: true },
+        { label: '☔ Rainy-Day Alternatives', action: 'RAINY_DAY_ALT', primary: true },
         { label: '📅 View Itinerary Timings', action: 'VIEW_ITINERARY' }
       ]
     };
@@ -1100,10 +1232,10 @@ export async function queryConcodeBrain(
         `Here is what I can do for you right now:\n` +
         `• **Build Complete Itineraries:** Ask me *"Plan a 3-day trip to Udaipur"* or any spot worldwide.\n` +
         `• **Local Secrets & Food:** Ask *"What should I eat?"* or *"Top sights to visit"*\n` +
-        `• **Highway Road Telemetry:** Ask *"How is the road from Ahmedabad to Udaipur?"* for verified pitstops.\n` +
+        `• **Highway route:** Open a navigation app for current road conditions and search its map listings for possible stops.\n` +
         `• **Budget Optimization:** Say *"Make Day 3 cheaper"* or *"What will this cost?"*\n` +
         `• **Dynamic Tweaks:** Say *"Add sunset at Monsoon Palace"* or *"Remove the museum"*\n` +
-        `• **Live Navigation:** Ask *"Start GPS Navigation"* to launch our heads-up dashboard.\n\n` +
+        `• **Directions:** Ask *"Get directions"* to open the route in an external navigation app.\n\n` +
         `What can I assist you with on your journey?`,
       actionButtons: [
         { label: '🍽️ Food & Dining Guide', action: 'VIEW_ITINERARY', primary: true },
@@ -1128,10 +1260,10 @@ export async function queryConcodeBrain(
       guild: 'devops',
       guildIcon: '🧭',
       confidence: 0.99,
-      response: `🧭 **Live Turn-by-Turn GPS Navigation Activated!**\n\n` +
+      response: `🧭 **Opening external directions**\n\n` +
         `• Corridor: ${currentOrigin} → ${currentDest}\n` +
-        `• Guidance: Speed radar active, toll lane assistance, and ${tripContext.breakStops?.length || 3} verified pitstops.\n\n` +
-        `Launching full-screen Navigation HUD now...`,
+        `• Guidance: TripVerse does not provide live turn-by-turn directions, speed detection, or toll-lane assistance. Open a navigation app for current directions.\n\n` +
+        `TripVerse will hand the route off to an external navigation app.`,
       appAction: { type: 'START_NAVIGATION' }
     };
   }
@@ -1166,8 +1298,8 @@ export async function queryConcodeBrain(
     confidence: 0.94,
     response: `${opener}\n\n` +
       `Regarding your inquiry about **"${query}"** for your journey to **${activeDest}**:\n\n` +
-      `I'm actively monitoring your **${activeDays}-day expedition** (~₹${activeBudget.toLocaleString('en-IN')} budget). ` +
-      `Whether you want to discover authentic local cuisine, add a sunset stop, audit toll and fuel expenses, or optimize your day schedule, I can adjust your journey in real time.\n\n` +
+      `Your current plan is a **${activeDays}-day draft** with a budget target of ~₹${activeBudget.toLocaleString('en-IN')}. ` +
+      `I can help review suggested activities, route planning, and estimated expenses. Changes update the TripVerse draft; they do not change external bookings.\n\n` +
       `Here are several helpful actions you can take right now:`,
     actionButtons: [
       { label: `🍽️ Best Food in ${activeDest}`, action: 'EXPLORE_FOOD', primary: true },

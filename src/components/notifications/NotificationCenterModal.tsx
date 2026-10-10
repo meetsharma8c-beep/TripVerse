@@ -115,7 +115,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
         {/* Header */}
         <div className="shrink-0 px-6 py-4 sm:py-5 border-b border-slate-200 flex items-center justify-between gap-4 bg-gradient-to-r from-emerald-50/50 via-teal-50/30 to-white">
           <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 rounded-2xl bg-emerald-100 text-[#00B074] flex items-center justify-center shadow-xs">
+            <div className="relative w-10 h-10 rounded-2xl bg-emerald-100 text-[#2D5A3D] flex items-center justify-center shadow-xs">
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
@@ -128,7 +128,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                 Notification & Countdown Hub
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Live flight/road tracking, weather alerts, and pre-trip reminders
+                Trip countdowns and planning reminders; no live flight or road tracking
               </p>
             </div>
           </div>
@@ -202,14 +202,14 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
         ) : (
           <div className="shrink-0 mx-4 sm:mx-6 mt-4 sm:mt-5 mb-3 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#0B2545] via-[#133966] to-[#07172C] text-white shadow-lg relative overflow-hidden">
             {/* Background Glow */}
-            <div className="absolute -right-8 -bottom-8 w-36 h-36 bg-[#00B074]/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -right-8 -bottom-8 w-36 h-36 bg-[#2D5A3D]/20 rounded-full blur-2xl pointer-events-none" />
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-emerald-400" />
                 <span>TripVerse Co-Pilot Ready</span>
               </span>
               <span className="text-[10px] font-semibold text-emerald-400/80 bg-emerald-950/60 px-2 py-0.5 rounded-full">
-                24/7 Safety Active
+                Planning tools only
               </span>
             </div>
 
@@ -217,7 +217,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
               Start Planning Your Journey
             </h4>
             <p className="text-xs text-slate-300 mb-3 leading-relaxed">
-              Curate custom road trips with verified restroom break stops, fuel tracking, and day-wise sightseeing in under a minute.
+              Draft road trips with estimated schedules and map listings when available. Confirm stops and facilities before travelling.
             </p>
 
             <div className="flex items-center gap-3">
@@ -226,7 +226,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                   onNavigateToTarget('plan');
                   onClose();
                 }}
-                className="px-4 py-2 rounded-xl bg-[#00B074] hover:bg-[#009663] text-white text-xs font-bold transition-all shadow-md shadow-emerald-900/30 inline-flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white text-xs font-bold transition-all shadow-md shadow-emerald-900/30 inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <span>Plan A Trip Now</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -282,7 +282,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllRead}
-              className="text-xs font-bold text-[#00B074] hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-1 cursor-pointer"
             >
               <CheckCheck className="w-3.5 h-3.5" />
               <span>Mark all read</span>
@@ -339,7 +339,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 
                   {notif.actionLabel && (
                     <div className="mt-2.5">
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-[#00B074] group-hover:underline">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-[#2D5A3D] group-hover:underline">
                         <span>{notif.actionLabel}</span>
                         <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                       </span>

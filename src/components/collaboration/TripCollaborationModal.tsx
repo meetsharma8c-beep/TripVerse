@@ -24,6 +24,7 @@ import {
 import confetti from 'canvas-confetti';
 import { Trip, CollaborationSession, TripCollaborator, GroupSuggestion } from '../../types/trip';
 import { AuthUser } from '../../types/auth';
+import { openExternalUrl } from '../../services/deviceService';
 import { 
   getOrInitializeCollaborationSession,
   castActivityVote,
@@ -98,7 +99,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
     const text = encodeURIComponent(
       `✈️ Join me in planning our trip to ${trip.destination} on TripVerse!\n\nUse Room Code: ${session.inviteCode}\nOr join directly with this link: ${inviteUrl}`
     );
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+    openExternalUrl(`https://api.whatsapp.com/send?text=${text}`);
   };
 
   const handleVote = async (activityId: string, vote: 'up' | 'down') => {
@@ -191,7 +192,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
         {/* Top Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-[#00B074] flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-[#2D5A3D] flex items-center justify-center font-bold">
               <Users className="w-5 h-5" />
             </div>
             <div>
@@ -222,11 +223,11 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
             onClick={() => setActiveTab('invite')}
             className={`py-3.5 flex items-center justify-center gap-2 border-b-2 cursor-pointer transition-all ${
               activeTab === 'invite'
-                ? 'border-[#00B074] text-[#0B2545] bg-white shadow-2xs'
+                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Share2 className="w-3.5 h-3.5 text-[#00B074]" />
+            <Share2 className="w-3.5 h-3.5 text-[#2D5A3D]" />
             <span>Invite & Friends</span>
           </button>
 
@@ -234,11 +235,11 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
             onClick={() => setActiveTab('votes')}
             className={`py-3.5 flex items-center justify-center gap-2 border-b-2 cursor-pointer transition-all ${
               activeTab === 'votes'
-                ? 'border-[#00B074] text-[#0B2545] bg-white shadow-2xs'
+                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <ThumbsUp className="w-3.5 h-3.5 text-[#00B074]" />
+            <ThumbsUp className="w-3.5 h-3.5 text-[#2D5A3D]" />
             <span>Activity Polls</span>
           </button>
 
@@ -246,11 +247,11 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
             onClick={() => setActiveTab('suggestions')}
             className={`py-3.5 flex items-center justify-center gap-2 border-b-2 cursor-pointer transition-all ${
               activeTab === 'suggestions'
-                ? 'border-[#00B074] text-[#0B2545] bg-white shadow-2xs'
+                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#00B074]" />
+            <Sparkles className="w-3.5 h-3.5 text-[#2D5A3D]" />
             <span>Drop-In Ideas ({session.suggestions.length})</span>
           </button>
         </div>
@@ -284,7 +285,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                       onClick={handleCopyCode}
                       className="px-3.5 py-2 rounded-xl bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50 font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-98 transition-all"
                     >
-                      {copiedCode ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-emerald-700" />}
+                      {copiedCode ? <Check className="w-4 h-4 text-[#2D5A3D]" /> : <Copy className="w-4 h-4 text-emerald-700" />}
                       <span>{copiedCode ? 'Code Copied' : 'Copy Code'}</span>
                     </button>
 
@@ -308,7 +309,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                   />
                   <button
                     onClick={handleCopyLink}
-                    className="px-3 py-1.5 rounded-lg bg-[#00B074] hover:bg-[#009663] text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-all shrink-0"
+                    className="px-3 py-1.5 rounded-lg bg-[#2D5A3D] hover:bg-[#244931] text-white font-bold text-xs flex items-center gap-1 cursor-pointer transition-all shrink-0"
                   >
                     {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
@@ -380,7 +381,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
           {activeTab === 'votes' && (
             <div className="space-y-5">
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-xs text-slate-600">
-                <ThumbsUp className="w-4 h-4 text-[#00B074] shrink-0 mt-0.5" />
+                <ThumbsUp className="w-4 h-4 text-[#2D5A3D] shrink-0 mt-0.5" />
                 <p>
                   Vote on activities with your travel buddies. Items with high group agreement get awarded the <strong className="text-[#0B2545]">Group Favorite</strong> badge!
                 </p>
@@ -435,7 +436,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                               onClick={() => handleVote(act.id, 'up')}
                               className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                                 summary.userVote === 'up'
-                                  ? 'bg-[#00B074] text-white shadow-2xs scale-105'
+                                  ? 'bg-[#2D5A3D] text-white shadow-2xs scale-105'
                                   : 'text-slate-600 hover:bg-slate-200'
                               }`}
                             >
@@ -474,7 +475,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
               <form onSubmit={handleCreateSuggestion} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#00B074]" />
+                    <Sparkles className="w-3.5 h-3.5 text-[#2D5A3D]" />
                     Propose a New Spot / Idea
                   </h4>
                   <span className="text-[11px] text-slate-400">Collaborators can upvote</span>
@@ -486,7 +487,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                     value={suggestTitle}
                     onChange={(e) => setSuggestTitle(e.target.value)}
                     placeholder="e.g. Sunset drinks at Thalassa Cafe"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                     required
                   />
 
@@ -494,7 +495,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                     <select
                       value={suggestDay}
                       onChange={(e) => setSuggestDay(Number(e.target.value))}
-                      className="px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                      className="px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                     >
                       {trip.itinerary.map(d => (
                         <option key={d.dayNumber} value={d.dayNumber}>
@@ -506,7 +507,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                     <select
                       value={suggestCategory}
                       onChange={(e) => setSuggestCategory(e.target.value as any)}
-                      className="flex-1 px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                      className="flex-1 px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                     >
                       <option value="food">🍜 Food & Cafe</option>
                       <option value="spot">🏛️ Spot / Viewpoint</option>
@@ -522,12 +523,12 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                     value={suggestDesc}
                     onChange={(e) => setSuggestDesc(e.target.value)}
                     placeholder="Why should the group go here? (optional)"
-                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#00B074]"
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                   />
                   <button
                     type="submit"
                     disabled={isSubmittingSuggest || !suggestTitle.trim()}
-                    className="px-4 py-2 rounded-xl bg-[#00B074] hover:bg-[#009663] text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                    className="px-4 py-2 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shrink-0"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Drop Idea</span>
@@ -580,13 +581,13 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
 
                           {isAccepted ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <CheckCircle2 className="w-3 h-3 text-[#2D5A3D]" />
                               Added to Plan
                             </span>
                           ) : (
                             <button
                               onClick={() => handleAcceptSuggestion(sug.id)}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-[#00B074] font-bold text-xs flex items-center gap-1 cursor-pointer transition-all shrink-0"
+                              className="px-2.5 py-1 rounded-lg bg-[#2D5A3D]/10 hover:bg-[#2D5A3D]/20 text-[#2D5A3D] font-bold text-xs flex items-center gap-1 cursor-pointer transition-all shrink-0"
                             >
                               <Plus className="w-3.5 h-3.5" />
                               <span>Add to Day {sug.dayNumber}</span>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Logo } from './Logo';
+import { Logo, BrandIconMark } from './Logo';
 import { 
   Compass, 
   MapPin, 
@@ -14,7 +14,9 @@ import {
   Bell,
   Smartphone,
   Download,
-  Search
+  Search,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { UserProfile, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
@@ -48,10 +50,37 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
   const [isStandaloneApp, setIsStandaloneApp] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try {
+      return localStorage.getItem('tripverse_theme') === 'dark';
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     setIsStandaloneApp(isStandalone());
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute(
+      'content',
+      isDarkMode ? '#0B1220' : '#2D5A3D'
+    );
+  }, [isDarkMode]);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(current => {
+      const next = !current;
+      try {
+        localStorage.setItem('tripverse_theme', next ? 'dark' : 'light');
+      } catch (error) {
+        console.error('[Theme] Could not save theme preference:', error);
+      }
+      return next;
+    });
+  };
 
   const handleOpenInstall = () => {
     window.dispatchEvent(new CustomEvent('tripverse-open-install'));
@@ -97,52 +126,53 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all pt-safe">
-      {/* Top Public Announcement Bar */}
-      <div className="bg-gradient-to-r from-[#0B2545] via-[#00B074] to-[#0B2545] text-white py-1.5 px-3 sm:px-4 text-center text-xs font-semibold flex items-center justify-between sm:justify-center gap-2 overflow-hidden shadow-inner">
+    <header className="sticky top-0 z-40 w-full bg-[#F4F6F2]/90 backdrop-blur-md border-b border-[#E2EBE1] transition-all pt-safe">
+      {/* Top Public Announcement Bar - Desktop only for clean mobile app feel */}
+      <div className="hidden lg:flex bg-gradient-to-r from-[#152A1C] via-[#2D5A3D] to-[#152A1C] text-white py-1.5 px-3 sm:px-4 text-center text-xs font-semibold items-center justify-between sm:justify-center gap-2 overflow-hidden shadow-inner">
         <div className="flex items-center gap-2 truncate">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-extrabold uppercase tracking-widest shrink-0">
-            <Sparkles className="w-3 h-3 text-emerald-300 animate-pulse shrink-0" />
-            <span>Public Release 2.0</span>
+            <Sparkles className="w-3 h-3 text-[#A8C5AC] animate-pulse shrink-0" />
+            <span>AI Travel Planner</span>
           </span>
-          <span className="hidden md:inline truncate">
-            Autonomous road trip intelligence: live satellite radar, 500+ verified NHAI rest stops & 0% commission bookings.
+          <span className="hidden md:inline truncate text-[#E2EBE1]">
+            Plan day-by-day itineraries, highway pit stops, and budget-optimized routes.
           </span>
-          <span className="md:hidden truncate">
-            Autonomous Travel & Highway Intelligence
+          <span className="md:hidden truncate text-[#E2EBE1]">
+            AI-Powered Journeys
           </span>
         </div>
         <button 
           type="button"
           onClick={onOpenPlanner}
-          className="underline font-bold text-emerald-200 hover:text-white transition-colors cursor-pointer shrink-0 ml-1 text-[11px] sm:text-xs"
+          className="underline font-bold text-[#C5D9C8] hover:text-white transition-colors cursor-pointer shrink-0 ml-1 text-[11px] sm:text-xs"
         >
-          Plan Free AI Trip ↗
+          Plan Free Trip ↗
         </button>
       </div>
 
       <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8">
-        <div className="flex items-center justify-between h-18 gap-3">
+        {/* DESKTOP HEADER (Preserved 100% for lg+) */}
+        <div className="hidden lg:flex items-center justify-between h-18 gap-2 sm:gap-3">
           
           {/* Left: Brand Logo & Navigation Links */}
-          <div className="flex items-center gap-2.5 xl:gap-4 min-w-0">
-            <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-1 lg:flex-none items-center gap-2.5 xl:gap-4 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               <Logo 
-                size="md" 
+                size="adaptive" 
                 taglineClassName="hidden 2xl:block"
                 onClick={() => onNavigate('home')} 
               />
               <div 
-                className="hidden 2xl:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100/90 border border-slate-200/80 text-[10px] font-bold text-slate-700 shadow-2xs shrink-0"
-                title="Official CONCODE.WEB Ecosystem Project"
+                className="hidden 2xl:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] text-[10px] font-bold text-[#2D5A3D] shadow-2xs shrink-0"
+                title="Intelligent Travel Planning"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>CONCODE.WEB</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A3D] animate-pulse" />
+                <span>AI Travelverse</span>
               </div>
             </div>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center space-x-0.5 xl:space-x-1 shrink-0" aria-label="Main Navigation">
+            <nav className="flex items-center space-x-0.5 xl:space-x-1 shrink-0" aria-label="Main Navigation">
               {desktopNavLinks.map((link) => {
                 const isActive = currentTab === link.id;
                 const Icon = link.icon;
@@ -151,21 +181,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     key={link.id}
                     onClick={() => handleLinkClick(link.id)}
-                    className={`relative flex items-center gap-1 xl:gap-1.5 px-2 xl:px-2.5 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold transition-all duration-200 cursor-pointer ${
+                    className={`relative flex items-center gap-1 xl:gap-1.5 px-2.5 xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold transition-all duration-200 cursor-pointer ${
                       isActive 
-                        ? 'text-[#00B074] bg-emerald-50/80 shadow-xs' 
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                        ? 'text-[#2D5A3D] bg-[#E8EFE7] shadow-xs' 
+                        : 'text-slate-600 hover:text-[#152A1C] hover:bg-[#EAF0E9]/70'
                     }`}
                   >
-                    {Icon && <Icon className={`w-3.5 h-3.5 xl:w-4 xl:h-4 ${isActive ? 'text-[#00B074]' : 'text-slate-400'}`} />}
+                    {Icon && <Icon className={`w-3.5 h-3.5 xl:w-4 xl:h-4 ${isActive ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />}
                     <span>{link.label}</span>
                     {link.badge && (
-                      <span className="text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs">
+                      <span className="text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-gradient-to-r from-[#386B49] to-[#2D5A3D] text-white shadow-xs">
                         {link.badge}
                       </span>
                     )}
                     {isActive && (
-                      <span className="absolute bottom-0 left-2 right-2 xl:left-2.5 xl:right-2.5 h-0.5 bg-[#00B074] rounded-full" />
+                      <span className="absolute bottom-0 left-2.5 right-2.5 h-0.5 bg-[#2D5A3D] rounded-full" />
                     )}
                   </button>
                 );
@@ -174,25 +204,33 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Right Action & Profile: Search, Currency, CTA, Profile */}
-          <div className="hidden lg:flex items-center gap-2 xl:gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 xl:gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#DCE7DB] bg-white/80 text-slate-600 transition-colors hover:bg-white"
+              aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+              title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+            >
+              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
             {/* Spotlight Global Search Trigger */}
             {onOpenSearch && (
               <button
                 onClick={onOpenSearch}
-                className="flex items-center gap-1.5 xl:gap-2 px-2.5 xl:px-3 py-1.5 rounded-full bg-slate-100/90 hover:bg-slate-200/80 text-slate-500 hover:text-slate-800 text-xs font-semibold transition-all border border-slate-200/80 cursor-pointer shadow-2xs hover:border-slate-300"
+                className="flex items-center gap-1.5 xl:gap-2 px-2.5 xl:px-3 py-1.5 rounded-full bg-white/80 hover:bg-white text-slate-500 hover:text-[#152A1C] text-xs font-semibold transition-all border border-[#DCE7DB] cursor-pointer shadow-2xs hover:border-[#C4D9C3]"
                 title="Search destinations & trips (⌘K)"
               >
                 <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="hidden xl:inline">Search...</span>
-                <kbd className="text-[10px] font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-400 shadow-2xs">
+                <kbd className="text-[10px] font-mono bg-[#F4F6F2] px-1.5 py-0.5 rounded border border-[#DCE7DB] text-slate-500 shadow-2xs">
                   ⌘K
                 </kbd>
               </button>
             )}
 
-
             {/* Currency Selector */}
-            <div className="flex items-center gap-1 xl:gap-1.5 bg-slate-100/90 hover:bg-slate-200/80 rounded-full px-2 xl:px-2.5 py-1.5 border border-slate-200/80 text-xs transition-all shadow-2xs">
+            <div className="flex items-center gap-1 xl:gap-1.5 bg-white/80 hover:bg-white rounded-full px-2 xl:px-2.5 py-1.5 border border-[#DCE7DB] text-xs transition-all shadow-2xs">
               <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               <select
                 value={currency}
@@ -211,7 +249,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Primary CTA: "Plan My Trip" */}
             <button
               onClick={onOpenPlanner}
-              className="btn-liquid-primary flex items-center gap-1.5 xl:gap-2 px-3.5 xl:px-5 py-2 xl:py-2.5 rounded-full text-white font-bold text-xs xl:text-sm shadow-lg shadow-emerald-500/25 group shrink-0"
+              className="btn-liquid-primary flex items-center gap-1.5 xl:gap-2 px-4 xl:px-5 py-2 xl:py-2.5 rounded-full text-white font-bold text-xs xl:text-sm group shrink-0"
             >
               <PlaneTakeoff className="w-3.5 h-3.5 xl:w-4 xl:h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               <span>Plan My Trip</span>
@@ -222,77 +260,97 @@ export const Navbar: React.FC<NavbarProps> = ({
             {!isAuthenticated ? (
               <button
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1.5 px-3 xl:px-4 py-1.5 xl:py-2 rounded-full bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="flex items-center gap-1.5 px-3.5 xl:px-4 py-1.5 xl:py-2 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] hover:bg-[#DCE7DB] text-[#2D5A3D] text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
                 title="Sign In / Register"
               >
-                <User className="w-3.5 h-3.5 text-[#00B074]" />
+                <User className="w-3.5 h-3.5 text-[#2D5A3D]" />
                 <span>Sign In</span>
               </button>
             ) : (
               <button
                 onClick={() => onNavigate('profile')}
-                className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 hover:border-emerald-300 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="flex items-center gap-2.5 pl-1.5 pr-3 py-1 rounded-full bg-white border border-[#DCE7DB] hover:border-[#2D5A3D] transition-colors cursor-pointer shadow-2xs"
                 title="View Profile"
               >
                 <img
                   src={userProfile.avatar}
                   alt={userProfile.name}
-                  className="w-7 h-7 rounded-full object-cover ring-2 ring-emerald-500/30"
+                  className="w-7 h-7 rounded-full object-cover ring-2 ring-[#2D5A3D]/30"
                 />
-                <span className="text-xs font-semibold text-slate-700 max-w-[90px] truncate">
+                <span className="text-xs font-bold text-[#152A1C] max-w-[90px] truncate">
                   {userProfile.name.split(' ')[0]}
                 </span>
               </button>
             )}
           </div>
 
-          {/* Mobile & Tablet Actions */}
-          <div className="flex lg:hidden items-center gap-1.5">
+        </div>
+
+        {/* MOBILE APP HEADER (Screen 1: Left Menu Button, Center Logo, Right Profile Avatar) */}
+        <div className="flex lg:hidden items-center justify-between h-14">
+          {/* Left: Mobile App Hamburger Menu Icon */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-800 hover:text-[#152A1C] hover:bg-white/80 active:scale-95 transition-all focus:outline-none"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5 text-[#152A1C]" /> : <Menu className="w-5 h-5 text-[#152A1C]" />}
+          </button>
+
+          {/* Center: Clean TripVerse Brand Logo */}
+          <div className="flex items-center justify-center">
+            <Logo 
+              size="sm" 
+              showTagline={false}
+              onClick={() => onNavigate('home')} 
+            />
+          </div>
+
+          {/* Right: Quick Search and Profile Avatar (Matching Screen 1) */}
+          <div className="flex items-center gap-2">
             {onOpenSearch && (
               <button
                 onClick={onOpenSearch}
-                className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                title="Search (⌘K)"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-slate-700 hover:text-[#152A1C] hover:bg-white/80 active:scale-95 transition-all"
+                title="Search"
                 aria-label="Search"
               >
-                <Search className="w-5 h-5 text-slate-600" />
+                <Search className="w-4 h-4 text-slate-600" />
               </button>
             )}
-            {onOpenNotifications && (
-              <button
-                onClick={onOpenNotifications}
-                className="relative p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
-                title="Notifications"
-                aria-label="Notifications"
-              >
-                <Bell className="w-5 h-5" />
-                {unreadNotificationCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white" />
-                )}
-              </button>
-            )}
+
+            {/* Mobile User Profile Avatar (matching Reference Image Screen 1) */}
             <button
-              onClick={onOpenPlanner}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-trip-gradient text-white font-bold text-xs shadow-xs"
+              onClick={() => onNavigate('profile')}
+              className="w-9 h-9 rounded-full ring-2 ring-[#2D5A3D]/30 overflow-hidden cursor-pointer active:scale-95 transition-transform shrink-0"
+              title="Profile"
+              aria-label="Profile"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>AI Plan</span>
-            </button>
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <img
+                src={userProfile.avatar}
+                alt={userProfile.name}
+                className="w-full h-full object-cover"
+              />
             </button>
           </div>
-
         </div>
       </div>
 
       {/* Mobile & Tablet Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-1 shadow-xl animate-in slide-in-from-top duration-200">
+        <div className="lg:hidden border-t border-[#E2EBE1] bg-[#F4F6F2] px-4 pt-3 pb-5 space-y-1 shadow-xl animate-in slide-in-from-top duration-200">
+          {onOpenSearch && (
+            <button
+              onClick={() => {
+                onOpenSearch();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <Search className="w-5 h-5 text-slate-400" />
+              <span>Search destinations & trips</span>
+            </button>
+          )}
           {mobileNavLinks.map((link) => {
             const isActive = currentTab === link.id;
             const Icon = link.icon;
@@ -301,15 +359,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 key={link.id}
                 onClick={() => handleLinkClick(link.id)}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
-                  isActive ? 'bg-emerald-50 text-[#00B074]' : 'text-slate-700 hover:bg-slate-50'
+                  isActive ? 'bg-[#E8EFE7] text-[#2D5A3D]' : 'text-slate-700 hover:bg-[#EAF0E9]/70'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  {Icon && <Icon className={`w-5 h-5 ${isActive ? 'text-[#00B074]' : 'text-slate-400'}`} />}
+                  {Icon && <Icon className={`w-5 h-5 ${isActive ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />}
                   <span>{link.label}</span>
                 </div>
                 {link.badge ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2D5A3D] text-white">
                     {link.badge}
                   </span>
                 ) : (
@@ -321,10 +379,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Mobile Install App banner for browser users */}
           {!isStandaloneApp && (
-            <div className="p-3 my-2 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 flex items-center justify-between">
+            <div className="p-3 my-2 rounded-2xl bg-[#EAF0E9] border border-[#8EA78D]/30 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Smartphone className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-xl bg-white p-1.5 flex items-center justify-center shrink-0 shadow-2xs border border-slate-200/90">
+                  <BrandIconMark className="w-full h-full" idPrefix="nav-banner" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-800">TripVerse App</p>
@@ -333,7 +391,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <button
                 onClick={handleOpenInstall}
-                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
+                className="px-3 py-1.5 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
               >
                 Install
               </button>
@@ -358,6 +416,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               ))}
             </select>
           </div>
+
+          <button
+            type="button"
+            onClick={toggleDarkMode}
+            className="w-full flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+          >
+            <span className="flex items-center gap-3">
+              {isDarkMode ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5 text-slate-400" />}
+              <span>{isDarkMode ? 'Light mode' : 'Dark mode'}</span>
+            </span>
+            <span className="text-xs text-slate-500">{isDarkMode ? 'On' : 'Off'}</span>
+          </button>
 
           <div className="pt-3 border-t border-slate-100">
             <button

@@ -627,8 +627,7 @@ function mapWmoCodeToCondition(code: number): { condition: string; icon: string 
 }
 
 /**
- * Real-Time Meteorological Weather Fetcher (Open-Meteo Satellite Feed)
- * Dispatches real-time weather query using exact geographic coordinates.
+ * Fetches the current forecast from Open-Meteo for the resolved coordinates.
  */
 export async function fetchLiveDestinationWeather(
   queryOrCity: string,
@@ -708,7 +707,7 @@ export async function fetchLiveDestinationWeather(
       forecastDays: forecastDays.length > 0 ? forecastDays : fallback.forecastDays,
       roadConditionAdvisory: fallback.roadConditionAdvisory,
       isLive: true,
-      source: 'Open-Meteo Satellite Feed',
+      source: 'Open-Meteo forecast',
       lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
   } catch (err) {
@@ -716,5 +715,4 @@ export async function fetchLiveDestinationWeather(
     return { ...fallback, isLive: false };
   }
 }
-
 

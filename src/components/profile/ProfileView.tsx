@@ -218,7 +218,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover ring-4 ring-emerald-500/20 shadow-md transition-transform group-hover:scale-105"
             />
             {currentUser && (
-              <div className="absolute -bottom-1 -right-1 p-1.5 bg-[#00B074] rounded-xl text-white shadow-xs" title="Verified Explorer Profile">
+              <div className="absolute -bottom-1 -right-1 p-1.5 bg-[#2D5A3D] rounded-xl text-white shadow-xs" title="Verified Explorer Profile">
                 <ShieldCheck className="w-4 h-4" />
               </div>
             )}
@@ -260,7 +260,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs sm:text-sm font-semibold text-[#00B074]">
+                <p className="text-xs sm:text-sm font-semibold text-[#2D5A3D]">
                   {currentUser ? (userProfile.travelStyleTag || 'Verified Explorer') : 'Guest Explorer'}
                 </p>
               </div>
@@ -269,7 +269,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="flex items-center gap-2 justify-center sm:justify-end flex-wrap">
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D] font-semibold text-xs border border-[#8EA78D]/30 transition-colors cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
@@ -278,10 +278,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {savedAccounts.length > 1 && (
                   <button
                     onClick={() => setShowSwitchModal(true)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-[#F8FAF7] text-[#152A1C] border border-[#E2EBE1] font-semibold text-xs transition-colors cursor-pointer"
                     title="Switch between saved accounts"
                   >
-                    <Users className="w-3.5 h-3.5" />
+                    <Users className="w-3.5 h-3.5 text-[#2D5A3D]" />
                     <span>Switch</span>
                   </button>
                 )}
@@ -289,10 +289,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {onOpenNotifications && (
                   <button
                     onClick={onOpenNotifications}
-                    className="relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
+                    className="relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-[#F8FAF7] text-[#152A1C] border border-[#E2EBE1] font-semibold text-xs transition-colors cursor-pointer"
                     title="Reminders & Notifications"
                   >
-                    <Bell className="w-3.5 h-3.5 text-slate-600" />
+                    <Bell className="w-3.5 h-3.5 text-[#2D5A3D]" />
                     <span>Reminders</span>
                     {unreadNotificationCount > 0 && (
                       <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center">
@@ -305,7 +305,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {onReplayTour && (
                   <button
                     onClick={onReplayTour}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#00B074] font-semibold text-xs border border-emerald-200/80 transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D] font-semibold text-xs border border-[#8EA78D]/30 transition-colors cursor-pointer"
                     title="Take First-Time Interactive Tour"
                   >
                     <Compass className="w-3.5 h-3.5" />
@@ -376,7 +376,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
           <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 min-w-0">
             <span className="text-[10px] uppercase font-semibold text-slate-400 block tracking-wider">Highway Kms</span>
-            <span className="text-xl sm:text-2xl font-serif font-bold text-[#00B074]">
+            <span className="text-xl sm:text-2xl font-serif font-bold text-[#2D5A3D]">
               {highwayKms > 0 ? `${highwayKms.toLocaleString()} km` : '0 km'}
             </span>
           </div>
@@ -394,7 +394,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {!currentUser && (
         <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200/90 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
           <div className="flex items-center gap-3.5 text-center sm:text-left">
-            <div className="w-11 h-11 rounded-2xl bg-white border border-emerald-300 text-[#00B074] flex items-center justify-center shrink-0 shadow-2xs">
+            <div className="w-11 h-11 rounded-2xl bg-white border border-[#8EA78D] text-[#2D5A3D] flex items-center justify-center shrink-0 shadow-2xs">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
@@ -444,7 +444,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   onClick={() => setFormData({ ...formData, avatar: preset })}
                   className={`w-14 h-14 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0 ${
                     formData.avatar === preset
-                      ? 'border-[#00B074] ring-2 ring-emerald-500/30 scale-105'
+                      ? 'border-[#2D5A3D] ring-2 ring-[#2D5A3D]/30 scale-105'
                       : 'border-slate-200 opacity-70 hover:opacity-100'
                   }`}
                 >
@@ -558,7 +558,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#00B074]">Smart Preferences</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Smart Preferences</span>
               <h3 className="text-lg font-bold text-[#0B2545]">AI Personalization Engine</h3>
             </div>
             <span className="text-xs text-slate-400 font-semibold">Active Learning: ON</span>
@@ -587,7 +587,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/70 flex items-start gap-3 text-xs text-slate-700">
-            <Sparkles className="w-4 h-4 text-[#00B074] flex-shrink-0 mt-0.5" />
+            <Sparkles className="w-4 h-4 text-[#2D5A3D] flex-shrink-0 mt-0.5" />
             <p className="leading-relaxed">
               <strong>Personalized Recommendation Rule:</strong> Because you frequently choose budget havelis and road trips from Ahmedabad, TripVerse prioritizes NH-48 rest stops with top 5-star washroom ratings and cost-effective group room packages.
             </p>
@@ -612,7 +612,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   onClick={() => handleSwitchAccount(account.uid)}
                   className={`w-full p-3 rounded-2xl border text-left flex items-center gap-3 transition-colors cursor-pointer ${
                     currentUser?.uid === account.uid
-                      ? 'border-[#00B074] bg-emerald-50/70'
+                      ? 'border-[#2D5A3D] bg-emerald-50/70'
                       : 'border-slate-200 hover:bg-slate-50'
                   }`}
                 >
@@ -647,7 +647,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-[#00B074]" />
+            <ShieldCheck className="w-4 h-4 text-[#2D5A3D]" />
             <h4 className="font-bold text-sm text-[#0B2545]">Trust, Privacy & Feedback</h4>
           </div>
           <span className="text-[11px] font-semibold text-slate-400">TripVerse Core</span>
@@ -659,7 +659,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             className="p-3.5 rounded-2xl bg-slate-50 hover:bg-emerald-50/60 border border-slate-200/80 hover:border-emerald-300 flex items-center justify-between transition-all text-left cursor-pointer group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-[#00B074]">
+              <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-[#2D5A3D]">
                 <Lock className="w-4 h-4" />
               </div>
               <div>
@@ -667,7 +667,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <p className="text-[11px] text-slate-500">Local encryption & zero ad trackers</p>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#00B074]" />
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#2D5A3D]" />
           </button>
 
           <button
@@ -675,7 +675,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             className="p-3.5 rounded-2xl bg-slate-50 hover:bg-emerald-50/60 border border-slate-200/80 hover:border-emerald-300 flex items-center justify-between transition-all text-left cursor-pointer group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-[#00B074]">
+              <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-[#2D5A3D]">
                 <FileText className="w-4 h-4" />
               </div>
               <div>
@@ -683,7 +683,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <p className="text-[11px] text-slate-500">Platform guidelines & fair travel</p>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#00B074]" />
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#2D5A3D]" />
           </button>
 
           <button
@@ -707,7 +707,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             className="p-3.5 rounded-2xl bg-emerald-50/50 hover:bg-emerald-50 border border-emerald-200/80 hover:border-emerald-300 flex items-center justify-between transition-all text-left cursor-pointer group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-[#00B074]">
+              <div className="w-8 h-8 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-[#2D5A3D]">
                 <MessageSquare className="w-4 h-4" />
               </div>
               <div>
@@ -715,7 +715,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <p className="text-[11px] text-emerald-700">Suggest spots or report road bugs</p>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-[#00B074]" />
+            <ChevronRight className="w-4 h-4 text-[#2D5A3D]" />
           </button>
         </div>
       </div>
@@ -724,7 +724,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3.5 text-center sm:text-left">
           <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-            currentUser ? 'bg-emerald-50 text-[#00B074] border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
+            currentUser ? 'bg-emerald-50 text-[#2D5A3D] border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
           }`}>
             <User className="w-5 h-5" />
           </div>
@@ -763,7 +763,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </button>
               <button
                 onClick={onOpenAuthModal}
-                className="px-5 py-2.5 rounded-xl bg-[#00B074] hover:bg-[#009663] text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="px-5 py-2.5 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
               >
                 <User className="w-4 h-4" />
                 <span>Sign In / Register</span>

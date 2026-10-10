@@ -1,5 +1,3 @@
-import { Coordinates } from './trip';
-
 export type DisruptionType = 
   | 'flight_cancellation' 
   | 'train_cancellation' 
@@ -38,15 +36,7 @@ export interface EmergencyStay {
 }
 
 export interface RefundGuidance {
-  carrierOrEntity: string;
-  referenceNumber: string;
-  estimatedRefundAmount: number;
-  originalFareAmount: number;
-  cancellationFeeWaiverPercent: number;
-  policyExemptionRule: string;
-  estimatedProcessingDays: number;
   claimSteps: string[];
-  supportHelpline: string;
 }
 
 export interface ReplanOption {
