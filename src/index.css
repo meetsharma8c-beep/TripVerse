@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   --font-display: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -81,27 +83,35 @@ body {
 
 html.dark {
   color-scheme: dark;
-  --color-trip-primary: #34D399;
-  --color-trip-primary-hover: #10B981;
-  --color-trip-emerald: #6EE7B7;
-  --color-trip-darkteal: #A7F3D0;
-  --color-trip-forest: #6EE7B7;
-  --color-trip-forest-dark: #A7F3D0;
+  --color-trip-primary: #10B981;
+  --color-trip-primary-hover: #059669;
+  --color-trip-emerald: #34D399;
+  --color-trip-darkteal: #6EE7B7;
+  --color-trip-forest: #34D399;
+  --color-trip-forest-dark: #6EE7B7;
   --color-trip-forest-light: #A7F3D0;
   --color-trip-sage: #94A3B8;
-  --color-trip-sage-light: #16382B;
-  --color-trip-sage-pill: #1E293B;
+  --color-trip-sage-light: rgba(16, 185, 129, 0.12);
+  --color-trip-sage-pill: #162338;
   --color-trip-navy: #F8FAFC;
   --color-trip-navy-dark: #FFFFFF;
-  --color-trip-navy-light: #E2E8F0;
-  --color-trip-bg: #0B1220;
-  --color-trip-card: #111C2E;
+  --color-trip-navy-light: #CBD5E1;
+  --color-trip-bg: #070C16;
+  --color-trip-card: #0E1726;
 }
 
+html.dark,
 html.dark body,
+html.dark #root,
 html.dark #root > div {
-  background-color: #0b1220 !important;
-  color: #e2e8f0;
+  background-color: #070C16 !important;
+  background-image: none !important;
+  color: #E2E8F0 !important;
+}
+
+html.dark ::selection {
+  background-color: #059669 !important;
+  color: #FFFFFF !important;
 }
 
 /* ==========================================================================
@@ -110,7 +120,6 @@ html.dark #root > div {
 
 /* Main Headings, Titles, Durations, and Dark Green UI Copy */
 html.dark [class~="text-[#152A1C]"],
-html.dark [class*="text-[#152A1C]"],
 html.dark .text-\[\#152A1C\],
 html.dark [class~="text-slate-900"],
 html.dark [class~="text-slate-800"],
@@ -122,13 +131,12 @@ html.dark [class~="text-[#0F172A]"] {
 
 /* Brand Accent Text, Section Subtitles, Active Nav, Verified Badges */
 html.dark [class~="text-[#2D5A3D]"],
-html.dark [class*="text-[#2D5A3D]"],
 html.dark .text-\[\#2D5A3D\],
 html.dark [class~="text-[#00B074]"],
 html.dark [class~="text-emerald-800"],
 html.dark [class~="text-emerald-700"],
 html.dark [class~="text-emerald-600"] {
-  color: #6EE7B7 !important;
+  color: #34D399 !important;
 }
 
 /* Deep Forest & Teal Text Elements */
@@ -142,50 +150,45 @@ html.dark [class~="text-[#0D1A11]"] {
 /* Light Forest / Emerald Accent Text */
 html.dark [class~="text-[#446E50]"],
 html.dark [class~="text-[#386B49]"] {
-  color: #A7F3D0 !important;
+  color: #6EE7B7 !important;
 }
 
 /* Secondary & Muted Category Labels, Descriptions, Footnotes */
 html.dark [class~="text-[#57685D]"],
-html.dark [class*="text-[#57685D]"],
 html.dark [class~="text-[#5A7362]"],
-html.dark [class*="text-[#5A7362]"],
 html.dark [class~="text-slate-600"] {
   color: #CBD5E1 !important;
 }
 
 html.dark [class~="text-[#8EA78D]"],
-html.dark [class*="text-[#8EA78D]"],
 html.dark [class~="text-slate-500"],
 html.dark [class~="text-slate-400"] {
   color: #94A3B8 !important;
 }
 
 html.dark [class~="text-amber-800"] {
-  color: #fcd34d !important;
+  color: #FCD34D !important;
 }
 
 /* Hover text states */
-html.dark [class~="hover:text-[#152A1C]"]:hover,
-html.dark [class*="hover:text-[#152A1C]"]:hover {
+html.dark [class~="hover:text-[#152A1C]"]:hover {
   color: #FFFFFF !important;
 }
 
 html.dark [class~="hover:text-[#2D5A3D]"]:hover,
-html.dark [class*="hover:text-[#2D5A3D]"]:hover,
-html.dark [class*="hover:text-[#244931]"]:hover {
-  color: #A7F3D0 !important;
+html.dark [class~="hover:text-[#244931]"]:hover {
+  color: #6EE7B7 !important;
 }
 
 /* Night Mode Text Gradients */
 html.dark .text-trip-navy-gradient {
-  background: linear-gradient(135deg, #FFFFFF 0%, #6EE7B7 100%) !important;
+  background: linear-gradient(135deg, #FFFFFF 0%, #34D399 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
 
 html.dark .text-trip-gradient {
-  background: linear-gradient(135deg, #6EE7B7 0%, #A7F3D0 100%) !important;
+  background: linear-gradient(135deg, #34D399 0%, #A7F3D0 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
@@ -194,64 +197,68 @@ html.dark .text-trip-gradient {
    NIGHT MODE SURFACES & CARD CONTAINERS
    ========================================================================== */
 
-/* Cards and panels */
+/* Cards, modals, dialogs, and panels */
 html.dark [class~="bg-white"],
 html.dark [class~="bg-white/95"],
 html.dark [class~="bg-white/90"],
 html.dark [class~="bg-white/80"] {
-  background-color: #111C2E !important;
+  background-color: #0E1726 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 html.dark [class~="bg-[#F8FAFC]"],
 html.dark [class~="bg-[#F4F6F2]"],
-html.dark [class*="bg-[#F4F6F2]"] {
-  background-color: #0B1220 !important;
+html.dark [class~="bg-[#F4F6F2]/90"],
+html.dark [class~="bg-[#F4F6F2]/80"] {
+  background-color: #070C16 !important;
 }
 
-/* Header and Navbar translucency in night mode */
-html.dark header[class*="bg-[#F4F6F2]"],
-html.dark header.bg-\[\#F4F6F2\]\/90 {
-  background-color: rgba(11, 18, 32, 0.92) !important;
-  border-bottom-color: #1E293B !important;
+/* Header and Navbar in night mode */
+html.dark header {
+  background-color: rgba(7, 12, 22, 0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark header [class~="bg-gradient-to-r"] {
+  background: linear-gradient(90deg, #070C16 0%, #0D2619 50%, #070C16 100%) !important;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2) !important;
 }
 
 html.dark [class~="bg-[#F8FAF7]"],
-html.dark [class*="bg-[#F8FAF7]"],
 html.dark [class~="bg-slate-50"],
-html.dark [class~="bg-slate-50/90"] {
-  background-color: #162235 !important;
-}
-
+html.dark [class~="bg-slate-50/90"],
 html.dark [class~="bg-slate-100"],
 html.dark [class~="bg-slate-100/90"] {
-  background-color: #1E293B !important;
+  background-color: #142033 !important;
 }
 
 html.dark [class~="bg-slate-200"] {
-  background-color: #334155 !important;
+  background-color: #1E2D45 !important;
 }
 
 /* Glowing Emerald Pill Badges, Icon Badges & Tags */
 html.dark [class~="bg-[#E8EFE7]"],
-html.dark [class*="bg-[#E8EFE7]"],
 html.dark [class~="bg-[#EAF0E9]"],
-html.dark [class*="bg-[#EAF0E9]"],
 html.dark [class~="bg-emerald-50"],
 html.dark [class~="bg-emerald-50/80"],
 html.dark [class~="bg-teal-50"] {
-  background-color: rgba(45, 90, 61, 0.35) !important;
+  background-color: rgba(16, 185, 129, 0.14) !important;
+  border-color: rgba(52, 211, 153, 0.25) !important;
+  color: #34D399 !important;
 }
 
 html.dark [class~="bg-[#E2EBE1]"],
-html.dark [class*="bg-[#E2EBE1]"],
-html.dark [class~="bg-[#DCE7DB]"],
-html.dark [class*="bg-[#DCE7DB]"] {
-  background-color: #1E293B !important;
+html.dark [class~="bg-[#DCE7DB]"] {
+  background-color: #162338 !important;
+  color: #CBD5E1 !important;
 }
 
 html.dark [class~="bg-emerald-100"],
 html.dark [class~="bg-teal-100"] {
-  background-color: #164E3B !important;
+  background-color: rgba(16, 185, 129, 0.22) !important;
+  color: #34D399 !important;
 }
 
 html.dark [class~="bg-amber-50"] {
@@ -265,33 +272,39 @@ html.dark [class~="bg-sky-50"] {
 
 /* Nature Card & Boarding Pass Utilities */
 html.dark .nature-card {
-  background-color: #111C2E !important;
-  border-color: #234233 !important;
+  background-color: #0E1726 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5) !important;
 }
 
 html.dark .nature-card-hover:hover {
-  border-color: #34D399 !important;
+  border-color: rgba(52, 211, 153, 0.45) !important;
   box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.7) !important;
 }
 
 html.dark .ticket-divider {
-  border-top-color: #234233 !important;
+  border-top-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 html.dark .ticket-divider::before,
 html.dark .ticket-divider::after {
-  background-color: #0B1220 !important;
-  box-shadow: inset -2px 0 3px rgba(0, 0, 0, 0.4) !important;
+  background-color: #070C16 !important;
+  box-shadow: inset -2px 0 3px rgba(0, 0, 0, 0.6) !important;
 }
 
 /* Scroll Fade Masks in Night Mode */
-html.dark [class*="from-[#F4F6F2]"] {
-  --tw-gradient-from: #0B1220 !important;
+html.dark [class~="from-[#F4F6F2]"] {
+  --tw-gradient-from: #070C16 !important;
 }
 
-html.dark [class*="to-[#F4F6F2]"] {
-  --tw-gradient-to: #0B1220 !important;
+html.dark [class~="to-[#F4F6F2]"] {
+  --tw-gradient-to: #070C16 !important;
+}
+
+/* Ambient hero glow */
+html.dark [class*="from-[#E2EBE1]/60"],
+html.dark [class*="from-[#E2EBE1]"] {
+  background-image: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.12) 0%, rgba(7, 12, 22, 0) 70%) !important;
 }
 
 /* ==========================================================================
@@ -299,36 +312,28 @@ html.dark [class*="to-[#F4F6F2]"] {
    ========================================================================== */
 
 /* Primary Action Buttons */
-html.dark [class~="bg-[#2D5A3D]"],
-html.dark [class*="bg-[#2D5A3D]"] {
-  background-color: #059669 !important;
-  color: #FFFFFF !important;
-}
-
-html.dark [class~="hover:bg-[#2D5A3D]"]:hover,
-html.dark [class*="hover:bg-[#2D5A3D]"]:hover {
-  background-color: #10B981 !important;
-}
-
 html.dark .bg-trip-gradient,
 html.dark .btn-liquid-primary,
 html.dark [class~="bg-[#2D5A3D]"],
-html.dark [class*="bg-[#2D5A3D]"],
 html.dark [class~="bg-[#00B074]"] {
   background: linear-gradient(135deg, #059669 0%, #047857 52%, #065F46 100%) !important;
   color: #FFFFFF !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+  box-shadow: 0 8px 24px -4px rgba(5, 150, 105, 0.45), inset 0 1px 1.5px rgba(255, 255, 255, 0.25) !important;
 }
 
-html.dark .btn-liquid-primary:hover {
+html.dark .btn-liquid-primary:hover,
+html.dark [class~="hover:bg-[#2D5A3D]"]:hover,
+html.dark [class~="hover:bg-[#244931]"]:hover {
   background: linear-gradient(135deg, #10B981 0%, #059669 52%, #047857 100%) !important;
-  box-shadow: 0 14px 32px -4px rgba(5, 150, 105, 0.55), 0 6px 16px -2px rgba(5, 150, 105, 0.35) !important;
+  box-shadow: 0 14px 32px -4px rgba(16, 185, 129, 0.5), 0 6px 16px -2px rgba(5, 150, 105, 0.35) !important;
 }
 
 html.dark .btn-liquid-glass {
-  background: #263449 !important;
-  border-color: #475569 !important;
+  background: #162338 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
   color: #F8FAFC !important;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 html.dark .btn-liquid-glass * {
@@ -336,12 +341,12 @@ html.dark .btn-liquid-glass * {
 }
 
 html.dark .btn-liquid-glass:hover {
-  background: #334155 !important;
-  border-color: #64748B !important;
+  background: #1E2D45 !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 html.dark .btn-liquid-glass:active {
-  background: #1E293B !important;
+  background: #111C2E !important;
 }
 
 html.dark [class~="bg-emerald-500"],
@@ -353,19 +358,19 @@ html.dark [class~="bg-emerald-700"] {
 }
 
 html.dark [class~="bg-amber-500"] {
-  background-color: #92400e !important;
+  background-color: #92400E !important;
   color: #FFFFFF !important;
 }
 
 html.dark [class~="bg-blue-500"],
 html.dark [class~="bg-blue-600"] {
-  background-color: #1d4ed8 !important;
+  background-color: #1D4ED8 !important;
   color: #FFFFFF !important;
 }
 
 html.dark [class~="bg-red-500"],
 html.dark [class~="bg-red-600"] {
-  background-color: #b91c1c !important;
+  background-color: #B91C1C !important;
   color: #FFFFFF !important;
 }
 
@@ -374,11 +379,8 @@ html.dark [class~="bg-red-600"] {
    ========================================================================== */
 
 html.dark [class~="border-[#E2EBE1]"],
-html.dark [class*="border-[#E2EBE1]"],
 html.dark [class~="border-[#DCE7DB]"],
-html.dark [class*="border-[#DCE7DB]"],
 html.dark [class~="border-[#C4D9C3]"],
-html.dark [class*="border-[#C4D9C3]"],
 html.dark [class~="border-[#DCE6DA]"],
 html.dark [class~="border-[#C5D9C8]"],
 html.dark [class~="border-slate-100"],
@@ -386,15 +388,14 @@ html.dark [class~="border-slate-200"],
 html.dark [class~="border-slate-200/80"],
 html.dark [class~="border-slate-200/90"],
 html.dark [class~="border-slate-300"] {
-  border-color: #1E293B !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-html.dark [class*="border-[#8EA78D]"] {
-  border-color: rgba(78, 124, 93, 0.45) !important;
+html.dark [class~="border-[#8EA78D]"] {
+  border-color: rgba(52, 211, 153, 0.3) !important;
 }
 
 html.dark [class~="border-[#2D5A3D]"],
-html.dark [class*="border-[#2D5A3D]"],
 html.dark [class~="border-emerald-200"],
 html.dark [class~="border-emerald-200/80"],
 html.dark [class~="border-emerald-300"] {
@@ -405,22 +406,19 @@ html.dark [class~="hover:bg-slate-50"]:hover,
 html.dark [class~="hover:bg-slate-100"]:hover,
 html.dark [class~="hover:bg-slate-100/70"]:hover,
 html.dark [class~="hover:bg-[#F4F6F2]"]:hover,
-html.dark [class*="hover:bg-[#F4F6F2]"]:hover,
-html.dark [class~="hover:bg-[#F8FAF7]"]:hover,
-html.dark [class*="hover:bg-[#F8FAF7]"]:hover {
-  background-color: #1E293B !important;
+html.dark [class~="hover:bg-[#F8FAF7]"]:hover {
+  background-color: #1A2638 !important;
 }
 
 html.dark [class~="hover:bg-[#E8EFE7]"]:hover,
-html.dark [class*="hover:bg-[#E8EFE7]"]:hover,
-html.dark [class*="hover:bg-[#dce7db]"]:hover,
-html.dark [class*="hover:bg-[#d9e5d8]"]:hover {
-  background-color: rgba(45, 90, 61, 0.55) !important;
+html.dark [class~="hover:bg-[#dce7db]"]:hover,
+html.dark [class~="hover:bg-[#d9e5d8]"]:hover {
+  background-color: rgba(16, 185, 129, 0.22) !important;
 }
 
 /* Avatar rings in night mode */
 html.dark [class~="ring-white"] {
-  --tw-ring-color: #111C2E !important;
+  --tw-ring-color: #0E1726 !important;
 }
 
 /* ==========================================================================
@@ -430,31 +428,73 @@ html.dark [class~="ring-white"] {
 html.dark input:not([type="checkbox"]):not([type="radio"]),
 html.dark textarea,
 html.dark select {
-  background-color: #162235 !important;
+  background-color: #121D2F !important;
   color: #F8FAFC !important;
-  border-color: #334155 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 html.dark input::placeholder,
 html.dark textarea::placeholder,
-html.dark [class*="placeholder:text-[#5A7362]"]::placeholder,
-html.dark [class*="placeholder:text-slate-400"]::placeholder,
-html.dark [class*="placeholder:text-[#57685D]"]::placeholder {
+html.dark [class~="placeholder:text-[#5A7362]"]::placeholder,
+html.dark [class~="placeholder:text-slate-400"]::placeholder,
+html.dark [class~="placeholder:text-[#57685D]"]::placeholder {
+  color: #64748B !important;
+}
+
+/* Floating Search Pill in Hero */
+html.dark form:has(#hero-destination-input) [class~="bg-white"],
+html.dark [class*="shadow-[0_12px_36px_-6px_rgba(45,90,61,0.22)]"] {
+  background-color: #0E1726 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark #hero-destination-input {
+  color: #F8FAFC !important;
+}
+
+/* Mobile Bottom Navigation Bar */
+html.dark [class*="pb-safe"][class*="fixed"][class*="bottom-0"] {
+  background-color: rgba(11, 18, 32, 0.94) !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Modern Footer in Night Mode */
+html.dark footer {
+  background-color: #070C16 !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark footer [class~="text-slate-500"] {
   color: #94A3B8 !important;
 }
 
-html.dark .leaflet-control,
-html.dark .leaflet-bar a {
-  background-color: #111C2E !important;
-  color: #E2E8F0 !important;
-  border-color: #334155 !important;
+html.dark footer [class~="text-slate-600"] {
+  color: #CBD5E1 !important;
 }
 
+/* Leaflet Map in Night Mode */
+html.dark .leaflet-control,
+html.dark .leaflet-bar a {
+  background-color: #0E1726 !important;
+  color: #E2E8F0 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Scrollbars in Night Mode */
 html.dark ::-webkit-scrollbar-track {
-  background: #0B1220;
+  background: #070C16;
 }
 
 html.dark ::-webkit-scrollbar-thumb {
+  background: #1E2D45;
+  border-radius: 9999px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
 

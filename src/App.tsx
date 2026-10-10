@@ -1462,7 +1462,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900 selection:bg-[#2D5A3D] selection:text-white antialiased">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#070C16] text-slate-900 dark:text-slate-100 selection:bg-[#2D5A3D] selection:text-white antialiased">
 
       {/* 0. Native iOS & Android App Opening Animation Splash Screen */}
       {showSplash && (

@@ -20,6 +20,21 @@
     <meta name="application-name" content="TripVerse" />
     <link rel="manifest" href="/manifest.json" />
 
+    <!-- Instant Pre-hydration Theme Initializer -->
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('tripverse_theme');
+          var d = t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (d) {
+            document.documentElement.classList.add('dark');
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute('content', '#070C16');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- iOS Apple Web App & Bookmark Meta -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -84,18 +99,18 @@
   </head>
   <body class="bg-[#F4F6F2] text-[#152A1C] antialiased selection:bg-[#2D5A3D] selection:text-white font-sans overflow-x-clip">
     <div id="root">
-      <!-- Pre-hydration luxury splash screen (pixel-identical match with native splash) -->
+      <!-- Pre-hydration luxury splash screen (theme-adaptive match with native splash) -->
       <div id="pre-app-splash" style="position:fixed;inset:0;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1);">
         <div style="position:relative;display:flex;align-items:center;justify-content:center;">
-          <div style="position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle, rgba(45,90,61,0.12) 0%, rgba(45,90,61,0) 70%);filter:blur(16px);animation:tvPreAura 2s ease-in-out infinite;"></div>
-          <div style="position:relative;width:112px;height:112px;display:flex;align-items:center;justify-content:center;border-radius:28px;background:#FFFFFF;box-shadow:0 20px 48px -12px rgba(45,90,61,0.18), 0 0 0 1px rgba(45,90,61,0.06);animation:tvPrePulse 1.8s cubic-bezier(0.2,0.8,0.2,1) infinite;">
+          <div class="pre-splash-aura" style="position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle, rgba(45,90,61,0.12) 0%, rgba(45,90,61,0) 70%);filter:blur(16px);animation:tvPreAura 2s ease-in-out infinite;"></div>
+          <div class="pre-splash-card" style="position:relative;width:112px;height:112px;display:flex;align-items:center;justify-content:center;border-radius:28px;background:#FFFFFF;box-shadow:0 20px 48px -12px rgba(45,90,61,0.18), 0 0 0 1px rgba(45,90,61,0.06);animation:tvPrePulse 1.8s cubic-bezier(0.2,0.8,0.2,1) infinite;">
             <img src="/tripverse-mark-cropped.png" style="width:82px;height:auto;image-rendering:-webkit-optimize-contrast;transform:translateZ(0);" alt="TripVerse" />
           </div>
         </div>
-        <div style="margin-top:22px;font-family:'Sora',system-ui,sans-serif;font-weight:900;font-size:28px;letter-spacing:-0.5px;color:#0B2545;text-align:center;">
-          <span>Trip</span><span style="color:#2D5A3D;">Verse</span>
+        <div class="pre-splash-title" style="margin-top:22px;font-family:'Sora',system-ui,sans-serif;font-weight:900;font-size:28px;letter-spacing:-0.5px;color:#0B2545;text-align:center;">
+          <span class="pre-splash-brand-trip">Trip</span><span style="color:#2D5A3D;" class="pre-splash-brand-verse">Verse</span>
         </div>
-        <div style="margin-top:6px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:600;font-size:12px;letter-spacing:0.3px;color:#64748B;text-align:center;">
+        <div class="pre-splash-tagline" style="margin-top:6px;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:600;font-size:12px;letter-spacing:0.3px;color:#64748B;text-align:center;">
           Plan Smarter. Travel Further.
         </div>
       </div>
@@ -107,6 +122,25 @@
         @keyframes tvPreAura {
           0%, 100% { transform: scale(0.9); opacity: 0.6; }
           50% { transform: scale(1.15); opacity: 1; }
+        }
+        html.dark #pre-app-splash {
+          background: #070C16 !important;
+        }
+        html.dark .pre-splash-card {
+          background: #0E1726 !important;
+          box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+        }
+        html.dark .pre-splash-aura {
+          background: radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(7, 12, 22, 0) 70%) !important;
+        }
+        html.dark .pre-splash-brand-trip {
+          color: #F8FAFC !important;
+        }
+        html.dark .pre-splash-brand-verse {
+          color: #34D399 !important;
+        }
+        html.dark .pre-splash-tagline {
+          color: #94A3B8 !important;
         }
       </style>
     </div>
