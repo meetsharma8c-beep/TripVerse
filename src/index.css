@@ -493,9 +493,9 @@ html.dark [class~="ring-white"] {
    NIGHT MODE FORM INPUTS & INTERACTIVE CONTROLS
    ========================================================================== */
 
-html.dark input:not([type="checkbox"]):not([type="radio"]),
-html.dark textarea,
-html.dark select {
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]),
+html.dark textarea:not([class*="bg-transparent"]),
+html.dark select:not([class*="bg-transparent"]) {
   background-color: #121D2F !important;
   color: #F8FAFC !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
@@ -510,6 +510,7 @@ html.dark [class~="placeholder:text-[#57685D]"]::placeholder {
 }
 
 /* Floating Search Pill in Hero */
+html.dark form:has(#hero-floating-destination-input) [class~="bg-white"],
 html.dark form:has(#hero-destination-input) [class~="bg-white"],
 html.dark [class*="shadow-[0_12px_36px_-6px_rgba(45,90,61,0.22)]"] {
   background-color: #0E1726 !important;
@@ -517,7 +518,24 @@ html.dark [class*="shadow-[0_12px_36px_-6px_rgba(45,90,61,0.22)]"] {
   box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.6) !important;
 }
 
-html.dark #hero-destination-input {
+/* Transparent Inputs and Search Bars with Zero Box/Border in Dark Mode */
+html.dark input[class*="bg-transparent"],
+html.dark textarea[class*="bg-transparent"],
+html.dark input#hero-floating-destination-input,
+html.dark input#hero-destination-input.bg-transparent,
+html.dark [class*="shadow-[0_12px_36px_-6px_rgba(45,90,61,0.22)]"] input,
+html.dark form:has(#hero-floating-destination-input) input {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+html.dark #hero-destination-input,
+html.dark #hero-floating-destination-input,
+html.dark #hero-planner-destination-input {
   color: #F8FAFC !important;
 }
 

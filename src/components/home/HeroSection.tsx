@@ -162,13 +162,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               alt="Serene nature landscape with misty mountains, lake, and pagoda"
               className="w-full h-56 sm:h-72 md:h-84 lg:h-96 object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent pointer-events-none" />
-            <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 flex items-end justify-between text-white pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
+            <div className="absolute bottom-12 sm:bottom-14 md:bottom-16 left-4 right-4 sm:left-6 sm:right-6 flex items-end justify-between text-white pointer-events-none pb-1">
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#A8C5AC] bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 inline-block mb-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#A8C5AC] bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 inline-block mb-1.5 shadow-xs">
                   Tranquil Nature Retreats
                 </span>
-                <p className="text-sm sm:text-base font-bold drop-shadow-md text-white/95">
+                <p className="text-sm sm:text-base font-bold drop-shadow-md text-white/95 leading-snug">
                   Discover scenic roads, peaceful lakes, and ancient heritage
                 </p>
               </div>
@@ -182,7 +182,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <Search className="w-5 h-5 text-slate-400 shrink-0" />
                   <input
-                    id="hero-destination-input"
+                    id="hero-floating-destination-input"
                     type="text"
                     value={destination}
                     onChange={(e) => {
@@ -191,7 +191,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     }}
                     onFocus={() => setShowDropdown(true)}
                     placeholder="Where do you want to go?"
-                    className="w-full bg-transparent text-sm sm:text-base font-semibold text-[#152A1C] placeholder:text-slate-400 focus:outline-none"
+                    className="w-full bg-transparent dark:bg-transparent text-sm sm:text-base font-semibold text-[#152A1C] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-400 focus:outline-none border-0 ring-0 focus:ring-0 shadow-none"
+                    style={{ backgroundColor: 'transparent' }}
                   />
                   {isSearching ? (
                     <Loader2 className="w-4 h-4 text-[#2D5A3D] animate-spin shrink-0" />
@@ -468,7 +469,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               {/* Field 1: Destination with Precision Autocomplete */}
               <div className="relative">
                 <label 
-                  htmlFor="hero-destination-input"
+                  htmlFor="hero-planner-destination-input"
                   className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-1.5">
@@ -481,7 +482,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </label>
                 <div className="relative">
                   <input
-                    id="hero-destination-input"
+                    id="hero-planner-destination-input"
                     type="text"
                     value={destination}
                     onChange={(e) => {
