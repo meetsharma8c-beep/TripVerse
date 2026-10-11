@@ -131,7 +131,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
   // Hotel accommodation finding
   const stayActivity = trip.itinerary?.[0]?.activities?.find(a => a.type === 'hotel') || 
                       trip.itinerary?.[1]?.activities?.find(a => a.type === 'hotel');
-  const hotelName = stayActivity?.title || `${trip.destination.split(',')[0]} Eco Sanctuary Resort`;
+  const hotelName = stayActivity?.title || `${(trip.destination || 'Destination').split(',')[0]} Eco Sanctuary Resort`;
   const hotelThumbnail = resolveDestinationImage(hotelName, 'nature');
 
   // SVG circular progress calculation
@@ -158,7 +158,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
 
           <div>
             <h1 className="text-xl sm:text-2xl font-display font-bold text-[#152A1C] tracking-tight">
-              Trip to {trip.destination.split(',')[0]}
+              Trip to {(trip.destination || 'Destination').split(',')[0]}
             </h1>
             <p className="text-xs text-[#5A7362] font-medium">
               {formatDateHeader()}
@@ -206,7 +206,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
             {/* Origin */}
             <div className="space-y-0.5">
               <span className="text-[11px] uppercase tracking-wider text-[#5A7362] font-semibold block truncate max-w-[100px]">
-                {trip.origin.split(',')[0]}
+                {(trip.origin || 'Origin').split(',')[0]}
               </span>
               <span className="text-3xl sm:text-4xl font-display font-black text-[#152A1C] tracking-tight block">
                 {originCode}
@@ -238,7 +238,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
             {/* Destination */}
             <div className="space-y-0.5 text-right">
               <span className="text-[11px] uppercase tracking-wider text-[#5A7362] font-semibold block truncate max-w-[100px]">
-                {trip.destination.split(',')[0]}
+                {(trip.destination || 'Destination').split(',')[0]}
               </span>
               <span className="text-3xl sm:text-4xl font-display font-black text-[#152A1C] tracking-tight block">
                 {destinationCode}

@@ -73,8 +73,8 @@ export const TripReviewModal: React.FC<TripReviewModalProps> = ({
 
   const getRatingLabel = (score: number) => {
     switch (score) {
-      case 5: return 'Exceptional Expedition! 🌟';
-      case 4: return 'Great Experience & Memories 👍';
+      case 5: return 'Exceptional Expedition!';
+      case 4: return 'Great Experience & Memories';
       case 3: return 'Good Journey with Few Gaps';
       case 2: return 'Challenging or Delayed';
       case 1: return 'Poor Route Experience';
@@ -202,10 +202,10 @@ export const TripReviewModal: React.FC<TripReviewModalProps> = ({
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { id: 'exceptional', label: 'Exceptional 🤩' },
-                { id: 'delightful', label: 'Delightful 😊' },
-                { id: 'average', label: 'Average 😐' },
-                { id: 'challenging', label: 'Challenging 😓' },
+                { id: 'exceptional', label: 'Exceptional' },
+                { id: 'delightful', label: 'Delightful' },
+                { id: 'average', label: 'Average' },
+                { id: 'challenging', label: 'Challenging' },
               ].map((exp) => (
                 <button
                   key={exp.id}
@@ -257,9 +257,9 @@ export const TripReviewModal: React.FC<TripReviewModalProps> = ({
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { id: 'under_budget', label: 'Under Budget 🎉', desc: 'Saved cash' },
-                { id: 'on_budget', label: 'Spot On 🎯', desc: 'Matched plan' },
-                { id: 'over_budget', label: 'Over Budget 💸', desc: 'Extra spent' },
+                { id: 'under_budget', label: 'Under Budget', desc: 'Saved cash' },
+                { id: 'on_budget', label: 'Spot On', desc: 'Matched plan' },
+                { id: 'over_budget', label: 'Over Budget', desc: 'Extra spent' },
               ].map((verdict) => (
                 <button
                   key={verdict.id}

@@ -41,27 +41,27 @@ interface AuthModalProps {
 }
 
 const TRAVELER_STYLES = [
-  { id: 'Budget explorer', label: '🎒 Budget Explorer' },
-  { id: 'Heritage & Culture', label: '🏛️ Heritage & Culture' },
-  { id: 'Nature & Trekking', label: '🌿 Nature & Trekking' },
-  { id: 'Food & Cafe Hunter', label: '🍜 Foodie & Cafes' },
-  { id: 'Luxury & Leisure', label: '✨ Luxury & Leisure' }
+  { id: 'Budget explorer', label: 'Budget Explorer' },
+  { id: 'Heritage & Culture', label: 'Heritage & Culture' },
+  { id: 'Nature & Trekking', label: 'Nature & Trekking' },
+  { id: 'Food & Cafe Hunter', label: 'Foodie & Cafes' },
+  { id: 'Luxury & Leisure', label: 'Luxury & Leisure' }
 ];
 
 const COUNTRY_CODES = [
-  { code: '+91', country: 'India', flag: '🇮🇳', placeholder: '98765 43210' },
-  { code: '+1', country: 'US / Canada', flag: '🇺🇸', placeholder: '(555) 000-0000' },
-  { code: '+44', country: 'United Kingdom', flag: '🇬🇧', placeholder: '7911 123456' },
-  { code: '+971', country: 'UAE', flag: '🇦🇪', placeholder: '50 123 4567' },
-  { code: '+65', country: 'Singapore', flag: '🇸🇬', placeholder: '8123 4567' },
-  { code: '+61', country: 'Australia', flag: '🇦🇺', placeholder: '412 345 678' },
-  { code: '+49', country: 'Germany', flag: '🇩🇪', placeholder: '151 23456789' },
-  { code: '+33', country: 'France', flag: '🇫🇷', placeholder: '6 12 34 56 78' },
-  { code: '+966', country: 'Saudi Arabia', flag: '🇸🇦', placeholder: '50 123 4567' },
-  { code: '+977', country: 'Nepal', flag: '🇳🇵', placeholder: '984 1234567' },
-  { code: '+880', country: 'Bangladesh', flag: '🇧🇩', placeholder: '1712 345678' },
-  { code: '+94', country: 'Sri Lanka', flag: '🇱🇰', placeholder: '71 234 5678' },
-  { code: '+81', country: 'Japan', flag: '🇯🇵', placeholder: '90 1234 5678' }
+  { code: '+91', country: 'India', placeholder: '98765 43210' },
+  { code: '+1', country: 'US / Canada', placeholder: '(555) 000-0000' },
+  { code: '+44', country: 'United Kingdom', placeholder: '7911 123456' },
+  { code: '+971', country: 'UAE', placeholder: '50 123 4567' },
+  { code: '+65', country: 'Singapore', placeholder: '8123 4567' },
+  { code: '+61', country: 'Australia', placeholder: '412 345 678' },
+  { code: '+49', country: 'Germany', placeholder: '151 23456789' },
+  { code: '+33', country: 'France', placeholder: '6 12 34 56 78' },
+  { code: '+966', country: 'Saudi Arabia', placeholder: '50 123 4567' },
+  { code: '+977', country: 'Nepal', placeholder: '984 1234567' },
+  { code: '+880', country: 'Bangladesh', placeholder: '1712 345678' },
+  { code: '+94', country: 'Sri Lanka', placeholder: '71 234 5678' },
+  { code: '+81', country: 'Japan', placeholder: '90 1234 5678' }
 ];
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -456,9 +456,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <button
                 type="button"
                 onClick={() => setErrorMsg(null)}
-                className="text-rose-400 hover:text-rose-600 text-xs font-bold ml-1 cursor-pointer"
+                className="text-rose-400 hover:text-rose-600 ml-1 cursor-pointer"
+                aria-label="Dismiss error"
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
@@ -525,7 +526,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           >
                             {COUNTRY_CODES.map((c) => (
                               <option key={c.code} value={c.code}>
-                                {c.flag} {c.code}
+                                {c.code} ({c.country})
                               </option>
                             ))}
                           </select>

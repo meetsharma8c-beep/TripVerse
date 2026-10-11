@@ -63,12 +63,12 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🧭 **Open live navigation**\n\n` +
+        text: `**Open live navigation**\n\n` +
           `TripVerse does not provide turn-by-turn directions, live traffic, speed-limit detection, or toll-lane guidance. Opening an external navigation app for ${cleanOrigin} → ${cleanDest}.`,
         timestamp,
         actionButtons: [
-          { label: '🛡️ Highway Safety & SOS', action: 'SAFETY_CHECK' },
-          { label: '🗺️ View mapped place listings', action: 'VIEW_ITINERARY' }
+          { label: 'Highway Safety & SOS', action: 'SAFETY_CHECK' },
+          { label: 'View mapped place listings', action: 'VIEW_ITINERARY' }
         ]
       },
       appAction: {
@@ -103,9 +103,9 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
           `Opening Trip Replanning options...`,
         timestamp,
         actionButtons: [
-          { label: '🔄 Replan My Trip', action: 'OPEN_REPLANNING' },
-          { label: '🏨 Nearby Emergency Stays', action: 'OPEN_EMERGENCY_STAY' },
-          { label: '📄 Refund Policy Docket', action: 'OPEN_REFUND_INFO' }
+          { label: 'Replan My Trip', action: 'OPEN_REPLANNING' },
+          { label: 'Nearby Emergency Stays', action: 'OPEN_EMERGENCY_STAY' },
+          { label: 'Refund Policy Docket', action: 'OPEN_REFUND_INFO' }
         ]
       },
       appAction: {
@@ -154,7 +154,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `✨ **Created New Journey to ${newTrip.destination}!**\n\n` +
+        text: `**Created New Journey to ${newTrip.destination}!**\n\n` +
           `• **Duration:** ${newTrip.durationDays} Days (${newTrip.travelersCount} Travelers)\n` +
           `• **Route Corridor:** ${newTrip.origin.split(',')[0]} → ${newTrip.destination.split(',')[0]}\n` +
           `• **Estimated Budget:** ₹${newTrip.estimatedTotal.toLocaleString('en-IN')} (Target: ₹${newTrip.totalBudget.toLocaleString('en-IN')})\n` +
@@ -162,9 +162,9 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
           `Switched your dashboard to your new ${newTrip.destination.split(',')[0]} expedition!`,
         timestamp,
         actionButtons: [
-          { label: '⛅ Check Weather & Road Alerts', action: 'CHECK_WEATHER' },
-          { label: '🧭 Start GPS Navigation', action: 'START_NAV' },
-          { label: '💳 Optimize Budget', action: 'MAKE_CHEAPER' }
+          { label: 'Check Weather & Road Alerts', action: 'CHECK_WEATHER' },
+          { label: 'Start GPS Navigation', action: 'START_NAV' },
+          { label: 'Optimize Budget', action: 'MAKE_CHEAPER' }
         ]
       },
       appAction: {
@@ -187,7 +187,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `📄 **Generating Official TripVerse Travel Guide for ${cleanDest}!**\n\n` +
+        text: `**Generating Official TripVerse Travel Guide for ${cleanDest}!**\n\n` +
           `• **Contents:** Complete day-by-day itinerary, toll tax budgets, emergency contacts, dining stops, and packing checklist.\n` +
           `• **Format:** High-resolution offline document formatted for mobile viewing or direct printing.\n\n` +
           `Opening the Travel Guide export modal now...`,
@@ -215,7 +215,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🔗 **Trip Sharing & Collaboration Docket Ready!**\n\n` +
+        text: `**Trip Sharing & Collaboration Docket Ready!**\n\n` +
           `• Generate your live shareable link or scan QR code to collaborate on ${cleanDest} with friends and family.\n\n` +
           `Opening Share Modal now...`,
         timestamp,
@@ -242,7 +242,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `📸 **Opening Trip Photo Journal & Memory Scrapbook for ${cleanDest}!**\n\n` +
+        text: `**Opening Trip Photo Journal & Memory Scrapbook for ${cleanDest}!**\n\n` +
           `Upload geotagged road trip snapshots, polaroids, and notes to preserve your travel milestones.\n\n` +
           `Opening Photo Journal now...`,
         timestamp,
@@ -268,7 +268,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `⭐ **Post-Trip Review & Feedback Hub:**\n\n` +
+        text: `**Post-Trip Review & Feedback Hub:**\n\n` +
           `Rate your overall experience, highway condition, havelis, and food dhabas for ${cleanDest}.\n\n` +
           `Opening Review Modal now...`,
         timestamp
@@ -290,7 +290,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🔔 **Notification & Travel Briefing Center:**\n\n` +
+        text: `**Notification & Travel Briefing Center:**\n\n` +
           `View departure countdowns, FASTag balance alerts, and highway patrol advisory broadcasts.\n\n` +
           `Opening Notification Center now...`,
         timestamp
@@ -313,7 +313,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🔐 **TripVerse Account Session & Cloud Sync:**\n\n` +
+        text: `**TripVerse Account Session & Cloud Sync:**\n\n` +
           `Sign in to automatically sync your trips, passport stamps, and custom itineraries across all your devices.\n\n` +
           `Opening Sign In Modal now...`,
         timestamp
@@ -336,7 +336,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🗺️ **Switching to Interactive Route Map:**\n\n` +
+        text: `**Switching to Interactive Route Map:**\n\n` +
           `Displaying full highway corridor from ${cleanOrigin} to ${cleanDest} with pitstops, tolls, and elevation profiles.`,
         timestamp,
         actionButtons: [
@@ -385,7 +385,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🎒 **Opening Weather-Aligned Packing Checklist:**\n\n` +
+        text: `**Opening Weather-Aligned Packing Checklist:**\n\n` +
           `Smart checklist tailored for ${cleanDest}'s climate and terrain with essentials, gear, and medication.`,
         timestamp,
         actionButtons: [
@@ -409,7 +409,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `💳 **Switching to Real-Time Budget & Expense Ledger:**\n\n` +
+        text: `**Switching to Real-Time Budget & Expense Ledger:**\n\n` +
           `Total Budget: ₹${currentTrip.totalBudget.toLocaleString('en-IN')} • Estimated: ₹${currentTrip.estimatedTotal.toLocaleString('en-IN')}`,
         timestamp,
         actionButtons: [
@@ -432,7 +432,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `💎 **Opening Offbeat Hidden Gems for ${cleanDest}:**\n\n` +
+        text: `**Opening Offbeat Hidden Gems for ${cleanDest}:**\n\n` +
           `Discovering uncrowded photography vistas, secluded lakes, and artisanal workshops.`,
         timestamp
       },
@@ -453,7 +453,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `📅 **Switching to Day-by-Day Itinerary Schedule for ${cleanDest}:**`,
+        text: `**Switching to Day-by-Day Itinerary Schedule for ${cleanDest}:**`,
         timestamp,
         actionButtons: [
           { label: 'Add Waypoint', action: 'ADD_MOUNT_ABU' },
@@ -476,7 +476,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `👤 **Navigating to Your Explorer Profile:**`,
+        text: `**Navigating to Your Explorer Profile:**`,
         timestamp
       },
       appAction: {
@@ -494,7 +494,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🌍 **Navigating to Explore Hub:**`,
+        text: `**Navigating to Explore Hub:**`,
         timestamp
       },
       appAction: {
@@ -526,8 +526,8 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
         timestamp,
         actionButtons: [
           { label: 'Check Weather Forecast', action: 'CHECK_WEATHER' },
-          { label: '🎒 View Packing Checklist', action: 'VIEW_PACKING' },
-          { label: '🛡️ Review Route Safety Guidance', action: 'SAFETY_CHECK' }
+          { label: 'View Packing Checklist', action: 'VIEW_PACKING' },
+          { label: 'Review Route Safety Guidance', action: 'SAFETY_CHECK' }
         ]
       }
     };
@@ -580,16 +580,16 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `📍 **Added Mount Abu Scenic Hill Waypoint to Your Route!**\n\n` +
+        text: `**Added Mount Abu Scenic Hill Waypoint to Your Route!**\n\n` +
           `• **Detour Details:** +120 km scenic mountain driving through lush Aravalli ghats.\n` +
           `• **Highlights:** Sunset Point at Nakki Lake, toad rock overlook, and ancient marble Dilwara Temples.\n` +
           `• **Cost & Time:** ~2h additional driving, +₹1,200 estimated fuel and state hill toll.\n\n` +
           `Your route map and break stops have been updated!`,
         timestamp,
         actionButtons: [
-          { label: '🗺️ View Updated Route Map', action: 'VIEW_ROUTE' },
-          { label: '🧭 Start GPS Navigation', action: 'START_NAV' },
-          { label: '💳 Make Trip Cheaper', action: 'MAKE_CHEAPER' }
+          { label: 'View Updated Route Map', action: 'VIEW_ROUTE' },
+          { label: 'Start GPS Navigation', action: 'START_NAV' },
+          { label: 'Make Trip Cheaper', action: 'MAKE_CHEAPER' }
         ]
       },
       updatedTrip: updated,
@@ -627,11 +627,11 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `💰 **Draft budget reduced by ₹${totalSavings.toLocaleString('en-IN')}**\n\n` +
+        text: `**Draft budget reduced by ₹${totalSavings.toLocaleString('en-IN')}**\n\n` +
           `This offline rule updated the draft estimate; it did not find or book any live offer:\n` +
-          `• 🏨 **Lodging:** Uses a lower-cost stay assumption (Estimated reduction ₹${savedHotel})\n` +
-          `• 🍲 **Dining:** Uses a lower-cost local-meal assumption (Estimated reduction ₹${savedFood})\n` +
-          `• 🚗 **Transit:** Uses a lower transport-cost assumption (Estimated reduction ₹${savedTransport})\n\n` +
+          `• **Lodging:** Uses a lower-cost stay assumption (Estimated reduction ₹${savedHotel})\n` +
+          `• **Dining:** Uses a lower-cost local-meal assumption (Estimated reduction ₹${savedFood})\n` +
+          `• **Transit:** Uses a lower transport-cost assumption (Estimated reduction ₹${savedTransport})\n\n` +
           `**New draft estimate:** ₹${updated.estimatedTotal.toLocaleString('en-IN')}. Check provider prices before booking.`,
         timestamp,
         actionButtons: [
@@ -671,7 +671,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
         message: {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `💳 **Budget Recalibrated to ₹${newBudget.toLocaleString('en-IN')}!**\n\n` +
+          text: `**Budget Recalibrated to ₹${newBudget.toLocaleString('en-IN')}!**\n\n` +
             `• **Lodging:** ₹${updated.budgetBreakdown.accommodation.toLocaleString('en-IN')} (40%)\n` +
             `• **Transport & Fuel:** ₹${updated.budgetBreakdown.transportation.toLocaleString('en-IN')} (30%)\n` +
             `• **Dining & Dhabas:** ₹${updated.budgetBreakdown.food.toLocaleString('en-IN')} (20%)\n` +
@@ -768,7 +768,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `📅 **Extended Journey to ${newDayNumber} Days!**\n\n` +
+        text: `**Extended Journey to ${newDayNumber} Days!**\n\n` +
           `• Added **Day ${newDayNumber}:** Cultural Artisan Village, lakeside garden lunch, and sunset ridge overlook.\n` +
           `• Budget Adjusted: +₹1,800 to cover 1 extra night lodging, meals, and local transit.\n\n` +
           `Your itinerary schedule and calendar have been updated!`,
@@ -803,7 +803,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
         message: {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `⚡ **Shortened Journey to ${updated.durationDays} Days!**\n\n` +
+          text: `**Shortened Journey to ${updated.durationDays} Days!**\n\n` +
             `Adjusted itinerary and trimmed estimated budget down to ₹${updated.estimatedTotal.toLocaleString('en-IN')}.`,
           timestamp,
           actionButtons: [
@@ -847,7 +847,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🥗 **Vegetarian preference noted**\n\n` +
+        text: `**Vegetarian preference noted**\n\n` +
           `Trip suggestions reflect a vegetarian preference for ${cleanOrigin} → ${cleanDest}. This does not verify a venue's menu, preparation practices, or hygiene; confirm directly with each venue.`,
         timestamp,
         actionButtons: [
@@ -895,7 +895,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🚗 **Switched Transport Mode to ${updated.transportMode.toUpperCase()}!**\n\n` +
+        text: `**Switched Transport Mode to ${updated.transportMode.toUpperCase()}!**\n\n` +
           `TripVerse does not have live fares or schedules. Check provider listings for current availability and prices.`,
         timestamp,
         actionButtons: [
@@ -926,7 +926,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🧭 **Route Type Updated to ${updated.routeType.replace('_', ' ').toUpperCase()}!**\n\n` +
+        text: `**Route Type Updated to ${updated.routeType.replace('_', ' ').toUpperCase()}!**\n\n` +
           `Recalculated driving trajectory along ${cleanOrigin} → ${cleanDest}.`,
         timestamp,
         actionButtons: [
@@ -959,7 +959,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: '🛍️ **Removed Shopping Visits from Itinerary!**\n\nReclaimed 2.5 hours of free leisure time and reduced activities budget by ₹400.',
+        text: '**Removed Shopping Visits from Itinerary!**\n\nReclaimed 2.5 hours of free leisure time and reduced activities budget by ₹400.',
         timestamp,
         actionButtons: [
           { label: 'View Itinerary', action: 'VIEW_ITINERARY' }
@@ -1035,15 +1035,15 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `💳 **Logged Expense of ₹${amount.toLocaleString('en-IN')}!**\n\n` +
+        text: `**Logged Expense of ₹${amount.toLocaleString('en-IN')}!**\n\n` +
           `• **Item:** ${title}\n` +
-          `• **Category:** ${category.toUpperCase()} (${category === 'fuel' ? '⛽ Fuel & Transit' : category === 'food' ? '🍲 Dining & Dhabas' : category === 'toll' ? '🛣️ FASTag Toll' : '🎟️ Travel'})\n` +
+          `• **Category:** ${category.toUpperCase()} (${category === 'fuel' ? 'Fuel & Transit' : category === 'food' ? 'Dining & Dhabas' : category === 'toll' ? 'FASTag Toll' : 'Travel'})\n` +
           `• **Updated Trip Spend:** ₹${updated.estimatedTotal.toLocaleString('en-IN')} of ₹${updated.totalBudget.toLocaleString('en-IN')} planned target.\n\n` +
           `Recorded to your real-time expense ledger and split settlements!`,
         timestamp,
         actionButtons: [
-          { label: '📊 View Expense Tracker', action: 'VIEW_EXPENSES' },
-          { label: '💳 Make Trip Cheaper', action: 'MAKE_CHEAPER' }
+          { label: 'View Expense Tracker', action: 'VIEW_EXPENSES' },
+          { label: 'Make Trip Cheaper', action: 'MAKE_CHEAPER' }
         ]
       },
       updatedTrip: updated,
@@ -1068,7 +1068,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
         message: {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `🎒 **All ${updatedPacking.length} Packing Items Marked as Packed!**\n\nYour bags are 100% ready for departure to ${cleanDest}.`,
+          text: `**All ${updatedPacking.length} Packing Items Marked as Packed!**\n\nYour bags are 100% ready for departure to ${cleanDest}.`,
           timestamp,
           actionButtons: [
             { label: 'View Packing List', action: 'VIEW_PACKING' },
@@ -1109,7 +1109,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
         message: {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `🎒 **Added to Your Packing Checklist:**\n\n` +
+          text: `**Added to Your Packing Checklist:**\n\n` +
             addedItems.map(i => `• ${i.name}`).join('\n') +
             `\n\nSynced with your ${cleanDest} packing list.`,
           timestamp,
@@ -1150,7 +1150,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
         message: {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `✈️ **Switched Active Trip to ${foundTrip.destination.split(',')[0]}!**\n\n` +
+          text: `**Switched Active Trip to ${foundTrip.destination.split(',')[0]}!**\n\n` +
             `• **Trip Name:** ${foundTrip.name}\n` +
             `• **Duration:** ${foundTrip.durationDays} Days (${foundTrip.travelersCount} Travelers)\n` +
             `• **Budget:** ₹${foundTrip.estimatedTotal.toLocaleString('en-IN')}\n\n` +
@@ -1180,7 +1180,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `🗑️ **Trip Deleted:** Successfully removed ${cleanDest} from your active journeys list.`,
+        text: `**Trip Deleted:** Successfully removed ${cleanDest} from your active journeys list.`,
         timestamp,
         actionButtons: [
           { label: 'Go to My Trips', action: 'VIEW_ITINERARY' }
@@ -1207,7 +1207,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `✏️ **Trip Renamed:** Your journey is now titled **"${newName}"**!`,
+        text: `**Trip Renamed:** Your journey is now titled **"${newName}"**!`,
         timestamp,
         actionButtons: [
           { label: 'View Itinerary', action: 'VIEW_ITINERARY' },
@@ -1236,7 +1236,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `📍 **Starting Point Updated!**\n\nDeparture origin updated to **${newOrigin}**. Route corridor and distance metrics recalculating.`,
+        text: `**Starting Point Updated!**\n\nDeparture origin updated to **${newOrigin}**. Route corridor and distance metrics recalculating.`,
         timestamp,
         actionButtons: [
           { label: 'View Route Map', action: 'VIEW_ROUTE' },
@@ -1282,7 +1282,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `👥 **Traveler Party Updated!**\n\n` +
+        text: `**Traveler Party Updated!**\n\n` +
           `• **Travelers Count:** ${updated.travelersCount} (${updated.travelerType.toUpperCase()})\n` +
           `• **Budget Per Person:** ₹${updated.budgetPerPerson.toLocaleString('en-IN')} (Target total: ₹${updated.totalBudget.toLocaleString('en-IN')})\n\n` +
           `Itinerary activities and vehicle passenger load adjusted accordingly!`,
@@ -1353,7 +1353,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `📍 **Added Activity to Day ${targetDayNumber}!**\n\n` +
+        text: `**Added Activity to Day ${targetDayNumber}!**\n\n` +
           `• **Activity:** ${activityTitle}\n` +
           `• **Scheduled Time:** 3:00 PM\n` +
           `• **Estimated Cost:** ₹${newActivity.estimatedCost}\n\n` +
@@ -1391,9 +1391,9 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
           `Follow local authority instructions and check official route and weather updates before travelling.`,
         timestamp,
         actionButtons: [
-          { label: '🧭 Start GPS Navigation', action: 'START_NAV' },
-          { label: '🗺️ View Route on Map', action: 'VIEW_ROUTE' },
-          { label: '🔄 Replan Trip if Delayed', action: 'OPEN_REPLANNING' }
+          { label: 'Start GPS Navigation', action: 'START_NAV' },
+          { label: 'View Route on Map', action: 'VIEW_ROUTE' },
+          { label: 'Replan Trip if Delayed', action: 'OPEN_REPLANNING' }
         ]
       }
     };
@@ -1410,7 +1410,7 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `✨ **Opening TripVerse AI Planner Wizard:**\n\nCraft a custom itinerary tailored by travelers, budget tier, and scenic priorities.`,
+        text: `**Opening TripVerse AI Planner Wizard:**\n\nCraft a custom itinerary tailored by travelers, budget tier, and scenic priorities.`,
         timestamp
       },
       appAction: {
@@ -1425,23 +1425,23 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
     message: {
       id: `msg-${Date.now()}`,
       sender: 'ai',
-      text: `🚀 **TripVerse AI Co-Pilot Ready!**\n\n` +
+      text: `**TripVerse AI Co-Pilot Ready!**\n\n` +
         `I understood your request: "${query}". I can execute any action across your journey to ${cleanDest}:\n` +
-        `• 🧭 **Start GPS Navigation:** Say "start navigation" to launch the turn-by-turn HUD\n` +
-        `• ⛅ **Check Weather & Rain:** Say "show me ${cleanDest}'s weather" or "weather in Manali"\n` +
-        `• 💳 **Optimize Budget:** Say "make this cheaper" or "log expense ₹850 for dinner"\n` +
-        `• 🎒 **Packing List:** Say "add power bank and camera to packing list"\n` +
-        `• 📍 **Add Waypoints:** Say "add Mount Abu" to inject scenic hill detours\n` +
-        `• 📄 **Print Travel Guide:** Say "download PDF guide" to get an offline booklet\n` +
-        `• 📅 **Adjust Dates:** Say "extend trip by 1 day" or "shorten to 2 days"\n` +
-        `• 🥗 **Dietary:** Say "pure veg only" to filter verified vegetarian havelis`,
+        `• **Start GPS Navigation:** Say "start navigation" to launch the turn-by-turn HUD\n` +
+        `• **Check Weather & Rain:** Say "show me ${cleanDest}'s weather" or "weather in Manali"\n` +
+        `• **Optimize Budget:** Say "make this cheaper" or "log expense ₹850 for dinner"\n` +
+        `• **Packing List:** Say "add power bank and camera to packing list"\n` +
+        `• **Add Waypoints:** Say "add Mount Abu" to inject scenic hill detours\n` +
+        `• **Print Travel Guide:** Say "download PDF guide" to get an offline booklet\n` +
+        `• **Adjust Dates:** Say "extend trip by 1 day" or "shorten to 2 days"\n` +
+        `• **Dietary:** Say "pure veg only" to filter verified vegetarian havelis`,
       timestamp,
       actionButtons: [
-        { label: '⛅ Check Weather & Rain', action: 'CHECK_WEATHER' },
-        { label: '🧭 Start GPS Navigation', action: 'START_NAV' },
-        { label: '💳 Make This Cheaper', action: 'MAKE_CHEAPER' },
-        { label: '📍 Add Mount Abu Waypoint', action: 'ADD_MOUNT_ABU' },
-        { label: '📄 Print Travel Guide', action: 'OPEN_PRINT' }
+        { label: 'Check Weather & Rain', action: 'CHECK_WEATHER' },
+        { label: 'Start GPS Navigation', action: 'START_NAV' },
+        { label: 'Make This Cheaper', action: 'MAKE_CHEAPER' },
+        { label: 'Add Mount Abu Waypoint', action: 'ADD_MOUNT_ABU' },
+        { label: 'Print Travel Guide', action: 'OPEN_PRINT' }
       ]
     }
   };
@@ -1458,9 +1458,9 @@ export async function processTravelCoPilotQuery(
     const actionButtons = (brainRes.actionButtons && brainRes.actionButtons.length > 0)
       ? brainRes.actionButtons
       : [
-          { label: '🧭 Start GPS Navigation', action: 'START_NAV' },
-          { label: '💳 Audit Tolls & Fuel', action: 'MAKE_CHEAPER' },
-          { label: '🥗 Food Trails & Dhabas', action: 'EXPLORE_FOOD' }
+          { label: 'Start GPS Navigation', action: 'START_NAV' },
+          { label: 'Audit Tolls & Fuel', action: 'MAKE_CHEAPER' },
+          { label: 'Food Trails & Dhabas', action: 'EXPLORE_FOOD' }
         ];
 
     return {

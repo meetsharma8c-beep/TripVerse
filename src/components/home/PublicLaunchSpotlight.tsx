@@ -26,7 +26,7 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const launchUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tripverse-pied.vercel.app';
 
-  const shareText = "🚀 Plan a trip with TripVerse: create a draft itinerary and budget estimate, with driving routes and map listings when available. Check it out:";
+  const shareText = "Plan a trip with TripVerse: create a draft itinerary and budget estimate, with driving routes and map listings when available. Check it out:";
 
   const handleCopyLink = () => {
     triggerHaptic('light');
@@ -156,7 +156,7 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
                 Booking and transport links open third-party providers. Confirm availability, prices, fees, and terms with them before purchase.
               </p>
               <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block pt-1">
-                ⚡ Direct Partner Handoff
+                Direct Partner Handoff
               </span>
             </div>
 

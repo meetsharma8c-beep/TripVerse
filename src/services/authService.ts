@@ -440,7 +440,7 @@ export async function sendEmailVerificationCode(email: string, purpose: 'signup'
   });
   saveVerificationCodes(allCodes);
 
-  console.log(`[TripVerse Auth] 📧 Verification code for ${emailNorm} (${purpose}): ${code}`);
+  console.log(`[TripVerse Auth] Verification code for ${emailNorm} (${purpose}): ${code}`);
   return { code, expiresAt };
 }
 

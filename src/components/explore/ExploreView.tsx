@@ -177,7 +177,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               </div>
             </div>
             <span className="text-xs font-bold text-[#2D5A3D] bg-[#E8EFE7] px-3 py-1 rounded-full border border-[#8EA78D]/30 self-start sm:self-auto">
-              ✨ 98% AI Match
+              98% AI Match
             </span>
           </div>
 
@@ -199,8 +199,9 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                       decoding="async"
                       onError={handleImageError}
                     />
-                    <span className="absolute bottom-1 right-1 bg-black/70 backdrop-blur-xs text-white text-[9px] font-bold px-1 rounded">
-                      ★ {dest.rating}
+                    <span className="absolute bottom-1 right-1 bg-black/70 backdrop-blur-xs text-white text-[9px] font-bold px-1 rounded flex items-center gap-0.5">
+                      <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+                      <span>{dest.rating}</span>
                     </span>
                   </div>
                   <div className="min-w-0 flex-1 space-y-1">
@@ -366,7 +367,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                       Precise Location Detected
                     </span>
                     <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                      📍 {synthesized.coordinates.lat.toFixed(4)}°N, {synthesized.coordinates.lng.toFixed(4)}°E
+                      {synthesized.coordinates.lat.toFixed(4)}°N, {synthesized.coordinates.lng.toFixed(4)}°E
                     </span>
                     <span className="text-xs text-slate-400 font-medium">Ready for AI Itinerary</span>
                   </div>
@@ -383,7 +384,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                     <div className="flex flex-wrap gap-1.5 pt-0.5">
                       {synthesized.popularActivities.slice(0, 3).map((act, idx) => (
                         <span key={idx} className="text-[11px] font-semibold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs">
-                          ✨ {act}
+                          {act}
                         </span>
                       ))}
                     </div>

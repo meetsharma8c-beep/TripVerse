@@ -18,8 +18,8 @@ const MODES: Array<{ id: TransportMode; label: string; Icon: typeof Plane }> = [
 
 export const TransportDealsView: React.FC<TransportDealsViewProps> = ({ trip }) => {
   const [mode, setMode] = useState<TransportMode>(trip.transportMode || 'car');
-  const origin = trip.origin.split(',')[0].trim();
-  const destination = trip.destination.split(',')[0].trim();
+  const origin = (trip.origin || 'Origin').split(',')[0].trim();
+  const destination = (trip.destination || 'Destination').split(',')[0].trim();
   const query = encodeURIComponent(`${origin} to ${destination}`);
   const providers = {
     flight: [

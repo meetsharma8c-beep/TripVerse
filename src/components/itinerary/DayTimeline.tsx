@@ -488,7 +488,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
         {/* Action Controls: Responsive Setup */}
         <div className="pl-13 sm:pl-15 pt-1 space-y-3">
           
-          {/* Desktop Toolbar (md+): Inline "+ Add Activity" + "✨ Optimize with AI" + Settings */}
+          {/* Desktop Toolbar (md+): Inline "+ Add Activity" + "Optimize with AI" + Settings */}
           <div className="hidden md:flex items-center gap-3">
             {onAddActivity && (
               <button

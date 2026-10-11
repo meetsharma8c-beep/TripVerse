@@ -268,19 +268,21 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-1">
-                <span className="font-bold text-slate-800 block text-xs flex items-center gap-1 text-emerald-700">
-                  ✓ What's Included:
+                <span className="font-bold text-slate-800 block text-xs flex items-center gap-1.5 text-emerald-700">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>What's Included:</span>
                 </span>
                 <ul className="text-slate-600 space-y-1 pl-1 text-[11px]">
-                  <li>• Verified 3★/4★ Heritage stay recommendation</li>
+                  <li>• Verified 3-star/4-star Heritage stay recommendation</li>
                   <li>• FastTag expressway toll tariffs computation</li>
                   <li>• Recommended highway break stop dining costs</li>
                   <li>• Primary destination entry & parking estimates</li>
                 </ul>
               </div>
               <div className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-1">
-                <span className="font-bold text-slate-700 block text-xs flex items-center gap-1 text-slate-500">
-                  ✕ Excluded from Estimate:
+                <span className="font-bold text-slate-700 block text-xs flex items-center gap-1.5 text-slate-500">
+                  <X className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Excluded from Estimate:</span>
                 </span>
                 <ul className="text-slate-500 space-y-1 pl-1 text-[11px]">
                   <li>• Personal retail & handicraft shopping</li>

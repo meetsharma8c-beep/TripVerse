@@ -278,7 +278,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="w-7 h-7 rounded-full object-cover ring-2 ring-[#2D5A3D]/30"
                 />
                 <span className="text-xs font-bold text-[#152A1C] max-w-[90px] truncate">
-                  {userProfile.name.split(' ')[0]}
+                  {(userProfile?.name || 'Traveler').split(' ')[0]}
                 </span>
               </button>
             )}

@@ -449,7 +449,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                               </p>
                               {spot.highlights && spot.highlights.length > 0 && (
                                 <p className="text-[11px] text-[#2D5A3D] font-medium truncate mt-0.5">
-                                  ✨ {spot.highlights.slice(0, 2).join(' • ')}
+                                  {spot.highlights.slice(0, 2).join(' • ')}
                                 </p>
                               )}
                             </div>
@@ -496,7 +496,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {selectedPreciseSpot.highlights.slice(0, 3).map((hl, i) => (
                           <span key={i} className="text-[10px] font-semibold bg-white text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md shadow-2xs">
-                            📍 {hl}
+                            {hl}
                           </span>
                         ))}
                       </div>

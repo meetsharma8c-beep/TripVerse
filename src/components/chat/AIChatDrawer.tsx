@@ -343,11 +343,11 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         guild: 'fullstack',
         confidence: 0.99,
         actionButtons: [
-          { label: '✈️ Plan a 5-day trip to Dubai', action: 'PLAN_DUBAI', primary: true },
-          { label: '💳 What will this trip approximately cost?', action: 'CHECK_BUDGET' },
-          { label: '📉 Make Day 3 cheaper', action: 'MAKE_CHEAPER' },
-          { label: '☔ Rainy-day alternative', action: 'RAINY_DAY_ALT' },
-          { label: '🧭 Get Directions', action: 'START_NAV' }
+          { label: 'Plan a 5-day trip to Dubai', action: 'PLAN_DUBAI', primary: true },
+          { label: 'What will this trip approximately cost?', action: 'CHECK_BUDGET' },
+          { label: 'Make Day 3 cheaper', action: 'MAKE_CHEAPER' },
+          { label: 'Rainy-day alternative', action: 'RAINY_DAY_ALT' },
+          { label: 'Get Directions', action: 'START_NAV' }
         ]
       }
     ];
@@ -443,10 +443,10 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         engine: 'concode_brain',
         guild: 'fullstack',
         actionButtons: [
-          { label: '✈️ Plan a 5-day trip to Dubai', action: 'PLAN_DUBAI', primary: true },
-          { label: '💳 I have ₹1,00,000 budget', action: 'BUDGET_1LAKH' },
-          { label: '🍽️ I like food and architecture', action: 'PREF_FOOD_ARCH' },
-          { label: '🧭 Get Directions', action: 'START_NAV' }
+          { label: 'Plan a 5-day trip to Dubai', action: 'PLAN_DUBAI', primary: true },
+          { label: 'I have ₹1,00,000 budget', action: 'BUDGET_1LAKH' },
+          { label: 'I like food and architecture', action: 'PREF_FOOD_ARCH' },
+          { label: 'Get Directions', action: 'START_NAV' }
         ]
       }
     ]);
@@ -571,16 +571,16 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   };
 
   const scenarioChips = [
-    { label: '✈️ 5-Day Dubai', prompt: 'Plan a 5-day trip to Dubai' },
-    { label: '💳 Budget ₹1 Lakh', prompt: 'I have ₹1,00,000' },
-    { label: '🍽️ Food & Arch', prompt: 'I like food and architecture' },
-    { label: '📉 Day 3 Cheaper', prompt: 'Make Day 3 cheaper' },
-    { label: '🏛️ Remove Museum', prompt: 'Remove the museum' },
-    { label: '☔ Rainy Day Alt', prompt: 'Give me a rainy-day alternative' },
-    { label: '💳 Cost Breakdown', prompt: 'What will this trip approximately cost?' },
-    { label: '💾 Save Itinerary', prompt: 'Save this itinerary' },
-    { label: '🧭 Get Directions', prompt: 'Get directions to my destination' },
-    { label: '📄 PDF Guide', prompt: 'Print official travel guide and offline itinerary' }
+    { label: '5-Day Dubai', prompt: 'Plan a 5-day trip to Dubai' },
+    { label: 'Budget ₹1 Lakh', prompt: 'I have ₹1,00,000' },
+    { label: 'Food & Arch', prompt: 'I like food and architecture' },
+    { label: 'Day 3 Cheaper', prompt: 'Make Day 3 cheaper' },
+    { label: 'Remove Museum', prompt: 'Remove the museum' },
+    { label: 'Rainy Day Alt', prompt: 'Give me a rainy-day alternative' },
+    { label: 'Cost Breakdown', prompt: 'What will this trip approximately cost?' },
+    { label: 'Save Itinerary', prompt: 'Save this itinerary' },
+    { label: 'Get Directions', prompt: 'Get directions to my destination' },
+    { label: 'PDF Guide', prompt: 'Print official travel guide and offline itinerary' }
   ];
 
   return (
@@ -872,19 +872,19 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
                         <div className="grid grid-cols-2 gap-2 text-[11px]">
                           <div className="p-2 rounded-lg bg-sky-50 text-sky-900 border border-sky-100 min-w-0">
-                            <span className="block text-[10px] text-sky-600 font-semibold truncate">✈️ Transit</span>
+                            <span className="block text-[10px] text-sky-600 font-semibold truncate">Transit</span>
                             <span className="font-bold truncate block">₹{transport.toLocaleString('en-IN')}</span>
                           </div>
                           <div className="p-2 rounded-lg bg-indigo-50 text-indigo-900 border border-indigo-100 min-w-0">
-                            <span className="block text-[10px] text-indigo-600 font-semibold truncate">🏨 Stays</span>
+                            <span className="block text-[10px] text-indigo-600 font-semibold truncate">Stays</span>
                             <span className="font-bold truncate block">₹{stays.toLocaleString('en-IN')}</span>
                           </div>
                           <div className="p-2 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-100 min-w-0">
-                            <span className="block text-[10px] text-emerald-600 font-semibold truncate">🍽️ Dining</span>
+                            <span className="block text-[10px] text-emerald-600 font-semibold truncate">Dining</span>
                             <span className="font-bold truncate block">₹{food.toLocaleString('en-IN')}</span>
                           </div>
                           <div className="p-2 rounded-lg bg-amber-50 text-amber-900 border border-amber-100 min-w-0">
-                            <span className="block text-[10px] text-amber-600 font-semibold truncate">🎟️ Tickets</span>
+                            <span className="block text-[10px] text-amber-600 font-semibold truncate">Tickets</span>
                             <span className="font-bold truncate block">₹{activities.toLocaleString('en-IN')}</span>
                           </div>
                         </div>

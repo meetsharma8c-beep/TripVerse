@@ -123,7 +123,7 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
         <div className="flex items-center justify-between pt-2 border-t border-[#E2EBE1] gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-[#5A7362]">
-              {isGeoapifyListing ? `${breakStop.rating ? `${breakStop.rating.toFixed(1)}★${breakStop.reviewCount ? ` (${breakStop.reviewCount} reviews)` : ''} · ` : ''}${breakStop.openingHours}` : 'Highway route facility'}
+              {isGeoapifyListing ? `${breakStop.rating ? `${breakStop.rating.toFixed(1)}/5${breakStop.reviewCount ? ` (${breakStop.reviewCount} reviews)` : ''} · ` : ''}${breakStop.openingHours}` : 'Highway route facility'}
             </span>
           </div>
 

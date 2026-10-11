@@ -132,7 +132,11 @@ html.dark [class~="text-[#0F172A]"] {
 /* Brand Accent Text, Section Subtitles, Active Nav, Verified Badges */
 html.dark [class~="text-[#2D5A3D]"],
 html.dark .text-\[\#2D5A3D\],
+html.dark [class~="text-[#244931]"],
+html.dark .text-\[\#244931\],
 html.dark [class~="text-[#00B074]"],
+html.dark [class~="text-emerald-950"],
+html.dark [class~="text-emerald-900"],
 html.dark [class~="text-emerald-800"],
 html.dark [class~="text-emerald-700"],
 html.dark [class~="text-emerald-600"] {
@@ -166,8 +170,50 @@ html.dark [class~="text-slate-400"] {
   color: #94A3B8 !important;
 }
 
-html.dark [class~="text-amber-800"] {
+/* Amber / Gold / Yellow Alerts & Badges */
+html.dark [class~="text-amber-950"],
+html.dark [class~="text-amber-900"],
+html.dark [class~="text-amber-800"],
+html.dark [class~="text-amber-700"],
+html.dark [class~="text-yellow-800"],
+html.dark [class~="text-yellow-700"] {
   color: #FCD34D !important;
+}
+
+/* Rose & Red Danger / Critical / Cancellation Badges */
+html.dark [class~="text-rose-950"],
+html.dark [class~="text-rose-900"],
+html.dark [class~="text-rose-800"],
+html.dark [class~="text-rose-700"],
+html.dark [class~="text-red-950"],
+html.dark [class~="text-red-900"],
+html.dark [class~="text-red-800"],
+html.dark [class~="text-red-700"] {
+  color: #FDA4AF !important;
+}
+
+/* Sky, Blue & Cyan Informational Statuses */
+html.dark [class~="text-sky-950"],
+html.dark [class~="text-sky-900"],
+html.dark [class~="text-sky-800"],
+html.dark [class~="text-sky-700"],
+html.dark [class~="text-blue-950"],
+html.dark [class~="text-blue-900"],
+html.dark [class~="text-blue-800"],
+html.dark [class~="text-blue-700"] {
+  color: #7DD3FC !important;
+}
+
+/* Purple & Indigo Tags, AI Labels & Step Indicators */
+html.dark [class~="text-purple-950"],
+html.dark [class~="text-purple-900"],
+html.dark [class~="text-purple-800"],
+html.dark [class~="text-purple-700"],
+html.dark [class~="text-indigo-950"],
+html.dark [class~="text-indigo-900"],
+html.dark [class~="text-indigo-800"],
+html.dark [class~="text-indigo-700"] {
+  color: #C4B5FD !important;
 }
 
 /* Hover text states */
@@ -261,13 +307,35 @@ html.dark [class~="bg-teal-100"] {
   color: #34D399 !important;
 }
 
-html.dark [class~="bg-amber-50"] {
-  background-color: #422006 !important;
+/* Colored Alert & Badge Backgrounds in Dark Mode */
+html.dark [class~="bg-amber-50"],
+html.dark [class~="bg-amber-100"] {
+  background-color: rgba(245, 158, 11, 0.14) !important;
+  border-color: rgba(245, 158, 11, 0.28) !important;
+}
+
+html.dark [class~="bg-rose-50"],
+html.dark [class~="bg-rose-100"],
+html.dark [class~="bg-red-50"],
+html.dark [class~="bg-red-100"] {
+  background-color: rgba(244, 63, 94, 0.14) !important;
+  border-color: rgba(244, 63, 94, 0.28) !important;
 }
 
 html.dark [class~="bg-blue-50"],
-html.dark [class~="bg-sky-50"] {
-  background-color: #172F4B !important;
+html.dark [class~="bg-blue-100"],
+html.dark [class~="bg-sky-50"],
+html.dark [class~="bg-sky-100"] {
+  background-color: rgba(14, 165, 233, 0.14) !important;
+  border-color: rgba(14, 165, 233, 0.28) !important;
+}
+
+html.dark [class~="bg-purple-50"],
+html.dark [class~="bg-purple-100"],
+html.dark [class~="bg-indigo-50"],
+html.dark [class~="bg-indigo-100"] {
+  background-color: rgba(168, 85, 247, 0.14) !important;
+  border-color: rgba(168, 85, 247, 0.28) !important;
 }
 
 /* Nature Card & Boarding Pass Utilities */

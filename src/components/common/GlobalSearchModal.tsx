@@ -11,7 +11,8 @@ import {
   ShieldCheck, 
   Wallet,
   Calendar,
-  Bookmark
+  Bookmark,
+  Star
 } from 'lucide-react';
 import { Trip, Destination } from '../../types/trip';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
@@ -254,8 +255,9 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                         <p className="text-[11px] text-slate-500 truncate">{dest.tagline}</p>
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold text-[#2D5A3D] shrink-0">
-                      ★ {dest.rating}
+                    <span className="text-[11px] font-bold text-[#2D5A3D] shrink-0 flex items-center gap-1">
+                      <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                      <span>{dest.rating}</span>
                     </span>
                   </button>
                 ))}

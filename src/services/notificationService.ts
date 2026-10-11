@@ -124,12 +124,13 @@ export function generateNotifications(trips: Trip[], activeTrip?: Trip): TripNot
 
   if (isUserUpcomingJourney && activeTrip) {
     const countdown = calculateCountdown(activeTrip);
+    const destName = (activeTrip.destination || 'Destination').split(',')[0];
     if (!countdown.isPast) {
       notifs.push({
         id: `notif-countdown-${activeTrip.id}`,
         tripId: activeTrip.id,
-        title: `Departure Countdown: ${countdown.daysRemaining}d ${countdown.hoursRemaining}h to ${activeTrip.destination.split(',')[0]}!`,
-        message: `Your journey to ${activeTrip.destination} is upcoming. Check current route conditions and weather before departure.`,
+        title: `Departure Countdown: ${countdown.daysRemaining}d ${countdown.hoursRemaining}h to ${destName}!`,
+        message: `Your journey to ${activeTrip.destination || 'your destination'} is upcoming. Check current route conditions and weather before departure.`,
         type: 'countdown',
         timestamp: 'Active Trip',
         read: readIds.includes(`notif-countdown-${activeTrip.id}`),
@@ -143,7 +144,7 @@ export function generateNotifications(trips: Trip[], activeTrip?: Trip): TripNot
     notifs.push({
       id: `notif-weather-${activeTrip.id}`,
       tripId: activeTrip.id,
-      title: `Weather check reminder: ${activeTrip.destination.split(',')[0]}`,
+      title: `Weather check reminder: ${destName}`,
       message: 'No weather or route conditions have been checked for this trip. Review current forecasts and official advisories before travelling.',
       type: 'system',
       timestamp: 'Planning reminder',
@@ -158,7 +159,7 @@ export function generateNotifications(trips: Trip[], activeTrip?: Trip): TripNot
       id: `notif-packing-${activeTrip.id}`,
       tripId: activeTrip.id,
       title: 'Smart Packing Checklist Ready',
-      message: `Review and adjust the suggested packing checklist for your trip to ${activeTrip.destination.split(',')[0]}.`,
+      message: `Review and adjust the suggested packing checklist for your trip to ${destName}.`,
       type: 'packing',
       timestamp: 'Trip Assistant',
       read: readIds.includes(`notif-packing-${activeTrip.id}`),
@@ -172,10 +173,11 @@ export function generateNotifications(trips: Trip[], activeTrip?: Trip): TripNot
   // 3. User reviews (Only for user-completed trips that have not been reviewed yet)
   const unreviewedTrip = trips.find(t => t.status === 'completed' && !t.review && (t as any).isUserCreated);
   if (unreviewedTrip) {
+    const unreviewedDest = (unreviewedTrip.destination || 'Destination').split(',')[0];
     notifs.push({
       id: `notif-review-${unreviewedTrip.id}`,
       tripId: unreviewedTrip.id,
-      title: `How was ${unreviewedTrip.destination.split(',')[0]}? ⭐`,
+      title: `How was ${unreviewedDest}?`,
       message: `You completed "${unreviewedTrip.name}". Share your feedback and preserve your memories!`,
       type: 'system',
       timestamp: 'Recent Trip',

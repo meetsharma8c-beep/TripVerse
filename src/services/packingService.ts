@@ -1,17 +1,19 @@
 import { PackingItem, Trip } from '../types/trip';
 
 export function generateSmartPackingList(trip: Trip): PackingItem[] {
-  const isMountain = trip.destination.toLowerCase().includes('manali') || 
-                     trip.destination.toLowerCase().includes('leh') || 
-                     trip.destination.toLowerCase().includes('munnar') ||
-                     trip.destination.toLowerCase().includes('shimla') ||
-                     trip.preferences.includes('nature') ||
-                     trip.preferences.includes('adventure');
+  const destLower = (trip.destination || '').toLowerCase();
+  const prefs = trip.preferences || [];
+  const isMountain = destLower.includes('manali') || 
+                     destLower.includes('leh') || 
+                     destLower.includes('munnar') ||
+                     destLower.includes('shimla') ||
+                     prefs.includes('nature') ||
+                     prefs.includes('adventure');
 
-  const isBeach = trip.destination.toLowerCase().includes('goa') || 
-                  trip.destination.toLowerCase().includes('gokarna') ||
-                  trip.destination.toLowerCase().includes('pondicherry') ||
-                  trip.preferences.includes('beach');
+  const isBeach = destLower.includes('goa') || 
+                  destLower.includes('gokarna') ||
+                  destLower.includes('pondicherry') ||
+                  prefs.includes('beach');
 
   const items: PackingItem[] = [
     // 1. Documents & Valuables

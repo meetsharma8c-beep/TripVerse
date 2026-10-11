@@ -97,7 +97,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
 
   const handleWhatsAppShare = () => {
     const text = encodeURIComponent(
-      `✈️ Join me in planning our trip to ${trip.destination} on TripVerse!\n\nUse Room Code: ${session.inviteCode}\nOr join directly with this link: ${inviteUrl}`
+      `Join me in planning our trip to ${trip.destination} on TripVerse!\n\nUse Room Code: ${session.inviteCode}\nOr join directly with this link: ${inviteUrl}`
     );
     openExternalUrl(`https://api.whatsapp.com/send?text=${text}`);
   };
@@ -509,10 +509,10 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                       onChange={(e) => setSuggestCategory(e.target.value as any)}
                       className="flex-1 px-2.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                     >
-                      <option value="food">🍜 Food & Cafe</option>
-                      <option value="spot">🏛️ Spot / Viewpoint</option>
-                      <option value="activity">🏄 Activity / Tour</option>
-                      <option value="stay">🏨 Hotel / Stay</option>
+                      <option value="food">Food & Cafe</option>
+                      <option value="spot">Spot / Viewpoint</option>
+                      <option value="activity">Activity / Tour</option>
+                      <option value="stay">Hotel / Stay</option>
                     </select>
                   </div>
                 </div>

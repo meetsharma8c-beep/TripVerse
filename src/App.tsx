@@ -435,7 +435,15 @@ export function App() {
   const [reviewTrip, setReviewTrip] = useState<Trip | null>(null);
 
   // Native & PWA App Opening Animation Screen State
-  const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [showSplash, setShowSplash] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('nosplash') === 'true' || window.localStorage?.getItem('tripverse_skip_splash') === 'true' || window.sessionStorage?.getItem('tripverse_skip_splash') === 'true') {
+        return false;
+      }
+    }
+    return true;
+  });
   const [splashPlatform, setSplashPlatform] = useState<'ios' | 'android' | undefined>(undefined);
 
   const handleFinishSplash = React.useCallback(() => {
