@@ -1,3 +1,5 @@
+import type { Hotel } from '../services/hotelService';
+
 export type TravelerType = 'solo' | 'couple' | 'friends' | 'family' | 'business';
 
 export type TransportMode = 'car' | 'bike' | 'bus' | 'train' | 'flight' | 'public' | 'any';
@@ -132,6 +134,9 @@ export interface Trip {
   aiRationale?: string;
   bestTransportDeal?: TransportDeal;
   transportDeals?: TransportDeal[];
+  selectedHotel?: Hotel;
+  hotelOptions?: Hotel[];
+  pacing?: 'relaxed' | 'balanced' | 'fast_paced';
   routeDetails?: {
     distanceKm: number;
     durationHours: number;

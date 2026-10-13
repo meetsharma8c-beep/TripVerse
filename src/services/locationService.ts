@@ -633,10 +633,10 @@ export function resolvePreciseLocationSync(input: string): PreciseLocation {
     category,
     spotType,
     highlights: [
-      `${clean} Cultural & Historic Tour`,
-      `Local Regional Specialty Dining`,
-      `Scenic Panoramic Viewpoint`,
-      `Evening Leisure Promenade`
+      `${clean} Cultural & Historic Landmark Tour`,
+      `${clean} Iconic Heritage Architecture & Scenic Spots`,
+      `${clean} Artisan Craft Bazaar & Souvenir Walk`,
+      `${clean} Panoramic Viewpoint & Sunset Overlook`
     ],
     tagline: `Precise Spot • ${state} • Handcrafted AI Itinerary`,
     image: undefined

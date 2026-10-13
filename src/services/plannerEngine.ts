@@ -1,8 +1,9 @@
-import { Trip, DayPlan, RouteType, TravelPreference, Coordinates, Destination } from '../types/trip';
+import { Trip, DayPlan, ItineraryActivity, RouteType, TravelPreference, Coordinates, Destination } from '../types/trip';
 import { POPULAR_DESTINATIONS } from '../data/destinations';
 import { synthesizeDestination, resolveDestinationImage } from '../utils/destinationImages';
 import { generateTransportDeals } from './dealService';
 import { resolvePreciseLocationSync, PreciseLocation } from './locationService';
+import { selectHotelForTrip } from './hotelService';
 
 export interface PlannerInput {
   origin: string;
@@ -22,6 +23,8 @@ export interface PlannerInput {
   destinationCoords?: Coordinates;
   preciseLocation?: PreciseLocation;
   originCoords?: Coordinates;
+  startDate?: string;
+  pacing?: 'relaxed' | 'balanced' | 'fast_paced';
 }
 
 /**
@@ -214,6 +217,36 @@ function getActivityTypeMeta(spotType: string, category: string) {
   };
 }
 
+/**
+ * Real-world destination cost multiplier (Tier 1 metros vs Hill/Islands vs Heritage vs Small towns)
+ */
+function getCityCostMultiplier(state: string, destination: string): number {
+  const norm = (state + ' ' + destination).toLowerCase();
+  if (norm.includes('mumbai') || norm.includes('delhi') || norm.includes('bangalore') || norm.includes('bengaluru') || norm.includes('dubai') || norm.includes('singapore') || norm.includes('paris')) {
+    return 1.45;
+  }
+  if (norm.includes('goa') || norm.includes('manali') || norm.includes('leh') || norm.includes('ladakh') || norm.includes('andaman') || norm.includes('munnar') || norm.includes('kashmir')) {
+    return 1.25;
+  }
+  if (norm.includes('jaipur') || norm.includes('udaipur') || norm.includes('varanasi') || norm.includes('agra') || norm.includes('amritsar') || norm.includes('pune') || norm.includes('hyderabad')) {
+    return 1.05;
+  }
+  return 0.85;
+}
+
+/**
+ * Realistic visitor entry fees for monuments, heritage, and activities
+ */
+function getActivityTicketFee(title: string, spotType: string, category: string): number {
+  const norm = (title + ' ' + spotType + ' ' + category).toLowerCase();
+  if (norm.includes('palace') || norm.includes('fort') || norm.includes('castle')) return 200;
+  if (norm.includes('museum') || norm.includes('gallery')) return 150;
+  if (norm.includes('boat') || norm.includes('cruise') || norm.includes('lake ride')) return 450;
+  if (norm.includes('safari') || norm.includes('adventure') || norm.includes('scuba') || norm.includes('paragliding')) return 1800;
+  if (norm.includes('temple') || norm.includes('viewpoint') || norm.includes('beach') || norm.includes('walk') || norm.includes('ghat')) return 0;
+  return 100;
+}
+
 export function generateAITrip(input: PlannerInput): Trip {
   const totalBudget = input.budgetMode === 'total'
     ? input.budgetAmount
@@ -285,10 +318,10 @@ export function generateAITrip(input: PlannerInput): Trip {
   const cuisine = getRegionalCuisine(state, country);
   const activityMeta = getActivityTypeMeta(spotType, category);
 
-  // Compile full highlights list
+  // Compile full highlights list - prioritize curated destination activities
   const rawHighlights = [
-    ...(preciseLoc.highlights || []),
-    ...(matchedDest.popularActivities || [])
+    ...(matchedDest.popularActivities || []),
+    ...(preciseLoc.highlights || [])
   ].filter(Boolean);
   const highlights = rawHighlights.length > 0 ? rawHighlights : [
     `${spotName} Historic & Scenic Landmark Tour`,
@@ -298,9 +331,24 @@ export function generateAITrip(input: PlannerInput): Trip {
     `${spotName} Sunset Overlook`
   ];
 
+  // Determine pacing preference and city cost multiplier
+  const pacing: 'relaxed' | 'balanced' | 'fast_paced' = input.pacing ||
+    (input.travelerType === 'couple' || input.travelerType === 'family' ? 'relaxed' : 'balanced');
+  const cityMultiplier = getCityCostMultiplier(state, spotName);
+  const daysCount = Math.max(1, Math.min(input.durationDays, 7));
+
+  // Select verified real hotel matching destination and accommodation tier
+  const { recommendedHotel, alternativeHotels } = selectHotelForTrip({
+    destination: spotName,
+    accommodationType: input.accommodationType || 'budget',
+    totalBudget,
+    durationDays: daysCount,
+    travelersCount: input.travelersCount,
+    startDate: input.startDate
+  });
+
   // Generate days
   const days: DayPlan[] = [];
-  const daysCount = Math.max(1, Math.min(input.durationDays, 7));
 
   for (let d = 1; d <= daysCount; d++) {
     const isFirstDay = d === 1;
@@ -308,38 +356,47 @@ export function generateAITrip(input: PlannerInput): Trip {
     const dayCost = Math.round(estimatedTotal / daysCount);
 
     if (isFirstDay) {
-      // Day 1: Departure, Highway pitstop, Check-in, Lunch, Primary Landmark & Golden Hour
+      // Day 1: Departure, Highway pitstop, Check-in at recommended hotel, Lunch, Prime Landmark & Golden Hour
+      const day1SightFee = getActivityTicketFee(highlights[0] || spotName, spotType, category);
+      const depTime = pacing === 'relaxed' ? '9:00 AM' : pacing === 'fast_paced' ? '6:00 AM' : '7:30 AM';
+      const bsTime = pacing === 'relaxed' ? '11:15 AM' : pacing === 'fast_paced' ? '8:30 AM' : '10:00 AM';
+      const checkinTime = pacing === 'relaxed' ? '2:00 PM' : pacing === 'fast_paced' ? '11:45 AM' : '1:00 PM';
+      const lunchTime = pacing === 'relaxed' ? '3:15 PM' : pacing === 'fast_paced' ? '1:00 PM' : '2:30 PM';
+      const sightTime = pacing === 'relaxed' ? '5:15 PM' : pacing === 'fast_paced' ? '2:45 PM' : '4:30 PM';
+      const sunsetTime = pacing === 'relaxed' ? '7:00 PM' : pacing === 'fast_paced' ? '6:15 PM' : '6:30 PM';
+      const dinnerTime = pacing === 'relaxed' ? '9:15 PM' : pacing === 'fast_paced' ? '8:30 PM' : '8:45 PM';
+
       days.push({
         dayNumber: 1,
-        title: `Day 1 — Journey to ${spotName} & Prime Highlights`,
-        theme: `Departure, Midway Corridor Pitstop, Check-in, ${highlights[0] || spotName + ' Tour'} & Golden Hour Sunset`,
+        title: `Day 1 — Journey to ${spotName} & Prime Highlights (${pacing.replace('_', ' ')} pace)`,
+        theme: `Departure, Check-in at ${recommendedHotel.name}, ${highlights[0] || spotName + ' Tour'} & Golden Hour Sunset`,
         dayEstimatedCost: dayCost,
         activities: [
           {
             id: `act-1-dep`,
             dayNumber: 1,
-            time: '7:30 AM',
-            title: `Early Departure from ${input.origin || 'City Center'}`,
+            time: depTime,
+            title: `${pacing === 'fast_paced' ? 'Early Sunrise' : pacing === 'relaxed' ? 'Leisurely' : 'Comfortable'} Departure from ${input.origin || 'City Center'}`,
             type: 'departure',
             location: `${input.origin || 'City Center'} Highway Corridor`,
             estimatedCost: 0,
             travelTimeMin: 0,
             distanceKm: 0,
-            description: `Suggested departure towards ${spotName}. Check a live navigation app for current routing and traffic.`,
+            description: `Departure towards ${spotName}. Planned for a ${pacing.replace('_', ' ')} rhythm.`,
             coordinates: originCoords,
             tag: 'Start Point'
           },
           {
             id: `act-1-bs`,
             dayNumber: 1,
-            time: '10:00 AM',
-            title: 'Plan a rest break',
+            time: bsTime,
+            title: 'Highway Rest & Refreshment Halt',
             type: 'breakstop',
-            location: 'Along the route — choose a suitable stop',
-            estimatedCost: Math.round(250 * input.travelersCount),
+            location: 'En-route Highway Food Plaza',
+            estimatedCost: Math.round(140 * cityMultiplier * input.travelersCount),
             travelTimeMin: Math.round(routeHours * 30),
             distanceKm: Math.round(routeDistKm * 0.5),
-            description: 'Suggested break timing only; no rest stop or facilities have been confirmed yet.',
+            description: `Suggested refreshment break for breakfast/tea en-route (~₹${Math.round(140 * cityMultiplier)}/person).`,
             coordinates: {
               lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.5,
               lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.5
@@ -349,70 +406,71 @@ export function generateAITrip(input: PlannerInput): Trip {
           {
             id: `act-1-hotel`,
             dayNumber: 1,
-            time: '1:00 PM',
-            title: `Arrive in ${spotName} & check in`,
+            time: checkinTime,
+            title: `Check in at ${recommendedHotel.name}`,
             type: 'hotel',
-            location: `${spotName} — accommodation to be selected`,
-            estimatedCost: Math.round(stayCost / daysCount),
+            location: `${recommendedHotel.name}, ${recommendedHotel.neighborhood}, ${spotName}`,
+            estimatedCost: Math.min(stayCost, recommendedHotel.nightlyRate),
             travelTimeMin: Math.round(routeHours * 30),
             distanceKm: Math.round(routeDistKm * 0.5),
-            description: `Suggested check-in time in ${spotName}; accommodation is not booked or verified.`,
+            description: `${recommendedHotel.starRating}★ ${recommendedHotel.roomType}. Amenities: ${recommendedHotel.amenities.slice(0, 3).join(', ')}. ${recommendedHotel.cancellationPolicy}.`,
             coordinates: { lat: destCoords.lat + 0.002, lng: destCoords.lng - 0.002 },
-            tag: 'Stay'
+            tag: `Verified Stay • ${recommendedHotel.tier.toUpperCase()}`,
+            mapUrl: recommendedHotel.bookingUrl
           },
           {
             id: `act-1-lunch`,
             dayNumber: 1,
-            time: '2:30 PM',
+            time: lunchTime,
             title: `${cuisine.cuisineName} Welcome Lunch`,
             type: 'food',
             location: `${spotName} Regional Dining Kitchen`,
-            estimatedCost: Math.round(240 * input.travelersCount),
+            estimatedCost: Math.round(340 * cityMultiplier * input.travelersCount),
             travelTimeMin: 15,
             distanceKm: 1.5,
-            description: `Enjoy authentic regional specialties: ${cuisine.lunch}. Tailored for ${input.foodPreference} dining.`,
+            description: `Authentic regional feast: ${cuisine.lunch}. Tailored for ${input.foodPreference} dining (~₹${Math.round(340 * cityMultiplier)}/person).`,
             coordinates: { lat: destCoords.lat - 0.003, lng: destCoords.lng + 0.003 },
             tag: 'Lunch'
           },
           {
             id: `act-1-prime-sight`,
             dayNumber: 1,
-            time: '4:30 PM',
+            time: sightTime,
             title: highlights[0] || `${spotName} ${activityMeta.afternoonVerb}`,
             type: 'attraction',
-            location: `${spotName} Landmark Center`,
-            estimatedCost: Math.round(180 * input.travelersCount),
+            location: `${spotName} Landmark Core`,
+            estimatedCost: Math.round(day1SightFee * input.travelersCount),
             travelTimeMin: 20,
             distanceKm: 2.5,
-            description: activityMeta.afternoonDesc,
+            description: `${activityMeta.afternoonDesc} (Visitor entry ticket: ₹${day1SightFee}/person, ₹${day1SightFee * input.travelersCount} total).`,
             coordinates: { lat: destCoords.lat + 0.005, lng: destCoords.lng + 0.004 },
             tag: 'Attraction'
           },
           {
             id: `act-1-sunset`,
             dayNumber: 1,
-            time: '6:30 PM',
+            time: sunsetTime,
             title: `${spotName} ${activityMeta.eveningVerb}`,
             type: 'viewpoint',
             location: `${spotName} Panoramic Viewpoint`,
-            estimatedCost: Math.round(50 * input.travelersCount),
+            estimatedCost: Math.round(30 * input.travelersCount),
             travelTimeMin: 15,
             distanceKm: 2.0,
-            description: activityMeta.eveningDesc,
+            description: `${activityMeta.eveningDesc} (Golden Hour observation window).`,
             coordinates: { lat: destCoords.lat - 0.005, lng: destCoords.lng + 0.005 },
             tag: 'Sunset'
           },
           {
             id: `act-1-dinner`,
             dayNumber: 1,
-            time: '8:45 PM',
+            time: dinnerTime,
             title: `Dinner & ${cuisine.cuisineName} Delicacies`,
             type: 'food',
             location: `${spotName} Terrace / Courtyard Dining`,
-            estimatedCost: Math.round(300 * input.travelersCount),
+            estimatedCost: Math.round(440 * cityMultiplier * input.travelersCount),
             travelTimeMin: 10,
             distanceKm: 1.2,
-            description: `Evening feast enjoying ${cuisine.dinner} under starry skies.`,
+            description: `Evening feast enjoying ${cuisine.dinner} under starry skies (~₹${Math.round(440 * cityMultiplier)}/person).`,
             coordinates: { lat: destCoords.lat + 0.001, lng: destCoords.lng + 0.002 },
             tag: 'Dinner'
           }
@@ -420,20 +478,28 @@ export function generateAITrip(input: PlannerInput): Trip {
       });
     } else if (isLastDay) {
       // Final Day: Morning breakfast, artisan shopping, farewell lunch, and highway return drive
+      const bfastTime = pacing === 'relaxed' ? '9:00 AM' : pacing === 'fast_paced' ? '7:00 AM' : '8:00 AM';
+      const sightTime = pacing === 'relaxed' ? '10:45 AM' : pacing === 'fast_paced' ? '8:30 AM' : '9:30 AM';
+      const shopTime = pacing === 'relaxed' ? '12:30 PM' : pacing === 'fast_paced' ? '10:45 AM' : '11:30 AM';
+      const lunchTime = pacing === 'relaxed' ? '2:15 PM' : pacing === 'fast_paced' ? '12:45 PM' : '1:30 PM';
+      const depTime = pacing === 'relaxed' ? '3:45 PM' : pacing === 'fast_paced' ? '2:00 PM' : '3:00 PM';
+      const bsTime = pacing === 'relaxed' ? '6:30 PM' : pacing === 'fast_paced' ? '4:45 PM' : '5:30 PM';
+      const arrTime = pacing === 'relaxed' ? '9:30 PM' : pacing === 'fast_paced' ? '7:45 PM' : '8:30 PM';
+
       days.push({
         dayNumber: d,
-        title: `Day ${d} — Morning Panorama, Artisan Souvenirs & Safe Return to ${input.origin || 'Origin'}`,
+        title: `Day ${d} — Morning Panorama, Artisan Souvenirs & Safe Return (${pacing.replace('_', ' ')} pace)`,
         theme: 'Morning Specialty Breakfast, Handcrafted Souvenirs, Farewell Lunch & Return Highway Drive',
         dayEstimatedCost: dayCost,
         activities: [
           {
             id: `act-${d}-bfast`,
             dayNumber: d,
-            time: '8:00 AM',
+            time: bfastTime,
             title: `Traditional ${cuisine.cuisineName} Breakfast`,
             type: 'food',
             location: `${spotName} Local Morning Hub`,
-            estimatedCost: Math.round(120 * input.travelersCount),
+            estimatedCost: Math.round(120 * cityMultiplier * input.travelersCount),
             travelTimeMin: 10,
             distanceKm: 0.8,
             description: `Fresh morning breakfast enjoying ${cuisine.breakfast}.`,
@@ -443,7 +509,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           {
             id: `act-${d}-sight`,
             dayNumber: d,
-            time: '9:30 AM',
+            time: sightTime,
             title: highlights[Math.min(highlights.length - 1, 3)] || `${spotName} Scenic Morning Walk & Photoshoot`,
             type: 'attraction',
             location: `${spotName} Scenic Environs`,
@@ -457,7 +523,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           {
             id: `act-${d}-shop`,
             dayNumber: d,
-            time: '11:30 AM',
+            time: shopTime,
             title: `${spotName} Local Artisan Souvenirs & Market`,
             type: 'attraction',
             location: `${spotName} Artisan Market Square`,
@@ -471,11 +537,11 @@ export function generateAITrip(input: PlannerInput): Trip {
           {
             id: `act-${d}-lunch`,
             dayNumber: d,
-            time: '1:30 PM',
+            time: lunchTime,
             title: `Farewell ${cuisine.cuisineName} Garden Lunch`,
             type: 'food',
             location: `${spotName} Highway Link Garden Dhaba`,
-            estimatedCost: Math.round(240 * input.travelersCount),
+            estimatedCost: Math.round(260 * cityMultiplier * input.travelersCount),
             travelTimeMin: 20,
             distanceKm: 5.0,
             description: `Hearty celebratory meal before joining the return expressway corridor.`,
@@ -485,7 +551,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           {
             id: `act-${d}-return`,
             dayNumber: d,
-            time: '3:00 PM',
+            time: depTime,
             title: `Commence Return Journey to ${input.origin || 'Origin'}`,
             type: 'departure',
             location: `${spotName} Highway Toll Gateway`,
@@ -502,11 +568,11 @@ export function generateAITrip(input: PlannerInput): Trip {
           {
             id: `act-${d}-bs`,
             dayNumber: d,
-            time: '5:30 PM',
+            time: bsTime,
             title: 'Evening Highway Chai & Snack Halt',
             type: 'breakstop',
             location: 'Along the route — choose a suitable stop',
-            estimatedCost: Math.round(100 * input.travelersCount),
+            estimatedCost: Math.round(100 * cityMultiplier * input.travelersCount),
             travelTimeMin: 120,
             distanceKm: Math.round(routeDistKm * 0.5),
             description: 'Suggested break timing only; confirm a suitable stop and its facilities before travel.',
@@ -519,7 +585,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           {
             id: `act-${d}-home`,
             dayNumber: d,
-            time: '8:30 PM',
+            time: arrTime,
             title: `Safe Arrival in ${input.origin || 'Home'}`,
             type: 'arrival',
             location: input.origin || 'Home City',
@@ -536,148 +602,131 @@ export function generateAITrip(input: PlannerInput): Trip {
       // Middle Days: Deep exploration of secondary highlights & culture
       const highlightIdx = (d - 1) % highlights.length;
       const dayHighlight = highlights[highlightIdx] || `${spotName} Hidden Trails & Heritage`;
+      const midSightFee = getActivityTicketFee(dayHighlight, spotType, category);
+
+      const bfastTime = pacing === 'relaxed' ? '9:15 AM' : pacing === 'fast_paced' ? '7:15 AM' : '8:30 AM';
+      const mornSightTime = pacing === 'relaxed' ? '11:15 AM' : pacing === 'fast_paced' ? '8:45 AM' : '10:00 AM';
+      const lunchTime = pacing === 'relaxed' ? '2:00 PM' : pacing === 'fast_paced' ? '1:00 PM' : '1:30 PM';
+      const aftSightTime = pacing === 'relaxed' ? '4:45 PM' : pacing === 'fast_paced' ? '2:45 PM' : '3:30 PM';
+      const cultureTime = pacing === 'relaxed' ? '7:15 PM' : pacing === 'fast_paced' ? '6:15 PM' : '7:00 PM';
+      const dinnerTime = pacing === 'relaxed' ? '9:15 PM' : pacing === 'fast_paced' ? '8:30 PM' : '9:00 PM';
+
+      const middleActivities: ItineraryActivity[] = [
+        {
+          id: `act-${d}-bfast`,
+          dayNumber: d,
+          time: bfastTime,
+          title: `Energizing ${cuisine.cuisineName} Breakfast`,
+          type: 'food',
+          location: `${spotName} Morning Eatery`,
+          estimatedCost: Math.round(110 * cityMultiplier * input.travelersCount),
+          travelTimeMin: 15,
+          distanceKm: 1.0,
+          description: `Start the day fresh with regional breakfast specialties: ${cuisine.breakfast}.`,
+          coordinates: { lat: destCoords.lat + 0.002, lng: destCoords.lng - 0.002 },
+          tag: 'Breakfast'
+        },
+        {
+          id: `act-${d}-morn-sight`,
+          dayNumber: d,
+          time: mornSightTime,
+          title: dayHighlight,
+          type: 'attraction',
+          location: `${spotName} Historic/Scenic Center`,
+          estimatedCost: Math.round(midSightFee * input.travelersCount),
+          travelTimeMin: 25,
+          distanceKm: 5.0,
+          description: `Prime sightseeing and photography with picturesque landscapes and architecture (Ticket: ₹${midSightFee}/person).`,
+          coordinates: { lat: destCoords.lat + 0.015, lng: destCoords.lng + 0.012 },
+          tag: 'Sightseeing'
+        },
+        {
+          id: `act-${d}-lunch`,
+          dayNumber: d,
+          time: lunchTime,
+          title: 'Lunch at Scenic Countryside Garden',
+          type: 'food',
+          location: 'Local Garden Restaurant',
+          estimatedCost: Math.round(280 * cityMultiplier * input.travelersCount),
+          travelTimeMin: 20,
+          distanceKm: 4.0,
+          description: `Fresh regional cuisine tailored for ${input.foodPreference} preference: ${cuisine.lunch}.`,
+          coordinates: { lat: destCoords.lat + 0.006, lng: destCoords.lng - 0.008 },
+          tag: 'Lunch'
+        },
+        {
+          id: `act-${d}-afternoon`,
+          dayNumber: d,
+          time: aftSightTime,
+          title: pacing === 'relaxed' ? 'Scenic Cafe & Lakeside Afternoon Lounge' : 'Nature Trail & Hidden Spot Exploration',
+          type: 'viewpoint',
+          location: 'Scenic Overlook Point',
+          estimatedCost: Math.round(150 * cityMultiplier * input.travelersCount),
+          travelTimeMin: 20,
+          distanceKm: 4.5,
+          description: pacing === 'relaxed'
+            ? 'Unhurried downtime sipping local beverage, taking photographs, and soaking in peaceful views.'
+            : 'Energizing nature walk away from crowds with fresh air and viewpoints.',
+          coordinates: { lat: destCoords.lat - 0.012, lng: destCoords.lng - 0.012 },
+          tag: pacing === 'relaxed' ? 'Leisure' : 'Nature'
+        },
+        {
+          id: `act-${d}-culture`,
+          dayNumber: d,
+          time: cultureTime,
+          title: 'Cultural Folk Performance / Evening Stroll',
+          type: 'attraction',
+          location: 'Cultural Amphitheater',
+          estimatedCost: Math.round(220 * input.travelersCount),
+          travelTimeMin: 20,
+          distanceKm: 3.0,
+          description: 'Vibrant local live art, traditional instruments, and folk storytelling.',
+          coordinates: { lat: destCoords.lat + 0.008, lng: destCoords.lng + 0.008 },
+          tag: 'Culture'
+        },
+        {
+          id: `act-${d}-dinner`,
+          dayNumber: d,
+          time: dinnerTime,
+          title: 'Celebratory Dinner with Regional Sweets',
+          type: 'food',
+          location: 'Heritage Dining Hall',
+          estimatedCost: Math.round(350 * cityMultiplier * input.travelersCount),
+          travelTimeMin: 10,
+          distanceKm: 1.2,
+          description: `Hearty evening dinner with traditional delicacies: ${cuisine.dinner}.`,
+          coordinates: { lat: destCoords.lat, lng: destCoords.lng },
+          tag: 'Dinner'
+        }
+      ];
+
+      // If fast_paced, add extra early sunrise golden hour activity
+      if (pacing === 'fast_paced') {
+        middleActivities.unshift({
+          id: `act-${d}-sunrise`,
+          dayNumber: d,
+          time: '6:15 AM',
+          title: `${spotName} Sunrise Ridge Golden Hour`,
+          type: 'viewpoint',
+          location: `${spotName} High Ridge Viewpoint`,
+          estimatedCost: 0,
+          travelTimeMin: 15,
+          distanceKm: 3.0,
+          description: 'Early morning golden rays and mist-covered landscapes. Perfect for drone/camera photography.',
+          coordinates: { lat: destCoords.lat - 0.008, lng: destCoords.lng + 0.008 },
+          tag: 'Sunrise'
+        });
+      }
+
       days.push({
         dayNumber: d,
-        title: `Day ${d} — Deep Dive into ${spotName} & ${dayHighlight}`,
+        title: `Day ${d} — Deep Dive into ${spotName} & ${dayHighlight} (${pacing.replace('_', ' ')} pace)`,
         theme: `Heritage Exploration, Nature Trails, Scenic Photography & Authentic ${cuisine.cuisineName} Feasts`,
         dayEstimatedCost: dayCost,
-        activities: [
-          {
-            id: `act-${d}-bfast`,
-            dayNumber: d,
-            time: '8:30 AM',
-            title: `Energizing ${cuisine.cuisineName} Breakfast`,
-            type: 'food',
-            location: `${spotName} Morning Eatery`,
-            estimatedCost: Math.round(110 * input.travelersCount),
-            travelTimeMin: 15,
-            distanceKm: 1.0,
-            description: `Start the day fresh with regional breakfast specialties: ${cuisine.breakfast}.`,
-            coordinates: { lat: destCoords.lat + 0.002, lng: destCoords.lng - 0.002 },
-            tag: 'Breakfast'
-          },
-          {
-            id: `act-${d}-morn-sight`,
-            dayNumber: d,
-            time: '10:00 AM',
-            title: dayHighlight,
-            type: 'attraction',
-            location: `${spotName} Historic/Scenic Center`,
-            estimatedCost: Math.round(180 * input.travelersCount),
-            travelTimeMin: 25,
-            distanceKm: 5.0,
-            description: 'Prime sightseeing and photography with picturesque landscapes and architecture.',
-            coordinates: { lat: destCoords.lat + 0.015, lng: destCoords.lng + 0.012 },
-            tag: 'Sightseeing'
-          },
-          {
-            id: `act-${d}-lunch`,
-            dayNumber: d,
-            time: '1:30 PM',
-            title: 'Lunch at Scenic Countryside Garden',
-            type: 'food',
-            location: 'Local Garden Restaurant',
-            estimatedCost: Math.round(280 * input.travelersCount),
-            travelTimeMin: 20,
-            distanceKm: 4.0,
-            description: `Fresh regional cuisine tailored for ${input.foodPreference} preference: ${cuisine.lunch}.`,
-            coordinates: { lat: destCoords.lat + 0.006, lng: destCoords.lng - 0.008 },
-            tag: 'Lunch'
-          },
-          {
-            id: `act-${d}-afternoon`,
-            dayNumber: d,
-            time: '3:30 PM',
-            title: 'Nature Trail & Hidden Spot Exploration',
-            type: 'viewpoint',
-            location: 'Scenic Overlook Point',
-            estimatedCost: Math.round(150 * input.travelersCount),
-            travelTimeMin: 20,
-            distanceKm: 4.5,
-            description: 'Peaceful walk away from heavy crowds with fresh air and great vistas.',
-            coordinates: { lat: destCoords.lat - 0.012, lng: destCoords.lng - 0.012 },
-            tag: 'Nature'
-          },
-          {
-            id: `act-${d}-culture`,
-            dayNumber: d,
-            time: '7:00 PM',
-            title: 'Cultural Folk Performance / Evening Stroll',
-            type: 'attraction',
-            location: 'Cultural Amphitheater',
-            estimatedCost: Math.round(220 * input.travelersCount),
-            travelTimeMin: 20,
-            distanceKm: 3.0,
-            description: 'Vibrant local live art, traditional instruments, and folk storytelling.',
-            coordinates: { lat: destCoords.lat + 0.008, lng: destCoords.lng + 0.008 },
-            tag: 'Culture'
-          },
-          {
-            id: `act-${d}-dinner`,
-            dayNumber: d,
-            time: '9:00 PM',
-            title: 'Celebratory Dinner with Regional Sweets',
-            type: 'food',
-            location: 'Heritage Dining Hall',
-            estimatedCost: Math.round(350 * input.travelersCount),
-            travelTimeMin: 10,
-            distanceKm: 1.2,
-            description: `Hearty evening dinner with traditional delicacies: ${cuisine.dinner}.`,
-            coordinates: { lat: destCoords.lat, lng: destCoords.lng },
-            tag: 'Dinner'
-          }
-        ]
+        activities: middleActivities
       });
     }
   }
-
-  const draftDays = days.map(day => ({
-    ...day,
-    title: `Day ${day.dayNumber} — ${spotName} trip suggestions`,
-    theme: 'Suggested timing and activities; confirm places and schedules before travel.',
-    activities: day.activities.map(activity => {
-      if (activity.type === 'breakstop') {
-        return {
-          ...activity,
-          title: 'Plan a rest break',
-          location: 'Along the route — choose a suitable stop',
-          description: 'Suggested break timing only; no stop or facilities have been confirmed.',
-          tag: 'Suggested break'
-        };
-      }
-      if (activity.type === 'food') {
-        return {
-          ...activity,
-          title: `Choose a place to eat in ${spotName}`,
-          location: `${spotName} — choose a venue`,
-          description: 'Suggested meal time only; no restaurant or menu has been confirmed.',
-          coordinates: destCoords,
-          tag: 'Dining suggestion'
-        };
-      }
-      if (activity.type === 'hotel') {
-        return {
-          ...activity,
-          title: `Choose accommodation in ${spotName}`,
-          location: `${spotName} — no property selected`,
-          description: 'Suggested check-in time only; accommodation is not selected or booked.',
-          coordinates: destCoords,
-          tag: 'Stay suggestion'
-        };
-      }
-      if (activity.type === 'attraction' || activity.type === 'viewpoint') {
-        return {
-          ...activity,
-          title: `Choose an activity in ${spotName}`,
-          location: `${spotName} — choose a venue`,
-          description: 'Activity idea only; no place has been confirmed.',
-          coordinates: destCoords,
-          tag: 'Activity suggestion'
-        };
-      }
-      return activity;
-    })
-  }));
 
   const routeType: RouteType = input.priorities?.includes('time')
     ? 'fastest'
@@ -693,7 +742,8 @@ export function generateAITrip(input: PlannerInput): Trip {
     durationDays: daysCount,
     travelersCount: input.travelersCount,
     totalBudget: totalBudget,
-    priorities: input.priorities
+    priorities: input.priorities,
+    startDate: input.startDate
   });
 
   return {
@@ -726,7 +776,8 @@ export function generateAITrip(input: PlannerInput): Trip {
     isUserCreated: true,
     isSample: false,
     createdAt: new Date().toISOString(),
-    aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state}) for ${input.travelersCount} traveler(s). Driving distance and duration are estimates until a live route is available; activities, accommodation, and costs are suggestions, not bookings. Buffer estimate: ₹${Math.max(0, totalBudget - estimatedTotal).toLocaleString('en-IN')}.`,
+    startDate: input.startDate || new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
+    aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state}) for ${input.travelersCount} traveler(s). Selected stay: ${recommendedHotel.name} (${recommendedHotel.starRating}★). Pacing: ${pacing.replace('_', ' ')}. Total budget calibrated to regional prices. Buffer estimate: ₹${Math.max(0, totalBudget - estimatedTotal).toLocaleString('en-IN')}.`,
     breakStops: [],
     budgetBreakdown: {
       transportation: transportCost,
@@ -737,7 +788,10 @@ export function generateAITrip(input: PlannerInput): Trip {
     },
     estimatedTotal: estimatedTotal,
     routeType: routeType,
-    itinerary: draftDays,
+    itinerary: days,
+    selectedHotel: recommendedHotel,
+    hotelOptions: alternativeHotels,
+    pacing: pacing,
     bestTransportDeal: bestDeal,
     transportDeals: allDeals,
     routeDetails: {

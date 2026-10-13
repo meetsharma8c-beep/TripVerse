@@ -143,6 +143,73 @@ function concodeApiDevPlugin(targetUrl?: string, apiKey?: string): Plugin {
   };
 }
 
+function smsApiDevPlugin(): Plugin {
+  return {
+    name: 'sms-api-dev-proxy',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url || !req.url.startsWith('/api/sms')) {
+          return next();
+        }
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, authorization');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          return res.end();
+        }
+
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          return res.end(JSON.stringify({ error: 'Method not allowed' }));
+        }
+
+        let bodyRaw = '';
+        req.on('data', chunk => { bodyRaw += chunk; });
+        req.on('end', async () => {
+          try {
+            const body = bodyRaw ? JSON.parse(bodyRaw) : {};
+            const { numbers, variables_values, apiKey: clientApiKey } = body;
+            const authHeader = req.headers['authorization'];
+            const apiKey = 
+              process.env.FAST2SMS_API_KEY || 
+              process.env.VITE_FAST2SMS_API_KEY || 
+              authHeader || 
+              clientApiKey;
+
+            if (!numbers || !variables_values) {
+              res.statusCode = 400;
+              return res.end(JSON.stringify({ return: false, message: 'Missing phone number or OTP code.' }));
+            }
+
+            const fastResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+              method: 'POST',
+              headers: {
+                'authorization': String(apiKey),
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                route: 'otp',
+                variables_values: String(variables_values),
+                numbers: String(numbers)
+              })
+            });
+
+            const data = await fastResponse.json().catch(() => ({ return: false, message: 'Invalid response from Fast2SMS' }));
+            res.statusCode = fastResponse.status || 200;
+            return res.end(JSON.stringify(data));
+          } catch (err: any) {
+            res.statusCode = 500;
+            return res.end(JSON.stringify({ return: false, message: err?.message || 'SMS gateway network proxy error' }));
+          }
+        });
+      });
+    }
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -153,7 +220,8 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwindcss(),
-      concodeApiDevPlugin(concodeUrl, concodeKey)
+      concodeApiDevPlugin(concodeUrl, concodeKey),
+      smsApiDevPlugin()
     ],
     build: {
       target: ['es2020', 'edge88', 'firefox78', 'chrome80', 'safari14'],

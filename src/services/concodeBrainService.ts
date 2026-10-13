@@ -15,6 +15,8 @@ import {
 } from './concodeSession';
 import { generateAITrip } from './plannerEngine';
 import { AIAppAction } from './aiAssistant';
+import { CONCODE_MASTER_PROMPT } from './concodeMasterPrompt';
+import { resolveTransitContext } from './transportFeasibilityEngine';
 
 export interface BrainStatus {
   online: boolean;
@@ -428,6 +430,8 @@ async function tryQueryServerlessAPI(
       ...(customConfig?.apiKey ? { 'X-API-Key': customConfig.apiKey, 'Authorization': `Bearer ${customConfig.apiKey}` } : {})
     };
 
+    const transitContext = resolveTransitContext(trip.destination);
+
     const tripContextPayload = {
       destination: trip.destination,
       durationDays: trip.durationDays,
@@ -441,7 +445,16 @@ async function tryQueryServerlessAPI(
       foodPreference: trip.foodPreference,
       priorities: trip.priorities,
       knownDestinationHighlights: trip.destinationDetails?.highlights || [],
-      transportDeals: trip.transportDeals || []
+      transportDeals: trip.transportDeals || [],
+      transitHubs: {
+        hasDirectAirport: transitContext.hasDirectAirport,
+        primaryAirport: transitContext.primaryAirport?.name,
+        hasDirectTrain: transitContext.hasDirectTrain,
+        primaryStation: transitContext.primaryRailwayStation?.name,
+        roadConnectivity: transitContext.roadConnectivity.status,
+        requiresMultiModal: transitContext.requiresMultiModal,
+        guidance: transitContext.multiModalGuidance
+      }
     };
 
     const bodyPayload = customConfig?.url
@@ -449,13 +462,15 @@ async function tryQueryServerlessAPI(
           query,
           trip_context: tripContextPayload,
           session_id: session.sessionId,
-          mode
+          mode,
+          system_prompt: CONCODE_MASTER_PROMPT
         })
       : JSON.stringify({
           query,
           tripContext: tripContextPayload,
           sessionState: session,
-          mode
+          mode,
+          system_prompt: CONCODE_MASTER_PROMPT
         });
 
     const res = await fetch(targetUrl, {

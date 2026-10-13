@@ -11,6 +11,7 @@ import {
   Loader2, 
   MapPin,
   ArrowLeft, 
+  ArrowRight,
   KeyRound, 
   Sparkles,
   Compass,
@@ -25,13 +26,18 @@ import {
   signInWithEmail, 
   sendPasswordResetCode,
   signInWithGooglePopup, 
+  signInWithGoogleCredential,
+  ensureGoogleIdentityServices,
   createAccountWithSupabase, 
   sendPhoneOtp,
   verifyPhoneOtp,
   clearPhoneAuthSession,
   formatE164PhoneNumber,
   getPhoneAuthErrorMessage,
-  toUserProfile 
+  toUserProfile,
+  verifyEmailOtp,
+  resendEmailConfirmation,
+  AuthUser
 } from '../../services/authService';
 
 interface AuthModalProps {
@@ -69,9 +75,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  // Main Authentication mode
-  const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
-  const [emailSubMode, setEmailSubMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
+  // Main Authentication mode - Default to email
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
+  const [emailSubMode, setEmailSubMode] = useState<'login' | 'signup' | 'forgot-password' | 'verify-email'>('login');
   
   // Real Phone Auth state
   const [countryCode, setCountryCode] = useState('+91');
@@ -94,13 +100,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [emailLocation, setEmailLocation] = useState('India');
   const [emailTravelerStyle, setEmailTravelerStyle] = useState('Budget explorer');
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [emailOtpToken, setEmailOtpToken] = useState('');
+  const [pendingConfirmationUser, setPendingConfirmationUser] = useState<AuthUser | null>(null);
+  const [emailResendCountdown, setEmailResendCountdown] = useState(0);
 
   // Status & Feedback
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Resend Countdown Timer effect
+  // Google GIS Official Button integration
+  const googleBtnPhoneRef = useRef<HTMLDivElement>(null);
+  const googleBtnLoginRef = useRef<HTMLDivElement>(null);
+  const googleBtnSignupRef = useRef<HTMLDivElement>(null);
+  const [gisRendered, setGisRendered] = useState<{ phone?: boolean; login?: boolean; signup?: boolean }>({});
+
+  // Resend Countdown Timer effects
   useEffect(() => {
     if (resendCountdown <= 0) return;
     const timer = setInterval(() => {
@@ -109,6 +124,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     return () => clearInterval(timer);
   }, [resendCountdown]);
 
+  useEffect(() => {
+    if (emailResendCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setEmailResendCountdown(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [emailResendCountdown]);
+
   // Clean up phone verifier when modal closes
   const handleModalClose = () => {
     clearPhoneAuthSession();
@@ -116,6 +139,104 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSuccessMsg(null);
     onClose();
   };
+
+  // Close modal with Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleModalClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  // Google Identity Services (GIS) Official Credential Callback
+  const handleGoogleCredentialResponse = async (response: any) => {
+    if (!response?.credential) return;
+    setIsLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const user = await signInWithGoogleCredential(response.credential);
+      try {
+        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+      } catch {}
+      setSuccessMsg(`Welcome, ${user.displayName}! Signed in with Google.`);
+      setTimeout(() => {
+        onSuccess(toUserProfile(user));
+        handleModalClose();
+      }, 500);
+    } catch (err: any) {
+      console.error('Google credential login error:', err);
+      setErrorMsg(err.message || 'Google authentication failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Google Identity Services (GIS) Button Lifecycle
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let isMounted = true;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '472521464151-p64pmj4q5uh9oo9o6nl6hrqaef83tt5t.apps.googleusercontent.com';
+
+    const renderGis = () => {
+      const g = (window as any).google?.accounts?.id;
+      if (!g || !clientId || !isMounted) return;
+
+      try {
+        g.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredentialResponse
+        });
+
+        const activeKey =
+          authMethod === 'phone' ? 'phone' :
+          emailSubMode === 'signup' ? 'signup' :
+          emailSubMode === 'login' ? 'login' : null;
+
+        const targetEl =
+          activeKey === 'phone' ? googleBtnPhoneRef.current :
+          activeKey === 'signup' ? googleBtnSignupRef.current :
+          activeKey === 'login' ? googleBtnLoginRef.current : null;
+
+        if (targetEl && activeKey && isMounted) {
+          targetEl.innerHTML = '';
+          const computedWidth = typeof window !== 'undefined'
+            ? Math.min(340, Math.max(240, window.innerWidth - 64))
+            : 320;
+
+          g.renderButton(targetEl, {
+            theme: 'outline',
+            size: 'large',
+            width: computedWidth,
+            text: activeKey === 'signup' ? 'signup_with' : 'continue_with',
+            shape: 'rectangular',
+            logo_alignment: 'left'
+          });
+
+          setGisRendered(prev => ({ ...prev, [activeKey]: true }));
+        }
+      } catch (err) {
+        console.warn('[GIS] renderButton notice:', err);
+      }
+    };
+
+    ensureGoogleIdentityServices().then((ready) => {
+      if (ready && isMounted) {
+        setTimeout(() => {
+          if (isMounted) renderGis();
+        }, 50);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, authMethod, emailSubMode]);
 
   if (!isOpen) return null;
 
@@ -144,8 +265,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPhoneStep('otp');
       setResendCountdown(60);
       setOtpDigits(['', '', '', '', '', '']);
-      const providerLabel = sendRes.provider === 'fast2sms' ? 'Fast2SMS' : 'Supabase SMS';
-      setSuccessMsg(`Real SMS OTP code dispatched to ${fullPhoneNumber} via ${providerLabel}.`);
+      const providerLabel = sendRes.provider === 'fast2sms'
+        ? 'Fast2SMS'
+        : 'Supabase SMS';
+      setSuccessMsg(sendRes.message || `SMS verification code dispatched to ${fullPhoneNumber} via ${providerLabel}.`);
       setTimeout(() => {
         otpInputRefs.current[0]?.focus();
       }, 150);
@@ -242,8 +365,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   // ----------------------------------------------------------------------
-  // 3. Google Sign-In with Supabase OAuth / GIS Popup
+  // 3. Google Sign-In & Sign-Up with GIS Official Button / OAuth2 Popup
   // ----------------------------------------------------------------------
+
   const handleTriggerGoogleAuth = async () => {
     setIsLoading(true);
     setErrorMsg(null);
@@ -260,11 +384,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         handleModalClose();
       }, 500);
     } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user') {
+      const msg = err?.message || '';
+      if (
+        err.code === 'auth/popup-closed-by-user' ||
+        msg.toLowerCase().includes('popup-closed') ||
+        msg.toLowerCase().includes('cancelled') ||
+        msg.toLowerCase().includes('closed')
+      ) {
+        setIsLoading(false);
         return;
       }
-      console.error('Google Sign-In error:', err);
-      setErrorMsg(err.message || 'Google Sign-In failed. Please try again.');
+      console.warn('Google Auth notice:', err);
+      if (msg.toLowerCase().includes('origin') || msg.toLowerCase().includes('not allowed')) {
+        setErrorMsg("Google OAuth Origin Notice: Please ensure 'https://tripverse-pied.vercel.app' is listed under Authorized JavaScript Origins in Google Cloud Console.");
+      } else {
+        setErrorMsg(msg || 'Google Sign-In encountered an issue. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -300,7 +435,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }, 500);
     } catch (err: any) {
       console.error('Email sign in error:', err);
-      setErrorMsg(err.message || 'Authentication failed. Please verify credentials.');
+      const msg = err.message || 'Authentication failed. Please verify credentials.';
+      if (msg.toLowerCase().includes('email not confirmed')) {
+        setErrorMsg('Email address not yet confirmed. Enter your 6-digit confirmation code below or request a new code.');
+        setEmailSubMode('verify-email');
+        setEmailResendCountdown(60);
+      } else {
+        setErrorMsg(msg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -340,14 +482,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         travelerStyle: emailTravelerStyle,
         location: emailLocation || 'India'
       });
-      try {
-        confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
-      } catch {}
-      setSuccessMsg(`Welcome to TripVerse, ${user.displayName}! Account created.`);
-      setTimeout(() => {
-        onSuccess(toUserProfile(user));
-        handleModalClose();
-      }, 600);
+
+      if ((user as any).isPendingEmailConfirmation) {
+        setPendingConfirmationUser(user);
+        setEmailSubMode('verify-email');
+        setEmailResendCountdown(60);
+        setSuccessMsg(`Account created! A 6-digit confirmation code was sent to ${email.trim()}.`);
+      } else {
+        try {
+          confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+        } catch {}
+        setSuccessMsg(`Welcome to TripVerse, ${user.displayName}! Account created.`);
+        setTimeout(() => {
+          onSuccess(toUserProfile(user));
+          handleModalClose();
+        }, 600);
+      }
     } catch (err: any) {
       console.error('Account creation error:', err);
       setErrorMsg(err.message || 'Could not create account.');
@@ -357,7 +507,62 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   // ----------------------------------------------------------------------
-  // 6. Real Password Reset Link Dispatch
+  // 6. Email Confirmation Token Verification & Resend
+  // ----------------------------------------------------------------------
+  const handleVerifyEmailToken = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const token = emailOtpToken.trim();
+    if (!token || token.length < 6) {
+      setErrorMsg('Please enter the 6-digit confirmation code from your email.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const verifiedUser = await verifyEmailOtp(email.trim(), token);
+      try {
+        confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+      } catch {}
+      setSuccessMsg(`Email confirmed! Welcome to TripVerse, ${verifiedUser.displayName}.`);
+      setTimeout(() => {
+        onSuccess(toUserProfile(verifiedUser));
+        handleModalClose();
+      }, 600);
+    } catch (err: any) {
+      console.error('Email confirmation error:', err);
+      setErrorMsg(err.message || 'Invalid or expired confirmation code.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendEmailToken = async () => {
+    if (emailResendCountdown > 0) return;
+    setErrorMsg(null);
+    setIsLoading(true);
+    try {
+      await resendEmailConfirmation(email.trim());
+      setEmailResendCountdown(60);
+      setSuccessMsg(`Confirmation code re-dispatched to ${email.trim()}.`);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Could not resend confirmation email.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleContinuePendingUser = () => {
+    if (pendingConfirmationUser) {
+      onSuccess(toUserProfile(pendingConfirmationUser));
+      handleModalClose();
+    }
+  };
+
+  // ----------------------------------------------------------------------
+  // 7. Real Password Reset Link Dispatch
   // ----------------------------------------------------------------------
   const handleSendResetEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,9 +588,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div 
+      onClick={handleModalClose}
+      className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+    >
       
-      <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
+      >
         
         {/* Modal Top Bar */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
@@ -452,6 +663,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
               <div className="space-y-1.5 flex-1">
                 <span className="font-medium leading-relaxed block">{errorMsg}</span>
+                {authMethod !== 'email' && errorMsg.includes('Email & Password') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMethod('email');
+                      setEmailSubMode('login');
+                      setErrorMsg(null);
+                    }}
+                    className="inline-flex items-center gap-1 font-bold text-rose-800 underline hover:text-rose-950 cursor-pointer pt-0.5"
+                  >
+                    <span>Switch to Email & Password</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
               </div>
               <button
                 type="button"
@@ -488,21 +713,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
 
                   {/* 1-Click Google OAuth Shortcut */}
-                  <div>
-                    <button
-                      type="button"
-                      onClick={handleTriggerGoogleAuth}
-                      disabled={isLoading}
-                      className="w-full py-3 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
-                    >
-                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                      </svg>
-                      <span>Continue with Google</span>
-                    </button>
+                  <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
+                    <div ref={googleBtnPhoneRef} className="w-full flex justify-center items-center" />
+                    {!gisRendered.phone && (
+                      <button
+                        type="button"
+                        onClick={handleTriggerGoogleAuth}
+                        disabled={isLoading}
+                        className="w-full py-3 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
+                      >
+                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                        </svg>
+                        <span>Continue with Google</span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3 text-slate-300">
@@ -666,6 +894,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </p>
                   </div>
 
+
                   {/* 6 Individual Digit Boxes */}
                   <div className="flex justify-center items-center gap-2 py-2">
                     {otpDigits.map((digit, idx) => (
@@ -740,7 +969,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div className="space-y-4">
               
               {/* Email Submode Switcher (Sign In vs Create Account) */}
-              {emailSubMode !== 'forgot-password' && (
+              {emailSubMode !== 'forgot-password' && emailSubMode !== 'verify-email' && (
                 <div className="flex rounded-xl bg-slate-100 p-1">
                   <button
                     type="button"
@@ -786,21 +1015,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
 
                   {/* Real Google OAuth Button */}
-                  <div>
-                    <button
-                      type="button"
-                      onClick={handleTriggerGoogleAuth}
-                      disabled={isLoading}
-                      className="w-full py-3 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
-                    >
-                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                      </svg>
-                      <span>Continue with Google</span>
-                    </button>
+                  <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
+                    <div ref={googleBtnLoginRef} className="w-full flex justify-center items-center" />
+                    {!gisRendered.login && (
+                      <button
+                        type="button"
+                        onClick={handleTriggerGoogleAuth}
+                        disabled={isLoading}
+                        className="w-full py-3 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
+                      >
+                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                        </svg>
+                        <span>Continue with Google</span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3 text-slate-300">
@@ -903,21 +1135,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
 
                   {/* Real Google OAuth Button */}
-                  <div>
-                    <button
-                      type="button"
-                      onClick={handleTriggerGoogleAuth}
-                      disabled={isLoading}
-                      className="w-full py-3 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
-                    >
-                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                      </svg>
-                      <span>Sign up with Google</span>
-                    </button>
+                  <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
+                    <div ref={googleBtnSignupRef} className="w-full flex justify-center items-center" />
+                    {!gisRendered.signup && (
+                      <button
+                        type="button"
+                        onClick={handleTriggerGoogleAuth}
+                        disabled={isLoading}
+                        className="w-full py-3 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
+                      >
+                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                        </svg>
+                        <span>Sign up with Google</span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3 text-slate-300">
@@ -1131,6 +1366,104 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </button>
                     </form>
                   )}
+                </div>
+              )}
+
+              {/* 4. VERIFY EMAIL OTP */}
+              {emailSubMode === 'verify-email' && (
+                <div className="space-y-4">
+                  <button
+                    type="button"
+                    onClick={() => { 
+                      setEmailSubMode('login'); 
+                      setErrorMsg(null); 
+                      setSuccessMsg(null); 
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back to Sign In</span>
+                  </button>
+
+                  <div className="text-center space-y-1">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#2D5A3D] mx-auto flex items-center justify-center">
+                      <Mail className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-xl font-bold text-[#0B2545]">Verify Your Email</h3>
+                    <p className="text-xs text-slate-500">
+                      We sent a 6-digit confirmation code to
+                    </p>
+                    <p className="text-xs font-mono font-bold text-[#0B2545]">{email}</p>
+                  </div>
+
+                  <form onSubmit={handleVerifyEmailToken} className="space-y-3.5">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                        6-Digit Confirmation Code
+                      </label>
+                      <div className="relative">
+                        <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={emailOtpToken}
+                          onChange={(e) => setEmailOtpToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          placeholder="e.g. 123456"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-center font-mono text-base font-bold tracking-widest text-slate-800 focus:outline-hidden focus:border-[#2D5A3D]"
+                          required
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading || emailOtpToken.length !== 6}
+                      className="w-full py-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Verifying Code...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Confirm Email & Start Exploring</span>
+                        </>
+                      )}
+                    </button>
+
+                    {pendingConfirmationUser && (
+                      <button
+                        type="button"
+                        onClick={handleContinuePendingUser}
+                        className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                      >
+                        Skip for Now & Explore TripVerse
+                      </button>
+                    )}
+                  </form>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                    <span className="text-slate-400">Didn't receive the email?</span>
+                    {emailResendCountdown > 0 ? (
+                      <span className="font-semibold text-slate-500 flex items-center gap-1">
+                        <RotateCcw className="w-3 h-3 text-slate-400 animate-spin" />
+                        Resend in {emailResendCountdown}s
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendEmailToken}
+                        disabled={isLoading}
+                        className="font-bold text-[#2D5A3D] hover:underline cursor-pointer"
+                      >
+                        Resend Code
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 

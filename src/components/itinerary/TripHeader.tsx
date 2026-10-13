@@ -22,7 +22,10 @@ import {
   MapPin,
   Leaf,
   ChevronRight,
-  Edit3
+  Edit3,
+  Bed,
+  Clock,
+  Ticket
 } from 'lucide-react';
 
 interface TripHeaderProps {
@@ -157,6 +160,27 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
               <span className="text-xs text-[#5A7362] font-medium capitalize">
                 {trip.travelerType} group
               </span>
+            </div>
+
+            {/* Pacing & Verified Stay Badges */}
+            <div className="flex items-center gap-2 pt-1 flex-wrap">
+              {trip.pacing && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#2D5A3D] bg-[#E8EFE7] px-2.5 py-0.5 rounded-full border border-[#8EA78D]/30">
+                  <Clock className="w-3 h-3 text-[#2D5A3D]" />
+                  {trip.pacing.replace('_', ' ')} Pace
+                </span>
+              )}
+              {trip.selectedHotel && (
+                <button
+                  type="button"
+                  onClick={onOpenBooking}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200 cursor-pointer transition-colors"
+                  title="Click to view stay & booking options"
+                >
+                  <Bed className="w-3 h-3 text-emerald-700" />
+                  <span>Stay: {trip.selectedHotel.name} ({trip.selectedHotel.starRating}★)</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -414,10 +438,10 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
                 type="button"
                 onClick={onOpenBooking}
                 className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-[#152A1C] hover:bg-[#234730] text-white font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer"
-                title="Review budget estimates and open external booking providers"
+                title="Review verified stay, live flights/trains, and ticket booking options"
               >
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Booking Options</span>
+                <Ticket className="w-4 h-4 text-emerald-400" />
+                <span>Book Tickets & Stays</span>
               </button>
             )}
 

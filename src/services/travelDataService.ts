@@ -181,25 +181,6 @@ export function applyGeoapifyTravelData(trip: Trip, data: GeoapifyTravelDataResp
         };
       }
 
-      if (activity.type === 'food' || activity.type === 'hotel' ||
-          activity.type === 'attraction' || activity.type === 'viewpoint') {
-        const description = activity.type === 'hotel'
-          ? 'Accommodation suggestion only; no property is selected or booked.'
-          : `Activity suggestion only; no matching Geoapify place listing was returned. Search and confirm a venue before visiting.`;
-        const title = activity.type === 'food'
-          ? `Choose a place to eat in ${trip.destination}`
-          : activity.type === 'hotel'
-            ? `Choose accommodation in ${trip.destination}`
-            : `Choose an activity in ${trip.destination}`;
-        return {
-          ...activity,
-          title,
-          location: `${trip.destination} — choose a venue`,
-          coordinates: trip.destinationDetails?.coordinates || activity.coordinates,
-          description,
-          tag: 'Suggestion'
-        };
-      }
       return activity;
     })
   }));

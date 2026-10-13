@@ -421,13 +421,14 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
 
                                 {act.type === 'hotel' && (
                                   <a
-                                    href="https://www.booking.com/"
+                                    href={act.mapUrl || `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(act.location || act.title)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 px-2.5 py-1 rounded-lg transition-colors"
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200/60 px-2.5 py-1 rounded-lg transition-colors"
                                   >
                                     <Bed className="w-3 h-3 text-sky-600" />
-                                    <span>Check Stays</span>
+                                    <span>Book Stay on Booking.com</span>
+                                    <ExternalLink className="w-2.5 h-2.5 text-sky-400" />
                                   </a>
                                 )}
                               </div>

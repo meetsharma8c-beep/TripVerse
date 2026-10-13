@@ -41,6 +41,7 @@ import {
   Crosshair,
   Loader2,
   ShieldCheck,
+  Calendar,
   LucideIcon
 } from 'lucide-react';
 import { TravelPreference, TravelerType, TransportMode, AccommodationType, FoodPreference, Priority, Coordinates } from '../../types/trip';
@@ -155,8 +156,14 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
     }
   };
 
-  // Step 2: Duration
+  // Step 2: Duration, Dates & Pacing
   const [duration, setDuration] = useState<number>(initialDuration);
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().split('T')[0];
+  });
+  const [pacing, setPacing] = useState<'relaxed' | 'balanced' | 'fast_paced'>('balanced');
 
   // Step 3: Travelers
   const [travelerType, setTravelerType] = useState<TravelerType>('friends');
@@ -250,7 +257,9 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
       foodPreference,
       priorities,
       destinationCoords: selectedPreciseSpot?.coordinates,
-      preciseLocation: selectedPreciseSpot || undefined
+      preciseLocation: selectedPreciseSpot || undefined,
+      startDate,
+      pacing
     };
     onTripGenerated(input);
   };
@@ -555,39 +564,137 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
             </div>
           )}
 
-          {/* STEP 2: DURATION */}
+          {/* STEP 2: DURATION, DATES & PACING */}
           {currentStep === 2 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 2 — Trip Duration</span>
-                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">How long is your trip?</h3>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 2 — Duration, Dates & Pacing</span>
+                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">Plan Your Schedule & Rhythm</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  TripVerse balances daily driving time with sightseeing so you never feel exhausted.
+                  TripVerse balances daily travel times, stay dates, and activities for a seamless, realistic itinerary.
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {[
-                  { days: 1, label: '1 Day', sub: 'Express day out' },
-                  { days: 2, label: '2 Days', sub: 'Weekend recharge' },
-                  { days: 3, label: '3 Days', sub: 'Sweet spot escape' },
-                  { days: 4, label: '4 Days', sub: 'Deep exploration' },
-                  { days: 5, label: '5 Days', sub: 'Full holiday' },
-                  { days: 7, label: '1 Week', sub: 'Epic road expedition' },
-                ].map(item => (
-                  <button
-                    key={item.days}
-                    type="button"
-                    onClick={() => setDuration(item.days)}
-                    className={`p-4 rounded-2xl border text-left transition-all ${duration === item.days
-                      ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs scale-[1.02]'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                  >
-                    <span className="text-lg font-black text-[#0B2545] block">{item.label}</span>
-                    <span className="text-xs text-slate-500 font-medium">{item.sub}</span>
-                  </button>
-                ))}
+              {/* Trip Duration */}
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-600 mb-2">
+                  Trip Duration
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {[
+                    { days: 1, label: '1 Day', sub: 'Express day out' },
+                    { days: 2, label: '2 Days', sub: 'Weekend recharge' },
+                    { days: 3, label: '3 Days', sub: 'Sweet spot escape' },
+                    { days: 4, label: '4 Days', sub: 'Deep exploration' },
+                    { days: 5, label: '5 Days', sub: 'Full holiday' },
+                    { days: 7, label: '1 Week', sub: 'Epic road expedition' },
+                  ].map(item => (
+                    <button
+                      key={item.days}
+                      type="button"
+                      onClick={() => setDuration(item.days)}
+                      className={`p-3.5 rounded-2xl border text-left transition-all ${duration === item.days
+                        ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs scale-[1.01]'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                    >
+                      <span className="text-base font-black text-[#0B2545] block">{item.label}</span>
+                      <span className="text-[11px] text-slate-500 font-medium">{item.sub}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase text-slate-600">
+                    Departure / Start Date
+                  </label>
+                  <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    Powers Live Hotel & Ticket Booking
+                  </span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2.5">
+                  <input
+                    type="date"
+                    value={startDate}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="flex-1 px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-800 focus:bg-white focus:outline-none focus:border-[#2D5A3D] focus:ring-4 focus:ring-[#2D5A3D]/15"
+                  />
+                  <div className="flex gap-1.5 flex-wrap">
+                    {[
+                      { label: 'Next Sat', daysOffset: ((6 - new Date().getDay() + 7) % 7) || 7 },
+                      { label: 'In 2 Wks', daysOffset: 14 },
+                      { label: 'Next Mo', daysOffset: 30 }
+                    ].map(preset => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + preset.daysOffset);
+                      const iso = d.toISOString().split('T')[0];
+                      const isSel = startDate === iso;
+                      return (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => setStartDate(iso)}
+                          className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                            isSel ? 'bg-[#2D5A3D] text-white border-[#2D5A3D]' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Day-to-Day Schedule Pacing */}
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-600 mb-1.5">
+                  Day-to-Day Schedule Pacing
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {[
+                    {
+                      id: 'relaxed',
+                      title: 'Relaxed Pace',
+                      desc: 'Late 9:30 AM starts, 2 key spots, relaxed cafe pauses & leisurely dining.'
+                    },
+                    {
+                      id: 'balanced',
+                      title: 'Balanced Pace',
+                      desc: 'Optimal mix of 3-4 attractions, local lunch, and sunset golden hour.'
+                    },
+                    {
+                      id: 'fast_paced',
+                      title: 'Fast-Paced',
+                      desc: 'Action-packed 6:30 AM starts, maximum spots, night bazaars & adventure.'
+                    }
+                  ].map(p => {
+                    const isSel = pacing === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setPacing(p.id as any)}
+                        className={`p-3 rounded-2xl border text-left transition-all ${
+                          isSel
+                            ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-black text-slate-900">{p.title}</span>
+                          {isSel && <Check className="w-3.5 h-3.5 text-[#2D5A3D]" />}
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-snug">{p.desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -830,9 +937,9 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <strong className="text-slate-900 block font-bold">Transport planning estimates</strong>
+                  <strong className="text-slate-900 block font-bold">Direct Live Booking & Ticketing</strong>
                   <span className="text-slate-500 text-[11px]">
-                    Transport options and prices are suggestions, not live offers or verified promo codes. Check schedules, fares, and terms directly with providers.
+                    TripVerse matches live Google Flights, IRCTC Express trains, redBus volvo coaches, and Zoomcar self-drives with direct booking deep-links.
                   </span>
                 </div>
               </div>
@@ -846,7 +953,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 7 — Accommodation</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">Where would you like to stay?</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  This preference helps shape your plan only. TripVerse does not screen, select, or book properties.
+                  TripVerse matches real, verified hotels and boutique stays with instant Booking.com & Google Hotels booking links.
                 </p>
               </div>
 
@@ -888,7 +995,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 8 — Dining & Food</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">What are your dietary preferences?</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  We use this preference to shape suggestions; confirm menus, preparation practices, and hygiene directly with each venue.
+                  We calculate calibrated regional dining budgets (famous thalis, street food, and verified kitchens) matching your preference.
                 </p>
               </div>
 

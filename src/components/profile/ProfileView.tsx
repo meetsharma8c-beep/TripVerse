@@ -7,16 +7,11 @@ import {
   Briefcase, 
   Mail, 
   Phone,
-  Wallet, 
-  Utensils, 
-  Bed, 
   Sparkles, 
-  Settings, 
   Check, 
   RotateCcw,
   Edit3, 
   ShieldCheck, 
-  Award, 
   Compass,
   LogOut,
   Users,
@@ -29,7 +24,6 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { DigitalPassport } from './DigitalPassport';
-import { triggerHaptic } from '../../services/deviceService';
 import { loadUserVisitedStates, resetGuestStorage } from '../../services/storageService';
 import { 
   getCurrentUser, 
@@ -177,8 +171,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       authSignOut();
       if (onSignOut) {
         onSignOut();
-      } else {
-        onOpenAuthModal();
       }
     }
   };
@@ -244,15 +236,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       </svg>
                       <span>Google Verified</span>
                     </span>
-                  ) : currentUser?.provider === 'phone' ? (
+                  ) : currentUser?.provider === 'phone' || (currentUser?.phoneNumber && !currentUser?.email) ? (
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
                       <Phone className="w-3 h-3 text-emerald-600" />
                       <span>Phone Verified</span>
                     </span>
-                  ) : currentUser?.provider === 'email' ? (
+                  ) : (currentUser?.provider === 'email' || currentUser?.provider === 'supabase' || currentUser?.email) ? (
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
                       <Mail className="w-3 h-3 text-emerald-600" />
                       <span>Email Verified</span>
+                    </span>
+                  ) : currentUser ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      <span>Explorer Verified</span>
                     </span>
                   ) : (
                     <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-extrabold uppercase tracking-wider">
@@ -619,7 +616,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <img src={account.photoURL} alt={account.displayName} className="w-9 h-9 rounded-full object-cover" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">{account.displayName}</p>
-                    <p className="text-[11px] text-slate-500 truncate">{account.email}</p>
+                    <p className="text-[11px] text-slate-500 truncate">{account.email || account.phoneNumber || 'Phone Account'}</p>
                   </div>
                   {currentUser?.uid === account.uid && (
                     <Check className="w-4 h-4 text-emerald-600 shrink-0" />

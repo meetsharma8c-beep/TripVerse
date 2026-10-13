@@ -559,6 +559,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     } else if (action === 'OPEN_SHARE') {
       if (onAppAction) onAppAction({ type: 'OPEN_MODAL', payload: { modal: 'share' } });
       onClose();
+    } else if (action === 'OPEN_BOOKING') {
+      if (onAppAction) onAppAction({ type: 'OPEN_MODAL', payload: { modal: 'booking' } });
+      onClose();
     } else if (action === 'VIEW_ROUTE') {
       switchToTripSection('route');
     } else if (action === 'VIEW_ITINERARY') {

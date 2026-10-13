@@ -41,7 +41,6 @@ export function getFast2SmsApiKey(): string {
     } catch {}
   }
 
-  // Active key provided by developer
   return '';
 }
 
@@ -170,7 +169,7 @@ export async function sendRealSmsOtp(
 /**
  * Save pending SMS verification session in sessionStorage
  */
-function savePendingSmsSession(session: PendingSmsSession): void {
+export function savePendingSmsSession(session: PendingSmsSession): void {
   if (typeof window === 'undefined') return;
   try {
     sessionStorage.setItem(STORAGE_KEY_PENDING_SMS, JSON.stringify(session));

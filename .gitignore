@@ -24,3 +24,17 @@ dist-ssr
 *.sln
 *.sw?
 .env*
+
+# Security, Signing Keys & Certificates
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+credentials*.json
+google-services.json
+GoogleService-Info.plist
+
+# Scratch, intermediate testing assets
+scratch/

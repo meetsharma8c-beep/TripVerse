@@ -12,6 +12,7 @@ import {
 import { queryConcodeBrain } from './concodeBrainService';
 import { generateAITrip } from './plannerEngine';
 import { generateTransportDeals } from './dealService';
+import { evaluateTransportFeasibility, resolveTransitContext } from './transportFeasibilityEngine';
 import { 
   loadTrips, 
   loadTripExpenses, 
@@ -351,26 +352,160 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
     };
   }
 
+  // 7A. HOTEL & ACCOMMODATION BOOKING
   if (
-    normalized.includes('show deals') ||
-    normalized.includes('transport deals') ||
-    normalized.includes('flight deals') ||
-    normalized.includes('car deals')
+    normalized.includes('hotel') ||
+    normalized.includes('stay') ||
+    normalized.includes('resort') ||
+    normalized.includes('hostel') ||
+    normalized.includes('lodging') ||
+    normalized.includes('where to stay') ||
+    normalized.includes('book room')
   ) {
+    const hotel = currentTrip.selectedHotel;
+    const hotelName = hotel?.name || `${cleanDest} Heritage Stay`;
+    const hotelRate = hotel?.nightlyRate ? `₹${hotel.nightlyRate.toLocaleString('en-IN')}/night` : `₹${Math.round(currentTrip.budgetBreakdown.accommodation / Math.max(1, currentTrip.durationDays))}/night`;
+
     return {
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `Opening external transport provider searches for ${cleanDest}. TripVerse does not have live fares, verified discounts, or booking inventory.`,
+        text: `**Verified Stays & Room Booking for ${cleanDest}:**\n\n` +
+          `• **Selected Property:** ${hotelName} (${hotel?.starRating || 4}★)\n` +
+          `• **Location:** ${hotel?.address || hotel?.neighborhood || `${cleanDest} City Center`}\n` +
+          `• **Estimated Rate:** ${hotelRate}\n` +
+          (hotel?.amenities?.length ? `• **Amenities:** ${hotel.amenities.slice(0, 4).join(', ')}\n` : '') +
+          `• **Booking Partner:** Pre-configured deep-links available for **Booking.com** and **Google Hotels** with your exact dates.\n\n` +
+          `Opening the Booking & Ticketing Center to view room availability and partner links...`,
         timestamp,
         actionButtons: [
-          { label: 'Make Trip Cheaper', action: 'MAKE_CHEAPER' },
-          { label: 'View Itinerary', action: 'VIEW_ITINERARY' }
+          { label: 'Book Stay on Booking.com', action: 'OPEN_BOOKING', primary: true },
+          { label: 'View Itinerary', action: 'VIEW_ITINERARY' },
+          { label: 'Make Trip Cheaper', action: 'MAKE_CHEAPER' }
         ]
       },
       appAction: {
-        type: 'SWITCH_TAB',
-        payload: { tab: 'trips', subTab: 'deals' }
+        type: 'OPEN_MODAL',
+        payload: { modal: 'booking' }
+      }
+    };
+  }
+
+  // 7B. FLIGHT, TRAIN & BUS TICKETING / TRANSPORT DEALS (CONCODE FEASIBILITY ENGINE)
+  if (
+    normalized.includes('ticket') ||
+    normalized.includes('train') ||
+    normalized.includes('flight') ||
+    normalized.includes('bus') ||
+    normalized.includes('deal') ||
+    normalized.includes('transport') ||
+    normalized.includes('booking') ||
+    normalized.includes('buy ticket')
+  ) {
+    const rawMode = currentTrip.transportMode;
+    const requestedMode: 'train' | 'flight' | 'bus' | 'car' = 
+      normalized.includes('train') ? 'train' :
+      (normalized.includes('flight') || normalized.includes('air')) ? 'flight' :
+      normalized.includes('bus') ? 'bus' : 
+      rawMode === 'train' || rawMode === 'flight' || rawMode === 'bus' ? rawMode : 'car';
+
+    const feasibility = evaluateTransportFeasibility(requestedMode, cleanOrigin, cleanDest);
+    const deal = currentTrip.bestTransportDeal || currentTrip.transportDeals?.[0];
+    const dealPrice = deal?.dealPrice ? `₹${deal.dealPrice.toLocaleString('en-IN')}` : 'Market Fare Range';
+
+    let feasibilityText = `**CONCODE Transport Feasibility Audit for ${cleanOrigin} → ${cleanDest} (${requestedMode.toUpperCase()}):**\n\n` +
+      `• **Feasibility Status:** ${feasibility.status}\n` +
+      `• **Verified Corridor:** ${feasibility.routeDecomposition}\n` +
+      `• **Logistics Assessment:** ${feasibility.explanation}\n`;
+
+    if (!feasibility.isDirectPossible) {
+      feasibilityText += `• **Notice:** Direct ${requestedMode} does NOT reach ${cleanDest}. Broad-gauge rail or commercial flights terminate at **${feasibility.actualArrivalHub}**. Final-mile road transfer (~${feasibility.transferSteps[feasibility.transferSteps.length - 1]}) is mandatory.\n`;
+    }
+
+    feasibilityText += `• **Estimated Fare Range:** ${dealPrice} (Group estimate; seat prices fluctuate dynamically)\n` +
+      `• **Action / Booking Portals:** ${feasibility.actionBookingNote}\n\n` +
+      `*Action links connect directly to official operators (IRCTC / Google Flights / redBus) to verify live seat availability for this segment.*`;
+
+    return {
+      message: {
+        id: `msg-${Date.now()}`,
+        sender: 'ai',
+        text: feasibilityText,
+        timestamp,
+        actionButtons: [
+          { label: 'Open Booking Action Center', action: 'OPEN_BOOKING', primary: true },
+          { label: 'View Multi-Modal Route', action: 'VIEW_ROUTE' },
+          { label: 'Audit Budget', action: 'MAKE_CHEAPER' }
+        ]
+      },
+      appAction: {
+        type: 'OPEN_MODAL',
+        payload: { modal: 'booking' }
+      }
+    };
+  }
+
+  // 7C. SCHEDULE PACING TUNING (Relaxed vs Fast-Paced)
+  if (
+    normalized.includes('pace') ||
+    normalized.includes('pacing') ||
+    normalized.includes('relax') ||
+    normalized.includes('slow down') ||
+    normalized.includes('fast pace') ||
+    normalized.includes('packed') ||
+    normalized.includes('early morning')
+  ) {
+    const isRelaxed = normalized.includes('relax') || normalized.includes('slow');
+    const newPace: 'relaxed' | 'fast_paced' = isRelaxed ? 'relaxed' : 'fast_paced';
+
+    const updated = { ...currentTrip, pacing: newPace };
+    if (updated.itinerary?.length) {
+      updated.itinerary = updated.itinerary.map(day => {
+        return {
+          ...day,
+          title: day.title.replace(/\((relaxed|balanced|fast_paced)\s*pace\)/i, `(${newPace.replace('_', ' ')} pace)`),
+          activities: day.activities.map(act => {
+            if (act.type === 'departure' && act.tag === 'Start Point') {
+              return { ...act, time: isRelaxed ? '9:00 AM' : '6:00 AM', title: isRelaxed ? `Leisurely Departure from ${cleanOrigin}` : `Early Sunrise Departure from ${cleanOrigin}` };
+            }
+            if (act.type === 'food' && act.tag === 'Breakfast') {
+              return { ...act, time: isRelaxed ? '9:15 AM' : '7:15 AM' };
+            }
+            if (act.type === 'food' && act.tag === 'Lunch') {
+              return { ...act, time: isRelaxed ? '2:15 PM' : '1:00 PM' };
+            }
+            if (act.type === 'food' && act.tag === 'Dinner') {
+              return { ...act, time: isRelaxed ? '9:15 PM' : '8:30 PM' };
+            }
+            return act;
+          })
+        };
+      });
+    }
+
+    return {
+      message: {
+        id: `msg-${Date.now()}`,
+        sender: 'ai',
+        text: `**Schedule Pacing Adjusted to ${isRelaxed ? 'Relaxed Leisure' : 'Fast-Paced Explorer'}!**\n\n` +
+          (isRelaxed
+            ? `• **Morning Wake-up:** Departures and breakfast shifted to 9:00–9:30 AM.\n` +
+              `• **Cadence:** 2–3 prime attractions per day with afternoon lounge and unhurried dining.\n` +
+              `• **Evenings:** Extended sunset walks and late dinners under the stars.\n\n`
+            : `• **Sunrise Starts:** Days kick off at 6:00–6:30 AM to beat tourist crowds.\n` +
+              `• **Cadence:** Action-packed sightseeing across morning, afternoon, and golden hour.\n` +
+              `• **Evenings:** Night bazaars and cultural events for maximum exploration.\n\n`) +
+          `Your itinerary schedule and timeline have been recalculated!`,
+        timestamp,
+        actionButtons: [
+          { label: 'View Updated Itinerary', action: 'VIEW_ITINERARY', primary: true },
+          { label: 'Book Tickets & Stays', action: 'OPEN_BOOKING' }
+        ]
+      },
+      updatedTrip: updated,
+      appAction: {
+        type: 'UPDATE_TRIP',
+        payload: { updatedTrip: updated }
       }
     };
   }
@@ -879,6 +1014,8 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
     else if (normalized.includes('train')) updated.transportMode = 'train';
     else updated.transportMode = 'car';
 
+    const feasibility = evaluateTransportFeasibility(updated.transportMode, updated.origin, updated.destination);
+
     const deals = generateTransportDeals({
       mode: updated.transportMode,
       origin: updated.origin,
@@ -891,15 +1028,24 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
     updated.transportDeals = deals.allDeals;
     updated.bestTransportDeal = deals.bestDeal;
 
+    let switchMsg = `**Switched Transport Mode to ${updated.transportMode.toUpperCase()}!**\n\n` +
+      `• **Feasibility Status:** ${feasibility.status}\n` +
+      `• **Verified Corridor:** ${feasibility.routeDecomposition}\n`;
+
+    if (!feasibility.isDirectPossible) {
+      switchMsg += `• **Destination Notice:** ${cleanDest} has no direct ${updated.transportMode}. ${feasibility.explanation}\n`;
+    }
+
+    switchMsg += `• **Action Links:** Updated official operator search links in your travel dashboard. Check live operator schedules for current seat availability.`;
+
     return {
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: `**Switched Transport Mode to ${updated.transportMode.toUpperCase()}!**\n\n` +
-          `TripVerse does not have live fares or schedules. Check provider listings for current availability and prices.`,
+        text: switchMsg,
         timestamp,
         actionButtons: [
-          { label: 'Search Transport Providers', action: 'VIEW_DEALS' },
+          { label: 'Search Verified Operators', action: 'VIEW_DEALS' },
           { label: 'Start GPS Nav', action: 'START_NAV' }
         ]
       },

@@ -28,7 +28,7 @@ export const HighwayBreakstopsShowcase: React.FC<HighwayBreakstopsShowcaseProps>
         onClick={() => onPlanCorridor?.('Udaipur')}
         className="mt-6 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[#2D5A3D] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#244931]"
       >
-        Try a sample trip plan
+        Plan a journey to Udaipur
         <ArrowRight className="h-4 w-4" />
       </button>
     </div>

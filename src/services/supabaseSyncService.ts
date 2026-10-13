@@ -2,6 +2,7 @@ import { getSupabaseClient } from './supabase';
 import { Trip, UserProfile, ExpenseItem, TripReview, TripPhotoMemory, PackingItem } from '../types/trip';
 import { getActiveCurrency } from './currencyService';
 import { DisruptionAlert, ReplanOption, RefundGuidance } from '../types/replanning';
+import { toDeterministicUuid } from '../utils/uuid';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════
@@ -16,9 +17,10 @@ export async function saveTripToSupabase(userId: string, trip: Trip): Promise<bo
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const payload = {
       id: trip.id,
-      user_id: userId,
+      user_id: cleanUserId,
       name: trip.name,
       origin: trip.origin,
       destination: trip.destination,
@@ -103,10 +105,11 @@ export async function loadTripsFromSupabase(userId: string): Promise<Trip[] | nu
   if (!supabase) return null;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { data: tripsData, error: tripsErr } = await supabase
       .from('trips')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', cleanUserId)
       .order('created_at', { ascending: false });
 
     if (tripsErr) {
@@ -231,11 +234,12 @@ export async function deleteTripFromSupabase(userId: string, tripId: string): Pr
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { error } = await supabase
       .from('trips')
       .delete()
       .eq('id', tripId)
-      .eq('user_id', userId);
+      .eq('user_id', cleanUserId);
 
     return !error;
   } catch (err) {
@@ -250,10 +254,11 @@ export async function saveExpenseToSupabase(userId: string, expense: ExpenseItem
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const payload = {
       id: expense.id,
       trip_id: expense.tripId,
-      user_id: userId,
+      user_id: cleanUserId,
       title: expense.title,
       amount: expense.amount,
       category: expense.category,
@@ -275,11 +280,12 @@ export async function deleteExpenseFromSupabase(userId: string, expenseId: strin
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { error } = await supabase
       .from('expenses')
       .delete()
       .eq('id', expenseId)
-      .eq('user_id', userId);
+      .eq('user_id', cleanUserId);
 
     return !error;
   } catch (err) {
@@ -294,9 +300,10 @@ export async function saveSavedPlaceToSupabase(userId: string, placeId: string):
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { error } = await supabase.from('saved_places').upsert({
-      id: `save-${userId}-${placeId}`,
-      user_id: userId,
+      id: `save-${cleanUserId}-${placeId}`,
+      user_id: cleanUserId,
       place_id: placeId
     });
     return !error;
@@ -310,10 +317,11 @@ export async function deleteSavedPlaceFromSupabase(userId: string, placeId: stri
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { error } = await supabase
       .from('saved_places')
       .delete()
-      .eq('user_id', userId)
+      .eq('user_id', cleanUserId)
       .eq('place_id', placeId);
     return !error;
   } catch {
@@ -326,10 +334,11 @@ export async function loadSavedPlacesFromSupabase(userId: string): Promise<strin
   if (!supabase) return null;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { data, error } = await supabase
       .from('saved_places')
       .select('place_id')
-      .eq('user_id', userId);
+      .eq('user_id', cleanUserId);
 
     if (error) return null;
     return (data || []).map(d => d.place_id);
@@ -344,8 +353,9 @@ export async function saveProfileToSupabase(userId: string, profile: UserProfile
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const payload = {
-      id: userId,
+      id: cleanUserId,
       email: profile.email || null,
       display_name: profile.name,
       avatar_url: profile.avatar || null,
@@ -371,10 +381,11 @@ export async function loadProfileFromSupabase(userId: string): Promise<UserProfi
   if (!supabase) return null;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', cleanUserId)
       .single();
 
     if (error || !data) return null;
@@ -407,8 +418,9 @@ export async function savePassportToSupabase(userId: string, visitedStates: stri
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { error } = await supabase.from('user_passport').upsert({
-      user_id: userId,
+      user_id: cleanUserId,
       visited_states: visitedStates,
       updated_at: new Date().toISOString()
     });
@@ -423,10 +435,11 @@ export async function loadPassportFromSupabase(userId: string): Promise<string[]
   if (!supabase) return null;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { data, error } = await supabase
       .from('user_passport')
       .select('visited_states')
-      .eq('user_id', userId)
+      .eq('user_id', cleanUserId)
       .single();
 
     if (error || !data) return null;
@@ -453,11 +466,12 @@ export async function saveEmergencyEventToSupabase(
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const eventId = disruption.id || `emerg-evt-${Date.now()}`;
     const { error: evtErr } = await supabase.from('emergency_events').upsert({
       id: eventId,
       trip_id: disruption.tripId,
-      user_id: userId,
+      user_id: cleanUserId,
       disruption_type: disruption.type,
       title: disruption.title,
       details: disruption.details,
@@ -479,7 +493,7 @@ export async function saveEmergencyEventToSupabase(
         id: `plan-${eventId}`,
         event_id: eventId,
         trip_id: disruption.tripId,
-        user_id: userId,
+        user_id: cleanUserId,
         revised_itinerary_summary: plan.revisedSummary || null,
         alternative_transport: plan.alternativeTransport || null,
         budget_impact: plan.budgetImpact || 0,
@@ -503,7 +517,8 @@ export async function saveAllUserTripsToSupabase(userId: string, trips: Trip[]):
   if (!supabase || !trips || trips.length === 0) return false;
 
   try {
-    const results = await Promise.all(trips.map(t => saveTripToSupabase(userId, t)));
+    const cleanUserId = toDeterministicUuid(userId);
+    const results = await Promise.all(trips.map(t => saveTripToSupabase(cleanUserId, t)));
     return results.every(Boolean);
   } catch (err) {
     console.warn('[Supabase] Batch save trips notice:', err);
@@ -526,14 +541,15 @@ export async function saveUserSavedItemsToSupabase(userId: string, itemIds: stri
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     if (!itemIds || itemIds.length === 0) {
-      await supabase.from('saved_places').delete().eq('user_id', userId);
+      await supabase.from('saved_places').delete().eq('user_id', cleanUserId);
       return true;
     }
 
     const payload = itemIds.map(id => ({
-      id: `save-${userId}-${id}`,
-      user_id: userId,
+      id: `save-${cleanUserId}-${id}`,
+      user_id: cleanUserId,
       place_id: id
     }));
 
@@ -553,10 +569,11 @@ export async function saveUserActiveTripToSupabase(userId: string, activeTripId:
   if (!supabase || !activeTripId) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { error } = await supabase
       .from('profiles')
       .update({ active_trip_id: activeTripId, updated_at: new Date().toISOString() })
-      .eq('id', userId);
+      .eq('id', cleanUserId);
     return !error;
   } catch {
     return false;
@@ -568,10 +585,11 @@ export async function loadUserActiveTripFromSupabase(userId: string): Promise<st
   if (!supabase) return null;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { data } = await supabase
       .from('profiles')
       .select('active_trip_id')
-      .eq('id', userId)
+      .eq('id', cleanUserId)
       .single();
     return data?.active_trip_id || null;
   } catch {
@@ -621,10 +639,11 @@ export async function saveReviewToSupabase(userId: string, tripId: string, revie
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { error } = await supabase.from('trip_reviews').upsert({
       id: review.id,
       trip_id: tripId,
-      user_id: userId,
+      user_id: cleanUserId,
       rating: review.rating,
       review_text: review.notes || '',
       favorite_spot: review.favoriteSpot || null,
@@ -641,11 +660,12 @@ export async function loadReviewFromSupabase(userId: string, tripId: string): Pr
   if (!supabase) return null;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { data, error } = await supabase
       .from('trip_reviews')
       .select('*')
       .eq('trip_id', tripId)
-      .eq('user_id', userId)
+      .eq('user_id', cleanUserId)
       .single();
 
     if (error || !data) return null;
@@ -672,10 +692,11 @@ export async function savePhotoToSupabase(userId: string, photo: TripPhotoMemory
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { error } = await supabase.from('trip_photos').upsert({
       id: photo.id,
       trip_id: photo.tripId,
-      user_id: userId,
+      user_id: cleanUserId,
       day_number: photo.dayNumber || null,
       url: photo.url,
       caption: photo.caption || '',
@@ -695,11 +716,12 @@ export async function loadPhotosFromSupabase(userId: string, tripId: string): Pr
   if (!supabase) return null;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { data, error } = await supabase
       .from('trip_photos')
       .select('*')
       .eq('trip_id', tripId)
-      .eq('user_id', userId)
+      .eq('user_id', cleanUserId)
       .order('taken_at', { ascending: false });
 
     if (error || !data) return null;
@@ -724,11 +746,12 @@ export async function deletePhotoFromSupabase(userId: string, photoId: string): 
   if (!supabase) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { error } = await supabase
       .from('trip_photos')
       .delete()
       .eq('id', photoId)
-      .eq('user_id', userId);
+      .eq('user_id', cleanUserId);
     return !error;
   } catch {
     return false;
@@ -741,10 +764,11 @@ export async function savePackingToSupabase(userId: string, tripId: string, item
   if (!supabase || !items || items.length === 0) return false;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const payload = items.map(item => ({
       id: item.id,
       trip_id: tripId,
-      user_id: userId,
+      user_id: cleanUserId,
       name: item.name,
       category: item.category || 'essentials',
       is_packed: item.isPacked || false,
@@ -765,11 +789,12 @@ export async function loadPackingFromSupabase(userId: string, tripId: string): P
   if (!supabase) return null;
 
   try {
+    const cleanUserId = toDeterministicUuid(userId);
     const { data, error } = await supabase
       .from('packing_items')
       .select('*')
       .eq('trip_id', tripId)
-      .eq('user_id', userId);
+      .eq('user_id', cleanUserId);
 
     if (error || !data) return null;
     return data.map(p => ({

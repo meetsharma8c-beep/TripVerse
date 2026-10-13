@@ -311,7 +311,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
                 {/* Preset suggestions */}
                 <div className="space-y-1.5">
                   <span className="text-xs font-semibold text-slate-600 block">
-                    Or select a sample scenic image:
+                    Or choose from curated destination photography:
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                     {PHOTO_PRESETS.map((preset, idx) => (

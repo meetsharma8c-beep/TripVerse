@@ -22,8 +22,7 @@ export default async function handler(req, res) {
     process.env.FAST2SMS_API_KEY || 
     process.env.VITE_FAST2SMS_API_KEY || 
     authHeader || 
-    clientApiKey || 
-    '';
+    clientApiKey;
 
   if (!numbers || !variables_values) {
     return res.status(400).json({ return: false, message: 'Missing phone number or OTP code.' });

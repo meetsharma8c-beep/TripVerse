@@ -6,6 +6,8 @@ import {
   GoogleCredentialPayload,
   VerificationCodeRecord 
 } from '../types/auth';
+
+export type { AuthUser, AuthSession };
 import { UserProfile } from '../types/trip';
 import { User as SupabaseAuthUser } from '@supabase/supabase-js';
 import { 
@@ -25,7 +27,8 @@ import {
   verifyRealSmsOtp, 
   getPendingSmsSession, 
   clearPendingSmsSession, 
-  getFast2SmsApiKey 
+  getFast2SmsApiKey,
+  savePendingSmsSession 
 } from './smsService';
 
 const USERS_STORAGE_KEY = 'tripverse_auth_users_v3';
@@ -103,10 +106,13 @@ interface StoredAccount {
   passwordHash: string;
 }
 
+export { toDeterministicUuid, isValidUuid } from '../utils/uuid';
+import { toDeterministicUuid } from '../utils/uuid';
+
 /**
  * SHA-256 cryptographic password hashing using SubtleCrypto
  */
-async function hashPassword(password: string): Promise<string> {
+export async function hashPassword(password: string): Promise<string> {
   if (typeof crypto !== 'undefined' && crypto.subtle) {
     try {
       const msgUint8 = new TextEncoder().encode(password + '_tripverse_salt_2026');
@@ -142,10 +148,11 @@ export function supabaseUserToAuthUser(sbUser: SupabaseAuthUser, overrides?: Par
     metadata.picture || 
     `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=2D5A3D,0B2545`;
 
-  const provider = (sbUser.app_metadata?.provider as any) || (sbUser.phone ? 'phone' : 'supabase');
+  const rawProvider = (sbUser.app_metadata?.provider as any) || (sbUser.phone ? 'phone' : 'email');
+  const provider = rawProvider === 'google' ? 'google' : rawProvider === 'phone' ? 'phone' : 'email';
 
   return {
-    uid: sbUser.id,
+    uid: toDeterministicUuid(sbUser.id),
     email: sbUser.email || overrides?.email || '',
     phoneNumber: sbUser.phone || overrides?.phoneNumber || '',
     displayName,
@@ -156,7 +163,7 @@ export function supabaseUserToAuthUser(sbUser: SupabaseAuthUser, overrides?: Par
     occupation: overrides?.occupation || metadata.occupation || 'Explorer',
     age: overrides?.age || metadata.age || 25,
     emailVerified: Boolean(sbUser.email_confirmed_at),
-    provider: provider === 'google' ? 'google' : provider === 'phone' ? 'phone' : 'supabase',
+    provider,
     createdAt: sbUser.created_at || new Date().toISOString(),
     lastLoginAt: sbUser.last_sign_in_at || new Date().toISOString(),
     savedPlaceIds: overrides?.savedPlaceIds || []
@@ -189,7 +196,7 @@ export function saveAccounts(accounts: StoredAccount[]): void {
 /**
  * Synchronize authenticated cloud user into local accounts storage & active session
  */
-export function syncAccountToLocal(user: AuthUser): void {
+export function syncAccountToLocal(user: AuthUser, passwordHash?: string): void {
   const accounts = loadAccounts();
   const existingIdx = accounts.findIndex(a => 
     a.user.uid === user.uid || 
@@ -200,16 +207,22 @@ export function syncAccountToLocal(user: AuthUser): void {
   const now = new Date().toISOString();
   user.lastLoginAt = now;
 
+  const existingHash = existingIdx >= 0 ? accounts[existingIdx].passwordHash : undefined;
+  const finalHash = passwordHash || existingHash || 'cloud_authenticated';
+
   if (existingIdx >= 0) {
     accounts[existingIdx].user = {
       ...accounts[existingIdx].user,
       ...user,
       uid: user.uid
     };
+    if (passwordHash) {
+      accounts[existingIdx].passwordHash = passwordHash;
+    }
   } else {
     accounts.push({
       user,
-      passwordHash: 'cloud_authenticated'
+      passwordHash: finalHash
     });
   }
 
@@ -296,7 +309,10 @@ export async function signInWithGoogleCredential(credential: string): Promise<Au
     throw new Error('Google credential does not contain a verified email address.');
   }
 
+  const emailNorm = payload.email.toLowerCase();
+  const uid = toDeterministicUuid('google:' + (payload.sub || emailNorm));
   const supabase = getSupabaseClient();
+
   if (supabase) {
     try {
       const { data: supaData, error: supaErr } = await supabase.auth.signInWithIdToken({
@@ -319,14 +335,12 @@ export async function signInWithGoogleCredential(credential: string): Promise<Au
     }
   }
 
-  // Fallback to local accounts with verified GIS payload
+  // Fallback to local accounts with verified GIS payload using deterministic UUID
   const accounts = loadAccounts();
-  const emailNorm = payload.email.toLowerCase();
   let account = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
   const now = new Date().toISOString();
 
   if (!account) {
-    const uid = `google_${payload.sub || Date.now()}`;
     const newUser: AuthUser = {
       uid,
       email: emailNorm,
@@ -351,6 +365,7 @@ export async function signInWithGoogleCredential(credential: string): Promise<Au
     if (payload.picture) account.user.photoURL = payload.picture;
     account.user.provider = 'google';
     account.user.emailVerified = true;
+    account.user.uid = uid;
   }
 
   saveAccounts(accounts);
@@ -360,88 +375,165 @@ export async function signInWithGoogleCredential(credential: string): Promise<Au
     expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
   };
   saveSession(session);
+
+  // Sync profile to Supabase PostgreSQL database
+  const supabaseClient = getSupabaseClient();
+  if (supabaseClient) {
+    saveProfileToSupabase(uid, toUserProfile(account.user)).catch(() => {});
+  }
+
+  window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY, { detail: account.user }));
   return account.user;
 }
 
 /**
- * Primary Google Sign-In: Genuine Google OAuth via Supabase
+ * Ensure Google Identity Services (GIS) script is loaded and ready
+ */
+export async function ensureGoogleIdentityServices(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  if ((window as any).google?.accounts?.id && (window as any).google?.accounts?.oauth2) {
+    return true;
+  }
+  // Wait up to 3.5 seconds if script is already loading
+  const start = Date.now();
+  while (Date.now() - start < 3500) {
+    if ((window as any).google?.accounts?.id && (window as any).google?.accounts?.oauth2) {
+      return true;
+    }
+    await new Promise(r => setTimeout(r, 100));
+  }
+  // If not in DOM, inject script dynamically
+  if (!document.querySelector('script[src*="accounts.google.com/gsi/client"]')) {
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.defer = true;
+    document.head.appendChild(s);
+    const start2 = Date.now();
+    while (Date.now() - start2 < 4000) {
+      if ((window as any).google?.accounts?.id && (window as any).google?.accounts?.oauth2) {
+        return true;
+      }
+      await new Promise(r => setTimeout(r, 100));
+    }
+  }
+  return !!((window as any).google?.accounts?.id);
+}
+
+/**
+ * Sign in or register a user using verified Google UserInfo from OAuth2
+ */
+export async function signInWithGoogleUserInfo(info: {
+  sub?: string;
+  id?: string;
+  email: string;
+  name?: string;
+  given_name?: string;
+  picture?: string;
+  email_verified?: boolean;
+}): Promise<AuthUser> {
+  const emailNorm = info.email.trim().toLowerCase();
+  const uid = toDeterministicUuid('google:' + (info.sub || info.id || emailNorm));
+  const now = new Date().toISOString();
+
+  const accounts = loadAccounts();
+  let account = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+
+  if (!account) {
+    const displayName = info.name || info.given_name || emailNorm.split('@')[0];
+    const newUser: AuthUser = {
+      uid,
+      email: emailNorm,
+      displayName,
+      photoURL: info.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=2D5A3D,0B2545`,
+      travelerStyle: 'Budget explorer',
+      travelStyleTag: 'Heritage & Food Hunter',
+      location: 'India',
+      occupation: 'Explorer',
+      age: 26,
+      emailVerified: info.email_verified ?? true,
+      provider: 'google',
+      createdAt: now,
+      lastLoginAt: now,
+      savedPlaceIds: []
+    };
+    account = { user: newUser, passwordHash: 'oauth_google_gis_verified' };
+    accounts.push(account);
+  } else {
+    account.user.lastLoginAt = now;
+    if (info.name) account.user.displayName = info.name;
+    if (info.picture) account.user.photoURL = info.picture;
+    account.user.provider = 'google';
+    account.user.emailVerified = true;
+    account.user.uid = uid;
+  }
+
+  saveAccounts(accounts);
+  const session: AuthSession = {
+    token: `session-google-${account.user.uid}-${Date.now()}`,
+    user: account.user,
+    expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
+  };
+  saveSession(session);
+
+  // Sync profile to Supabase PostgreSQL database
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    saveProfileToSupabase(uid, toUserProfile(account.user)).catch(() => {});
+  }
+
+  window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY, { detail: account.user }));
+  return account.user;
+}
+
+/**
+ * Primary Google Sign-In with Google Identity Services (GIS) OAuth2 popup flow
  */
 export async function signInWithGooglePopup(): Promise<AuthUser> {
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    throw new Error('Supabase cloud authentication is not configured. Please add your VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable genuine Google Sign-In.');
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '472521464151-p64pmj4q5uh9oo9o6nl6hrqaef83tt5t.apps.googleusercontent.com';
+
+  await ensureGoogleIdentityServices();
+
+  // 1. GIS OAuth2 Token Client (Official user button click popup flow)
+  if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2 && clientId) {
+    return new Promise((resolve, reject) => {
+      try {
+        const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'openid email profile',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse.error) {
+              if (tokenResponse.error === 'access_denied') {
+                reject(new Error('Google sign-in was cancelled. Please select your account to proceed.'));
+              } else {
+                reject(new Error(tokenResponse.error_description || tokenResponse.error || 'Google Sign-In failed.'));
+              }
+              return;
+            }
+            try {
+              const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+              });
+              const info = await res.json();
+              if (!info.email) {
+                reject(new Error('Google account does not contain a verified email address.'));
+                return;
+              }
+              const user = await signInWithGoogleUserInfo(info);
+              resolve(user);
+            } catch (err: any) {
+              reject(new Error(err?.message || 'Failed to fetch Google profile.'));
+            }
+          }
+        });
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
+      } catch (err: any) {
+        reject(new Error(err?.message || 'Google Sign-In could not open popup.'));
+      }
+    });
   }
 
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin
-    }
-  });
-
-  if (error) {
-    throw new Error(error.message || 'Google authentication failed.');
-  }
-
-  const existing = getCurrentUser();
-  if (existing) return existing;
-
-  // Browser redirects to Google consent page
-  return new Promise(() => {});
-}
-
-/**
- * Verification Code Storage Helper (for local verification fallback)
- */
-function loadVerificationCodes(): VerificationCodeRecord[] {
-  try {
-    const raw = localStorage.getItem(VERIFICATION_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveVerificationCodes(codes: VerificationCodeRecord[]): void {
-  try {
-    localStorage.setItem(VERIFICATION_STORAGE_KEY, JSON.stringify(codes));
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-/**
- * Generate a 6-digit confirmation code for Email verification or Password Reset
- */
-export async function sendEmailVerificationCode(email: string, purpose: 'signup' | 'password_reset' = 'signup'): Promise<{ code: string; expiresAt: number }> {
-  const emailNorm = email.trim().toLowerCase();
-  if (!emailNorm || !emailNorm.includes('@') || !emailNorm.includes('.')) {
-    throw new Error('Please enter a valid email address.');
-  }
-
-  if (purpose === 'password_reset') {
-    const accounts = loadAccounts();
-    const exists = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
-    if (!exists && !isSupabaseConfigured()) {
-      throw new Error('No registered account was found with this email address.');
-    }
-  }
-
-  // Generate 6-digit random code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
-
-  const allCodes = loadVerificationCodes().filter(c => c.expiresAt > Date.now() && c.email !== emailNorm);
-  allCodes.push({
-    email: emailNorm,
-    code,
-    purpose,
-    expiresAt
-  });
-  saveVerificationCodes(allCodes);
-
-  console.log(`[TripVerse Auth] Verification code for ${emailNorm} (${purpose}): ${code}`);
-  return { code, expiresAt };
+  throw new Error('Google Sign-In service is initializing. Please tap again in a moment.');
 }
 
 export async function sendPasswordResetCode(email: string): Promise<{ code: string; expiresAt: number }> {
@@ -471,9 +563,9 @@ export async function sendPasswordResetEmail(email: string): Promise<void> {
 }
 
 /**
- * Create a new account with Supabase Authentication & PostgreSQL Database (100% Genuine)
+ * Create a new account with Supabase Authentication & PostgreSQL Database
  */
-export async function createAccountWithSupabase(data: SignUpData): Promise<AuthUser> {
+export async function createAccountWithSupabase(data: SignUpData): Promise<AuthUser & { emailConfirmationPending?: boolean }> {
   const emailNorm = (data.email || '').trim().toLowerCase();
   if (!emailNorm || !emailNorm.includes('@')) {
     throw new Error('Please enter a valid email address.');
@@ -482,79 +574,181 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
     throw new Error('Password must be at least 6 characters long.');
   }
 
+  const pwdHash = await hashPassword(data.password);
   const supabase = getSupabaseClient();
   if (!supabase) {
-    throw new Error('Supabase cloud authentication is not configured. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable genuine account creation.');
+    throw new Error('Supabase cloud authentication is not configured.');
   }
 
-  const { data: supaData, error: supaErr } = await supabase.auth.signUp({
-    email: emailNorm,
-    password: data.password,
-    options: {
-      data: {
-        full_name: data.name?.trim() || emailNorm.split('@')[0],
-        name: data.name?.trim() || emailNorm.split('@')[0],
-        traveler_style: data.travelerStyle || 'Budget explorer',
-        location: data.location || 'India',
-        occupation: data.occupation || 'Explorer'
+  let supaData: any = null;
+  let isRateLimited = false;
+
+  try {
+    const res = await supabase.auth.signUp({
+      email: emailNorm,
+      password: data.password,
+      options: {
+        data: {
+          full_name: data.name?.trim() || emailNorm.split('@')[0],
+          name: data.name?.trim() || emailNorm.split('@')[0],
+          traveler_style: data.travelerStyle || 'Budget explorer',
+          location: data.location || 'India',
+          occupation: data.occupation || 'Explorer'
+        }
       }
-    }
-  });
+    });
 
-  if (supaErr) {
-    if (supaErr.message.toLowerCase().includes('already registered')) {
-      throw new Error('An account with this email address already exists. Please sign in instead.');
+    if (res.error) {
+      if (res.error.message.toLowerCase().includes('already registered')) {
+        throw new Error('An account with this email address already exists. Please sign in instead.');
+      }
+      if ((res.error as any).code === 'over_email_send_rate_limit' || res.error.message.toLowerCase().includes('rate limit')) {
+        isRateLimited = true;
+      } else {
+        throw new Error(res.error.message);
+      }
+    } else {
+      supaData = res.data;
     }
-    throw new Error(supaErr.message);
+  } catch (err: any) {
+    if (err.message && err.message.toLowerCase().includes('already exists')) {
+      throw err;
+    }
+    if ((err as any).code === 'over_email_send_rate_limit' || (err.message && err.message.toLowerCase().includes('rate limit'))) {
+      isRateLimited = true;
+    } else {
+      throw err;
+    }
   }
 
-  if (!supaData.user) {
-    throw new Error('Account registration failed. Please check your credentials.');
+  let authUser: AuthUser;
+  const isSessionCreated = Boolean(supaData?.session);
+
+  if (supaData?.user) {
+    authUser = supabaseUserToAuthUser(supaData.user, {
+      displayName: data.name?.trim(),
+      travelerStyle: data.travelerStyle || 'Budget explorer',
+      location: data.location || 'India',
+      occupation: data.occupation || 'Explorer'
+    });
+    authUser.emailVerified = isSessionCreated;
+  } else {
+    // Graceful offline/rate-limit fallback with deterministic UUID
+    const uid = toDeterministicUuid('email:' + emailNorm);
+    const now = new Date().toISOString();
+    authUser = {
+      uid,
+      email: emailNorm,
+      displayName: data.name?.trim() || emailNorm.split('@')[0],
+      photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.name || emailNorm)}&backgroundColor=2D5A3D,0B2545`,
+      travelerStyle: data.travelerStyle || 'Budget explorer',
+      travelStyleTag: 'Verified Explorer',
+      location: data.location || 'India',
+      occupation: data.occupation || 'Explorer',
+      age: 25,
+      emailVerified: false,
+      provider: 'email',
+      createdAt: now,
+      lastLoginAt: now,
+      savedPlaceIds: []
+    };
   }
 
-  const authUser = supabaseUserToAuthUser(supaData.user, {
-    displayName: data.name?.trim(),
-    travelerStyle: data.travelerStyle || 'Budget explorer',
-    location: data.location || 'India',
-    occupation: data.occupation || 'Explorer'
-  });
+  // Persist locally with hashed password so login on this device is immediate & reliable
+  syncAccountToLocal(authUser, pwdHash);
 
-  // Persist extended user profile to Supabase PostgreSQL profiles table
-  await saveProfileToSupabase(authUser.uid, toUserProfile(authUser));
-  syncAccountToLocal(authUser);
-  return authUser;
+  // Attempt Supabase PostgreSQL profile sync if active session exists
+  if (isSessionCreated) {
+    saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
+  }
+
+  return {
+    ...authUser,
+    emailConfirmationPending: !isSessionCreated
+  };
 }
 
 // Backward-compatibility alias
 export const createAccountWithFirebase = createAccountWithSupabase;
 
 /**
- * Verify code and register a new user
+ * Verify 6-digit confirmation token sent by Supabase to user's email
  */
-export async function verifyEmailAndCreateAccount(data: SignUpData, inputCode: string): Promise<AuthUser> {
-  const emailNorm = (data.email || '').trim().toLowerCase();
-  const codeTrimmed = inputCode.trim();
-
-  const allCodes = loadVerificationCodes();
-  const record = allCodes.find(c => 
-    c.email === emailNorm && 
-    c.code === codeTrimmed && 
-    c.purpose === 'signup' && 
-    c.expiresAt > Date.now()
-  );
-
-  if (!record) {
-    throw new Error('Invalid or expired 6-digit verification code. Please request a new one.');
+export async function verifyEmailOtp(email: string, token: string): Promise<AuthUser> {
+  const emailNorm = email.trim().toLowerCase();
+  const cleanToken = token.trim();
+  if (cleanToken.length < 6) {
+    throw new Error('Please enter the complete 6-digit confirmation code.');
   }
 
-  saveVerificationCodes(allCodes.filter(c => !(c.email === emailNorm && c.code === codeTrimmed)));
-  return await createAccountWithSupabase(data);
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error('Supabase cloud authentication is not configured.');
+  }
+
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: emailNorm,
+    token: cleanToken,
+    type: 'signup'
+  });
+
+  if (error) {
+    // Fallback attempt with type: 'email'
+    const fallbackRes = await supabase.auth.verifyOtp({
+      email: emailNorm,
+      token: cleanToken,
+      type: 'email'
+    });
+    if (fallbackRes.error) {
+      throw new Error(fallbackRes.error.message || 'Incorrect or expired confirmation code.');
+    }
+    if (fallbackRes.data.user) {
+      const authUser = supabaseUserToAuthUser(fallbackRes.data.user);
+      authUser.emailVerified = true;
+      syncAccountToLocal(authUser);
+      saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
+      return authUser;
+    }
+  }
+
+  if (!data?.user) {
+    throw new Error('Email verification failed. Please check the code.');
+  }
+
+  const authUser = supabaseUserToAuthUser(data.user);
+  authUser.emailVerified = true;
+  syncAccountToLocal(authUser);
+  saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
+  return authUser;
 }
 
 /**
- * Sign in with email and password strictly via Supabase Authentication (100% Genuine)
+ * Resend email confirmation link/code via Supabase
  */
-export async function signInWithEmail(data: LoginData): Promise<AuthUser> {
+export async function resendEmailConfirmation(email: string): Promise<void> {
+  const emailNorm = email.trim().toLowerCase();
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error('Supabase cloud authentication is not configured.');
+  }
+
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: emailNorm
+  });
+
+  if (error) {
+    if ((error as any).code === 'over_email_send_rate_limit' || error.message.toLowerCase().includes('rate limit')) {
+      throw new Error('Email dispatch rate limit reached. Please wait a few moments before requesting another code.');
+    }
+    throw new Error(error.message || 'Failed to dispatch confirmation email.');
+  }
+}
+
+/**
+ * Sign in with email and password strictly via Supabase Authentication (with resilient local fallback)
+ */
+export async function signInWithEmail(data: LoginData): Promise<AuthUser & { emailConfirmationPending?: boolean }> {
   const emailNorm = (data.email || '').trim().toLowerCase();
   if (!emailNorm) {
     throw new Error('Please enter your email address.');
@@ -564,40 +758,61 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser> {
   }
 
   const supabase = getSupabaseClient();
-  if (!supabase) {
-    throw new Error('Supabase cloud authentication is not configured. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable genuine sign in.');
-  }
+  const pwdHash = await hashPassword(data.password);
 
-  const { data: supaData, error: supaErr } = await supabase.auth.signInWithPassword({
-    email: emailNorm,
-    password: data.password
-  });
+  if (supabase) {
+    const { data: supaData, error: supaErr } = await supabase.auth.signInWithPassword({
+      email: emailNorm,
+      password: data.password
+    });
 
-  if (supaErr) {
-    throw new Error(supaErr.message || 'Invalid email or password.');
-  }
+    if (!supaErr && supaData?.user) {
+      const authUser = supabaseUserToAuthUser(supaData.user);
+      try {
+        const profile = await loadProfileFromSupabase(authUser.uid);
+        if (profile) {
+          authUser.displayName = profile.name || authUser.displayName;
+          authUser.photoURL = profile.avatar || authUser.photoURL;
+          authUser.travelerStyle = profile.travelerStyle || authUser.travelerStyle;
+          authUser.location = profile.location || authUser.location;
+        }
+      } catch (err) {
+        console.warn('[Supabase] Profile fetch notice:', err);
+      }
 
-  if (!supaData?.user) {
-    throw new Error('Sign in failed. No user found.');
-  }
-
-  const authUser = supabaseUserToAuthUser(supaData.user);
-  
-  // Fetch customized profile metadata from Supabase profiles table
-  try {
-    const profile = await loadProfileFromSupabase(authUser.uid);
-    if (profile) {
-      authUser.displayName = profile.name || authUser.displayName;
-      authUser.photoURL = profile.avatar || authUser.photoURL;
-      authUser.travelerStyle = profile.travelerStyle || authUser.travelerStyle;
-      authUser.location = profile.location || authUser.location;
+      syncAccountToLocal(authUser, pwdHash);
+      return authUser;
     }
-  } catch (err) {
-    console.warn('[Supabase] Profile fetch notice:', err);
+
+    // Check for Email not confirmed
+    if (supaErr && (supaErr.message.toLowerCase().includes('email not confirmed') || (supaErr as any).code === 'email_not_confirmed')) {
+      const accounts = loadAccounts();
+      const localAccount = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+      if (localAccount && localAccount.passwordHash === pwdHash) {
+        const user = { ...localAccount.user, emailVerified: false };
+        syncAccountToLocal(user, pwdHash);
+        return { ...user, emailConfirmationPending: true };
+      }
+
+      const err = new Error('Email confirmation is pending for this account. Please verify via the link sent to your inbox, or enter the 6-digit verification code below.');
+      (err as any).code = 'email_not_confirmed';
+      throw err;
+    }
+
+    if (supaErr && !supaErr.message.toLowerCase().includes('fetch')) {
+      throw new Error(supaErr.message || 'Invalid email or password.');
+    }
   }
 
-  syncAccountToLocal(authUser);
-  return authUser;
+  // Offline / Network fallback
+  const accounts = loadAccounts();
+  const localAccount = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+  if (localAccount && localAccount.passwordHash === pwdHash) {
+    syncAccountToLocal(localAccount.user, pwdHash);
+    return localAccount.user;
+  }
+
+  throw new Error('Invalid email or password. Please verify your credentials.');
 }
 
 /**
@@ -776,12 +991,13 @@ let lastSmsDispatchedPhone: string | null = null;
 let activePhonePendingPhone: string | null = null;
 
 /**
- * Send real SMS verification code via Fast2SMS Gateway (or Supabase Phone Auth)
+ * Send real SMS verification code via Fast2SMS Gateway or Supabase Phone Auth.
+ * NO MOCK VERIFICATION: Dispatches genuine carrier SMS to the user's mobile device.
  */
 export async function sendPhoneOtp(
   rawPhoneNumber: string,
   _containerId: string = 'tripverse-recaptcha-container'
-): Promise<{ provider: 'fast2sms' | 'supabase'; result?: any; message?: string }> {
+): Promise<{ provider: 'fast2sms' | 'supabase'; message: string }> {
   let clean = rawPhoneNumber.trim().replace(/[\s-()]/g, '');
   if (!clean.startsWith('+')) {
     if (clean.length === 10) {
@@ -791,13 +1007,15 @@ export async function sendPhoneOtp(
     }
   }
 
-  // 1. Fast2SMS Gateway for Indian numbers (+91)
   const isIndianNumber = clean.startsWith('+91') || clean.replace(/\D/g, '').length === 10;
   const fast2SmsKey = getFast2SmsApiKey();
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
 
+  let lastFast2SmsError = '';
+
+  // 1. Fast2SMS Gateway for Indian numbers (+91)
   if (isIndianNumber && fast2SmsKey) {
     try {
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
       const res = await sendRealSmsOtp(clean, code);
       if (res.success) {
         lastSmsDispatchedPhone = clean;
@@ -805,37 +1023,48 @@ export async function sendPhoneOtp(
         console.log(`[Fast2SMS] Real SMS dispatched to ${clean}. Request ID: ${res.requestId}`);
         return {
           provider: 'fast2sms',
-          message: res.message
+          message: res.message || `Real SMS verification code dispatched to ${clean}.`
         };
       }
-      console.warn('[Fast2SMS] Notice, falling back to Supabase Phone Auth:', res.message);
+      lastFast2SmsError = res.message;
+      console.warn('[Fast2SMS] Gateway error:', res.message);
     } catch (e: any) {
-      console.warn('[Fast2SMS] Dispatch error, falling back to Supabase Phone Auth:', e.message);
+      lastFast2SmsError = e.message;
+      console.warn('[Fast2SMS] Dispatch error:', e.message);
     }
   }
 
   // 2. Supabase Phone Auth (International or Supabase SMS provider)
+  let lastSupabaseError = '';
   const supabase = getSupabaseClient();
   if (supabase) {
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: clean
-    });
-    if (error) {
-      throw new Error(error.message || `Failed to dispatch SMS to ${clean}.`);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: clean
+      });
+      if (!error) {
+        lastSmsDispatchedPhone = clean;
+        activePhonePendingPhone = clean;
+        return {
+          provider: 'supabase',
+          message: `Real SMS verification code dispatched to ${clean}.`
+        };
+      }
+      lastSupabaseError = error.message;
+      console.warn('[Supabase] Phone auth notice:', error.message);
+    } catch (e: any) {
+      lastSupabaseError = e.message;
+      console.warn('[Supabase] Phone auth error:', e.message);
     }
-    lastSmsDispatchedPhone = clean;
-    activePhonePendingPhone = clean;
-    return {
-      provider: 'supabase',
-      message: `SMS verification code dispatched to ${clean}.`
-    };
   }
 
-  throw new Error('No SMS gateway is configured. Please configure Fast2SMS API key or Supabase Phone Auth to dispatch real SMS verification codes.');
+  // NO MOCK VERIFICATION: Throw genuine carrier or provider error
+  const failureReason = lastFast2SmsError || lastSupabaseError || 'Unable to dispatch SMS to carrier. Please check your mobile number or verify with Email & Password.';
+  throw new Error(failureReason);
 }
 
 /**
- * Verify real SMS OTP code and sign in / register user (100% Genuine, No 123456 Bypass)
+ * Verify SMS OTP code and sign in / register user
  */
 export async function verifyPhoneOtp(
   code: string,
@@ -856,7 +1085,7 @@ export async function verifyPhoneOtp(
 
   const now = new Date().toISOString();
 
-  // 1. Verify Fast2SMS pending session if active
+  // 1. Verify genuine Fast2SMS carrier pending session if active
   const pendingSession = getPendingSmsSession();
   if (pendingSession) {
     const verification = verifyRealSmsOtp(targetPhone || pendingSession.phoneNumber, cleanCode);
@@ -866,7 +1095,7 @@ export async function verifyPhoneOtp(
 
     const cleanPhone = pendingSession.phoneNumber || targetPhone;
     const finalName = (displayName || '').trim() || `Explorer (${cleanPhone.slice(-4)})`;
-    const uid = `user-phone-${cleanPhone.replace(/\D/g, '')}`;
+    const uid = toDeterministicUuid('phone:' + cleanPhone.replace(/\D/g, ''));
 
     const newUser: AuthUser = {
       uid,

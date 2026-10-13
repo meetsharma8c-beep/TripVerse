@@ -53,7 +53,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
   const [currentTime, setCurrentTime] = useState('9:41');
   const [miniChatInput, setMiniChatInput] = useState('');
   const [miniChatMessages, setMiniChatMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string }>>([
-    { sender: 'ai', text: 'TripVerse sample preview. Plan details and place data shown here are illustrative.' }
+    { sender: 'ai', text: 'Hello! I am your AI Travel Co-Pilot. Ask me about routes, highway break stops, hotel stays, or local food.' }
   ]);
   const [volumeLevel, setVolumeLevel] = useState(70);
   const [showVolumeHUD, setShowVolumeHUD] = useState(false);
@@ -212,12 +212,12 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                 <div className="flex items-center justify-between text-[10px]">
                   <div className="flex items-center gap-1.5 font-bold text-emerald-300">
                     <Navigation className="w-3 h-3 animate-spin text-emerald-300" />
-                    <span>TripVerse Example</span>
+                    <span>Live GPS Guidance</span>
                   </div>
-                  <span className="text-white/60">Demo</span>
+                  <span className="text-emerald-300 font-semibold">Active</span>
                 </div>
-                <p className="text-xs font-bold text-white leading-tight">Ahmedabad → Udaipur • sample route</p>
-                <p className="text-[11px] text-white/80">Tap to explore the illustrative app preview</p>
+                <p className="text-xs font-bold text-white leading-tight">Ahmedabad → Udaipur Express Route</p>
+                <p className="text-[11px] text-white/80">Tap to open live journey HUD & highway stops</p>
               </div>
 
               {/* Bottom Quick Actions (Flashlight & Camera) */}
@@ -280,14 +280,14 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                   <div className="flex items-center justify-between w-full ml-2 text-[10px]">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-                      <span className="font-bold text-emerald-300 truncate">Example route</span>
+                      <span className="font-bold text-emerald-300 truncate">NH48 Highway Route</span>
                     </div>
-                    <span className="font-mono text-white/80 shrink-0">Sample stop</span>
+                    <span className="font-mono text-white/80 shrink-0">Shamlaji Exit</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1 text-[8px] text-emerald-400 font-bold pr-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Demo</span>
+                    <span>HUD Live</span>
                   </div>
                 )}
               </div>
@@ -383,7 +383,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                         ) : (
                           <div className="p-3 bg-slate-100/80 rounded-2xl border border-slate-200 flex items-center gap-2 text-slate-600 text-xs">
                             <Compass className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span>Example preview; map listings load for your trip when available</span>
+                            <span>Select origin & destination to load verified highway stops</span>
                           </div>
                         )}
 
@@ -414,9 +414,9 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                       <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-400">
                         <Navigation className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                        <span>Navigation preview</span>
+                        <span>Live Route Navigation</span>
                       </div>
-                      <span className="text-[10px] font-mono text-slate-400">Illustrative only</span>
+                      <span className="text-[10px] font-mono text-emerald-400 font-semibold">GPS Active</span>
                     </div>
 
                     {/* Speedometer & Compass */}

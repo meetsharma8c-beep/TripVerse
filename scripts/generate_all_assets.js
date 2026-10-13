@@ -36,11 +36,8 @@ async function generateAllAssets() {
     throw new Error('Master mark public/tripverse-mark-cropped.png not found!');
   }
 
-  // Load and apply subtle micro-sharpening to retain razor-sharp edge contrast across all scales
-  const rawMarkBuffer = fs.readFileSync(masterPath);
-  const markBuffer = await sharp(rawMarkBuffer)
-    .sharpen({ sigma: 0.8, m1: 1.15, m2: 0.4 })
-    .toBuffer();
+  // Load pristine transparent master mark directly with natural subpixel anti-aliasing
+  const markBuffer = fs.readFileSync(masterPath);
 
   const markMeta = await sharp(markBuffer).metadata();
   console.log(`✅ Loaded Master Source: ${markMeta.width}x${markMeta.height} (${markMeta.channels} channels, Ultra-HD Transparent)`);

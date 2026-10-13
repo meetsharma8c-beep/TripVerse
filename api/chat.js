@@ -1,3 +1,5 @@
+import { CONCODE_MASTER_PROMPT } from './concodePrompt.js';
+
 // Vercel Serverless Function: private TripVerse-to-CONCODE travel proxy.
 // The CONCODE key exists only in Vercel environment variables, never in the app bundle.
 
@@ -141,7 +143,8 @@ export default async function handler(req, res) {
         query,
         trip_context: buildTravelContext(req.body?.tripContext, req.body?.sessionState),
         session_id: sessionId,
-        mode
+        mode,
+        system_prompt: CONCODE_MASTER_PROMPT
       }),
       signal: controller.signal
     });

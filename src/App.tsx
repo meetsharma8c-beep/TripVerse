@@ -1141,6 +1141,7 @@ export function App() {
             setIsPrintModalOpen(true);
             break;
           case 'deals':
+          case 'booking':
             setIsBestDealModalOpen(true);
             break;
           case 'replanning':

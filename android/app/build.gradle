@@ -18,10 +18,10 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file('tripverse-release-key.jks')
-            storePassword ''
-            keyAlias 'tripverse'
-            keyPassword ''
+            storeFile file(System.getenv("ANDROID_KEYSTORE_FILE") ?: 'tripverse-release-key.jks')
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: (project.findProperty('RELEASE_STORE_PASSWORD') ?: '')
+            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: (project.findProperty('RELEASE_KEY_ALIAS') ?: 'tripverse')
+            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: (project.findProperty('RELEASE_KEY_PASSWORD') ?: '')
         }
     }
     buildTypes {
