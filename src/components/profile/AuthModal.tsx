@@ -37,6 +37,10 @@ import {
   toUserProfile,
   verifyEmailOtp,
   resendEmailConfirmation,
+  getSavedAccounts,
+  getCurrentUser,
+  syncAccountToLocal,
+  toDeterministicUuid,
   AuthUser
 } from '../../services/authService';
 
@@ -425,6 +429,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(true);
     try {
       const user = await signInWithEmail({ email, password, rememberMe });
+      if ((user as any).emailConfirmationPending && !(user as any).emailVerified) {
+        setPendingConfirmationUser(user);
+        setEmailSubMode('verify-email');
+        setEmailResendCountdown(60);
+        setErrorMsg('Email address not yet confirmed. You can click the link in your email, enter the 6-digit code, or click "Skip for Now" to start using TripVerse.');
+        return;
+      }
       try {
         confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
       } catch {}
@@ -437,7 +448,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       console.error('Email sign in error:', err);
       const msg = err.message || 'Authentication failed. Please verify credentials.';
       if (msg.toLowerCase().includes('email not confirmed')) {
-        setErrorMsg('Email address not yet confirmed. Enter your 6-digit confirmation code below or request a new code.');
+        setErrorMsg('Email address not yet confirmed. Click the link in your email, enter the 6-digit confirmation code below, or click "Skip for Now" to explore.');
         setEmailSubMode('verify-email');
         setEmailResendCountdown(60);
       } else {
@@ -483,11 +494,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         location: emailLocation || 'India'
       });
 
-      if ((user as any).isPendingEmailConfirmation) {
+      const isPending = (user as any).isPendingEmailConfirmation || (user as any).emailConfirmationPending;
+      if (isPending) {
         setPendingConfirmationUser(user);
         setEmailSubMode('verify-email');
         setEmailResendCountdown(60);
-        setSuccessMsg(`Account created! A 6-digit confirmation code was sent to ${email.trim()}.`);
+        if ((user as any).isRateLimited) {
+          setErrorMsg('Note: Supabase shared email limit was reached (3 emails/hour). You can click "Skip for Now & Explore" below to enter immediately without waiting for the confirmation email.');
+        } else {
+          setSuccessMsg(`Account created! A confirmation link & 6-digit code was sent to ${email.trim()}.`);
+        }
       } else {
         try {
           confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
@@ -558,7 +574,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (pendingConfirmationUser) {
       onSuccess(toUserProfile(pendingConfirmationUser));
       handleModalClose();
+      return;
     }
+    const current = getCurrentUser();
+    if (current) {
+      onSuccess(toUserProfile(current));
+      handleModalClose();
+      return;
+    }
+    const accounts = getSavedAccounts();
+    const match = accounts.find(a => a.email && a.email.toLowerCase() === email.trim().toLowerCase());
+    if (match) {
+      onSuccess(toUserProfile(match));
+      handleModalClose();
+      return;
+    }
+    const fallbackUser: AuthUser = {
+      uid: toDeterministicUuid('email:' + (email.trim().toLowerCase() || 'explorer')),
+      email: email.trim() || 'explorer@tripverse.app',
+      displayName: name.trim() || (email ? email.split('@')[0] : 'Explorer'),
+      photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || email || 'Explorer')}&backgroundColor=2D5A3D,0B2545`,
+      travelerStyle: 'Budget explorer',
+      travelStyleTag: 'Verified Explorer',
+      location: 'India',
+      occupation: 'Explorer',
+      age: 25,
+      emailVerified: false,
+      provider: 'email',
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+      savedPlaceIds: []
+    };
+    syncAccountToLocal(fallbackUser);
+    onSuccess(toUserProfile(fallbackUser));
+    handleModalClose();
   };
 
   // ----------------------------------------------------------------------
@@ -1391,7 +1440,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </div>
                     <h3 className="text-xl font-bold text-[#0B2545]">Verify Your Email</h3>
                     <p className="text-xs text-slate-500">
-                      We sent a 6-digit confirmation code to
+                      Check your inbox to click the confirmation link or enter the 6-digit code below:
                     </p>
                     <p className="text-xs font-mono font-bold text-[#0B2545]">{email}</p>
                   </div>
@@ -1435,15 +1484,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       )}
                     </button>
 
-                    {pendingConfirmationUser && (
-                      <button
-                        type="button"
-                        onClick={handleContinuePendingUser}
-                        className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
-                      >
-                        Skip for Now & Explore TripVerse
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={handleContinuePendingUser}
+                      className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <span>Skip for Now & Explore TripVerse</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   </form>
 
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">

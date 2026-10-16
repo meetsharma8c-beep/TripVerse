@@ -576,7 +576,7 @@ export async function sendPasswordResetEmail(email: string): Promise<void> {
 /**
  * Create a new account with Supabase Authentication & PostgreSQL Database
  */
-export async function createAccountWithSupabase(data: SignUpData): Promise<AuthUser & { emailConfirmationPending?: boolean }> {
+export async function createAccountWithSupabase(data: SignUpData): Promise<AuthUser & { emailConfirmationPending?: boolean; isPendingEmailConfirmation?: boolean; isRateLimited?: boolean }> {
   const emailNorm = (data.email || '').trim().toLowerCase();
   if (!emailNorm || !emailNorm.includes('@')) {
     throw new Error('Please enter a valid email address.');
@@ -595,10 +595,15 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
   let isRateLimited = false;
 
   try {
+    const redirectUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/?tab=profile`
+      : 'https://tripverse-pied.vercel.app/?tab=profile';
+
     const res = await supabase.auth.signUp({
       email: emailNorm,
       password: data.password,
       options: {
+        emailRedirectTo: redirectUrl,
         data: {
           full_name: data.name?.trim() || emailNorm.split('@')[0],
           name: data.name?.trim() || emailNorm.split('@')[0],
@@ -675,7 +680,9 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
 
   return {
     ...authUser,
-    emailConfirmationPending: !isSessionCreated
+    emailConfirmationPending: !isSessionCreated,
+    isPendingEmailConfirmation: !isSessionCreated,
+    isRateLimited
   };
 }
 
@@ -743,9 +750,16 @@ export async function resendEmailConfirmation(email: string): Promise<void> {
     throw new Error('Supabase cloud authentication is not configured.');
   }
 
+  const redirectUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/?tab=profile`
+    : 'https://tripverse-pied.vercel.app/?tab=profile';
+
   const { error } = await supabase.auth.resend({
     type: 'signup',
-    email: emailNorm
+    email: emailNorm,
+    options: {
+      emailRedirectTo: redirectUrl
+    }
   });
 
   if (error) {
