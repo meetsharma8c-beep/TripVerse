@@ -100,7 +100,7 @@ export function generateTransportDeals(params: DealQueryParams): {
       id: `deal-fl-indigo-${Date.now()}`,
       mode: 'flight',
       provider: 'IndiGo Airlines',
-      providerLogo: '✈️',
+      providerLogo: 'flight',
       title: isMultiModalAir 
         ? `${cleanOrigin} → ${airportName} (${cleanDest} Air Gateway)` 
         : `${cleanOrigin} → ${cleanDest} Non-Stop Express`,
@@ -143,7 +143,7 @@ export function generateTransportDeals(params: DealQueryParams): {
       id: `deal-fl-airindia-${Date.now()}`,
       mode: 'flight',
       provider: 'Air India / Vistara',
-      providerLogo: '✈️',
+      providerLogo: 'flight',
       title: isMultiModalAir
         ? `${cleanOrigin} → ${airportName} Full-Service Flight`
         : `${cleanOrigin} → ${cleanDest} Full-Service Flight`,
@@ -189,7 +189,7 @@ export function generateTransportDeals(params: DealQueryParams): {
       id: `deal-tr-vandebharat-${Date.now()}`,
       mode: 'train',
       provider: 'Indian Railways — Vande Bharat Express',
-      providerLogo: '🚆',
+      providerLogo: 'train',
       title: isMultiModalRail
         ? `${cleanOrigin} → ${stationName} (${cleanDest} Railhead)`
         : `${cleanOrigin} → ${cleanDest} Vande Bharat Superfast`,
@@ -231,7 +231,7 @@ export function generateTransportDeals(params: DealQueryParams): {
       id: `deal-tr-superfast-${Date.now()}`,
       mode: 'train',
       provider: 'Indian Railways — AC Superfast Express',
-      providerLogo: '🚆',
+      providerLogo: 'train',
       title: isMultiModalRail
         ? `${cleanOrigin} → ${stationName} 3-Tier AC Overnight`
         : `${cleanOrigin} → ${cleanDest} 3-Tier AC Overnight Sleeper`,
@@ -275,7 +275,7 @@ export function generateTransportDeals(params: DealQueryParams): {
       id: `deal-car-sedan-${Date.now()}`,
       mode: 'car',
       provider: 'TripVerse Verified Chauffeur Cab',
-      providerLogo: '🚗',
+      providerLogo: 'car',
       title: `Private AC Sedan (Dzire / Etios) Door-to-Door`,
       subtitle: 'Dedicated Chauffeur • Tolls & Fuel Included • Flexible Stops',
       badge: 'AI Recommended for Comfort',
@@ -312,7 +312,7 @@ export function generateTransportDeals(params: DealQueryParams): {
       id: `deal-car-selfdrive-${Date.now()}`,
       mode: 'car',
       provider: 'Zoomcar Self-Drive Unlimited',
-      providerLogo: '🚙',
+      providerLogo: 'car',
       title: `Self-Drive SUV (Hyundai Creta / Mahindra Thar)`,
       subtitle: 'Unlimited Kilometers • Keyless Pickup • Full Insurance',
       badge: 'Freedom of the Road',
@@ -356,7 +356,7 @@ export function generateTransportDeals(params: DealQueryParams): {
       id: `deal-bus-volvo-${Date.now()}`,
       mode: 'bus',
       provider: 'Volvo 9600 Multi-Axle Sleeper',
-      providerLogo: '🚌',
+      providerLogo: 'bus',
       title: `${cleanOrigin} → ${cleanDest} Luxury Sleeper Coach`,
       subtitle: 'Air Suspension • Individual Entertainment Screen • USB Charging',
       badge: 'Most Economical Overnight',
