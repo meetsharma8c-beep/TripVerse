@@ -38,10 +38,12 @@ import {
   Sunset,
   ArrowRight,
   TrendingDown,
-  Settings
+  Settings,
+  Crown
 } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { ConcodeBrainConfigModal } from './ConcodeBrainConfigModal';
+import { getUserSubscriptionQuota } from '../../services/authService';
 
 interface AIChatDrawerProps {
   trip: Trip;
@@ -51,6 +53,7 @@ interface AIChatDrawerProps {
   onUpdateTrip: (updatedTrip: Trip) => void;
   onOpenReplanning?: (screen?: 1 | 2 | 3 | 4 | 5 | 'refund') => void;
   onAppAction?: (action: AIAppAction) => void;
+  onOpenProModal?: () => void;
 }
 
 import { getCurrentUser } from '../../services/authService';
@@ -308,7 +311,8 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   onClose,
   onUpdateTrip,
   onOpenReplanning,
-  onAppAction
+  onAppAction,
+  onOpenProModal
 }) => {
   const [brainStatus, setBrainStatus] = useState<BrainStatus>({ online: false });
   const [isCheckingBrain, setIsCheckingBrain] = useState(false);
@@ -356,6 +360,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>(getInitialMessages);
   const [inputQuery, setInputQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const quota = getUserSubscriptionQuota();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Reload messages when switching accounts or signing in/out
@@ -601,11 +606,32 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <h3 className="font-bold text-sm">TripVerse AI Co-Pilot</h3>
                 <span className="text-[9px] font-black uppercase tracking-wider bg-white/10 text-emerald-300 px-1.5 py-0.5 rounded border border-white/10 flex items-center gap-1">
                   CONCODE
                 </span>
+                {quota.isPro ? (
+                  <button
+                    type="button"
+                    onClick={onOpenProModal}
+                    className="text-[9px] font-black uppercase tracking-wider bg-amber-400/25 hover:bg-amber-400/35 text-amber-300 px-1.5 py-0.5 rounded border border-amber-300/30 flex items-center gap-0.5 cursor-pointer transition-colors"
+                    title="TripVerse Pro Active (30 Hours/Week Full ConCode Facility)"
+                  >
+                    <Crown className="w-2.5 h-2.5 fill-amber-300" />
+                    <span>30h/Wk Facility</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onOpenProModal}
+                    className="text-[9px] font-bold uppercase tracking-wider bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-400/30 cursor-pointer transition-colors flex items-center gap-1"
+                    title="Free Explorer Tier • Upgrade to Pro for 30h/week Facility"
+                  >
+                    <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                    <span>Free Demo • Upgrade</span>
+                  </button>
+                )}
               </div>
               <p className="text-[11px] text-slate-300 font-medium flex items-center gap-1">
                 <span>Travel Intelligence Layer</span>

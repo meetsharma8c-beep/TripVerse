@@ -4,10 +4,12 @@ import {
   SignUpData, 
   LoginData, 
   GoogleCredentialPayload,
-  VerificationCodeRecord 
+  VerificationCodeRecord,
+  SubscriptionTier,
+  UserSubscriptionQuota 
 } from '../types/auth';
 
-export type { AuthUser, AuthSession };
+export type { AuthUser, AuthSession, SubscriptionTier, UserSubscriptionQuota };
 import { UserProfile } from '../types/trip';
 import { User as SupabaseAuthUser } from '@supabase/supabase-js';
 import { 
@@ -166,7 +168,16 @@ export function supabaseUserToAuthUser(sbUser: SupabaseAuthUser, overrides?: Par
     provider,
     createdAt: sbUser.created_at || new Date().toISOString(),
     lastLoginAt: sbUser.last_sign_in_at || new Date().toISOString(),
-    savedPlaceIds: overrides?.savedPlaceIds || []
+    savedPlaceIds: overrides?.savedPlaceIds || [],
+    subscriptionTier: overrides?.subscriptionTier || (metadata.subscription_tier as SubscriptionTier) || 'free',
+    freeTripsRemaining: typeof overrides?.freeTripsRemaining === 'number' 
+      ? overrides.freeTripsRemaining 
+      : (typeof metadata.free_trips_remaining === 'number' ? metadata.free_trips_remaining : 3),
+    weeklyAssistantMinutesRemaining: typeof overrides?.weeklyAssistantMinutesRemaining === 'number'
+      ? overrides.weeklyAssistantMinutesRemaining
+      : (typeof metadata.weekly_assistant_minutes_remaining === 'number' ? metadata.weekly_assistant_minutes_remaining : 1800),
+    subscriptionExpiresAt: overrides?.subscriptionExpiresAt || metadata.subscription_expires_at,
+    weeklyQuotaResetAt: overrides?.weeklyQuotaResetAt || metadata.weekly_quota_reset_at
   };
 }
 
@@ -863,7 +874,7 @@ export function deleteAccount(userId: string): void {
 /**
  * Update authenticated user profile details
  */
-export async function updateAuthProfile(updates: Partial<UserProfile> & { displayName?: string; photoURL?: string }): Promise<AuthUser> {
+export async function updateAuthProfile(updates: Partial<UserProfile & AuthUser> & { displayName?: string; photoURL?: string; name?: string; avatar?: string }): Promise<AuthUser> {
   const current = getCurrentUser();
   if (!current) {
     throw new Error('No user is currently signed in.');
@@ -1234,3 +1245,185 @@ export function toUserProfile(user: AuthUser): UserProfile {
     tripsCount: 0
   };
 }
+
+export const updateUserProfile = updateAuthProfile;
+
+/**
+ * =========================================================================
+ * Subscription & Quota Management (Freemium 3-Trip & Pro 30h/week Facility)
+ * =========================================================================
+ */
+const GUEST_QUOTA_STORAGE_KEY = 'tripverse_guest_quota_v1';
+
+export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubscriptionQuota {
+  const user = userParam !== undefined ? userParam : getCurrentUser();
+
+  if (!user) {
+    // Guest user quota stored locally
+    let guestTrips = 3;
+    let guestMinutes = 30;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem(GUEST_QUOTA_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed.freeTripsRemaining === 'number') guestTrips = parsed.freeTripsRemaining;
+          if (typeof parsed.weeklyAssistantMinutesRemaining === 'number') guestMinutes = parsed.weeklyAssistantMinutesRemaining;
+        }
+      }
+    } catch {}
+
+    const hours = Math.floor(guestMinutes / 60);
+    const mins = guestMinutes % 60;
+    const weeklyQuotaHoursFormatted = `${hours}h ${mins.toString().padStart(2, '0')}m`;
+
+    return {
+      tier: 'free',
+      isPro: false,
+      freeTripsRemaining: Math.max(0, guestTrips),
+      freeTripsTotal: 3,
+      canCreateTrip: guestTrips > 0,
+      weeklyAssistantMinutesRemaining: Math.max(0, guestMinutes),
+      weeklyAssistantMinutesTotal: 30,
+      weeklyQuotaHoursFormatted
+    };
+  }
+
+  // Logged-in user
+  let isPro = user.subscriptionTier === 'pro';
+  if (isPro && user.subscriptionExpiresAt) {
+    const expiresMs = new Date(user.subscriptionExpiresAt).getTime();
+    if (!isNaN(expiresMs) && Date.now() > expiresMs) {
+      isPro = false;
+      updateAuthProfile({ subscriptionTier: 'free' }).catch(() => {});
+    }
+  }
+
+  const freeTripsRemaining = typeof user.freeTripsRemaining === 'number' ? user.freeTripsRemaining : 3;
+  const assistantMinutes = typeof user.weeklyAssistantMinutesRemaining === 'number'
+    ? user.weeklyAssistantMinutesRemaining
+    : (isPro ? 1800 : 30);
+
+  const hours = Math.floor(assistantMinutes / 60);
+  const mins = assistantMinutes % 60;
+  const weeklyQuotaHoursFormatted = `${hours}h ${mins.toString().padStart(2, '0')}m`;
+
+  return {
+    tier: isPro ? 'pro' : 'free',
+    isPro,
+    freeTripsRemaining: isPro ? 9999 : Math.max(0, freeTripsRemaining),
+    freeTripsTotal: 3,
+    canCreateTrip: isPro || freeTripsRemaining > 0,
+    weeklyAssistantMinutesRemaining: assistantMinutes,
+    weeklyAssistantMinutesTotal: isPro ? 1800 : 30, // 30 hours per week = 1800 mins
+    weeklyQuotaHoursFormatted,
+    subscriptionExpiresAt: user.subscriptionExpiresAt
+  };
+}
+
+export function consumeTripCredit(userParam?: AuthUser | null): { allowed: boolean; remaining: number } {
+  const user = userParam !== undefined ? userParam : getCurrentUser();
+
+  if (!user) {
+    // Guest credit consumption
+    let guestTrips = 3;
+    let guestMinutes = 30;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem(GUEST_QUOTA_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed.freeTripsRemaining === 'number') guestTrips = parsed.freeTripsRemaining;
+          if (typeof parsed.weeklyAssistantMinutesRemaining === 'number') guestMinutes = parsed.weeklyAssistantMinutesRemaining;
+        }
+      }
+    } catch {}
+
+    if (guestTrips <= 0) {
+      return { allowed: false, remaining: 0 };
+    }
+
+    const nextTrips = Math.max(0, guestTrips - 1);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(GUEST_QUOTA_STORAGE_KEY, JSON.stringify({
+          freeTripsRemaining: nextTrips,
+          weeklyAssistantMinutesRemaining: guestMinutes
+        }));
+      }
+    } catch {}
+
+    window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { remaining: nextTrips } }));
+    return { allowed: true, remaining: nextTrips };
+  }
+
+  // If user is Pro, unlimited trips!
+  if (user.subscriptionTier === 'pro') {
+    return { allowed: true, remaining: 9999 };
+  }
+
+  // Free tier registered user
+  const currentRemaining = typeof user.freeTripsRemaining === 'number' ? user.freeTripsRemaining : 3;
+  if (currentRemaining <= 0) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  const newRemaining = Math.max(0, currentRemaining - 1);
+  updateAuthProfile({ freeTripsRemaining: newRemaining }).catch(() => {});
+  window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { remaining: newRemaining } }));
+  return { allowed: true, remaining: newRemaining };
+}
+
+export async function upgradeUserToPro(userParam?: AuthUser | null, durationDays: number = 30): Promise<AuthUser | null> {
+  const user = userParam !== undefined ? userParam : getCurrentUser();
+  const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+  const nextReset = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  if (!user) {
+    // Upgrading guest
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(GUEST_QUOTA_STORAGE_KEY, JSON.stringify({
+          freeTripsRemaining: 9999,
+          weeklyAssistantMinutesRemaining: 1800,
+          tier: 'pro'
+        }));
+      }
+    } catch {}
+    window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { isPro: true } }));
+    return null;
+  }
+
+  const updated = await updateAuthProfile({
+    subscriptionTier: 'pro',
+    freeTripsRemaining: 9999,
+    weeklyAssistantMinutesRemaining: 1800, // 30 hours per week full facility
+    subscriptionExpiresAt: expiresAt,
+    weeklyQuotaResetAt: nextReset
+  });
+
+  window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { isPro: true, user: updated } }));
+  return updated;
+}
+
+export async function downgradeUserToFree(userParam?: AuthUser | null): Promise<AuthUser | null> {
+  const user = userParam !== undefined ? userParam : getCurrentUser();
+  if (!user) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(GUEST_QUOTA_STORAGE_KEY);
+      }
+    } catch {}
+    window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { isPro: false } }));
+    return null;
+  }
+  const updated = await updateAuthProfile({
+    subscriptionTier: 'free',
+    freeTripsRemaining: 3,
+    weeklyAssistantMinutesRemaining: 30,
+    subscriptionExpiresAt: undefined
+  });
+  window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { isPro: false, user: updated } }));
+  return updated;
+}
+

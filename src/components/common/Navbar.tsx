@@ -16,11 +16,13 @@ import {
   Download,
   Search,
   Moon,
-  Sun
+  Sun,
+  Crown
 } from 'lucide-react';
 import { UserProfile, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
 import { isStandalone } from '../../services/deviceService';
+import { getUserSubscriptionQuota } from '../../services/authService';
 
 interface NavbarProps {
   currentTab: string;
@@ -33,6 +35,7 @@ interface NavbarProps {
   isAuthenticated?: boolean;
   onOpenSearch?: () => void;
   onOpenChat?: () => void;
+  onOpenProModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -45,8 +48,23 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuthModal,
   isAuthenticated = true,
   onOpenSearch,
-  onOpenChat
+  onOpenChat,
+  onOpenProModal
 }) => {
+  const [quota, setQuota] = useState(() => getUserSubscriptionQuota());
+
+  useEffect(() => {
+    const handleQuotaChange = () => {
+      setQuota(getUserSubscriptionQuota());
+    };
+    window.addEventListener('tripverse_quota_updated', handleQuotaChange);
+    window.addEventListener('tripverse_auth_state_change', handleQuotaChange);
+    return () => {
+      window.removeEventListener('tripverse_quota_updated', handleQuotaChange);
+      window.removeEventListener('tripverse_auth_state_change', handleQuotaChange);
+    };
+  }, []);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
   const [isStandaloneApp, setIsStandaloneApp] = useState(true);
@@ -246,6 +264,33 @@ export const Navbar: React.FC<NavbarProps> = ({
               </select>
             </div>
 
+            {/* Subscription & Quota Badge Pill */}
+            {onOpenProModal && (
+              <button
+                type="button"
+                onClick={onOpenProModal}
+                className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs border ${
+                  quota.isPro
+                    ? 'bg-gradient-to-r from-amber-400/20 to-yellow-400/10 border-amber-300/40 text-amber-900 dark:text-amber-300 hover:bg-amber-400/30'
+                    : 'bg-[#E8EFE7] dark:bg-[#1A2E22] hover:bg-[#DCE7DB] border-[#DCE7DB] text-[#2D5A3D] dark:text-emerald-300'
+                }`}
+                title={quota.isPro ? 'TripVerse Pro Active (30h/week AI Co-Pilot)' : `${quota.freeTripsRemaining}/3 Free Trips Available • Click to Upgrade`}
+              >
+                {quota.isPro ? (
+                  <>
+                    <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                    <span className="font-black">PRO</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{quota.freeTripsRemaining}/3 Free</span>
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Primary CTA: "Plan My Trip" */}
             <button
               onClick={onOpenPlanner}
@@ -350,6 +395,45 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Search className="w-5 h-5 text-slate-400" />
               <span>Search destinations & trips</span>
             </button>
+          )}
+
+          {/* Mobile Subscription & Plan Banner */}
+          {onOpenProModal && (
+            <div 
+              onClick={() => {
+                onOpenProModal();
+                setMobileMenuOpen(false);
+              }}
+              className={`p-3.5 my-2 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${
+                quota.isPro
+                  ? 'bg-gradient-to-r from-[#12281D] via-[#1E3E2A] to-[#12281D] text-white border-amber-400/40 shadow-emerald-950/20'
+                  : 'bg-gradient-to-r from-amber-50 to-emerald-50 border-amber-200/90 text-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  quota.isPro ? 'bg-amber-400 text-slate-900' : 'bg-[#E8EFE7] text-[#2D5A3D]'
+                }`}>
+                  <Crown className="w-5 h-5 fill-current" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <p className={`text-xs font-bold ${quota.isPro ? 'text-white' : 'text-slate-900'}`}>
+                      {quota.isPro ? 'TripVerse Pro Active' : 'Free Explorer Pass'}
+                    </p>
+                    <span className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
+                      quota.isPro ? 'bg-amber-400/30 text-amber-300' : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {quota.isPro ? '30H/WK' : `${quota.freeTripsRemaining}/3 FREE`}
+                    </span>
+                  </div>
+                  <p className={`text-[10px] ${quota.isPro ? 'text-emerald-200' : 'text-slate-500'}`}>
+                    {quota.isPro ? 'Unlimited Trips & 30h/week AI Active' : 'Upgrade to Pro for Unlimited Trips'}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className={`w-4 h-4 ${quota.isPro ? 'text-amber-300' : 'text-slate-400'}`} />
+            </div>
           )}
           {mobileNavLinks.map((link) => {
             const isActive = currentTab === link.id;

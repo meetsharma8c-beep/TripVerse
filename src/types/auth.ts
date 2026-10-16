@@ -1,4 +1,17 @@
 export type AuthProvider = 'email' | 'google' | 'phone' | 'guest' | 'supabase';
+export type SubscriptionTier = 'free' | 'pro';
+
+export interface UserSubscriptionQuota {
+  tier: SubscriptionTier;
+  isPro: boolean;
+  freeTripsRemaining: number;
+  freeTripsTotal: number;
+  canCreateTrip: boolean;
+  weeklyAssistantMinutesRemaining: number;
+  weeklyAssistantMinutesTotal: number;
+  weeklyQuotaHoursFormatted: string;
+  subscriptionExpiresAt?: string;
+}
 
 export interface AuthUser {
   uid: string;
@@ -16,6 +29,11 @@ export interface AuthUser {
   createdAt: string;
   lastLoginAt: string;
   savedPlaceIds?: string[];
+  subscriptionTier?: SubscriptionTier;
+  freeTripsRemaining?: number;
+  subscriptionExpiresAt?: string;
+  weeklyAssistantMinutesRemaining?: number;
+  weeklyQuotaResetAt?: string;
 }
 
 export interface AuthSession {

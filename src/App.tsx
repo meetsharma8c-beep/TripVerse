@@ -73,7 +73,14 @@ import { DestinationDetailModal } from './components/explore/DestinationDetailMo
 import { SavedItemsView } from './components/saved/SavedItemsView';
 import { ProfileView } from './components/profile/ProfileView';
 import { AuthModal } from './components/profile/AuthModal';
-import { getCurrentUser, onAuthStateChanged, toUserProfile } from './services/authService';
+import { 
+  getCurrentUser, 
+  onAuthStateChanged, 
+  toUserProfile, 
+  getUserSubscriptionQuota, 
+  consumeTripCredit 
+} from './services/authService';
+import { TripVerseProModal } from './components/subscription/TripVerseProModal';
 import { AuthUser } from './types/auth';
 import {
   loadUserTripsFromSupabase,
@@ -368,6 +375,7 @@ export function App() {
   const [isCollabModalOpen, setIsCollabModalOpen] = useState(() => (initialRoute as any).openCollab || false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLiveNavOpen, setIsLiveNavOpen] = useState(false);
+  const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [isBestDealModalOpen, setIsBestDealModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(() => initialRoute.openBooking || false);
@@ -986,6 +994,12 @@ export function App() {
     travelers?: number;
     budget?: number;
   }) => {
+    const quota = getUserSubscriptionQuota(currentUser);
+    if (!quota.canCreateTrip) {
+      setIsProModalOpen(true);
+      return;
+    }
+
     triggerHaptic('medium');
     const finalParams = {
       destination: params.destination?.trim() || 'Udaipur',
@@ -997,6 +1011,7 @@ export function App() {
     setIsGeneratingTrip(true);
 
     setTimeout(async () => {
+      consumeTripCredit(currentUser);
       let originCoords: Coordinates | undefined;
       if (typeof navigator !== 'undefined' && navigator.geolocation) {
         originCoords = await new Promise<Coordinates | undefined>(resolve => {
@@ -1063,6 +1078,14 @@ export function App() {
   };
 
   const handleTripGenerated = async (input: PlannerInput) => {
+    const quota = getUserSubscriptionQuota(currentUser);
+    if (!quota.canCreateTrip) {
+      setIsPlannerOpen(false);
+      setIsProModalOpen(true);
+      return;
+    }
+
+    consumeTripCredit(currentUser);
     triggerHaptic('success');
     setIsGeneratingTrip(true);
     try {
@@ -1506,6 +1529,7 @@ export function App() {
         unreadNotificationCount={unreadNotificationCount}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         isAuthenticated={currentUser !== null}
+        onOpenProModal={() => setIsProModalOpen(true)}
       />
 
       {/* Pull down to refresh gesture wrapper */}
@@ -2193,6 +2217,10 @@ export function App() {
             initialBudget={plannerPrefill.budget}
             onClose={() => setIsPlannerOpen(false)}
             onTripGenerated={handleTripGenerated}
+            onOpenProModal={() => {
+              setIsPlannerOpen(false);
+              setIsProModalOpen(true);
+            }}
           />
         )}
 
@@ -2207,6 +2235,7 @@ export function App() {
             }}
             onUpdateTrip={handleUpdateTrip}
             onAppAction={handleAIAppAction}
+            onOpenProModal={() => setIsProModalOpen(true)}
             onOpenReplanning={(screen) => {
               setIsAIChatOpen(false);
               setReplanningInitialScreen(screen || 2);
@@ -2410,6 +2439,16 @@ export function App() {
         initialTab={legalModalState.tab}
         onClose={() => setLegalModalState(prev => ({ ...prev, isOpen: false }))}
         userEmail={currentUser?.email || ''}
+      />
+
+      {/* TripVerse Pro & Quota Modal */}
+      <TripVerseProModal
+        isOpen={isProModalOpen}
+        currentUser={currentUser}
+        onClose={() => setIsProModalOpen(false)}
+        onSubscribed={() => {
+          setCurrentUser(getCurrentUser());
+        }}
       />
 
     </div>

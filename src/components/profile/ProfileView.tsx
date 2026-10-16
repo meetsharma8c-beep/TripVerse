@@ -21,7 +21,11 @@ import {
   Lock,
   FileText,
   MessageSquare,
-  ChevronRight
+  ChevronRight,
+  Crown,
+  CheckCircle2,
+  Radio,
+  Zap
 } from 'lucide-react';
 import { DigitalPassport } from './DigitalPassport';
 import { loadUserVisitedStates, resetGuestStorage } from '../../services/storageService';
@@ -31,9 +35,11 @@ import {
   getSavedAccounts, 
   switchAccount, 
   updateAuthProfile, 
-  toUserProfile 
+  toUserProfile,
+  getUserSubscriptionQuota
 } from '../../services/authService';
 import { AuthUser } from '../../types/auth';
+import { TripVerseProModal } from '../subscription/TripVerseProModal';
 
 interface ProfileViewProps {
   userProfile: UserProfile;
@@ -74,6 +80,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const [activeBadgesCount, setActiveBadgesCount] = useState<number>(0);
+  const [isProModalOpen, setIsProModalOpen] = useState(false);
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => propCurrentUser ?? getCurrentUser());
 
@@ -88,10 +95,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       setAuthUser(getCurrentUser());
     };
     window.addEventListener('tripverse_auth_state_change', handleAuthChange);
-    return () => window.removeEventListener('tripverse_auth_state_change', handleAuthChange);
+    window.addEventListener('tripverse_quota_updated', handleAuthChange);
+    return () => {
+      window.removeEventListener('tripverse_auth_state_change', handleAuthChange);
+      window.removeEventListener('tripverse_quota_updated', handleAuthChange);
+    };
   }, []);
 
   const currentUser = authUser;
+  const quota = getUserSubscriptionQuota(currentUser);
   const savedAccounts = getSavedAccounts();
 
   // Dynamic calculations for user stats (only user-planned trips count towards personal profile stats)
@@ -384,6 +396,115 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Subscription & Quota Card (Luxury Pass Aesthetic) */}
+        {quota.isPro ? (
+          <div className="mt-6 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#0C1A14] via-[#152F22] to-[#1F4431] text-white border border-amber-400/40 shadow-xl shadow-emerald-950/25 relative overflow-hidden">
+            {/* Ambient Lighting Orbs */}
+            <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-amber-400/15 blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-400/20 blur-2xl pointer-events-none" />
+
+            <div className="relative z-1 flex flex-col sm:flex-row items-center justify-between gap-5">
+              <div className="flex items-center gap-4 text-center sm:text-left">
+                <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 p-0.5 shadow-[0_0_20px_rgba(245,158,11,0.35)] shrink-0 flex items-center justify-center">
+                  <div className="w-full h-full rounded-[14px] bg-[#0E1E16] flex items-center justify-center">
+                    <Crown className="w-7 h-7 text-amber-400 fill-amber-400" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                    <h3 className="font-display font-black text-lg text-white tracking-tight">
+                      TripVerse Pro Member
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-300" />
+                      <span>VIP ALL-ACCESS</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-emerald-100/90 mt-1 flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
+                    <span className="font-semibold text-white">Unlimited Trips</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1 text-amber-300 font-bold">
+                      <Zap className="w-3 h-3" />
+                      30h/Week AI Facility Active
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsProModalOpen(true)}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs backdrop-blur-xs transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5 shrink-0"
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                <span>Manage Membership</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-6 p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 via-emerald-50/40 to-amber-50/25 dark:from-[#0c1611] dark:via-[#13241b] dark:to-[#171f1a] border border-slate-200/90 dark:border-emerald-500/20 shadow-sm relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
+              <div className="flex items-start gap-4 text-center sm:text-left w-full sm:w-auto">
+                <div className="w-12 h-12 rounded-2xl bg-[#E8EFE7] dark:bg-[#1A2E22] border border-[#2D5A3D]/20 dark:border-emerald-500/30 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0 shadow-2xs mx-auto sm:mx-0">
+                  <Compass className="w-6 h-6" />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <h4 className="font-display font-black text-base text-[#0B2545] dark:text-white">
+                      Free Explorer Pass
+                    </h4>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/80 text-[10px] font-black uppercase tracking-wider">
+                      {quota.freeTripsRemaining}/3 FREE TRIPS LEFT
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                    Includes 3 free AI trip plans. Upgrade to Pro for unlimited trips and full 30h/week AI capacity.
+                  </p>
+
+                  {/* 3-Step Milestone Beads */}
+                  <div className="flex items-center gap-2 mt-3 justify-center sm:justify-start">
+                    {[1, 2, 3].map((stepNum) => {
+                      const isUsed = (quota.freeTripsTotal - quota.freeTripsRemaining) >= stepNum;
+                      return (
+                        <div 
+                          key={stepNum}
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                            isUsed 
+                              ? 'bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 shadow-2xs'
+                          }`}
+                        >
+                          {isUsed ? (
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <span className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center text-[8px] font-black">
+                              {stepNum}
+                            </span>
+                          )}
+                          <span>Trip {stepNum}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsProModalOpen(true)}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-[#2D5A3D] to-[#1E3E2A] hover:opacity-95 text-white font-extrabold text-xs shadow-md shadow-emerald-900/15 hover:shadow-lg transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 shrink-0"
+              >
+                <Crown className="w-4 h-4 fill-amber-300 text-amber-300" />
+                <span>Upgrade to Pro (30h/Wk)</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -769,6 +890,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           )}
         </div>
       </div>
+
+      <TripVerseProModal
+        isOpen={isProModalOpen}
+        currentUser={currentUser}
+        onClose={() => setIsProModalOpen(false)}
+        onSubscribed={() => {
+          setAuthUser(getCurrentUser());
+        }}
+      />
 
     </div>
   );
