@@ -216,6 +216,9 @@ function resolveRouteFromBrowser(loadedTrips: Trip[]) {
       return { tab: 'trip-detail', dest: null, tripId: found.id, openBooking: actionParam === 'book', openPlanner: false, openCollab: false };
     }
   }
+  if (actionParam === 'pro' || actionParam === 'subscription') {
+    return { tab: 'profile', dest: null, tripId: null, openBooking: false, openPlanner: false, openPro: true };
+  }
   if (actionParam === 'plan') {
     return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: true };
   }
@@ -375,7 +378,7 @@ export function App() {
   const [isCollabModalOpen, setIsCollabModalOpen] = useState(() => (initialRoute as any).openCollab || false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLiveNavOpen, setIsLiveNavOpen] = useState(false);
-  const [isProModalOpen, setIsProModalOpen] = useState(false);
+  const [isProModalOpen, setIsProModalOpen] = useState(() => (initialRoute as any).openPro || false);
   const [isBestDealModalOpen, setIsBestDealModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(() => initialRoute.openBooking || false);

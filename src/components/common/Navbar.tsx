@@ -351,8 +351,33 @@ export const Navbar: React.FC<NavbarProps> = ({
             />
           </div>
 
-          {/* Right: Quick Search and Profile Avatar (Matching Screen 1) */}
-          <div className="flex items-center gap-2">
+          {/* Right: Subscription Badge, Quick Search and Profile Avatar */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {onOpenProModal && (
+              <button
+                type="button"
+                onClick={onOpenProModal}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer shadow-2xs border ${
+                  quota.isPro
+                    ? 'bg-gradient-to-r from-amber-400/20 to-yellow-400/10 border-amber-400/40 text-amber-900 dark:text-amber-300'
+                    : 'bg-[#E8EFE7] dark:bg-[#1A2E22] border-[#DCE7DB] text-[#2D5A3D] dark:text-emerald-300'
+                }`}
+                title={quota.isPro ? 'TripVerse Pro Active' : `${quota.freeTripsRemaining}/3 Free Trips Available`}
+              >
+                {quota.isPro ? (
+                  <>
+                    <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                    <span>PRO</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <span>{quota.freeTripsRemaining}/3 Free</span>
+                  </>
+                )}
+              </button>
+            )}
+
             {onOpenSearch && (
               <button
                 onClick={onOpenSearch}
