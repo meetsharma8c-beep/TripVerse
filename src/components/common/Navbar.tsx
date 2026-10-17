@@ -264,30 +264,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               </select>
             </div>
 
-            {/* Subscription & Quota Badge Pill */}
+            {/* Desktop Subscription / Pro Link */}
             {onOpenProModal && (
               <button
                 type="button"
                 onClick={onOpenProModal}
                 className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs border ${
                   quota.isPro
-                    ? 'bg-gradient-to-r from-amber-400/20 to-yellow-400/10 border-amber-300/40 text-amber-900 dark:text-amber-300 hover:bg-amber-400/30'
+                    ? 'bg-amber-500/10 border-amber-300/40 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20'
                     : 'bg-[#E8EFE7] dark:bg-[#1A2E22] hover:bg-[#DCE7DB] border-[#DCE7DB] text-[#2D5A3D] dark:text-emerald-300'
                 }`}
-                title={quota.isPro ? 'TripVerse Pro Active (30h/week AI Co-Pilot)' : `${quota.freeTripsRemaining}/3 Free Trips Available • Click to Upgrade`}
+                title={quota.isPro ? 'TripVerse Pro Active (30h/week AI Co-Pilot)' : 'Unlock Unlimited Trips with TripVerse Pro'}
               >
-                {quota.isPro ? (
-                  <>
-                    <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    <span className="font-black">PRO</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>{quota.freeTripsRemaining}/3 Free</span>
-                  </>
-                )}
+                <Crown className={`w-3.5 h-3.5 ${quota.isPro ? 'text-amber-500 fill-amber-500' : 'text-[#2D5A3D] dark:text-emerald-400'}`} />
+                <span>{quota.isPro ? 'PRO' : 'Get Pro'}</span>
               </button>
             )}
 
@@ -351,57 +341,34 @@ export const Navbar: React.FC<NavbarProps> = ({
             />
           </div>
 
-          {/* Right: Subscription Badge, Quick Search and Profile Avatar */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {onOpenProModal && (
+          {/* Right: Clean Profile Avatar / Auth (Matching Reference Screen 1) */}
+          <div className="flex items-center gap-2">
+            {!isAuthenticated ? (
               <button
-                type="button"
-                onClick={onOpenProModal}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer shadow-2xs border ${
-                  quota.isPro
-                    ? 'bg-gradient-to-r from-amber-400/20 to-yellow-400/10 border-amber-400/40 text-amber-900 dark:text-amber-300'
-                    : 'bg-[#E8EFE7] dark:bg-[#1A2E22] border-[#DCE7DB] text-[#2D5A3D] dark:text-emerald-300'
-                }`}
-                title={quota.isPro ? 'TripVerse Pro Active' : `${quota.freeTripsRemaining}/3 Free Trips Available`}
+                onClick={onOpenAuthModal}
+                className="px-3.5 py-1.5 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] text-[#2D5A3D] text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
               >
-                {quota.isPro ? (
-                  <>
-                    <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    <span>PRO</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3 h-3 text-amber-500" />
-                    <span>{quota.freeTripsRemaining}/3 Free</span>
-                  </>
+                Sign In
+              </button>
+            ) : (
+              <button
+                onClick={() => onNavigate('profile')}
+                className="w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-700 shadow-xs overflow-hidden cursor-pointer active:scale-95 transition-transform shrink-0 relative"
+                title="Profile"
+                aria-label="Profile"
+              >
+                <img
+                  src={userProfile.avatar}
+                  alt={userProfile.name}
+                  className="w-full h-full object-cover"
+                />
+                {quota.isPro && (
+                  <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-amber-400 ring-1.5 ring-white flex items-center justify-center">
+                    <Crown className="w-2 h-2 text-amber-900 fill-amber-900" />
+                  </span>
                 )}
               </button>
             )}
-
-            {onOpenSearch && (
-              <button
-                onClick={onOpenSearch}
-                className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-[#E2EBE1] dark:border-slate-700 shadow-2xs flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-[#152A1C] active:scale-95 transition-all cursor-pointer"
-                title="Search"
-                aria-label="Search"
-              >
-                <Search className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-              </button>
-            )}
-
-            {/* Mobile User Profile Avatar (matching Reference Image Screen 1) */}
-            <button
-              onClick={() => onNavigate('profile')}
-              className="w-9 h-9 rounded-full ring-2 ring-white dark:ring-slate-700 shadow-xs overflow-hidden cursor-pointer active:scale-95 transition-transform shrink-0"
-              title="Profile"
-              aria-label="Profile"
-            >
-              <img
-                src={userProfile.avatar}
-                alt={userProfile.name}
-                className="w-full h-full object-cover"
-              />
-            </button>
           </div>
         </div>
       </div>
@@ -429,35 +396,35 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onOpenProModal();
                 setMobileMenuOpen(false);
               }}
-              className={`p-3.5 my-2 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${
+              className={`p-4 my-2 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${
                 quota.isPro
-                  ? 'bg-gradient-to-r from-[#12281D] via-[#1E3E2A] to-[#12281D] text-white border-amber-400/40 shadow-emerald-950/20'
-                  : 'bg-gradient-to-r from-amber-50 to-emerald-50 border-amber-200/90 text-slate-800'
+                  ? 'bg-gradient-to-r from-[#152A1C] via-[#1E3E2A] to-[#2D5A3D] text-white border-emerald-400/30'
+                  : 'bg-white dark:bg-slate-800 border-[#E2EBE1] dark:border-slate-700 text-[#152A1C] dark:text-white'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                  quota.isPro ? 'bg-amber-400 text-slate-900' : 'bg-[#E8EFE7] text-[#2D5A3D]'
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  quota.isPro ? 'bg-amber-400 text-amber-950' : 'bg-[#E8EFE7] text-[#2D5A3D]'
                 }`}>
                   <Crown className="w-5 h-5 fill-current" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <p className={`text-xs font-bold ${quota.isPro ? 'text-white' : 'text-slate-900'}`}>
-                      {quota.isPro ? 'TripVerse Pro Active' : 'Free Explorer Pass'}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className={`text-xs font-bold truncate ${quota.isPro ? 'text-white' : 'text-[#152A1C] dark:text-slate-100'}`}>
+                      {quota.isPro ? 'TripVerse Pro Member' : 'TripVerse Pro'}
                     </p>
-                    <span className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
-                      quota.isPro ? 'bg-amber-400/30 text-amber-300' : 'bg-emerald-100 text-emerald-800'
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase shrink-0 ${
+                      quota.isPro ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' : 'bg-[#E8EFE7] text-[#2D5A3D]'
                     }`}>
-                      {quota.isPro ? '30H/WK' : `${quota.freeTripsRemaining}/3 FREE`}
+                      {quota.isPro ? 'ACTIVE' : 'UPGRADE'}
                     </span>
                   </div>
-                  <p className={`text-[10px] ${quota.isPro ? 'text-emerald-200' : 'text-slate-500'}`}>
-                    {quota.isPro ? 'Unlimited Trips & 30h/week AI Active' : 'Upgrade to Pro for Unlimited Trips'}
+                  <p className={`text-[11px] truncate mt-0.5 ${quota.isPro ? 'text-emerald-200' : 'text-[#5A7362] dark:text-slate-400'}`}>
+                    {quota.isPro ? 'Unlimited Trips & 30h/week AI Active' : 'Unlock Unlimited Trips & AI Brain'}
                   </p>
                 </div>
               </div>
-              <ChevronRight className={`w-4 h-4 ${quota.isPro ? 'text-amber-300' : 'text-slate-400'}`} />
+              <ChevronRight className={`w-4 h-4 shrink-0 ${quota.isPro ? 'text-amber-300' : 'text-slate-400'}`} />
             </div>
           )}
           {mobileNavLinks.map((link) => {
