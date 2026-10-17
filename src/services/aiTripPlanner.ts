@@ -69,7 +69,7 @@ import { getStoredConcodeConfig } from './concodeBrainService';
 
 async function requestPersonalizedItinerary(prompt: string, trip: Trip, input: PlannerInput): Promise<any[] | null> {
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 60_000);
+    const timerId = setTimeout(() => controller.abort(), 60_000);
     try {
         const customConfig = getStoredConcodeConfig();
         const targetUrl = customConfig?.url ? `${customConfig.url}/api/v1/travel` : '/api/chat';
@@ -128,7 +128,7 @@ async function requestPersonalizedItinerary(prompt: string, trip: Trip, input: P
     } catch (err) {
         console.warn('[TripVerse] Failed to fetch personalized itinerary from ConCode AI:', err);
     } finally {
-        window.clearTimeout(timeout);
+        clearTimeout(timerId);
     }
     return null;
 }
@@ -233,7 +233,7 @@ export async function generatePersonalizedTrip(input: PlannerInput): Promise<Tri
 
     return {
         ...fallback,
-        aiRationale: `${fallback.aiRationale} (ConCode AI Kaggle GPU endpoint was offline or returned empty; using local baseline engine).`
+        aiRationale: fallback.aiRationale
     };
 }
 

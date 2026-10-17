@@ -36,8 +36,8 @@ export interface ConcodeConfig {
 const STORAGE_KEY_CONCODE = 'tripverse_concode_config_v1';
 
 export function getStoredConcodeConfig(): ConcodeConfig | null {
-  const envUrl = import.meta.env.VITE_CONCODE_API_URL;
-  const envKey = import.meta.env.VITE_CONCODE_API_KEY;
+  const envUrl = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_CONCODE_API_URL : undefined;
+  const envKey = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_CONCODE_API_KEY : undefined;
   if (envUrl && envUrl.startsWith('http') && !envUrl.includes('api.concode.ai')) {
     return {
       url: envUrl.trim().replace(/\/$/, ''),
