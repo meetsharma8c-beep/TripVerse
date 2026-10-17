@@ -311,7 +311,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                       {/* Brand Tag */}
                       <div className="absolute top-12 left-4 z-10">
                         <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full shadow-md">
-                          <span className="font-display font-black text-xs text-[#0B2545]">
+                          <span className="font-display font-black text-xs text-[#152A1C]">
                             Trip<span className="text-[#2D5A3D]">Verse</span>
                           </span>
                         </div>
@@ -333,8 +333,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                       <div className="space-y-2.5">
                         
                         {/* Card 1: Route & Price Pill */}
-                        {/* Card 1: Route & Price Pill */}
-                        <div className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-sm space-y-1.5 hover:border-emerald-300 transition-colors">
+                        <div className="p-3.5 bg-white rounded-2xl border border-[#E2EBE1] shadow-xs space-y-1.5 hover:border-[#2D5A3D] transition-colors">
                           <div className="flex items-center justify-between text-xs gap-2">
                             <span className="font-extrabold text-slate-900 text-sm font-display truncate">
                               {activeTrip ? `${activeTrip.origin.split(',')[0]} → ${activeTrip.destination.split(',')[0]}` : 'Configure Your Journey'}
@@ -454,13 +453,13 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                 {/* APP VIEW 3: DAY-WISE TIMELINE */}
                 {activeScreen === 'itinerary' && (
                   <div className="flex-1 flex flex-col p-3.5 space-y-2.5 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <h4 className="font-extrabold text-xs text-[#0B2545] font-display">Udaipur 3-Day Highlights</h4>
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Example schedule</span>
+                    <div className="flex items-center justify-between border-b border-[#E2EBE1] pb-2">
+                      <h4 className="font-extrabold text-xs text-[#152A1C] font-display">Udaipur 3-Day Highlights</h4>
+                      <span className="text-[10px] font-bold text-[#2D5A3D] bg-[#EAF0E9] px-2 py-0.5 rounded">Example schedule</span>
                     </div>
 
                     <div className="space-y-2 text-xs">
-                      <div className="p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1">
+                      <div className="p-2.5 bg-white rounded-xl border border-[#E2EBE1] shadow-2xs space-y-1">
                         <div className="flex justify-between font-bold text-slate-800">
                           <span>Day 1: Lake Pichola Sunset</span>
                           <span className="text-emerald-600">₹2,800</span>

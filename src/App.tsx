@@ -2177,27 +2177,27 @@ export function App() {
         </main>
 
         {/* Modern Footer */}
-        <footer className="bg-white border-t border-slate-200 py-8 lg:py-10 mt-auto pb-24 lg:pb-10">
+        <footer className="bg-white border-t border-[#E2EBE1] py-8 lg:py-10 mt-auto pb-24 lg:pb-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
               <Logo size="adaptive" showTagline={false} />
-              <span className="hidden sm:inline text-slate-300">|</span>
-              <span className="text-xs font-semibold text-slate-500">
+              <span className="hidden sm:inline text-[#DCE7DB]">|</span>
+              <span className="text-xs font-semibold text-[#5A7362]">
                 "TripVerse plans the journey, not just the destination."
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-600">
-              <button onClick={() => setIsOnboardingOpen(true)} className="hover:text-[#2D5A3D] cursor-pointer">Interactive Tour</button>
-              <button onClick={() => setCurrentTab('explore')} className="hover:text-[#2D5A3D] cursor-pointer">Destinations</button>
-              <button onClick={() => handleOpenPlannerWithPrefill()} className="hover:text-[#2D5A3D] cursor-pointer">AI Engine</button>
-              <button onClick={() => setCurrentTab('trips')} className="hover:text-[#2D5A3D] cursor-pointer">My Routes</button>
-              <span className="text-slate-300">|</span>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'privacy' })} className="hover:text-[#2D5A3D] cursor-pointer">Privacy</button>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'terms' })} className="hover:text-[#2D5A3D] cursor-pointer">Terms</button>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'advisory' })} className="hover:text-[#2D5A3D] cursor-pointer">Advisory</button>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'feedback' })} className="text-[#2D5A3D] hover:text-[#1E3E2B] bg-[#EAF0E9] px-2.5 py-1 rounded-lg border border-[#8EA78D]/40 cursor-pointer">Feedback</button>
-              <span className="text-slate-400">© 2026 TripVerse</span>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-[#5A7362]">
+              <button onClick={() => setIsOnboardingOpen(true)} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">Interactive Tour</button>
+              <button onClick={() => setCurrentTab('explore')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">Destinations</button>
+              <button onClick={() => handleOpenPlannerWithPrefill()} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">AI Engine</button>
+              <button onClick={() => setCurrentTab('trips')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">My Routes</button>
+              <span className="text-[#DCE7DB]">|</span>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'privacy' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">Privacy</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'terms' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">Terms</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'advisory' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">Advisory</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'feedback' })} className="text-[#2D5A3D] hover:text-[#1E3E2B] bg-[#EAF0E9] px-3 py-1 rounded-full border border-[#DCE7DB] transition-colors cursor-pointer font-bold">Feedback</button>
+              <span className="text-[#7A9382]">© 2026 TripVerse</span>
             </div>
           </div>
         </footer>

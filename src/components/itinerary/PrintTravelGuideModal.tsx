@@ -70,16 +70,16 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
     <div className="printable-target-root fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 print:p-0 print:bg-white print:static print:inset-auto">
       
       {/* Container */}
-      <div className="printable-target-container bg-white rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 print:shadow-none print:border-none print:max-h-none print:w-full print:rounded-none">
+      <div className="printable-target-container bg-white rounded-[32px] w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl border border-[#E2EBE1] print:shadow-none print:border-none print:max-h-none print:w-full print:rounded-none">
         
         {/* Modal Action Bar (Hidden in Print) */}
-        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-slate-200 flex items-center justify-between print:hidden no-print">
+        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-[#E2EBE1] flex items-center justify-between print:hidden no-print">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Official Travel Dossier</span>
             <span className="text-slate-300">•</span>
-            <span className="text-xs font-semibold text-slate-500">A4 PDF Print-Ready</span>
+            <span className="text-xs font-semibold text-[#5A7362]">A4 PDF Print-Ready</span>
             <span className="text-slate-300">•</span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EAF0E9] text-[#2D5A3D] border border-[#DCE7DB]">
               <ShieldCheck className="w-3 h-3 text-[#2D5A3D]" />
               100% Genuine Route Pass
             </span>
@@ -96,7 +96,7 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-sm cursor-pointer"
+              className="w-8 h-8 rounded-full bg-[#F4F6F2] hover:bg-[#EAF0E9] flex items-center justify-center text-[#152A1C] text-sm cursor-pointer transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -104,7 +104,7 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
         </div>
 
         {/* Printable Document Body */}
-        <div className="p-6 sm:p-10 space-y-8 print:p-2 print:space-y-6 text-slate-900">
+        <div className="p-6 sm:p-10 space-y-8 print:p-2 print:space-y-6 text-[#152A1C]">
           
           {/* Header Boarding Pass Banner */}
           <div className="border-b-2 border-slate-900 pb-6 print-avoid-break break-inside-avoid">
@@ -113,12 +113,12 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-black tracking-widest uppercase text-[#2D5A3D]">TRIPVERSE VERIFIED TRAVEL DOSSIER</span>
                   <span className="text-xs text-slate-400">|</span>
-                  <span className="text-xs font-bold text-slate-500">CONCODE AI Intelligent Co-Pilot</span>
+                  <span className="text-xs font-bold text-[#5A7362]">CONCODE AI Intelligent Co-Pilot</span>
                 </div>
-                <h1 className="text-3xl font-black font-display text-slate-900 mt-1">
+                <h1 className="text-3xl font-black font-display text-[#152A1C] mt-1">
                   {trip.name}
                 </h1>
-                <p className="text-sm font-medium text-slate-600 mt-1 flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-medium text-[#5A7362] mt-1 flex items-center gap-2 flex-wrap">
                   <span className="flex items-center gap-1.5">{trip.origin} <ArrowRight className="w-3.5 h-3.5 text-slate-400 inline" /> {trip.destination}</span>
                   <span>•</span>
                   <span>{trip.durationDays} Days</span>
@@ -141,8 +141,8 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
                 </div>
 
                 <div className="text-right">
-                  <div className="text-xs text-slate-400 font-bold uppercase">Estimated Budget ({currency})</div>
-                  <div className="text-2xl font-black text-[#0B2545]">
+                  <div className="text-xs text-[#5A7362] font-bold uppercase">Estimated Budget ({currency})</div>
+                  <div className="text-2xl font-black text-[#152A1C]">
                     {formatCurrency(trip.estimatedTotal, currency, true)}
                   </div>
                   <div className="text-[11px] text-[#2D5A3D] font-semibold">
@@ -228,12 +228,12 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
 
             <div className="space-y-6">
               {trip.itinerary.map(day => (
-                <div key={day.dayNumber} className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 print:bg-white print-avoid-break break-inside-avoid">
-                  <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
-                    <span className="text-sm font-black text-[#0B2545]">
+                <div key={day.dayNumber} className="border border-[#E2EBE1] rounded-2xl p-4 bg-[#F4F6F2]/50 print:bg-white print-avoid-break break-inside-avoid">
+                  <div className="flex items-center justify-between border-b border-[#E2EBE1] pb-2 mb-3">
+                    <span className="text-sm font-black text-[#152A1C]">
                       Day {day.dayNumber}: {day.title}
                     </span>
-                    <span className="text-xs font-bold text-slate-600">
+                    <span className="text-xs font-bold text-[#5A7362]">
                       Est. Day Spend: {formatCurrency(day.dayEstimatedCost, currency)}
                     </span>
                   </div>

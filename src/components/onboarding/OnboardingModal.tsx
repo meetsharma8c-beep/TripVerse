@@ -132,7 +132,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
       }}
     >
       <div
-        className="bg-white rounded-3xl w-full max-w-xl max-h-full shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col"
+        className="bg-white rounded-[32px] w-full max-w-xl max-h-full shadow-2xl border border-[#E2EBE1] overflow-hidden flex flex-col"
         style={{ maxHeight: 'calc(100dvh - max(1.5rem, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)))' }}
       >
         
@@ -152,8 +152,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     idx === currentStepIndex
                       ? 'w-8 bg-[#2D5A3D]'
                       : idx < currentStepIndex
-                      ? 'w-2.5 bg-emerald-300'
-                      : 'w-2.5 bg-slate-200'
+                      ? 'w-2.5 bg-[#8EA78D]'
+                      : 'w-2.5 bg-[#E2EBE1]'
                   }`}
                 />
               </button>
@@ -164,14 +164,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             {!isLastStep && (
               <button
                 onClick={handleSkip}
-                className="min-h-11 px-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                className="min-h-11 px-2 text-xs font-bold text-[#5A7362] hover:text-[#152A1C] transition-colors cursor-pointer"
               >
                 Skip Tour
               </button>
             )}
             <button
               onClick={handleSkip}
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-400 hover:text-[#152A1C] hover:bg-[#EAF0E9] transition-colors cursor-pointer"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -191,14 +191,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
               <span className={`inline-block text-[10px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full text-white bg-gradient-to-r ${currentStep.gradient} shadow-xs mb-1`}>
                 {currentStep.badge}
               </span>
-              <h2 className="text-xl sm:text-2xl font-bold font-display text-[#0B2545] tracking-tight leading-snug">
+              <h2 className="text-xl sm:text-2xl font-bold font-display text-[#152A1C] tracking-tight leading-snug">
                 {currentStep.title}
               </h2>
             </div>
           </div>
 
           {/* Description */}
-          <p className="text-sm text-slate-600 font-normal leading-relaxed">
+          <p className="text-sm text-[#5A7362] font-normal leading-relaxed">
             {currentStep.description}
           </p>
 
@@ -225,49 +225,49 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
           )}
 
           {currentStepIndex === 1 && (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-900/90 to-[#0B2545] text-white border border-blue-500/30 shadow-sm space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-bold text-blue-300">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#1E3E2B] to-[#152A1C] text-white border border-[#386B49]/40 shadow-sm space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-bold text-[#8EA78D]">
                 <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Example location result</span>
-                <span className="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-400/30">Example</span>
+                <span className="bg-[#2D5A3D]/30 text-[#A8C7A5] px-2 py-0.5 rounded-full border border-[#386B49]/40">Example</span>
               </div>
               <div className="bg-white/10 backdrop-blur-xs p-2.5 rounded-xl border border-white/10 flex items-center justify-between">
                 <div>
                   <p className="font-bold text-white text-xs">Poicha Nilkanthdham Swaminarayan</p>
-                  <p className="text-[10px] text-blue-200">21.84° N, 73.55° E · Narmada Riverbank</p>
+                  <p className="text-[10px] text-[#EAF0E9]">21.84° N, 73.55° E · Narmada Riverbank</p>
                 </div>
-                <span className="text-[10px] font-bold text-blue-300 bg-blue-950/60 px-2 py-1 rounded-md">Example</span>
+                <span className="text-[10px] font-bold text-[#A8C7A5] bg-[#152A1C]/70 px-2 py-1 rounded-md">Example</span>
               </div>
             </div>
           )}
 
           {currentStepIndex === 2 && (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-rose-950/90 to-[#0B2545] text-white border border-rose-500/30 shadow-sm space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-bold text-rose-300">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#244931] to-[#152A1C] text-white border border-[#386B49]/40 shadow-sm space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-bold text-[#A8C7A5]">
                 <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Directions & Trip Planning</span>
-                <span className="bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full border border-rose-400/30">Planning only</span>
+                <span className="bg-[#2D5A3D]/30 text-[#A8C7A5] px-2 py-0.5 rounded-full border border-[#386B49]/40">Planning only</span>
               </div>
               <div className="bg-white/10 backdrop-blur-xs p-2.5 rounded-xl border border-white/10 flex items-center justify-between">
                 <div>
                   <p className="font-bold text-white text-xs">Next Turn: In 1.2 km take Vadodara Ring Road</p>
-                  <p className="text-[10px] text-rose-200">Current Speed: 74 km/h · 0 Traffic Disruptions Ahead</p>
+                  <p className="text-[10px] text-[#EAF0E9]">Current Speed: 74 km/h · 0 Traffic Disruptions Ahead</p>
                 </div>
-                <span className="text-xs font-black text-rose-400 bg-rose-950/70 px-2.5 py-1 rounded-md">74 km/h</span>
+                <span className="text-xs font-black text-emerald-300 bg-[#152A1C]/70 px-2.5 py-1 rounded-md">74 km/h</span>
               </div>
             </div>
           )}
 
           {currentStepIndex === 3 && (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-teal-950/90 to-[#0B2545] text-white border border-teal-500/30 shadow-sm space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-bold text-teal-300">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#2D5A3D] to-[#152A1C] text-white border border-[#386B49]/40 shadow-sm space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-bold text-[#A8C7A5]">
                 <span className="flex items-center gap-1.5"><Wallet className="w-3.5 h-3.5" /> Group TripSplit & Offline Dossier</span>
-                <span className="bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-400/30">Expense Splits</span>
+                <span className="bg-[#2D5A3D]/30 text-[#A8C7A5] px-2 py-0.5 rounded-full border border-[#386B49]/40">Expense Splits</span>
               </div>
               <div className="bg-white/10 backdrop-blur-xs p-2.5 rounded-xl border border-white/10 flex items-center justify-between">
                 <div>
                   <p className="font-bold text-white text-xs">₹8,400 Total Shared · 4 Friends</p>
-                  <p className="text-[10px] text-teal-200">Settlement ready · Printable PDF Dossier cached</p>
+                  <p className="text-[10px] text-[#EAF0E9]">Settlement ready · Printable PDF Dossier cached</p>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/70 px-2 py-1 rounded-md">Settled</span>
+                <span className="text-[10px] font-bold text-emerald-300 bg-[#152A1C]/70 px-2 py-1 rounded-md">Settled</span>
               </div>
             </div>
           )}

@@ -132,7 +132,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200"
+        className="bg-white rounded-[32px] max-w-2xl w-full shadow-2xl border border-[#E2EBE1] overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         
@@ -361,7 +361,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
         </div>
 
         {/* Modal Sticky Bottom Action Bar */}
-        <div className="p-4 sm:p-5 border-t border-slate-100 bg-white/95 backdrop-blur-md flex items-center gap-3 shrink-0">
+        <div className="p-4 sm:p-5 border-t border-[#E2EBE1] bg-white/95 backdrop-blur-md flex items-center gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}

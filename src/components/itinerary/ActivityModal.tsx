@@ -78,10 +78,10 @@ export function ActivityModal({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[92vh]">
+      <div className="bg-white rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl border border-[#E2EBE1] flex flex-col max-h-[92vh]">
         
         {/* Header */}
-        <div className="p-5 sm:p-6 bg-gradient-to-r from-[#0B2545] to-[#102E54] text-white flex items-center justify-between shrink-0">
+        <div className="p-5 sm:p-6 bg-gradient-to-r from-[#152A1C] to-[#1E3E2B] text-white flex items-center justify-between shrink-0">
           <div>
             <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-300">
               Itinerary Customization
@@ -188,8 +188,8 @@ export function ActivityModal({
                   onClick={() => setTag(t)}
                   className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
                     tag === t
-                      ? 'bg-[#0B2545] text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-[#2D5A3D] text-white shadow-xs'
+                      : 'bg-[#F4F6F2] text-[#5A7362] border border-[#E2EBE1] hover:bg-[#EAF0E9]'
                   }`}
                 >
                   {t}

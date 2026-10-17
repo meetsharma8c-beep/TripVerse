@@ -66,17 +66,17 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
       
-      <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-[32px] max-w-md w-full shadow-2xl border border-[#E2EBE1] overflow-hidden animate-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div className="px-6 py-4 border-b border-[#E2EBE1] flex items-center justify-between bg-[#F4F6F2]">
           <div className="flex items-center gap-2">
             <Share2 className="w-4 h-4 text-[#2D5A3D]" />
-            <h3 className="font-bold text-sm text-[#0B2545]">Share Trip Itinerary</h3>
+            <h3 className="font-bold text-sm text-[#152A1C]">Share Trip Itinerary</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+            className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-[#EAF0E9] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -85,7 +85,7 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
         {/* Shareable Card Canvas Preview */}
         <div className="p-6 space-y-5">
           
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#0B2545] via-[#102E54] to-[#2D5A3D] text-white p-6 shadow-xl space-y-4">
+          <div className="relative rounded-[24px] overflow-hidden bg-gradient-to-br from-[#152A1C] via-[#1E3E2B] to-[#2D5A3D] text-white p-6 shadow-xl space-y-4">
             
             {/* Brand Watermark */}
             <div className="flex items-center justify-between">

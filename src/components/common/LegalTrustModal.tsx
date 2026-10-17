@@ -80,29 +80,29 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-[32px] max-w-2xl w-full shadow-2xl border border-[#E2EBE1] overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+        <div className="px-6 py-4 border-b border-[#E2EBE1] flex items-center justify-between bg-[#F4F6F2] shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#2D5A3D]/10 text-[#2D5A3D] flex items-center justify-center border border-emerald-500/20">
+            <div className="w-8 h-8 rounded-xl bg-[#2D5A3D]/10 text-[#2D5A3D] flex items-center justify-center border border-[#2D5A3D]/20">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-[#0B2545]">TripVerse Trust, Legal & Feedback</h3>
-              <p className="text-[11px] text-slate-500 font-medium">Transparent, traveler-first policies & community voice</p>
+              <h3 className="font-bold text-sm text-[#152A1C]">TripVerse Trust, Legal & Feedback</h3>
+              <p className="text-[11px] text-[#5A7362] font-medium">Transparent, traveler-first policies & community voice</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+            className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-[#EAF0E9] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 bg-white px-6 gap-2 pt-3 shrink-0 overflow-x-auto no-scrollbar">
+        <div className="flex border-b border-[#E2EBE1] bg-white px-6 gap-2 pt-3 shrink-0 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('privacy')}
             className={`pb-3 px-3 text-xs font-bold transition-all flex items-center gap-1.5 border-b-2 whitespace-nowrap ${

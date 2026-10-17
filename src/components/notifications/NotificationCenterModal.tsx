@@ -110,12 +110,12 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-200/90 overflow-hidden">
+      <div className="bg-white rounded-[32px] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-[#E2EBE1] overflow-hidden">
         
         {/* Header */}
-        <div className="shrink-0 px-6 py-4 sm:py-5 border-b border-slate-200 flex items-center justify-between gap-4 bg-gradient-to-r from-emerald-50/50 via-teal-50/30 to-white">
+        <div className="shrink-0 px-6 py-4 sm:py-5 border-b border-[#E2EBE1] flex items-center justify-between gap-4 bg-[#F4F6F2]">
           <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 rounded-2xl bg-emerald-100 text-[#2D5A3D] flex items-center justify-center shadow-xs">
+            <div className="relative w-10 h-10 rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center shadow-xs">
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
@@ -124,10 +124,10 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
               )}
             </div>
             <div>
-              <h2 className="text-xl font-bold font-display text-[#0B2545] tracking-tight">
+              <h2 className="text-xl font-bold font-display text-[#152A1C] tracking-tight">
                 Notification & Countdown Hub
               </h2>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-[#5A7362] font-medium">
                 Trip countdowns and planning reminders; no live flight or road tracking
               </p>
             </div>
@@ -135,7 +135,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-slate-400 hover:text-[#152A1C] hover:bg-[#EAF0E9] transition-colors cursor-pointer"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -144,7 +144,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 
         {/* LIVE CARD: EITHER ACTIVE UPCOMING COUNTDOWN OR FRESH USER ONBOARDING BANNER */}
         {hasUpcomingActiveTrip && countdown && !countdown.isPast && activeTrip ? (
-          <div className="shrink-0 mx-4 sm:mx-6 mt-4 sm:mt-5 mb-3 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#0B2545] via-[#133966] to-[#07172C] text-white shadow-lg relative overflow-hidden">
+          <div className="shrink-0 mx-4 sm:mx-6 mt-4 sm:mt-5 mb-3 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#152A1C] via-[#1E3E2B] to-[#2D5A3D] text-white shadow-lg relative overflow-hidden">
             {/* Background Glow */}
             <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
             
@@ -200,7 +200,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
             </p>
           </div>
         ) : (
-          <div className="shrink-0 mx-4 sm:mx-6 mt-4 sm:mt-5 mb-3 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#0B2545] via-[#133966] to-[#07172C] text-white shadow-lg relative overflow-hidden">
+          <div className="shrink-0 mx-4 sm:mx-6 mt-4 sm:mt-5 mb-3 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#152A1C] via-[#1E3E2B] to-[#2D5A3D] text-white shadow-lg relative overflow-hidden">
             {/* Background Glow */}
             <div className="absolute -right-8 -bottom-8 w-36 h-36 bg-[#2D5A3D]/20 rounded-full blur-2xl pointer-events-none" />
             <div className="flex items-center justify-between gap-2 mb-2">

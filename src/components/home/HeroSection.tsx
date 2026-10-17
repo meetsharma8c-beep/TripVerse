@@ -17,7 +17,8 @@ import {
   Info,
   ShieldCheck,
   Search,
-  BookOpen
+  BookOpen,
+  Mic
 } from 'lucide-react';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { searchLocations, PreciseLocation } from '../../services/locationService';
@@ -156,29 +157,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </p>
 
           {/* Serene Ethereal Landscape Visual (Matching Reference Image Screen 1 Hero Artwork) */}
-          <div className="relative rounded-3xl overflow-hidden border border-[#E2EBE1] shadow-xl shadow-[#2D5A3D]/5 bg-[#EAF0E9] group">
+          <div className="relative rounded-[32px] overflow-hidden border border-[#E2EBE1] shadow-[0_12px_40px_rgba(45,90,61,0.08)] bg-[#EAF0E9] group">
             <img
               src="/images/hero-nature-serene.jpg"
               alt="Serene nature landscape with misty mountains, lake, and pagoda"
-              className="w-full h-56 sm:h-72 md:h-84 lg:h-96 object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
+              className="w-full h-60 sm:h-72 md:h-84 lg:h-96 object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
-            <div className="absolute bottom-12 sm:bottom-14 md:bottom-16 left-4 right-4 sm:left-6 sm:right-6 flex items-end justify-between text-white pointer-events-none pb-1">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#A8C5AC] bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 inline-block mb-1.5 shadow-xs">
-                  Tranquil Nature Retreats
-                </span>
-                <p className="text-sm sm:text-base font-bold drop-shadow-md text-white/95 leading-snug">
-                  Discover scenic roads, peaceful lakes, and ancient heritage
-                </p>
-              </div>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
           </div>
 
           {/* Floating Pill Search Bar (Matching Reference Image Screen 1) */}
           <div className="relative max-w-2xl mx-auto -mt-7 sm:-mt-8 z-30 px-2 sm:px-4">
             <form onSubmit={handleSubmit} className="relative">
-              <div className="bg-white rounded-full p-2 pl-4 sm:pl-6 shadow-[0_12px_36px_-6px_rgba(45,90,61,0.22)] border border-[#E2EBE1] flex items-center justify-between gap-2.5 transition-all focus-within:ring-4 focus-within:ring-[#2D5A3D]/15 focus-within:border-[#2D5A3D]">
+              <div className="bg-white rounded-full p-2 pl-4 sm:pl-6 shadow-[0_12px_36px_-6px_rgba(45,90,61,0.20)] border border-[#E2EBE1] flex items-center justify-between gap-2.5 transition-all focus-within:ring-4 focus-within:ring-[#2D5A3D]/15 focus-within:border-[#2D5A3D]">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <Search className="w-5 h-5 text-slate-400 shrink-0" />
                   <input
@@ -217,7 +208,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   aria-label="Search destination"
                   title="Search destination"
                 >
-                  <Sparkles className="w-5 h-5" />
+                  <Mic className="w-5 h-5" />
                 </button>
               </div>
 
@@ -470,13 +461,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <div className="relative">
                 <label 
                   htmlFor="hero-planner-destination-input"
-                  className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center justify-between"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#152A1C] mb-1.5 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-[#2D5A3D]" />
                     <span>Destination or Specific Spot</span>
                   </div>
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
+                  <span className="text-[11px] font-bold text-[#2D5A3D] bg-[#EAF0E9] px-2.5 py-0.5 rounded-full border border-[#DCE7DB]">
                     Any Spot Worldwide
                   </span>
                 </label>
@@ -491,11 +482,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     }}
                     onFocus={() => setShowDropdown(true)}
                     placeholder="Enter spot or route (e.g. Udaipur, Manali, Chopta, Goa, Hallstatt)..."
-                    className="w-full pl-4 pr-10 py-3 sm:py-3.5 min-h-[44px] rounded-2xl bg-slate-50 border border-slate-300 text-slate-900 font-semibold placeholder:text-slate-500 focus:bg-white focus:outline-none focus:border-[#2D5A3D] focus:ring-4 focus:ring-emerald-500/10 transition-all text-sm sm:text-base"
+                    className="w-full pl-4 pr-10 py-3 sm:py-3.5 min-h-[44px] rounded-2xl bg-[#F4F6F2] border border-[#DCE7DB] text-[#152A1C] font-semibold placeholder:text-[#57685D] focus:bg-white focus:outline-none focus:border-[#2D5A3D] focus:ring-4 focus:ring-[#2D5A3D]/10 transition-all text-sm sm:text-base"
                   />
                   <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                     {isSearching ? (
-                      <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
+                      <Loader2 className="w-4 h-4 text-[#2D5A3D] animate-spin" />
                     ) : destination.trim().length > 0 ? (
                       <button
                         type="button"
@@ -503,7 +494,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           setDestination('');
                           setSuggestions([]);
                         }}
-                        className="text-slate-400 hover:text-slate-600 p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg"
+                        className="text-slate-400 hover:text-[#152A1C] p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg"
                         aria-label="Clear destination input"
                       >
                         <X className="w-4 h-4" />
@@ -593,7 +584,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div>
                   <label 
                     htmlFor="hero-duration-select"
-                    className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5"
+                    className="block text-xs font-bold uppercase tracking-wider text-[#152A1C] mb-1.5 flex items-center gap-1.5"
                   >
                     <Calendar className="w-3.5 h-3.5 text-[#2D5A3D]" />
                     <span>Trip Duration</span>
@@ -616,7 +607,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
                 {/* Field 3: Travelers */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#152A1C] mb-1.5 flex items-center gap-1.5">
                     <Users className="w-3.5 h-3.5 text-[#2D5A3D]" />
                     <span>Travelers</span>
                   </label>
@@ -624,7 +615,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => setTravelers(Math.max(1, travelers - 1))}
-                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white border border-[#DCE7DB] text-[#152A1C] font-extrabold text-base hover:bg-slate-100 active:scale-95 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white border border-[#DCE7DB] text-[#152A1C] font-extrabold text-base hover:bg-[#EAF0E9] active:scale-95 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                       aria-label="Decrease traveler count"
                     >
                       -
@@ -635,7 +626,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => setTravelers(Math.min(12, travelers + 1))}
-                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white border border-[#DCE7DB] text-[#152A1C] font-extrabold text-base hover:bg-slate-100 active:scale-95 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white border border-[#DCE7DB] text-[#152A1C] font-extrabold text-base hover:bg-[#EAF0E9] active:scale-95 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                       aria-label="Increase traveler count"
                     >
                       +
@@ -650,7 +641,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <label 
                     htmlFor="hero-budget-slider"
-                    className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5"
+                    className="text-xs font-bold uppercase tracking-wider text-[#152A1C] flex items-center gap-1.5"
                   >
                     <Wallet className="w-3.5 h-3.5 text-[#2D5A3D]" />
                     <span>Total Group Budget</span>

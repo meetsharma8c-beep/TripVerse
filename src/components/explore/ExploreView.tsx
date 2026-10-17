@@ -188,7 +188,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                 <div
                   key={`rec-${dest.id}`}
                   onClick={() => setActiveModalDest(dest)}
-                  className="bg-white rounded-2xl p-3 border border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all duration-200 flex gap-3.5 items-center cursor-pointer group"
+                  className="bg-white rounded-2xl p-3 border border-[#E2EBE1] hover:border-[#2D5A3D] hover:shadow-[0_8px_25px_rgba(45,90,61,0.08)] transition-all duration-200 flex gap-3.5 items-center cursor-pointer group"
                 >
                   <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative">
                     <img
@@ -206,7 +206,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                   </div>
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-sm text-slate-800 truncate group-hover:text-emerald-700 transition-colors">
+                      <h4 className="font-bold text-sm text-[#152A1C] truncate group-hover:text-[#2D5A3D] transition-colors">
                         {dest.name}
                       </h4>
                       <button
@@ -214,12 +214,12 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                           e.stopPropagation();
                           onToggleSaved(dest.id);
                         }}
-                        className={`p-1 rounded-full ${isSaved ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`p-1 rounded-full ${isSaved ? 'text-[#2D5A3D]' : 'text-slate-400 hover:text-slate-600'}`}
                       >
-                        <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-emerald-600' : ''}`} />
+                        <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-[#2D5A3D]' : ''}`} />
                       </button>
                     </div>
-                    <p className="text-[11px] text-slate-500 truncate">{dest.tagline}</p>
+                    <p className="text-[11px] text-[#5A7362] truncate">{dest.tagline}</p>
                     <div className="flex items-center justify-between text-xs pt-0.5">
                       <span className="font-bold text-[#2D5A3D] text-xs">
                         From {formatCurrency(dest.startBudget, currency)}
@@ -229,7 +229,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                           e.stopPropagation();
                           onPlanTripForDestination(dest.name);
                         }}
-                        className="text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-lg border border-emerald-200 transition-colors"
+                        className="text-[10px] font-bold text-[#2D5A3D] bg-[#EAF0E9] hover:bg-[#DCE7DB] px-2.5 py-1 rounded-lg border border-[#DCE7DB] transition-colors"
                       >
                         Plan
                       </button>
@@ -250,7 +250,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           return (
             <div
               key={dest.id}
-              className="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-emerald-300 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+              className="bg-white rounded-[28px] overflow-hidden border border-[#E2EBE1] shadow-[0_4px_20px_rgba(45,90,61,0.05)] hover:shadow-[0_16px_36px_rgba(45,90,61,0.12)] hover:border-[#2D5A3D] transition-all duration-300 flex flex-col justify-between group cursor-pointer"
               onClick={() => setActiveModalDest(dest)}
             >
               <div>
@@ -262,10 +262,10 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                     loading="lazy"
                     onError={handleImageError}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
 
                   <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                    <span className="flex items-center gap-1 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-extrabold text-slate-800">
+                    <span className="flex items-center gap-1 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-extrabold text-[#152A1C] shadow-xs">
                       <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                       <span>{dest.rating}</span>
                     </span>
@@ -275,21 +275,21 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                         e.stopPropagation();
                         onToggleSaved(dest.id);
                       }}
-                      className={`p-2 rounded-full backdrop-blur-md transition-all ${
-                        isSaved ? 'bg-emerald-500 text-white' : 'bg-white/85 text-slate-700 hover:bg-white'
+                      className={`p-2 rounded-full backdrop-blur-md transition-all shadow-xs ${
+                        isSaved ? 'bg-[#2D5A3D] text-white' : 'bg-white/90 text-slate-700 hover:bg-white'
                       }`}
                     >
                       <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-white' : ''}`} />
                     </button>
                   </div>
 
-                  <div className="absolute bottom-3 left-3 right-3 p-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-end justify-between gap-2 text-white shadow-lg">
+                  <div className="absolute bottom-3 left-3 right-3 p-3 rounded-2xl bg-black/45 backdrop-blur-md border border-white/20 flex items-end justify-between gap-2 text-white shadow-lg">
                     <div className="min-w-0 flex-1">
                       <h3 className="text-base font-bold font-display truncate leading-tight">{dest.name}</h3>
                       <p className="text-xs text-white/80 font-medium truncate mt-0.5">{dest.state || dest.tagline}</p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <span className="text-[11px] font-bold text-emerald-300 bg-white/10 px-2.5 py-1 rounded-full border border-white/15">
+                      <span className="text-[11px] font-bold text-white bg-[#2D5A3D]/90 px-2.5 py-1 rounded-full border border-white/20 shadow-xs">
                         {formatCurrency(dest.startBudget, currency)}
                       </span>
                     </div>
@@ -297,23 +297,23 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                 </div>
 
                 <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between text-xs py-2 px-3 rounded-xl bg-slate-50 border border-slate-100 gap-2">
+                  <div className="flex items-center justify-between text-xs py-2 px-3 rounded-xl bg-[#F4F6F2] border border-[#E2EBE1] gap-2">
                     <div className="min-w-0 flex-1">
-                      <span className="badge-caps text-slate-400 block">Est. Budget</span>
-                      <span className="font-bold text-slate-800 text-xs font-display truncate block">
+                      <span className="badge-caps text-[#5A7362] block">Est. Budget</span>
+                      <span className="font-bold text-[#152A1C] text-xs font-display truncate block">
                         From {formatCurrency(dest.startBudget, currency)}
                       </span>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="badge-caps text-slate-400 block">Best Time</span>
-                      <span className="font-semibold text-slate-700 text-xs">{dest.bestTime}</span>
+                      <span className="badge-caps text-[#5A7362] block">Best Time</span>
+                      <span className="font-semibold text-[#152A1C] text-xs">{dest.bestTime}</span>
                     </div>
                   </div>
 
                   {/* Popular Activities Tag Pills */}
                   <div className="flex flex-wrap gap-1.5">
                     {dest.popularActivities.slice(0, 2).map(act => (
-                      <span key={act} className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md truncate max-w-[130px]">
+                      <span key={act} className="text-[10px] font-semibold text-[#5A7362] bg-[#EAF0E9] border border-[#DCE7DB] px-2 py-0.5 rounded-full truncate max-w-[130px]">
                         {act}
                       </span>
                     ))}
@@ -328,7 +328,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                     e.stopPropagation();
                     setActiveModalDest(dest);
                   }}
-                  className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors text-center whitespace-nowrap truncate cursor-pointer"
+                  className="py-2.5 px-3 rounded-xl bg-[#F4F6F2] hover:bg-[#EAF0E9] text-[#152A1C] border border-[#E2EBE1] font-bold text-xs transition-colors text-center whitespace-nowrap truncate cursor-pointer"
                 >
                   Explore Details
                 </button>
@@ -339,7 +339,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                     e.stopPropagation();
                     onPlanTripForDestination(dest.name);
                   }}
-                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-xs transition-all active:scale-95 whitespace-nowrap truncate cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl btn-liquid-primary text-white font-bold text-xs shadow-xs transition-all active:scale-95 whitespace-nowrap truncate cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5 shrink-0" />
                   <span className="truncate">Plan Trip</span>

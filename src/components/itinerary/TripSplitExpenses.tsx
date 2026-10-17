@@ -191,22 +191,22 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
         {/* Card 1: Total Spent */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-white rounded-3xl p-5 border border-[#E2EBE1] shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="badge-caps text-slate-500">Total Spent</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#2D5A3D] flex items-center justify-center">
+            <span className="badge-caps text-[#5A7362]">Total Spent</span>
+            <div className="w-8 h-8 rounded-xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black font-display text-[#0B2545]">
+            <div className="text-2xl sm:text-3xl font-black font-display text-[#152A1C]">
               {formatCurrency(summary.totalSpent, currency)}
             </div>
-            <div className="text-xs font-semibold text-slate-500 mt-1">
+            <div className="text-xs font-semibold text-[#5A7362] mt-1">
               Planned Budget: {formatCurrency(summary.plannedBudget, currency)}
             </div>
           </div>
-          <div className="mt-3 w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+          <div className="mt-3 w-full bg-[#EAF0E9] h-2 rounded-full overflow-hidden">
             <div 
               className={`h-full rounded-full transition-all ${
                 summary.totalSpent > summary.plannedBudget ? 'bg-rose-500' : 'bg-[#2D5A3D]'
@@ -217,36 +217,36 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
         </div>
 
         {/* Card 2: Per Person Average */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-white rounded-3xl p-5 border border-[#E2EBE1] shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="badge-caps text-slate-500">Cost Per Traveler</span>
-            <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+            <span className="badge-caps text-[#5A7362]">Cost Per Traveler</span>
+            <div className="w-8 h-8 rounded-xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black font-display text-[#0B2545]">
+            <div className="text-2xl sm:text-3xl font-black font-display text-[#152A1C]">
               {formatCurrency(Math.round(summary.totalSpent / travelers.length), currency)}
             </div>
-            <div className="text-xs font-semibold text-slate-500 mt-1">
+            <div className="text-xs font-semibold text-[#5A7362] mt-1">
               Split across {travelers.length} companions
             </div>
           </div>
-          <div className="mt-3 text-xs font-bold text-slate-400">
+          <div className="mt-3 text-xs font-bold text-[#5A7362]">
             {expenses.length} individual bills logged
           </div>
         </div>
 
         {/* Card 3: Settlements Action */}
-        <div className="bg-gradient-to-br from-[#0B2545] to-[#102E54] text-white rounded-3xl p-5 border border-slate-700 shadow-sm flex flex-col justify-between">
+        <div className="bg-gradient-to-br from-[#152A1C] to-[#1E3E2B] text-white rounded-3xl p-5 border border-[#2D5A3D]/40 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="badge-caps text-emerald-300">Who Owes Whom</span>
+            <span className="badge-caps text-[#A8C7A5]">Who Owes Whom</span>
             <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full">
               {summary.settlements.length} Settlements
             </span>
           </div>
           <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black font-display text-emerald-400">
+            <div className="text-2xl sm:text-3xl font-black font-display text-emerald-300">
               {summary.settlements.length === 0 ? 'All Settled' : `${summary.settlements.length} Pending`}
             </div>
             <div className="text-xs text-slate-300 mt-1">
@@ -277,11 +277,11 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left 2 Cols: Expenses Ledger */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm">
-          <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        <div className="lg:col-span-2 bg-white rounded-3xl p-5 sm:p-7 border border-[#E2EBE1] shadow-xs">
+          <div className="flex items-center justify-between gap-4 border-b border-[#E2EBE1] pb-4">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Group Ledger</span>
-              <h3 className="text-xl font-bold text-[#0B2545]">Trip Expenses</h3>
+              <h3 className="text-xl font-bold text-[#152A1C]">Trip Expenses</h3>
             </div>
 
             <button
@@ -295,15 +295,15 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
 
           {/* Add Expense Drawer/Form Modal */}
           {isAddExpenseOpen && (
-            <div className="bg-white rounded-3xl p-6 border border-emerald-200 shadow-xl mt-4 animate-in fade-in">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2 font-bold text-[#0B2545]">
+            <div className="bg-white rounded-3xl p-6 border border-[#2D5A3D]/30 shadow-xl mt-4 animate-in fade-in">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E2EBE1]">
+                <div className="flex items-center gap-2 font-bold text-[#152A1C]">
                   <Plus className="w-4 h-4 text-[#2D5A3D]" />
                   <span>Log Group Expense</span>
                 </div>
                 <button
                   onClick={() => setIsAddExpenseOpen(false)}
-                  className="text-xs font-semibold text-slate-400 hover:text-slate-600"
+                  className="text-xs font-semibold text-slate-400 hover:text-[#152A1C]"
                 >
                   Cancel
                 </button>
@@ -378,8 +378,8 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                         onClick={() => toggleSplitMember(t)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                           splitAmong.includes(t)
-                            ? 'bg-[#0B2545] text-white shadow-xs'
-                            : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
+                            ? 'bg-[#2D5A3D] text-white shadow-xs'
+                            : 'bg-white text-[#5A7362] border border-[#E2EBE1] hover:bg-[#EAF0E9]'
                         }`}
                       >
                         {t}
@@ -453,7 +453,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
 
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="text-right">
-                    <div className="text-sm sm:text-base font-black text-[#0B2545] font-display">
+                    <div className="text-sm sm:text-base font-black text-[#152A1C] font-display">
                       {formatCurrency(exp.amount, currency)}
                     </div>
                     <div className="text-[10px] text-slate-400">
@@ -480,9 +480,9 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
         <div className="space-y-6">
           
           {/* Individual Balances */}
-          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E2EBE1] shadow-xs">
             <span className="badge-caps text-[#2D5A3D]">Net Balance Sheet</span>
-            <h4 className="text-base font-bold text-[#0B2545] mt-0.5 font-display">Traveler Standing</h4>
+            <h4 className="text-base font-bold text-[#152A1C] mt-0.5 font-display">Traveler Standing</h4>
 
             <div className="mt-4 space-y-3">
               {Object.entries(summary.perPersonBalances).map(([name, bal]) => (
@@ -551,7 +551,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
               <span className="text-xs font-bold text-slate-400">•</span>
               <span className="text-xs font-semibold text-slate-500">Live Indian Toll & Fuel Estimates</span>
             </div>
-            <h3 className="text-xl font-bold font-display text-[#0B2545] mt-0.5">
+            <h3 className="text-xl font-bold font-display text-[#152A1C] mt-0.5">
               Fuel & FASTag Toll Calculator
             </h3>
           </div>
@@ -563,7 +563,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
 
         {/* Vehicle Selection Chips */}
         <div className="mt-5">
-          <label className="block text-xs font-bold text-slate-700 mb-2">Select Your Vehicle Class:</label>
+          <label className="block text-xs font-bold text-[#152A1C] mb-2">Select Your Vehicle Class:</label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {(Object.keys(VEHICLE_CONFIGS) as VehicleType[]).map(vKey => {
               const cfg = VEHICLE_CONFIGS[vKey];
@@ -579,8 +579,8 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                   }}
                   className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-[#0B2545] text-white border-[#0B2545] shadow-md scale-[1.02]'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      ? 'bg-[#2D5A3D] text-white border-[#2D5A3D] shadow-md scale-[1.02]'
+                      : 'bg-[#F4F6F2] text-[#152A1C] border-[#E2EBE1] hover:bg-[#EAF0E9]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -606,7 +606,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
         {/* Distance and Mileage Sliders */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+            <div className="flex items-center justify-between text-xs font-bold text-[#152A1C] mb-1">
               <span>Total Route Distance</span>
               <span className="text-[#2D5A3D] font-display">{tripDistanceKm} km</span>
             </div>
@@ -622,7 +622,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
           </div>
 
           <div>
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+            <div className="flex items-center justify-between text-xs font-bold text-[#152A1C] mb-1">
               <span>Vehicle Mileage / Efficiency</span>
               <span className="text-[#2D5A3D] font-display">{customMileage} km/{VEHICLE_CONFIGS[vehicleType].fuelUnit.replace('₹/', '')}</span>
             </div>
@@ -641,24 +641,24 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
         {/* Fuel & Toll Output Strip */}
         <div className="mt-6 p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
           <div>
-            <div className="text-[10px] uppercase font-bold text-slate-500">Fuel / Energy Needed</div>
-            <div className="text-lg font-black text-[#0B2545] mt-0.5 font-display">
+            <div className="text-[10px] uppercase font-bold text-[#5A7362]">Fuel / Energy Needed</div>
+            <div className="text-lg font-black text-[#152A1C] mt-0.5 font-display">
               {fuelResult.fuelNeeded} {VEHICLE_CONFIGS[vehicleType].fuelUnit.replace('₹/', '')}
             </div>
             <div className="text-[10px] text-slate-400 mt-0.5">@ {formatCurrency(fuelResult.fuelRate, currency)} / unit</div>
           </div>
 
           <div>
-            <div className="text-[10px] uppercase font-bold text-slate-500">Estimated Fuel Cost</div>
-            <div className="text-lg font-black text-[#0B2545] mt-0.5 font-display">
+            <div className="text-[10px] uppercase font-bold text-[#5A7362]">Estimated Fuel Cost</div>
+            <div className="text-lg font-black text-[#152A1C] mt-0.5 font-display">
               {formatCurrency(fuelResult.estimatedFuelCost, currency)}
             </div>
             <div className="text-[10px] text-emerald-700 font-semibold mt-0.5">Direct Consumption</div>
           </div>
 
           <div>
-            <div className="text-[10px] uppercase font-bold text-slate-500">Estimated FASTag Tolls</div>
-            <div className="text-lg font-black text-[#0B2545] mt-0.5 font-display">
+            <div className="text-[10px] uppercase font-bold text-[#5A7362]">Estimated FASTag Tolls</div>
+            <div className="text-lg font-black text-[#152A1C] mt-0.5 font-display">
               {formatCurrency(fuelResult.estimatedTollCost, currency)}
             </div>
             <div className="text-[10px] text-slate-400 mt-0.5">NHAI Corridor Avg</div>
