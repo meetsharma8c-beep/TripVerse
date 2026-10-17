@@ -4,15 +4,15 @@ import {
   Sparkles, 
   Check, 
   X, 
-  Zap, 
   ShieldCheck, 
   Compass, 
-  Radio, 
-  RefreshCw,
   ChevronRight,
   CheckCircle2,
   Lock,
-  Star
+  Zap,
+  MapPin,
+  CloudRain,
+  FileText
 } from 'lucide-react';
 import { AuthUser, UserSubscriptionQuota } from '../../types/auth';
 import { 
@@ -39,8 +39,8 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
   currentUser,
   onClose,
   onSubscribed,
-  title = 'Plan Without Limits with',
-  subtitle = 'Unlock unlimited AI trip generations, live weather re-routing, and dedicated 30 hours/week ConCode AI travel co-pilot.'
+  title = 'Travel Without Limits with',
+  subtitle = 'Unlock unlimited AI itineraries, real-time monsoon detours, and a dedicated 30h/week AI travel co-pilot.'
 }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -77,7 +77,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
     triggerHaptic('medium');
     try {
       await upgradeUserToPro(currentUser, billingCycle === 'annual' ? 365 : 30);
-      setSuccessMessage('Welcome to TripVerse Pro! Unlimited trips and 30h/week AI Co-Pilot activated.');
+      setSuccessMessage('Welcome to TripVerse Pro! VIP privileges activated.');
       triggerHaptic('success');
       try {
         confetti({
@@ -93,7 +93,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
         setSuccessMessage(null);
         if (onSubscribed) onSubscribed();
         onClose();
-      }, 1500);
+      }, 1400);
     } catch (e) {
       console.error('Upgrade error:', e);
       setIsProcessing(false);
@@ -116,99 +116,101 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
     }
   };
 
-  const features = [
+  const perks = [
     {
-      title: 'Unlimited AI Trip Plannings',
-      desc: 'Create and save endless custom multi-day vacation itineraries without monthly caps.'
+      icon: Zap,
+      title: 'Unlimited AI Trips',
+      desc: 'Zero generation or saving limits'
     },
     {
-      title: '30h / Week Dedicated AI Brain',
-      desc: 'High-speed multi-turn ConCode AI reasoning for live itinerary updates, local food gems, and rest stops.'
+      icon: Compass,
+      title: '30h / Wk AI Brain',
+      desc: 'High-speed live Co-Pilot reasoning'
     },
     {
-      title: 'Dynamic Weather & Road Re-routing',
-      desc: 'Instant detour adjustments for monsoon weather alerts, transit delays, or road maintenance.'
+      icon: CloudRain,
+      title: 'Dynamic Detours',
+      desc: 'Monsoon, transit & road alerts'
     },
     {
-      title: 'High-Resolution Offline Dossiers',
-      desc: 'Export beautiful printable PDF travel guides with verified emergency SOS contacts and booking details.'
-    },
-    {
-      title: 'Group Collaboration & Live Sync',
-      desc: 'Invite travel companions to view, vote, and co-edit itineraries with real-time cloud synchronization.'
+      icon: FileText,
+      title: 'Offline PDF Passes',
+      desc: 'Printable guides & SOS contacts'
     }
   ];
 
   return (
-    <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[120] bg-black/65 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+      
+      {/* 
+        Outer modal card:
+        - overflow-hidden strictly guarantees rounded-[30px] sm:rounded-[36px] without native scrollbars breaking corners!
+        - my-auto ensures centered floating on large screens and smooth complete scrolling on tiny viewports.
+      */}
       <div 
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-[32px] bg-white dark:bg-[#0E1726] shadow-[0_25px_80px_rgba(45,90,61,0.22)] border border-[#E2EBE1] dark:border-slate-800 flex flex-col font-sans"
+        className="relative w-full max-w-[480px] rounded-[30px] sm:rounded-[36px] overflow-hidden bg-white dark:bg-[#0E1726] shadow-[0_30px_100px_rgba(21,42,28,0.32),0_0_0_1px_rgba(226,235,225,0.7)] dark:shadow-[0_30px_100px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] flex flex-col font-sans transition-all my-auto"
       >
-        {/* Top Organic Sage & Emerald Banner */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#152A1C] via-[#1E3E2A] to-[#2D5A3D] text-white p-6 sm:p-8 rounded-t-[32px]">
-          
-          {/* Subtle Ambient Decorative Glow */}
-          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-44 h-44 rounded-full bg-amber-400/10 blur-3xl pointer-events-none" />
 
-          {/* Close Button */}
+        {/* ─── HERO HEADER: Emerald & Deep Pine Horizon ─── */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#112316] via-[#1A3824] to-[#2D5A3D] text-white p-6 sm:p-7">
+          
+          {/* Subtle Ambient Decorative Glows */}
+          <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-emerald-400/15 blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-amber-400/10 blur-2xl pointer-events-none" />
+          
+          {/* Subtle Geometric Luxury Watermark */}
+          <div className="absolute top-0 right-0 w-36 h-36 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08)_0%,transparent_70%)] pointer-events-none" />
+
+          {/* Close Button - Smooth Frosted Glass Pill */}
           <button
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white backdrop-blur-xs flex items-center justify-center transition-all cursor-pointer z-10"
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer z-10 active:scale-95"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
 
-          <div className="relative z-1 space-y-3">
-            {/* VIP Pass Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-emerald-300 text-xs font-bold shadow-xs">
+          <div className="relative z-1 space-y-2.5">
+            {/* VIP Pass Gold Pill */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400/20 to-emerald-400/20 border border-amber-300/30 text-amber-200 text-[11px] font-bold tracking-wide shadow-xs">
               <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-              <span>{isPro ? 'VIP Membership Active' : 'TripVerse Pro Pass'}</span>
+              <span>{isPro ? 'VIP PASS ACTIVE' : 'TRIPVERSE VIP PASS'}</span>
             </div>
 
             {/* Editorial Headline */}
-            <h2 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-white leading-tight">
+            <h2 className="text-2xl sm:text-[26px] font-display font-extrabold tracking-tight text-white leading-tight">
               {title} <span className="font-serif italic font-normal text-emerald-300">TripVerse Pro</span>
             </h2>
 
-            <p className="text-emerald-100/85 text-xs sm:text-sm leading-relaxed">
+            <p className="text-emerald-100/80 text-xs leading-relaxed max-w-[390px]">
               {subtitle}
             </p>
           </div>
         </div>
 
-        {/* Modal Body */}
-        <div className="p-5 sm:p-7 space-y-5 bg-[#F4F6F2]/40 dark:bg-[#0E1726]">
+        {/* ─── MODAL BODY: Compact, Single-Fold Luxury Experience ─── */}
+        <div className="p-5 sm:p-6 space-y-4 bg-[#F8FAF7] dark:bg-[#0E1726]">
 
-          {/* Success Message Banner */}
+          {/* Success Notification */}
           {successMessage && (
-            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs font-bold flex items-center gap-2.5 shadow-xs animate-in zoom-in-95">
+            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs font-bold flex items-center gap-2.5 shadow-2xs animate-in zoom-in-95">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span>{successMessage}</span>
             </div>
           )}
 
-          {/* Trial Status Card */}
-          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-[#E2EBE1] dark:border-slate-800 shadow-2xs flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-[#E8EFE7] dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <Compass className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-[#152A1C] dark:text-slate-100 truncate">
-                  {isPro ? 'Unlimited Trips Activated' : `${quota.freeTripsRemaining} of 3 Free Trips Available`}
-                </div>
-                <div className="text-[11px] text-[#5A7362] dark:text-slate-400 truncate">
-                  {isPro ? '30h/week ConCode AI Co-Pilot Active' : 'Full-feature explorer trial'}
-                </div>
-              </div>
+          {/* Explorer Trial Status - Crisp Integrated Banner */}
+          <div className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-[#E2EBE1] dark:border-slate-800 flex items-center justify-between text-xs shadow-2xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="font-medium text-[#152A1C] dark:text-slate-200 truncate text-[11px]">
+                {isPro ? 'Unlimited Trips & 30h AI Co-Pilot Active' : `${quota.freeTripsRemaining} of 3 Free Explorer Trips Available`}
+              </span>
             </div>
-
-            <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase shrink-0 ${
+            <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-wider uppercase shrink-0 ${
               isPro 
                 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300' 
                 : 'bg-[#E8EFE7] text-[#2D5A3D] dark:bg-emerald-950 dark:text-emerald-300'
@@ -217,101 +219,125 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
             </span>
           </div>
 
-          {/* Billing Cycle Pill Toggle */}
+          {/* Side-by-Side Dual Plan Selection Cards (Annual vs Monthly) */}
           {!isPro && (
-            <div className="p-1 rounded-2xl bg-[#E8EFE7] dark:bg-slate-800 border border-[#DCE7DB] dark:border-slate-700 flex items-center gap-1">
+            <div className="grid grid-cols-2 gap-3">
+              {/* Annual Plan Card */}
               <button
                 type="button"
                 onClick={() => {
                   triggerHaptic('light');
                   setBillingCycle('annual');
                 }}
-                className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`relative p-3.5 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
                   billingCycle === 'annual'
-                    ? 'bg-white dark:bg-slate-700 text-[#152A1C] dark:text-white shadow-xs'
-                    : 'text-[#5A7362] dark:text-slate-400 hover:text-[#152A1C]'
+                    ? 'bg-white dark:bg-slate-900 border-2 border-[#2D5A3D] shadow-[0_6px_20px_rgba(45,90,61,0.14)] ring-1 ring-[#2D5A3D]/20'
+                    : 'bg-white/80 dark:bg-slate-900/60 border border-[#E2EBE1] dark:border-slate-800 hover:border-[#2D5A3D]/50 opacity-80 hover:opacity-100'
                 }`}
               >
-                <span>Annual Plan</span>
-                <span className="px-1.5 py-0.5 rounded-full bg-[#2D5A3D] text-white text-[9px] font-black uppercase">
-                  Save 33%
-                </span>
+                {/* Popular / Best Value Badge */}
+                <div className="flex items-center justify-between gap-1 mb-2">
+                  <span className="px-2 py-0.5 rounded-full bg-[#2D5A3D] text-white text-[9px] font-extrabold uppercase tracking-wide">
+                    Save 33%
+                  </span>
+                  {billingCycle === 'annual' && (
+                    <div className="w-4 h-4 rounded-full bg-[#2D5A3D] text-white flex items-center justify-center shrink-0">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#5A7362] dark:text-slate-400">
+                    Annual Pass
+                  </div>
+                  <div className="flex items-baseline gap-0.5 mt-0.5">
+                    <span className="text-2xl font-display font-black text-[#152A1C] dark:text-white">
+                      {formattedAnnualPerMonth}
+                    </span>
+                    <span className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium">/ mo</span>
+                  </div>
+                  <div className="text-[10px] text-[#2D5A3D] dark:text-emerald-400 font-semibold mt-1">
+                    {formattedAnnual} billed yearly
+                  </div>
+                </div>
               </button>
 
+              {/* Monthly Plan Card */}
               <button
                 type="button"
                 onClick={() => {
                   triggerHaptic('light');
                   setBillingCycle('monthly');
                 }}
-                className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`relative p-3.5 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
                   billingCycle === 'monthly'
-                    ? 'bg-white dark:bg-slate-700 text-[#152A1C] dark:text-white shadow-xs'
-                    : 'text-[#5A7362] dark:text-slate-400 hover:text-[#152A1C]'
+                    ? 'bg-white dark:bg-slate-900 border-2 border-[#2D5A3D] shadow-[0_6px_20px_rgba(45,90,61,0.14)] ring-1 ring-[#2D5A3D]/20'
+                    : 'bg-white/80 dark:bg-slate-900/60 border border-[#E2EBE1] dark:border-slate-800 hover:border-[#2D5A3D]/50 opacity-80 hover:opacity-100'
                 }`}
               >
-                <span>Monthly Plan</span>
+                <div className="flex items-center justify-between gap-1 mb-2">
+                  <span className="px-2 py-0.5 rounded-full bg-[#E8EFE7] text-[#2D5A3D] dark:bg-slate-800 dark:text-emerald-300 text-[9px] font-bold uppercase tracking-wide">
+                    Flexible
+                  </span>
+                  {billingCycle === 'monthly' && (
+                    <div className="w-4 h-4 rounded-full bg-[#2D5A3D] text-white flex items-center justify-center shrink-0">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#5A7362] dark:text-slate-400">
+                    Monthly Pass
+                  </div>
+                  <div className="flex items-baseline gap-0.5 mt-0.5">
+                    <span className="text-2xl font-display font-black text-[#152A1C] dark:text-white">
+                      {formattedMonthly}
+                    </span>
+                    <span className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium">/ mo</span>
+                  </div>
+                  <div className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium mt-1">
+                    Billed every month
+                  </div>
+                </div>
               </button>
             </div>
           )}
 
-          {/* Pricing Highlight Card */}
-          {!isPro && (
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[#E2EBE1] dark:border-slate-800 shadow-sm flex items-center justify-between gap-4">
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[#5A7362] dark:text-slate-400">
-                  {billingCycle === 'annual' ? 'Billed annually' : 'Flexible billing'}
-                </div>
-                <div className="flex items-baseline gap-1 mt-0.5">
-                  <span className="text-3xl font-display font-black text-[#152A1C] dark:text-white">
-                    {billingCycle === 'annual' ? formattedAnnualPerMonth : formattedMonthly}
-                  </span>
-                  <span className="text-xs text-[#5A7362] dark:text-slate-400 font-medium">/ month</span>
-                </div>
-                <div className="text-[11px] text-[#2D5A3D] dark:text-emerald-400 font-semibold mt-0.5">
-                  {billingCycle === 'annual' 
-                    ? `${formattedAnnual} total per year • Cancel anytime` 
-                    : `${formattedMonthly} charged monthly • Cancel anytime`}
-                </div>
-              </div>
-
-              <div className="text-right shrink-0">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#E8EFE7] dark:bg-emerald-950 text-[#2D5A3D] dark:text-emerald-300 text-xs font-bold">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>VIP Access</span>
-                </span>
-              </div>
+          {/* 4 Core VIP Privileges Grid (Compact 2x2) */}
+          <div className="space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#5A7362] dark:text-slate-400 px-1">
+              Included with TripVerse Pro
             </div>
-          )}
 
-          {/* Features Checklist */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#5A7362] dark:text-slate-400 px-1">
-              What’s Included in Pro
-            </h3>
-
-            <div className="space-y-2.5">
-              {features.map((item, idx) => (
-                <div 
-                  key={idx}
-                  className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-[#E2EBE1] dark:border-slate-800 flex items-start gap-3 shadow-2xs"
-                >
-                  <div className="w-6 h-6 rounded-full bg-[#E8EFE7] text-[#2D5A3D] flex items-center justify-center shrink-0 mt-0.5">
-                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+            <div className="grid grid-cols-2 gap-2">
+              {perks.map((perk, idx) => {
+                const IconComponent = perk.icon;
+                return (
+                  <div 
+                    key={idx}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-900/80 border border-[#E2EBE1] dark:border-slate-800 flex items-start gap-2 shadow-2xs"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-[#E8EFE7] dark:bg-emerald-950/70 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0 mt-0.5">
+                      <IconComponent className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-bold text-[#152A1C] dark:text-slate-100 truncate">
+                        {perk.title}
+                      </div>
+                      <div className="text-[10px] text-[#5A7362] dark:text-slate-400 leading-tight truncate">
+                        {perk.desc}
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-[#152A1C] dark:text-slate-100">{item.title}</h4>
-                    <p className="text-[11px] text-[#5A7362] dark:text-slate-400 mt-0.5 leading-relaxed">
-                      {item.desc}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          {/* Action Button */}
-          <div className="pt-2">
+          {/* Primary Action Button (Above the fold, liquid emerald) */}
+          <div className="pt-1 space-y-2">
             {isPro ? (
               <div className="space-y-2">
                 <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-center text-xs font-bold text-[#2D5A3D] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
@@ -321,7 +347,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                   type="button"
                   onClick={handleDowngrade}
                   disabled={isProcessing}
-                  className="w-full py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-500 hover:text-slate-800 text-xs font-semibold transition-colors cursor-pointer"
+                  className="w-full py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
                 >
                   Switch back to Free Tier (Developer Test)
                 </button>
@@ -331,36 +357,36 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                 type="button"
                 onClick={handleUpgrade}
                 disabled={isProcessing}
-                className="w-full py-3.5 px-6 rounded-2xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-display font-bold text-sm shadow-[0_8px_30px_rgba(45,90,61,0.28)] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 disabled:opacity-75"
+                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#1E3B27] via-[#2D5A3D] to-[#234730] hover:brightness-105 text-white font-display font-bold text-sm shadow-[0_8px_30px_rgba(45,90,61,0.3)] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-75"
               >
-                <Crown className="w-4 h-4 text-amber-300 fill-amber-300" />
-                <span>
+                <Crown className="w-4 h-4 text-amber-300 fill-amber-300 shrink-0" />
+                <span className="truncate">
                   {isProcessing 
-                    ? 'Activating Pro...' 
+                    ? 'Activating Pro Pass...' 
                     : `Upgrade to Pro — ${billingCycle === 'annual' ? formattedAnnual : formattedMonthly}`}
                 </span>
-                <ChevronRight className="w-4 h-4 ml-1" />
+                <ChevronRight className="w-4 h-4 ml-0.5 shrink-0" />
               </button>
             )}
 
-            <div className="flex items-center justify-center gap-2 text-[11px] text-[#5A7362] dark:text-slate-400 text-center mt-2.5">
-              <Lock className="w-3 h-3 text-[#2D5A3D]" />
-              <span>100% Risk-Free • Instant Activation • Cancel Anytime</span>
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#5A7362] dark:text-slate-400 text-center">
+              <Lock className="w-3 h-3 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
+              <span>100% Risk-Free • Instant Access • Cancel Anytime</span>
             </div>
           </div>
 
         </div>
 
-        {/* Modal Footer */}
-        <div className="px-6 py-3.5 bg-white dark:bg-slate-900 border-t border-[#E2EBE1] dark:border-slate-800 rounded-b-[32px] flex items-center justify-between text-xs text-[#5A7362] dark:text-slate-400">
+        {/* ─── MODAL FOOTER: Crisp, Clean Security Lock ─── */}
+        <div className="px-6 py-3 bg-white dark:bg-slate-900 border-t border-[#E2EBE1] dark:border-slate-800 flex items-center justify-between text-xs text-[#5A7362] dark:text-slate-400">
           <div className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#2D5A3D]" />
-            <span>Bank-grade security</span>
+            <ShieldCheck className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400" />
+            <span className="text-[11px]">Bank-grade 256-bit encryption</span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="font-bold text-[#152A1C] dark:text-slate-200 hover:underline cursor-pointer"
+            className="text-[11px] font-bold text-[#152A1C] dark:text-slate-200 hover:text-[#2D5A3D] dark:hover:text-emerald-300 transition-colors cursor-pointer"
           >
             Continue Browsing
           </button>
@@ -370,3 +396,4 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
     </div>
   );
 };
+
