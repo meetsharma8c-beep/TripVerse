@@ -20,6 +20,15 @@ import {
   removeSupabaseConfig, 
   SupabaseConfig 
 } from './supabase';
+import {
+  isFirebaseConfigured,
+  getStoredFirebaseConfig,
+  saveFirebaseConfig,
+  removeFirebaseConfig,
+  signInWithFirebaseGoogle,
+  signOutFirebase,
+  FirebaseConfig
+} from './firebase';
 import { 
   saveProfileToSupabase, 
   loadProfileFromSupabase 
@@ -96,12 +105,14 @@ export {
 };
 export type { SupabaseConfig };
 
-// Backward-compatibility aliases for Firebase exports
-export const isFirebaseConfigured = isSupabaseConfigured;
-export const getStoredFirebaseConfig = getStoredSupabaseConfig as any;
-export const saveFirebaseConfig = saveSupabaseConfig as any;
-export const removeFirebaseConfig = removeSupabaseConfig;
-export type FirebaseConfig = SupabaseConfig;
+// Firebase configuration helpers & exports
+export {
+  isFirebaseConfigured,
+  getStoredFirebaseConfig,
+  saveFirebaseConfig,
+  removeFirebaseConfig
+};
+export type { FirebaseConfig };
 
 interface StoredAccount {
   user: AuthUser;
@@ -498,14 +509,101 @@ export async function signInWithGoogleUserInfo(info: {
 }
 
 /**
- * Primary Google Sign-In with Google Identity Services (GIS) OAuth2 popup flow
+ * Sign in using Firebase Authentication Google Provider popup
+ */
+export async function signInWithFirebaseGoogleAuth(): Promise<AuthUser> {
+  const cred = await signInWithFirebaseGoogle();
+  const fbUser = cred.user;
+  if (!fbUser.email) {
+    throw new Error('Google account does not contain a verified email address.');
+  }
+
+  const emailNorm = fbUser.email.trim().toLowerCase();
+  const uid = toDeterministicUuid('google:' + (fbUser.uid || emailNorm));
+  const now = new Date().toISOString();
+
+  const accounts = loadAccounts();
+  let account = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+
+  if (!account) {
+    const displayName = fbUser.displayName || emailNorm.split('@')[0];
+    const newUser: AuthUser = {
+      uid,
+      email: emailNorm,
+      displayName,
+      photoURL: fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=2D5A3D,0B2545`,
+      travelerStyle: 'Budget explorer',
+      travelStyleTag: 'Heritage & Food Hunter',
+      location: 'India',
+      occupation: 'Explorer',
+      age: 26,
+      emailVerified: fbUser.emailVerified ?? true,
+      provider: 'google',
+      createdAt: now,
+      lastLoginAt: now,
+      savedPlaceIds: []
+    };
+    account = { user: newUser, passwordHash: 'oauth_google_firebase_verified' };
+    accounts.push(account);
+  } else {
+    account.user.lastLoginAt = now;
+    if (fbUser.displayName) account.user.displayName = fbUser.displayName;
+    if (fbUser.photoURL) account.user.photoURL = fbUser.photoURL;
+    account.user.provider = 'google';
+    account.user.emailVerified = true;
+    account.user.uid = uid;
+  }
+
+  saveAccounts(accounts);
+  const idToken = await fbUser.getIdToken().catch(() => `session-google-${account.user.uid}-${Date.now()}`);
+  const session: AuthSession = {
+    token: idToken,
+    user: account.user,
+    expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
+  };
+  saveSession(session);
+
+  // Sync profile to Supabase PostgreSQL database if configured
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    saveProfileToSupabase(uid, toUserProfile(account.user)).catch(() => {});
+  }
+
+  window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY, { detail: account.user }));
+  return account.user;
+}
+
+/**
+ * Primary Google Sign-In: Prefers Firebase Auth when configured, with GIS fallback
  */
 export async function signInWithGooglePopup(): Promise<AuthUser> {
+  // 1. If Firebase Auth is configured, use Firebase Auth popup
+  if (isFirebaseConfigured()) {
+    try {
+      return await signInWithFirebaseGoogleAuth();
+    } catch (fbErr: any) {
+      const msg = fbErr?.message || '';
+      if (
+        fbErr?.code === 'auth/popup-closed-by-user' ||
+        fbErr?.code === 'auth/cancelled-popup-request' ||
+        msg.toLowerCase().includes('closed') ||
+        msg.toLowerCase().includes('cancel')
+      ) {
+        throw new Error('Google sign-in was cancelled. Please select your account to proceed.');
+      }
+      if (fbErr?.code === 'auth/unauthorized-domain') {
+        throw new Error("Firebase Auth Domain Error: This domain is not listed under 'Authorized domains' in your Firebase Console (Authentication -> Settings -> Authorized domains).");
+      }
+      console.warn('[Firebase Auth] Notice during Google popup, falling back to GIS if available:', fbErr);
+    }
+  }
+
+  // 2. Fallback to Google Identity Services (GIS)
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '472521464151-p64pmj4q5uh9oo9o6nl6hrqaef83tt5t.apps.googleusercontent.com';
 
   await ensureGoogleIdentityServices();
 
-  // 1. GIS OAuth2 Token Client (Official user button click popup flow)
+  // GIS OAuth2 Token Client (Official user button click popup flow)
   if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2 && clientId) {
     return new Promise((resolve, reject) => {
       try {
@@ -957,6 +1055,9 @@ export async function signOut(): Promise<void> {
       console.warn('[Supabase] Signout warning:', e);
     }
   }
+
+  // Also sign out from Firebase Auth if active
+  await signOutFirebase().catch(() => {});
 
   saveSession(null);
   window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY, { detail: null }));

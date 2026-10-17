@@ -24,6 +24,7 @@ dist-ssr
 *.sln
 *.sw?
 .env*
+!.env.example
 
 # Security, Signing Keys & Certificates
 *.jks
