@@ -1878,6 +1878,8 @@ export function App() {
                 <TransportDealsView
                   trip={activeTrip}
                   onApplySavings={handleApplyBudgetSavings}
+                  onOpenPrint={() => setIsPrintModalOpen(true)}
+                  onOpenBooking={() => setIsBookingModalOpen(true)}
                 />
               )}
 

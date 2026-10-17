@@ -283,9 +283,16 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                     </button>
                   </div>
 
-                  <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <h3 className="text-xl font-bold font-display truncate drop-shadow-md">{dest.name}</h3>
-                    <p className="text-xs text-emerald-300 font-medium truncate drop-shadow-sm">{dest.tagline}</p>
+                  <div className="absolute bottom-3 left-3 right-3 p-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-end justify-between gap-2 text-white shadow-lg">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-base font-bold font-display truncate leading-tight">{dest.name}</h3>
+                      <p className="text-xs text-white/80 font-medium truncate mt-0.5">{dest.state || dest.tagline}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="text-[11px] font-bold text-emerald-300 bg-white/10 px-2.5 py-1 rounded-full border border-white/15">
+                        {formatCurrency(dest.startBudget, currency)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 

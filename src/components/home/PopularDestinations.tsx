@@ -137,11 +137,11 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                   </button>
                 </div>
 
-                {/* Bottom of Image: Name, Country/State & Reference Circular Arrow Button */}
-                <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2 text-white">
+                {/* Bottom of Image: Frosted Glass Caption with Name, State & Reference Circular Arrow Button */}
+                <div className="absolute bottom-3 left-3 right-3 p-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-end justify-between gap-2 text-white shadow-lg">
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-xl font-bold font-display leading-tight truncate drop-shadow-md">{dest.name}</h3>
-                    <p className="text-xs text-white/80 font-medium mt-0.5 truncate drop-shadow-sm">{dest.state}</p>
+                    <h3 className="text-lg font-bold font-display leading-tight truncate">{dest.name}</h3>
+                    <p className="text-xs text-white/80 font-medium mt-0.5 truncate">{dest.state}</p>
                   </div>
 
                   {/* Circular White Arrow Button (Matching Reference Image) */}

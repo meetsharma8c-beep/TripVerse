@@ -336,10 +336,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Left: Mobile App Hamburger Menu Icon */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-800 hover:text-[#152A1C] hover:bg-white/80 active:scale-95 transition-all focus:outline-none"
+            className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-xs border border-[#E2EBE1] dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-200 hover:text-[#152A1C] hover:bg-white active:scale-95 transition-all focus:outline-none cursor-pointer"
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
-            {mobileMenuOpen ? <X className="w-5 h-5 text-[#152A1C]" /> : <Menu className="w-5 h-5 text-[#152A1C]" />}
+            {mobileMenuOpen ? <X className="w-5 h-5 text-[#152A1C] dark:text-slate-100" /> : <Menu className="w-5 h-5 text-[#152A1C] dark:text-slate-100" />}
           </button>
 
           {/* Center: Clean TripVerse Brand Logo */}
@@ -381,18 +381,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             {onOpenSearch && (
               <button
                 onClick={onOpenSearch}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-slate-700 hover:text-[#152A1C] hover:bg-white/80 active:scale-95 transition-all"
+                className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-[#E2EBE1] dark:border-slate-700 shadow-2xs flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-[#152A1C] active:scale-95 transition-all cursor-pointer"
                 title="Search"
                 aria-label="Search"
               >
-                <Search className="w-4 h-4 text-slate-600" />
+                <Search className="w-4 h-4 text-slate-600 dark:text-slate-300" />
               </button>
             )}
 
             {/* Mobile User Profile Avatar (matching Reference Image Screen 1) */}
             <button
               onClick={() => onNavigate('profile')}
-              className="w-9 h-9 rounded-full ring-2 ring-[#2D5A3D]/30 overflow-hidden cursor-pointer active:scale-95 transition-transform shrink-0"
+              className="w-9 h-9 rounded-full ring-2 ring-white dark:ring-slate-700 shadow-xs overflow-hidden cursor-pointer active:scale-95 transition-transform shrink-0"
               title="Profile"
               aria-label="Profile"
             >

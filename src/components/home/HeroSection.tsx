@@ -146,9 +146,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <span>AI-Powered Travel Planning Made Effortless</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black text-[#152A1C] tracking-tight leading-[1.1] mb-3 text-balance">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-black text-[#152A1C] dark:text-slate-100 tracking-tight leading-[1.1] mb-3 text-balance">
             Your Journey,<br className="hidden sm:inline" />
-            <span className="text-trip-gradient"> Intelligently Planned.</span>
+            <span className="font-serif italic font-normal text-[#2D5A3D] dark:text-[#34D399]">Intelligently </span>Planned.
           </h1>
 
           <p className="text-base sm:text-lg text-[#57685D] max-w-2xl font-normal leading-relaxed text-pretty mb-6">
