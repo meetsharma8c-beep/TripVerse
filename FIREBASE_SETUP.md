@@ -75,5 +75,5 @@ Make sure your domains are listed:
 1. When a user clicks **"Continue with Google"**:
    - TripVerse calls `signInWithPopup(auth, googleProvider)` via Firebase Auth.
    - Once verified, the Google profile (UID, email, display name, photo URL) is obtained.
-   - The user session is created locally, and the profile is automatically synced to your **Supabase PostgreSQL database** (`tnetveqpyddodlczklxn`).
+   - The user session is created locally, and the profile is automatically synced to your **Supabase PostgreSQL database** (`<your-supabase-project-id>`).
 2. If Firebase credentials are not yet configured in `.env`, TripVerse smoothly falls back to Google Identity Services (GIS) without breaking the app.

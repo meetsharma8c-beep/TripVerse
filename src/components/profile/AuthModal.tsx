@@ -185,7 +185,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (!isOpen) return;
 
     let isMounted = true;
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '472521464151-p64pmj4q5uh9oo9o6nl6hrqaef83tt5t.apps.googleusercontent.com';
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
     const renderGis = () => {
       const g = (window as any).google?.accounts?.id;

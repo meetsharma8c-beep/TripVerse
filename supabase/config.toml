@@ -242,9 +242,9 @@ otp_expiry = 3600
 enabled = true
 host = "smtp.gmail.com"
 port = 465
-user = "meet.sharma8c@gmail.com"
+user = "env(SMTP_USER)"
 pass = "env(SMTP_PASS)"
-admin_email = "meet.sharma8c@gmail.com"
+admin_email = "env(SMTP_ADMIN_EMAIL)"
 sender_name = "TripVerse"
 
 # Uncomment to customize email template

@@ -1,15 +1,15 @@
 # Enabling Email & SMTP in Supabase for TripVerse
 
 Your Supabase Project: **TripVerse**  
-Project ID: `tnetveqpyddodlczklxn`  
-Dashboard: [https://supabase.com/dashboard/project/tnetveqpyddodlczklxn](https://supabase.com/dashboard/project/tnetveqpyddodlczklxn)
+Project ID: `<your-supabase-project-id>`  
+Dashboard: [https://supabase.com/dashboard/project/<your-supabase-project-id>](https://supabase.com/dashboard/project/<your-supabase-project-id>)
 
 ---
 
 ## 1. Enable Email Provider & Email Confirmation
 
 1. Navigate to:  
-   👉 **[Authentication → Providers → Email](https://supabase.com/dashboard/project/tnetveqpyddodlczklxn/auth/providers)**
+   👉 **[Authentication → Providers → Email](https://supabase.com/dashboard/project/<your-supabase-project-id>/auth/providers)**
 2. Turn **ON** **"Enable Email provider"**.
 3. Configure **"Confirm email"**:
    - **Turn ON**: Requires users to verify their email (via 6-digit code or confirmation link) before logging in.
@@ -23,7 +23,7 @@ Dashboard: [https://supabase.com/dashboard/project/tnetveqpyddodlczklxn](https:/
 When users click verification links in their email, Supabase redirects them back to TripVerse:
 
 1. Navigate to:  
-   👉 **[Authentication → URL Configuration](https://supabase.com/dashboard/project/tnetveqpyddodlczklxn/auth/url-configuration)**
+   👉 **[Authentication → URL Configuration](https://supabase.com/dashboard/project/<your-supabase-project-id>/auth/url-configuration)**
 2. Set **Site URL**:
    ```
    https://tripverse-pied.vercel.app
@@ -46,7 +46,7 @@ When users click verification links in their email, Supabase redirects them back
 > To enable unlimited, fast email delivery with high deliverability, enable **Custom SMTP**.
 
 1. Navigate to:  
-   👉 **[Project Settings → Authentication → SMTP Settings](https://supabase.com/dashboard/project/tnetveqpyddodlczklxn/settings/auth)**
+   👉 **[Project Settings → Authentication → SMTP Settings](https://supabase.com/dashboard/project/<your-supabase-project-id>/settings/auth)**
 2. Toggle **"Enable Custom SMTP"** to **ON**.
 
 ### Recommended Provider: Resend (Free 100 emails/day / 3,000/mo)
@@ -74,7 +74,7 @@ When users click verification links in their email, Supabase redirects them back
 TripVerse supports both **1-click link confirmation** and **6-digit OTP code entry** in the UI:
 
 1. Navigate to:  
-   👉 **[Authentication → Email Templates → Confirm signup](https://supabase.com/dashboard/project/tnetveqpyddodlczklxn/auth/templates)**
+   👉 **[Authentication → Email Templates → Confirm signup](https://supabase.com/dashboard/project/<your-supabase-project-id>/auth/templates)**
 2. You can customize the body so users get both the link and code:
    ```html
    <h2>Welcome to TripVerse!</h2>

@@ -599,7 +599,7 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
   }
 
   // 2. Fallback to Google Identity Services (GIS)
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '472521464151-p64pmj4q5uh9oo9o6nl6hrqaef83tt5t.apps.googleusercontent.com';
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   await ensureGoogleIdentityServices();
 

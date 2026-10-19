@@ -14,7 +14,7 @@ async function testGoogleBtn() {
   await page.goto('http://localhost:5173/', { waitUntil: 'networkidle2' });
 
   const result = await page.evaluate(async () => {
-    const clientId = '472521464151-p64pmj4q5uh9oo9o6nl6hrqaef83tt5t.apps.googleusercontent.com';
+    const clientId = process.env.VITE_GOOGLE_CLIENT_ID || 'your-google-client-id.apps.googleusercontent.com';
     let initOk = false;
     let renderOk = false;
     let tokenClientOk = false;
