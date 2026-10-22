@@ -2275,6 +2275,11 @@ export function App() {
             isOpen={isBookingModalOpen}
             onClose={() => setIsBookingModalOpen(false)}
             currency={currency}
+            onNavigateToPasses={() => {
+              setCurrentTab('trip-detail');
+              setTripSubTab('hub');
+              setIsBookingModalOpen(false);
+            }}
           />
         )}
 
@@ -2294,6 +2299,11 @@ export function App() {
             isOpen={isBestDealModalOpen}
             onClose={() => setIsBestDealModalOpen(false)}
             currency={currency}
+            onNavigateToPasses={() => {
+              setCurrentTab('trip-detail');
+              setTripSubTab('hub');
+              setIsBestDealModalOpen(false);
+            }}
           />
         )}
 

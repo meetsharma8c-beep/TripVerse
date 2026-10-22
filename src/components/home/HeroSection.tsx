@@ -156,14 +156,34 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             AI-powered travel planning made effortless. Plan custom day-by-day itineraries, highway pit stops, and budget-optimized routes.
           </p>
 
-          {/* Serene Ethereal Landscape Visual (Matching Reference Image Screen 1 Hero Artwork) */}
-          <div className="relative rounded-[32px] overflow-hidden border border-[#E2EBE1] shadow-[0_12px_40px_rgba(45,90,61,0.08)] bg-[#EAF0E9] group">
+          {/* Serene Dynamic Landscape Visual */}
+          <div className="relative rounded-[32px] overflow-hidden border border-[#E2EBE1] dark:border-slate-800 shadow-[0_12px_40px_rgba(45,90,61,0.08)] bg-[#EAF0E9] dark:bg-slate-900 group">
+            {/* Fallback image */}
             <img
-              src="/images/hero-nature-serene.jpg"
-              alt="Serene nature landscape with misty mountains, lake, and pagoda"
-              className="w-full h-60 sm:h-72 md:h-84 lg:h-96 object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
+              src="/videos/app-opening-poster.jpg"
+              alt="Serene nature landscape with misty mountains and lake"
+              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
+              loading="eager"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+
+            {/* Ambient Cross-Device Video Scenery */}
+            <video
+              src="/videos/app-opening.mp4"
+              poster="/videos/app-opening-poster.jpg"
+              autoPlay
+              loop
+              muted
+              playsInline
+              // @ts-ignore
+              webkit-playsinline="true"
+              x5-playsinline="true"
+              x5-video-player-type="h5"
+              preload="auto"
+              width={1280}
+              height={720}
+              className="relative z-10 w-full h-60 sm:h-72 md:h-84 lg:h-96 object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
+            />
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
           </div>
 
           {/* Floating Pill Search Bar (Matching Reference Image Screen 1) */}

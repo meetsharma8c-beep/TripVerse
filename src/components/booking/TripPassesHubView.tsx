@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Trip, PackingItem, WeatherForecast } from '../../types/trip';
 import { fetchLiveDestinationWeather, getDestinationWeather } from '../../services/weatherService';
 import { loadTripPacking, saveTripPacking } from '../../services/storageService';
@@ -22,8 +22,11 @@ import {
   ShieldCheck, 
   Calendar,
   Sparkles,
-  QrCode
+  QrCode,
+  CreditCard
 } from 'lucide-react';
+import { getBookingForTrip, BookingRecord, generateTicketReceiptText } from '../../services/paymentGatewayService';
+import { getActiveCurrency } from '../../services/currencyService';
 
 interface TripPassesHubViewProps {
   trip: Trip;
@@ -46,6 +49,24 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
   const [weather, setWeather] = useState<WeatherForecast>(() => 
     getDestinationWeather(trip.destination, trip.durationDays)
   );
+
+  // Confirmed booking state
+  const [booking, setBooking] = useState<BookingRecord | null>(() => getBookingForTrip(trip.id));
+
+  // Declarative download anchor ref (zero manual DOM manipulation)
+  const downloadAnchorRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    setBooking(getBookingForTrip(trip.id));
+    const handleBookingUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<BookingRecord>;
+      if (customEvent.detail && customEvent.detail.tripId === trip.id) {
+        setBooking(customEvent.detail);
+      }
+    };
+    window.addEventListener('tripverse_booking_confirmed', handleBookingUpdate);
+    return () => window.removeEventListener('tripverse_booking_confirmed', handleBookingUpdate);
+  }, [trip.id]);
 
   // Packing list state
   const [packingItems, setPackingItems] = useState<PackingItem[]>(() => {
@@ -185,16 +206,58 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
         </div>
       </div>
 
+      {/* Confirmed Booking & Payment Status Banner */}
+      {booking && (
+        <div className="rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50/50 to-white p-3.5 flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase text-emerald-800 bg-emerald-200/80 px-2 py-0.5 rounded-md">
+                  Confirmed & Paid
+                </span>
+                <span className="text-[11px] font-mono font-bold text-slate-700 truncate">PNR: {booking.pnr}</span>
+              </div>
+              <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                Paid via {booking.paymentMethod} • Ref: {booking.id}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!downloadAnchorRef.current) return;
+              triggerHaptic('light');
+              const text = generateTicketReceiptText(booking, getActiveCurrency());
+              const blob = new Blob([text], { type: 'text/plain' });
+              const url = URL.createObjectURL(blob);
+              const anchor = downloadAnchorRef.current;
+              anchor.href = url;
+              anchor.download = `TripVerse_Tax_Invoice_${booking.id}.txt`;
+              anchor.click();
+              setTimeout(() => {
+                URL.revokeObjectURL(url);
+              }, 1500);
+            }}
+            className="shrink-0 px-3 py-1.5 rounded-xl border border-emerald-300 bg-white text-emerald-900 text-xs font-bold hover:bg-emerald-50 transition-colors shadow-2xs cursor-pointer"
+          >
+            Invoice
+          </button>
+        </div>
+      )}
+
       {/* Reference Screen 3: Signature Boarding Pass Card */}
       <div className="rounded-3xl bg-white border border-[#E2EBE1] shadow-[0_8px_32px_rgba(45,90,61,0.08)] overflow-hidden">
         
         {/* Forest Green Top Banner */}
         <div className="bg-[#2D5A3D] px-6 py-4 flex items-center justify-between text-white">
           <span className="text-[11px] font-mono tracking-widest uppercase text-white/90 font-bold">
-            BOARDING PASS
+            {booking ? `BOARDING PASS • ${booking.pnr}` : 'BOARDING PASS'}
           </span>
           <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-xs">
-            <span>On Time</span>
+            <span>{booking ? 'Verified Ticket' : 'On Time'}</span>
             <Plane className="w-3.5 h-3.5 text-white transform rotate-45" />
           </div>
         </div>
@@ -270,7 +333,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
             <div>
               <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Transit / Deal</span>
               <span className="text-xs sm:text-sm font-extrabold text-[#152A1C] block truncate">
-                {trip.bestTransportDeal?.provider || 'GA-422'}
+                {booking ? booking.pnr : (trip.bestTransportDeal?.provider || 'GA-422')}
               </span>
             </div>
             <div>
@@ -282,7 +345,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
             <div>
               <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Seat / Class</span>
               <span className="text-xs sm:text-sm font-extrabold text-[#152A1C] block">
-                24A
+                {booking ? '14A (Confirmed)' : '24A'}
               </span>
             </div>
           </div>
@@ -328,7 +391,14 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
             />
           </div>
           <div className="min-w-0 space-y-0.5">
-            <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Hotel</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Hotel</span>
+              {booking && (
+                <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
+                  Voucher: {booking.hotelVoucher}
+                </span>
+              )}
+            </div>
             <h3 className="font-display font-bold text-sm sm:text-base text-[#152A1C] truncate block">
               {hotelName}
             </h3>
@@ -478,24 +548,35 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
 
       </div>
 
-      {/* Reference Screen 3: Bottom Action Buttons ("View E-Ticket" & Share) */}
+      {/* Reference Screen 3: Bottom Action Buttons ("Book Now" or "View E-Ticket" & Share) */}
       <div className="pt-2 flex items-center gap-3">
         
-        <button
-          type="button"
-          onClick={() => {
-            triggerHaptic('medium');
-            if (onExportTrip) {
-              onExportTrip();
-            } else if (onOpenBookingModal) {
-              onOpenBookingModal();
-            }
-          }}
-          className="flex-1 py-4 px-6 rounded-full bg-[#2D5A3D] hover:bg-[#234730] text-white font-display font-bold text-sm sm:text-base shadow-[0_8px_30px_rgba(45,90,61,0.25)] flex items-center justify-center gap-2.5 transition-all duration-200 cursor-pointer active:scale-95"
-        >
-          <Download className="w-4 h-4 text-emerald-300" />
-          <span>View E-Ticket & Passes</span>
-        </button>
+        {!booking && onOpenBookingModal ? (
+          <button
+            type="button"
+            onClick={onOpenBookingModal}
+            className="flex-1 py-4 px-6 rounded-full bg-emerald-800 hover:bg-emerald-900 text-white font-display font-bold text-sm sm:text-base shadow-[0_8px_30px_rgba(16,62,51,0.25)] flex items-center justify-center gap-2.5 transition-all duration-200 cursor-pointer active:scale-95"
+          >
+            <CreditCard className="w-4 h-4 text-emerald-300" />
+            <span>Book Trip (Payment Gateway)</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic('medium');
+              if (onExportTrip) {
+                onExportTrip();
+              } else if (onOpenBookingModal) {
+                onOpenBookingModal();
+              }
+            }}
+            className="flex-1 py-4 px-6 rounded-full bg-[#2D5A3D] hover:bg-[#234730] text-white font-display font-bold text-sm sm:text-base shadow-[0_8px_30px_rgba(45,90,61,0.25)] flex items-center justify-center gap-2.5 transition-all duration-200 cursor-pointer active:scale-95"
+          >
+            <Download className="w-4 h-4 text-emerald-300" />
+            <span>View E-Ticket & Passes</span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -508,6 +589,8 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
 
       </div>
 
+      {/* Declarative hidden anchor for invoice file download */}
+      <a ref={downloadAnchorRef} className="hidden" aria-hidden="true" tabIndex={-1} />
     </div>
   );
 };

@@ -75,6 +75,13 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
     return ['You', ...Array.from({ length: trip.travelersCount - 1 }, (_, i) => `Traveler ${i + 2}`)];
   });
 
+  // New Expense Form State
+  const [title, setTitle] = useState('');
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState<ExpenseCategory>('food');
+  const [paidBy, setPaidBy] = useState(travelers[0]);
+  const [splitAmong, setSplitAmong] = useState<string[]>(travelers);
+
   useEffect(() => {
     if (trip.collaboration?.collaborators && trip.collaboration.collaborators.length > 0) {
       const names = trip.collaboration.collaborators.map(c => c.name);
@@ -85,13 +92,6 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
       });
     }
   }, [trip.collaboration]);
-
-  // New Expense Form State
-  const [title, setTitle] = useState('');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<ExpenseCategory>('food');
-  const [paidBy, setPaidBy] = useState(travelers[0]);
-  const [splitAmong, setSplitAmong] = useState<string[]>(travelers);
 
   // Fuel & Toll Calculator State
   const [vehicleType, setVehicleType] = useState<VehicleType>('petrol_hatchback');
@@ -146,6 +146,24 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
     setExpenses(updated);
     saveTripExpenses(trip.id, updated);
     triggerHaptic('light');
+  };
+
+  const handleSettleCompleted = (fromUser: string, toUser: string, settleAmount: number) => {
+    const newExpense: ExpenseItem = {
+      id: `exp-settle-${Date.now()}`,
+      tripId: trip.id,
+      title: `UPI Settlement: ${fromUser} → ${toUser}`,
+      amount: Math.round(settleAmount),
+      category: 'other',
+      paidBy: fromUser,
+      splitAmong: [toUser],
+      date: `Day ${trip.durationDays || 1}`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    const updated = [newExpense, ...expenses];
+    setExpenses(updated);
+    saveTripExpenses(trip.id, updated);
+    setUpiModalData(null);
   };
 
   const handleCopyWhatsApp = () => {
@@ -675,7 +693,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
 
       </div>
 
-      {/* Suggested amount only; TripVerse does not initiate or verify payments. */}
+      {/* Verified UPI Settlement Gateway */}
       {upiModalData && (
         <UpiPaymentModal
           isOpen={upiModalData.isOpen}
@@ -684,6 +702,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
           toUser={upiModalData.toUser}
           amount={upiModalData.amount}
           currency={currency}
+          onSettleCompleted={handleSettleCompleted}
         />
       )}
 

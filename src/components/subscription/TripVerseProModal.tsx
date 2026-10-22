@@ -24,6 +24,7 @@ import { getActiveCurrency, formatCurrency } from '../../services/currencyServic
 import { CurrencyCode } from '../../types/trip';
 import { triggerHaptic } from '../../services/deviceService';
 import confetti from 'canvas-confetti';
+import { TripPaymentGatewayModal } from '../payment/TripPaymentGatewayModal';
 
 interface TripVerseProModalProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
 }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isGatewayOpen, setIsGatewayOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
 
@@ -72,13 +74,17 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
   const formattedAnnual = formatCurrency(annualPriceINR, currency);
   const formattedAnnualPerMonth = formatCurrency(annualPerMonthINR, currency);
 
-  const handleUpgrade = async () => {
-    setIsProcessing(true);
+  const handleUpgrade = () => {
     triggerHaptic('medium');
+    setIsGatewayOpen(true);
+  };
+
+  const handleGatewaySuccess = async () => {
+    setIsProcessing(true);
+    triggerHaptic('success');
     try {
       await upgradeUserToPro(currentUser, billingCycle === 'annual' ? 365 : 30);
       setSuccessMessage('Welcome to TripVerse Pro! VIP privileges activated.');
-      triggerHaptic('success');
       try {
         confetti({
           particleCount: 110,
@@ -90,6 +96,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
 
       setTimeout(() => {
         setIsProcessing(false);
+        setIsGatewayOpen(false);
         setSuccessMessage(null);
         if (onSubscribed) onSubscribed();
         onClose();
@@ -140,7 +147,8 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-[120] bg-black/65 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+    <>
+      <div className="fixed inset-0 z-[120] bg-black/65 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
       
       {/* 
         Outer modal card:
@@ -394,6 +402,20 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
 
       </div>
     </div>
-  );
+
+    {/* PRO PAYMENT GATEWAY MODAL */}
+    {isGatewayOpen && (
+      <TripPaymentGatewayModal
+        isOpen={isGatewayOpen}
+        onClose={() => setIsGatewayOpen(false)}
+        currency={currency}
+        customAmount={billingCycle === 'annual' ? annualPriceINR : monthlyPriceINR}
+        packageType="pro_subscription"
+        customTitle={`TripVerse Pro ${billingCycle === 'annual' ? 'Annual Pass' : 'Monthly Pass'}`}
+        onBookingSuccess={handleGatewaySuccess}
+      />
+    )}
+  </>
+);
 };
 
