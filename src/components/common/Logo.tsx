@@ -198,12 +198,12 @@ export const Logo: React.FC<LogoProps> = ({
       {/* Brand Text - Fluid sub-pixel typography scaling per device screen width */}
       <div className={`flex flex-col leading-none min-w-0 ${isStacked ? 'items-center mt-1.5' : 'justify-center'}`}>
         <div className={`font-display font-black tracking-tight whitespace-nowrap ${current.textMain}`}>
-          <span className={variant === 'light' ? 'text-white' : 'text-[#0B2545]'}>Trip</span>
-          <span className="text-[#2D5A3D]">Verse</span>
+          <span className={variant === 'light' ? 'text-white' : 'text-[#0B2545] dark:text-slate-100'}>Trip</span>
+          <span className={variant === 'light' ? 'text-emerald-300' : 'text-[#2D5A3D] dark:text-emerald-400'}>Verse</span>
         </div>
         {showTagline && (
           <span className={`font-semibold tracking-wide mt-0.5 truncate max-w-[190px] sm:max-w-none ${current.textSub} ${
-            variant === 'light' ? 'text-slate-300' : 'text-slate-500'
+            variant === 'light' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
           } ${effectiveTaglineClass}`}>
             Plan Smarter. Travel Further.
           </span>

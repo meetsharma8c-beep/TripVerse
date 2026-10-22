@@ -75,6 +75,36 @@ export const Navbar: React.FC<NavbarProps> = ({
       return false;
     }
   });
+  const [isMac, setIsMac] = useState(true);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      const platform = (navigator as unknown as { userAgentData?: { platform?: string } })?.userAgentData?.platform || navigator.platform || '';
+      setIsMac(/mac|iphone|ipad|ipod/i.test(platform));
+    }
+  }, []);
+
+  // Lock body scroll on touch devices while mobile drawer is open to prevent awkward background jitter
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [mobileMenuOpen]);
+
+  // Accessibility: close mobile menu on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     setIsStandaloneApp(isStandalone());
@@ -144,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#F4F6F2]/90 backdrop-blur-md border-b border-[#E2EBE1] transition-all pt-safe">
+    <header className="sticky top-0 z-40 w-full bg-[#F4F6F2]/90 dark:bg-[#070C16]/90 backdrop-blur-md border-b border-[#E2EBE1] dark:border-slate-800 transition-all pt-safe pl-safe pr-safe">
       {/* Top Public Announcement Bar - Desktop only for clean mobile app feel */}
       <div className="hidden lg:flex bg-gradient-to-r from-[#152A1C] via-[#2D5A3D] to-[#152A1C] text-white py-1.5 px-3 sm:px-4 text-center text-xs font-semibold items-center justify-between sm:justify-center gap-2 overflow-hidden shadow-inner">
         <div className="flex items-center gap-2 truncate">
@@ -181,10 +211,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => onNavigate('home')} 
               />
               <div 
-                className="hidden 2xl:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] text-[10px] font-bold text-[#2D5A3D] shadow-2xs shrink-0"
+                className="hidden 2xl:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 text-[10px] font-bold text-[#2D5A3D] dark:text-emerald-400 shadow-2xs shrink-0"
                 title="Intelligent Travel Planning"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A3D] animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A3D] dark:bg-emerald-400 animate-pulse" />
                 <span>AI Travelverse</span>
               </div>
             </div>
@@ -201,11 +231,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => handleLinkClick(link.id)}
                     className={`relative flex items-center gap-1 xl:gap-1.5 px-2.5 xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold transition-all duration-200 cursor-pointer ${
                       isActive 
-                        ? 'text-[#2D5A3D] bg-[#E8EFE7] shadow-xs' 
-                        : 'text-slate-600 hover:text-[#152A1C] hover:bg-[#EAF0E9]/70'
+                        ? 'text-[#2D5A3D] dark:text-emerald-400 bg-[#E8EFE7] dark:bg-emerald-950/40 shadow-xs' 
+                        : 'text-slate-600 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/60'
                     }`}
                   >
-                    {Icon && <Icon className={`w-3.5 h-3.5 xl:w-4 xl:h-4 ${isActive ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />}
+                    {Icon && <Icon className={`w-3.5 h-3.5 xl:w-4 xl:h-4 ${isActive ? 'text-[#2D5A3D] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-400'}`} />}
                     <span>{link.label}</span>
                     {link.badge && (
                       <span className="text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-gradient-to-r from-[#386B49] to-[#2D5A3D] text-white shadow-xs">
@@ -213,7 +243,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       </span>
                     )}
                     {isActive && (
-                      <span className="absolute bottom-0 left-2.5 right-2.5 h-0.5 bg-[#2D5A3D] rounded-full" />
+                      <span className="absolute bottom-0 left-2.5 right-2.5 h-0.5 bg-[#2D5A3D] dark:bg-emerald-400 rounded-full" />
                     )}
                   </button>
                 );
@@ -226,38 +256,39 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#DCE7DB] bg-white/80 text-slate-600 transition-colors hover:bg-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer"
               aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
               title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
             >
-              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {isDarkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
             </button>
             {/* Spotlight Global Search Trigger */}
             {onOpenSearch && (
               <button
                 onClick={onOpenSearch}
-                className="flex items-center gap-1.5 xl:gap-2 px-2.5 xl:px-3 py-1.5 rounded-full bg-white/80 hover:bg-white text-slate-500 hover:text-[#152A1C] text-xs font-semibold transition-all border border-[#DCE7DB] cursor-pointer shadow-2xs hover:border-[#C4D9C3]"
-                title="Search destinations & trips (⌘K)"
+                className="flex items-center gap-1.5 xl:gap-2 px-2.5 xl:px-3 py-1.5 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white text-xs font-semibold transition-all border border-[#DCE7DB] dark:border-slate-700 cursor-pointer shadow-2xs hover:border-[#C4D9C3] dark:hover:border-slate-600"
+                title={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
+                aria-label={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
               >
                 <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="hidden xl:inline">Search...</span>
-                <kbd className="text-[10px] font-mono bg-[#F4F6F2] px-1.5 py-0.5 rounded border border-[#DCE7DB] text-slate-500 shadow-2xs">
-                  ⌘K
+                <kbd className="text-[10px] font-mono bg-[#F4F6F2] dark:bg-slate-900 px-1.5 py-0.5 rounded border border-[#DCE7DB] dark:border-slate-700 text-slate-500 dark:text-slate-400 shadow-2xs">
+                  {isMac ? '⌘K' : 'Ctrl+K'}
                 </kbd>
               </button>
             )}
 
             {/* Currency Selector */}
-            <div className="flex items-center gap-1 xl:gap-1.5 bg-white/80 hover:bg-white rounded-full px-2 xl:px-2.5 py-1.5 border border-[#DCE7DB] text-xs transition-all shadow-2xs">
-              <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <div className="flex items-center gap-1 xl:gap-1.5 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full px-2 xl:px-2.5 py-1.5 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs">
+              <Globe className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
               <select
                 value={currency}
                 onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
-                className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer pr-0.5"
+                className="bg-transparent text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer pr-0.5"
                 aria-label="Select Currency"
               >
                 {Object.keys(CURRENCIES).map((c) => (
-                  <option key={c} value={c}>
+                  <option key={c} value={c} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                     {CURRENCIES[c as CurrencyCode].symbol} {c}
                   </option>
                 ))}
@@ -272,7 +303,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs border ${
                   quota.isPro
                     ? 'bg-amber-500/10 border-amber-300/40 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20'
-                    : 'bg-[#E8EFE7] dark:bg-[#1A2E22] hover:bg-[#DCE7DB] border-[#DCE7DB] text-[#2D5A3D] dark:text-emerald-300'
+                    : 'bg-[#E8EFE7] dark:bg-emerald-950/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400'
                 }`}
                 title={quota.isPro ? 'TripVerse Pro Active (30h/week AI Co-Pilot)' : 'Unlock Unlimited Trips with TripVerse Pro'}
               >
@@ -295,16 +326,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             {!isAuthenticated ? (
               <button
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1.5 px-3.5 xl:px-4 py-1.5 xl:py-2 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] hover:bg-[#DCE7DB] text-[#2D5A3D] text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="flex items-center gap-1.5 px-3.5 xl:px-4 py-1.5 xl:py-2 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
                 title="Sign In / Register"
               >
-                <User className="w-3.5 h-3.5 text-[#2D5A3D]" />
+                <User className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400" />
                 <span>Sign In</span>
               </button>
             ) : (
               <button
                 onClick={() => onNavigate('profile')}
-                className="flex items-center gap-2.5 pl-1.5 pr-3 py-1 rounded-full bg-white border border-[#DCE7DB] hover:border-[#2D5A3D] transition-colors cursor-pointer shadow-2xs"
+                className="flex items-center gap-2.5 pl-1.5 pr-3 py-1 rounded-full bg-white dark:bg-slate-800 border border-[#DCE7DB] dark:border-slate-700 hover:border-[#2D5A3D] dark:hover:border-emerald-500 transition-colors cursor-pointer shadow-2xs"
                 title="View Profile"
               >
                 <img
@@ -312,7 +343,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   alt={userProfile.name}
                   className="w-7 h-7 rounded-full object-cover ring-2 ring-[#2D5A3D]/30"
                 />
-                <span className="text-xs font-bold text-[#152A1C] max-w-[90px] truncate">
+                <span className="text-xs font-bold text-[#152A1C] dark:text-slate-100 max-w-[90px] truncate">
                   {(userProfile?.name || 'Traveler').split(' ')[0]}
                 </span>
               </button>
@@ -322,12 +353,14 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* MOBILE APP HEADER (Screen 1: Left Menu Button, Center Logo, Right Profile Avatar) */}
-        <div className="flex lg:hidden items-center justify-between h-14">
-          {/* Left: Mobile App Hamburger Menu Icon */}
+        <div className="flex lg:hidden items-center justify-between h-14 sm:h-16">
+          {/* Left: Mobile App Hamburger Menu Icon (44px min touch target for iOS & Android) */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-xs border border-[#E2EBE1] dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-200 hover:text-[#152A1C] hover:bg-white active:scale-95 transition-all focus:outline-none cursor-pointer"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white dark:bg-slate-800 shadow-xs border border-[#E2EBE1] dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-[#152A1C] dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 active:scale-95 transition-all focus:outline-none cursor-pointer"
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation-drawer"
           >
             {mobileMenuOpen ? <X className="w-5 h-5 text-[#152A1C] dark:text-slate-100" /> : <Menu className="w-5 h-5 text-[#152A1C] dark:text-slate-100" />}
           </button>
@@ -346,14 +379,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             {!isAuthenticated ? (
               <button
                 onClick={onOpenAuthModal}
-                className="px-3.5 py-1.5 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] text-[#2D5A3D] text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="h-10 px-4 min-h-[40px] rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
               >
                 Sign In
               </button>
             ) : (
               <button
                 onClick={() => onNavigate('profile')}
-                className="w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-700 shadow-xs overflow-hidden cursor-pointer active:scale-95 transition-transform shrink-0 relative"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full ring-2 ring-white dark:ring-slate-700 shadow-xs overflow-hidden cursor-pointer active:scale-95 transition-transform shrink-0 relative"
                 title="Profile"
                 aria-label="Profile"
               >
@@ -363,7 +396,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="w-full h-full object-cover"
                 />
                 {quota.isPro && (
-                  <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-amber-400 ring-1.5 ring-white flex items-center justify-center">
+                  <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-amber-400 ring-2 ring-white dark:ring-slate-800 flex items-center justify-center">
                     <Crown className="w-2 h-2 text-amber-900 fill-amber-900" />
                   </span>
                 )}
@@ -373,18 +406,32 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
+      {/* Mobile Drawer Backdrop overlay - closes drawer on tap outside */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 top-[calc(3.5rem+env(safe-area-inset-top,0px))] sm:top-[calc(4rem+env(safe-area-inset-top,0px))] bg-black/40 dark:bg-black/60 backdrop-blur-xs z-30 lg:hidden animate-in fade-in duration-200"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Mobile & Tablet Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-[#E2EBE1] bg-[#F4F6F2] px-4 pt-3 pb-5 space-y-1 shadow-xl animate-in slide-in-from-top duration-200">
+        <div 
+          id="mobile-navigation-drawer"
+          role="dialog"
+          aria-label="Mobile Navigation"
+          className="relative z-40 lg:hidden border-t border-[#E2EBE1] dark:border-slate-800 bg-[#F4F6F2] dark:bg-[#0E1726] px-4 pt-3 pb-6 space-y-1 shadow-2xl animate-in slide-in-from-top duration-200 transition-colors max-h-[calc(100vh-4.5rem)] overflow-y-auto"
+        >
           {onOpenSearch && (
             <button
               onClick={() => {
                 onOpenSearch();
                 setMobileMenuOpen(false);
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/80 transition-colors"
             >
-              <Search className="w-5 h-5 text-slate-400" />
+              <Search className="w-5 h-5 text-slate-400 dark:text-slate-500" />
               <span>Search destinations & trips</span>
             </button>
           )}
@@ -404,7 +451,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  quota.isPro ? 'bg-amber-400 text-amber-950' : 'bg-[#E8EFE7] text-[#2D5A3D]'
+                  quota.isPro ? 'bg-amber-400 text-amber-950' : 'bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-400'
                 }`}>
                   <Crown className="w-5 h-5 fill-current" />
                 </div>
@@ -414,7 +461,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       {quota.isPro ? 'TripVerse Pro Member' : 'TripVerse Pro'}
                     </p>
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase shrink-0 ${
-                      quota.isPro ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' : 'bg-[#E8EFE7] text-[#2D5A3D]'
+                      quota.isPro ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' : 'bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-400'
                     }`}>
                       {quota.isPro ? 'ACTIVE' : 'UPGRADE'}
                     </span>
@@ -424,9 +471,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </p>
                 </div>
               </div>
-              <ChevronRight className={`w-4 h-4 shrink-0 ${quota.isPro ? 'text-amber-300' : 'text-slate-400'}`} />
+              <ChevronRight className={`w-4 h-4 shrink-0 ${quota.isPro ? 'text-amber-300' : 'text-slate-400 dark:text-slate-500'}`} />
             </div>
           )}
+
           {mobileNavLinks.map((link) => {
             const isActive = currentTab === link.id;
             const Icon = link.icon;
@@ -435,19 +483,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                 key={link.id}
                 onClick={() => handleLinkClick(link.id)}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
-                  isActive ? 'bg-[#E8EFE7] text-[#2D5A3D]' : 'text-slate-700 hover:bg-[#EAF0E9]/70'
+                  isActive 
+                    ? 'bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300' 
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/60'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  {Icon && <Icon className={`w-5 h-5 ${isActive ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />}
+                  {Icon && <Icon className={`w-5 h-5 ${isActive ? 'text-[#2D5A3D] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />}
                   <span>{link.label}</span>
                 </div>
                 {link.badge ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2D5A3D] text-white">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2D5A3D] dark:bg-emerald-600 text-white">
                     {link.badge}
                   </span>
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-300" />
+                  <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600" />
                 )}
               </button>
             );
@@ -455,38 +505,39 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Mobile Install App banner for browser users */}
           {!isStandaloneApp && (
-            <div className="p-3 my-2 rounded-2xl bg-[#EAF0E9] border border-[#8EA78D]/30 flex items-center justify-between">
+            <div className="p-3 my-2 rounded-2xl bg-[#EAF0E9] dark:bg-slate-800/90 border border-[#8EA78D]/30 dark:border-slate-700 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-white p-1.5 flex items-center justify-center shrink-0 shadow-2xs border border-slate-200/90">
+                <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 p-1.5 flex items-center justify-center shrink-0 shadow-2xs border border-slate-200/90 dark:border-slate-700">
                   <BrandIconMark className="w-full h-full" idPrefix="nav-banner" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-800">TripVerse App</p>
-                  <p className="text-[10px] text-slate-500">Free, offline & fast</p>
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100">TripVerse App</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Free, offline & fast</p>
                 </div>
               </div>
               <button
                 onClick={handleOpenInstall}
-                className="px-3 py-1.5 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
+                className="px-3 py-1.5 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
               >
                 Install
               </button>
             </div>
           )}
 
-          {/* Mobile Currency & CONCODE badge */}
-          <div className="pt-2 pb-2 px-3 flex items-center justify-between border-t border-slate-100">
-            <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold">
-              <Globe className="w-4 h-4 text-slate-400" />
+          {/* Mobile Currency selector */}
+          <div className="pt-2 pb-2 px-3 flex items-center justify-between border-t border-slate-200/60 dark:border-slate-800">
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-semibold">
+              <Globe className="w-4 h-4 text-slate-400 dark:text-slate-500" />
               <span>Currency:</span>
             </div>
             <select
               value={currency}
               onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
-              className="px-3 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800"
+              className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
+              aria-label="Select Mobile Currency"
             >
               {Object.keys(CURRENCIES).map((c) => (
-                <option key={c} value={c}>
+                <option key={c} value={c} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                   {CURRENCIES[c as CurrencyCode].symbol} {c} ({CURRENCIES[c as CurrencyCode].name})
                 </option>
               ))}
@@ -496,23 +547,23 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={toggleDarkMode}
-            className="w-full flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            className="w-full flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/60 cursor-pointer"
             aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
           >
             <span className="flex items-center gap-3">
-              {isDarkMode ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5 text-slate-400" />}
+              {isDarkMode ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5 text-slate-400 dark:text-slate-500" />}
               <span>{isDarkMode ? 'Light mode' : 'Dark mode'}</span>
             </span>
-            <span className="text-xs text-slate-500">{isDarkMode ? 'On' : 'Off'}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">{isDarkMode ? 'On' : 'Off'}</span>
           </button>
 
-          <div className="pt-3 border-t border-slate-100">
+          <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800">
             <button
               onClick={() => {
                 onOpenPlanner();
                 setMobileMenuOpen(false);
               }}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-trip-gradient text-white font-bold text-sm shadow-md"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-trip-gradient text-white font-bold text-sm shadow-md active:scale-98 transition-transform cursor-pointer"
             >
               <PlaneTakeoff className="w-4 h-4" />
               <span>Plan My Trip With AI</span>
