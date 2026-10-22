@@ -35,6 +35,7 @@ interface TripPassesHubViewProps {
   onOpenPacking?: () => void;
   onExportTrip?: () => void;
   onOpenShare?: () => void;
+  onOpenNotifications?: () => void;
 }
 
 export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
@@ -43,7 +44,8 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
   onOpenBookingModal,
   onOpenPacking,
   onExportTrip,
-  onOpenShare
+  onOpenShare,
+  onOpenNotifications
 }) => {
   // Live weather forecast
   const [weather, setWeather] = useState<WeatherForecast>(() => 
@@ -74,6 +76,16 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
     if (saved && saved.length > 0) return saved;
     return generateSmartPackingList(trip);
   });
+
+  // Synchronize packing items when active trip changes
+  useEffect(() => {
+    const saved = loadTripPacking(trip.id);
+    if (saved && saved.length > 0) {
+      setPackingItems(saved);
+    } else {
+      setPackingItems(generateSmartPackingList(trip));
+    }
+  }, [trip.id]);
 
   useEffect(() => {
     let isMounted = true;
@@ -190,8 +202,10 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={onOpenNotifications}
             className="w-10 h-10 rounded-full bg-white border border-[#E2EBE1] text-[#2D5A3D] flex items-center justify-center shadow-xs hover:bg-[#F8FAF7] transition-all cursor-pointer"
             title="Notifications"
+            aria-label="Open notifications"
           >
             <Bell className="w-4 h-4" />
           </button>

@@ -63,19 +63,43 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const carouselRef = React.useRef<HTMLDivElement>(null);
   const featuredDestinations = POPULAR_DESTINATIONS.slice(0, 3);
 
+  const getCardStep = () => {
+    if (!carouselRef.current) return 156;
+    const firstCard = carouselRef.current.firstElementChild as HTMLElement | null;
+    if (!firstCard) return 156;
+    const cardRect = firstCard.getBoundingClientRect();
+    const nextCard = firstCard.nextElementSibling as HTMLElement | null;
+    if (nextCard) {
+      const nextRect = nextCard.getBoundingClientRect();
+      const step = nextRect.left - cardRect.left;
+      if (step > 0) return step;
+    }
+    return cardRect.width + 12;
+  };
+
   const handleCarouselScroll = () => {
     if (!carouselRef.current) return;
     const scrollLeft = carouselRef.current.scrollLeft;
-    const cardWidth = 156;
-    const newIndex = Math.min(2, Math.max(0, Math.round(scrollLeft / cardWidth)));
+    const step = getCardStep();
+    const newIndex = Math.min(featuredDestinations.length - 1, Math.max(0, Math.round(scrollLeft / step)));
     setCarouselActiveIndex(newIndex);
   };
 
   const scrollCarouselToIndex = (index: number) => {
     if (!carouselRef.current) return;
-    const cardWidth = 156;
+    const cards = carouselRef.current.children;
+    if (cards[index]) {
+      (cards[index] as HTMLElement).scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'start',
+      });
+      setCarouselActiveIndex(index);
+      return;
+    }
+    const step = getCardStep();
     carouselRef.current.scrollTo({
-      left: index * cardWidth,
+      left: index * step,
       behavior: 'smooth'
     });
     setCarouselActiveIndex(index);
@@ -89,8 +113,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     return () => window.removeEventListener('tripverse_currency_change' as any, handleCurrencyChange);
   }, []);
 
-  // Debounced search for hero destination input
+  // Debounced search for hero destination input with stale-response guard
   useEffect(() => {
+    let isCurrent = true;
+
     if (!destination || destination.trim().length < 2) {
       setSuggestions([]);
       setIsSearching(false);
@@ -101,15 +127,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       setIsSearching(true);
       try {
         const results = await searchLocations(destination);
-        setSuggestions(results);
+        if (isCurrent) {
+          setSuggestions(results);
+        }
       } catch {
         // ignore
       } finally {
-        setIsSearching(false);
+        if (isCurrent) {
+          setIsSearching(false);
+        }
       }
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () => {
+      isCurrent = false;
+      clearTimeout(timer);
+    };
   }, [destination]);
 
   const quickDests: { name: string; label: string; isHighlight?: boolean }[] = [
@@ -228,7 +261,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   aria-label="Search destination"
                   title="Search destination"
                 >
-                  <Mic className="w-5 h-5" />
+                  <Search className="w-5 h-5" />
                 </button>
               </div>
 

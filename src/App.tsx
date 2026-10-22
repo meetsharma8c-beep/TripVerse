@@ -1850,6 +1850,7 @@ export function App() {
                   onOpenPacking={() => setTripSubTab('packing')}
                   onExportTrip={handleExportTrip}
                   onOpenShare={() => setIsShareModalOpen(true)}
+                  onOpenNotifications={() => setIsNotificationCenterOpen(true)}
                 />
               )}
 
@@ -2085,6 +2086,7 @@ export function App() {
                   }}
                   onExportTrip={handleExportTrip}
                   onOpenShare={() => setIsShareModalOpen(true)}
+                  onOpenNotifications={() => setIsNotificationCenterOpen(true)}
                 />
               ) : (
                 <MyTripsView

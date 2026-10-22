@@ -94,11 +94,11 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
   const bestTransport = trip.bestTransportDeal || trip.transportDeals?.[0];
 
   const estimateItems = [
-    { label: 'Transport', amount: trip.budgetBreakdown.transportation, icon: Plane, color: 'text-sky-600 bg-sky-50' },
-    { label: 'Stays & Lodging', amount: trip.budgetBreakdown.accommodation, icon: Bed, color: 'text-indigo-600 bg-indigo-50' },
-    { label: 'Local Dining', amount: trip.budgetBreakdown.food, icon: Tag, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Activities & Entry', amount: trip.budgetBreakdown.activities, icon: Ticket, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Safety Buffer', amount: trip.budgetBreakdown.miscellaneous, icon: ShieldCheck, color: 'text-slate-600 bg-slate-100' }
+    { label: 'Transport', amount: trip.budgetBreakdown?.transportation ?? 0, icon: Plane, color: 'text-sky-600 bg-sky-50' },
+    { label: 'Stays & Lodging', amount: trip.budgetBreakdown?.accommodation ?? 0, icon: Bed, color: 'text-indigo-600 bg-indigo-50' },
+    { label: 'Local Dining', amount: trip.budgetBreakdown?.food ?? 0, icon: Tag, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Activities & Entry', amount: trip.budgetBreakdown?.activities ?? 0, icon: Ticket, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Safety Buffer', amount: trip.budgetBreakdown?.miscellaneous ?? 0, icon: ShieldCheck, color: 'text-slate-600 bg-slate-100' }
   ];
 
   // Open Gateway with specific package

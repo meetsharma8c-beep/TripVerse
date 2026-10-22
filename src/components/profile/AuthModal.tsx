@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   X, 
   Check, 
@@ -137,12 +137,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   }, [emailResendCountdown]);
 
   // Clean up phone verifier when modal closes
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     clearPhoneAuthSession();
     setErrorMsg(null);
     setSuccessMsg(null);
     onClose();
-  };
+  }, [onClose]);
 
   // Close modal with Escape key
   useEffect(() => {
@@ -154,7 +154,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, handleModalClose]);
 
   // Google Identity Services (GIS) Official Credential Callback
   const handleGoogleCredentialResponse = async (response: any) => {

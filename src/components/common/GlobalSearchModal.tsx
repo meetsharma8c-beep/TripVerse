@@ -167,8 +167,10 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           />
           {query ? (
             <button 
+              type="button"
               onClick={() => setQuery('')}
               className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              aria-label="Clear search"
             >
               <X className="w-4 h-4" />
             </button>

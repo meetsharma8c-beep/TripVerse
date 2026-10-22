@@ -54,6 +54,7 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
+  const routeBoundsRef = useRef<L.LatLngBounds | null>(null);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
@@ -89,6 +90,7 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
       ? decodePolyline(trip.routeDetails.encodedPolyline)
       : [];
     if (realRoute.length < 2) {
+      routeBoundsRef.current = null;
       map.setView([20, 0], 2);
       return;
     }
@@ -105,7 +107,9 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
       .bindPopup(makePopup(trip.destination, 'Trip destination'))
       .addTo(layers);
 
-    trip.breakStops.forEach(stop => {
+    const stops = trip.breakStops || [];
+    stops.forEach(stop => {
+      if (!stop?.coordinates) return;
       const point: L.LatLngTuple = [stop.coordinates.lat, stop.coordinates.lng];
       L.circleMarker(point, { radius: 7, color: '#fff', weight: 2, fillColor: '#F59E0B', fillOpacity: 1 })
         .bindPopup(makePopup(
@@ -118,7 +122,13 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
     });
 
     map.invalidateSize();
-    map.fitBounds(L.latLngBounds([...routePoints, ...trip.breakStops.map(stop => [stop.coordinates.lat, stop.coordinates.lng] as L.LatLngTuple)]), {
+    const allPoints: L.LatLngTuple[] = [
+      ...routePoints,
+      ...stops.filter(s => s?.coordinates).map(stop => [stop.coordinates.lat, stop.coordinates.lng] as L.LatLngTuple)
+    ];
+    const bounds = L.latLngBounds(allPoints);
+    routeBoundsRef.current = bounds;
+    map.fitBounds(bounds, {
       padding: [32, 32],
       maxZoom: 12
     });
@@ -164,7 +174,12 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
           type="button"
           onClick={() => {
             const map = mapInstanceRef.current;
-            if (map) map.fitBounds(map.getBounds(), { padding: [32, 32] });
+            if (!map) return;
+            if (routeBoundsRef.current && routeBoundsRef.current.isValid()) {
+              map.fitBounds(routeBoundsRef.current, { padding: [32, 32], maxZoom: 12 });
+            } else {
+              map.setView([20, 0], 2);
+            }
           }}
           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200"
         >

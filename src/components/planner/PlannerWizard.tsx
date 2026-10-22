@@ -88,8 +88,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   const [showDestDropdown, setShowDestDropdown] = useState(false);
   const [isDetectingOrigin, setIsDetectingOrigin] = useState(false);
 
-  // Debounced search for destination input
+  // Debounced search for destination input with stale-response guard
   React.useEffect(() => {
+    let isCurrent = true;
+
     if (!destination || destination.trim().length < 2) {
       setDestSuggestions([]);
       setIsSearchingDest(false);
@@ -100,6 +102,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
       setIsSearchingDest(true);
       try {
         const results = await searchLocations(destination);
+        if (!isCurrent) return;
         setDestSuggestions(results);
         const exact = results.find(
           r => r.name.toLowerCase() === destination.toLowerCase().trim() ||
@@ -112,13 +115,20 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         }
       } catch {
         // fallback to sync resolver
-        setSelectedPreciseSpot(resolvePreciseLocationSync(destination));
+        if (isCurrent) {
+          setSelectedPreciseSpot(resolvePreciseLocationSync(destination));
+        }
       } finally {
-        setIsSearchingDest(false);
+        if (isCurrent) {
+          setIsSearchingDest(false);
+        }
       }
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () => {
+      isCurrent = false;
+      clearTimeout(timer);
+    };
   }, [destination]);
 
   const handleSelectSpot = (spot: PreciseLocation) => {

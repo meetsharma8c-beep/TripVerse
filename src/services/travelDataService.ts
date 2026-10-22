@@ -72,32 +72,33 @@ function hasPlaceType(types: string[], category: string): boolean {
 }
 
 export function applyGeoapifyTravelData(trip: Trip, data: GeoapifyTravelDataResponse): Trip {
-  const breakStops: BreakStop[] = data.places.map(place => ({
+  const places = data.places || [];
+  const breakStops: BreakStop[] = places.map(place => ({
     id: `geoapify-${place.id}`,
     source: 'geoapify_places',
     mapUrl: place.mapUrl,
-    section: classifyPlace(place.types),
+    section: classifyPlace(place.types || []),
     name: place.name,
-    category: classifyPlace(place.types) === 'fuel'
+    category: classifyPlace(place.types || []) === 'fuel'
       ? 'fuel_plaza'
-      : classifyPlace(place.types) === 'amenities' && place.types.some(type => type.startsWith('tourism.'))
+      : classifyPlace(place.types || []) === 'amenities' && (place.types || []).some(type => type.startsWith('tourism.'))
         ? 'scenic_rest_stop'
-        : place.types.includes('catering.cafe')
+        : (place.types || []).includes('catering.cafe')
           ? 'dhaba'
           : 'highway_food_court',
     rating: place.rating,
     reviewCount: place.reviewCount,
     detourDistanceKm: place.offRouteKm,
     distanceFromStartKm: place.distanceFromStartKm,
-    foodAvailable: place.types.some(type => ['catering.restaurant', 'catering.cafe'].includes(type)) || undefined,
-    washroomAvailable: hasPlaceType(place.types, 'amenity.toilets') || undefined,
-    parkingAvailable: hasPlaceType(place.types, 'parking') || undefined,
-    restAreaAvailable: hasPlaceType(place.types, 'highway.rest_area') ||
-      hasPlaceType(place.types, 'highway.services') ||
-      hasPlaceType(place.types, 'leisure.picnic') || undefined,
-    fuelStationAvailable: hasPlaceType(place.types, 'service.vehicle.fuel') || undefined,
-    evChargingAvailable: hasPlaceType(place.types, 'service.vehicle.charging_station') || undefined,
-    medicalFacilityAvailable: place.types.some(type => type.startsWith('healthcare.')) || undefined,
+    foodAvailable: (place.types || []).some(type => ['catering.restaurant', 'catering.cafe'].includes(type)) || undefined,
+    washroomAvailable: hasPlaceType(place.types || [], 'amenity.toilets') || undefined,
+    parkingAvailable: hasPlaceType(place.types || [], 'parking') || undefined,
+    restAreaAvailable: hasPlaceType(place.types || [], 'highway.rest_area') ||
+      hasPlaceType(place.types || [], 'highway.services') ||
+      hasPlaceType(place.types || [], 'leisure.picnic') || undefined,
+    fuelStationAvailable: hasPlaceType(place.types || [], 'service.vehicle.fuel') || undefined,
+    evChargingAvailable: hasPlaceType(place.types || [], 'service.vehicle.charging_station') || undefined,
+    medicalFacilityAvailable: (place.types || []).some(type => type.startsWith('healthcare.')) || undefined,
     openingHours: 'Check the listing for current hours',
     estimatedStopMinutes: 30,
     image: '',
@@ -106,17 +107,18 @@ export function applyGeoapifyTravelData(trip: Trip, data: GeoapifyTravelDataResp
     coordinates: place.coordinates
   }));
 
-  const attractions = data.destinationPlaces.filter(place =>
-    place.types.some(type => type.startsWith('tourism.') || type === 'leisure.park')
+  const destinationPlaces = data.destinationPlaces || [];
+  const attractions = destinationPlaces.filter(place =>
+    (place.types || []).some(type => type.startsWith('tourism.') || type === 'leisure.park')
   );
-  const restaurants = data.destinationPlaces.filter(place =>
-    place.types.some(type => ['catering.restaurant', 'catering.cafe'].includes(type))
+  const restaurants = destinationPlaces.filter(place =>
+    (place.types || []).some(type => ['catering.restaurant', 'catering.cafe'].includes(type))
   );
-  const accommodations = data.destinationPlaces.filter(place => typeIsAccommodation(place.types));
+  const accommodations = destinationPlaces.filter(place => typeIsAccommodation(place.types || []));
   let attractionIndex = 0;
   let restaurantIndex = 0;
   let accommodationIndex = 0;
-  const routeDistanceKm = data.route.distanceKm;
+  const routeDistanceKm = data.route?.distanceKm || 0;
   const eligibleStops = breakStops.filter(stop =>
     stop.distanceFromStartKm >= routeDistanceKm * 0.15 &&
     stop.distanceFromStartKm <= routeDistanceKm * 0.85
@@ -125,9 +127,9 @@ export function applyGeoapifyTravelData(trip: Trip, data: GeoapifyTravelDataResp
     Math.abs(a.distanceFromStartKm - routeDistanceKm / 2) -
     Math.abs(b.distanceFromStartKm - routeDistanceKm / 2)
   )[0];
-  const itinerary = trip.itinerary.map(day => ({
+  const itinerary = (trip.itinerary || []).map(day => ({
     ...day,
-    activities: day.activities.map(activity => {
+    activities: (day.activities || []).map(activity => {
       if (activity.isCustom || !activity.id.startsWith('act-')) return activity;
       if (activity.type === 'breakstop') {
         if (activity.id !== 'act-1-bs' || !firstStop) {
