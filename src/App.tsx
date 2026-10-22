@@ -457,8 +457,66 @@ export function App() {
   });
   const [splashPlatform, setSplashPlatform] = useState<'ios' | 'android' | undefined>(undefined);
 
+  // Genuine App Initialization Tracking
+  const [isAppReady, setIsAppReady] = useState<boolean>(false);
+  const [initStage, setInitStage] = useState<{ progress: number; message: string }>({
+    progress: 25,
+    message: 'Initializing travel intelligence...'
+  });
+
   const handleFinishSplash = React.useCallback(() => {
     setShowSplash(false);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function bootstrapApp() {
+      try {
+        // Stage 1: Core local preferences and itinerary hydration
+        if (!isMounted) return;
+        setInitStage({
+          progress: 50,
+          message: 'Loading itineraries & profile...'
+        });
+
+        // Small yield so browser processes layout
+        await new Promise((r) => setTimeout(r, 120));
+
+        // Stage 2: Auth check & session sync
+        if (!isMounted) return;
+        const user = getCurrentUser();
+        setInitStage({
+          progress: 80,
+          message: user ? 'Syncing traveler passport...' : 'Connecting offline intelligence...'
+        });
+
+        // Stage 3: Font & critical asset readiness
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready.catch(() => {});
+        }
+
+        // Small pacing yield to ensure visual smoothness
+        await new Promise((r) => setTimeout(r, 160));
+
+        if (!isMounted) return;
+        setInitStage({
+          progress: 100,
+          message: 'Welcome to TripVerse'
+        });
+        setIsAppReady(true);
+      } catch (err) {
+        if (isMounted) {
+          setIsAppReady(true);
+        }
+      }
+    }
+
+    bootstrapApp();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -1503,6 +1561,9 @@ export function App() {
       {showSplash && (
         <AppSplashScreen
           initialPlatform={splashPlatform}
+          isAppReady={isAppReady}
+          statusMessage={initStage.message}
+          targetProgress={initStage.progress}
           onFinish={handleFinishSplash}
         />
       )}

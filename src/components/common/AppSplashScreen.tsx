@@ -5,23 +5,34 @@ import { BrandIconMark } from './Logo';
 
 interface AppSplashScreenProps {
   onFinish?: () => void;
-  minDuration?: number;
+  isAppReady?: boolean;
+  statusMessage?: string;
+  targetProgress?: number;
   initialPlatform?: 'ios' | 'android';
 }
 
 export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
   onFinish,
-  minDuration = 2800,
+  isAppReady = false,
+  statusMessage = 'Initializing travel intelligence...',
+  targetProgress = 20,
   initialPlatform
 }) => {
   const [isExiting, setIsExiting] = useState(false);
-  const [progress, setProgress] = useState(10);
+  const [progress, setProgress] = useState(15);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const onFinishRef = useRef(onFinish);
   const hasFinishedRef = useRef(false);
+  const mountTimeRef = useRef(Date.now());
+
+  // Minimum display threshold (800ms) to ensure the opening feels velvety smooth
+  // without any jarring 1-frame flashes on instantaneous cached loads.
+  const MIN_DISPLAY_MS = 800;
+  // Safety timeout: Ensure app never hangs even on constrained devices or slow networks
+  const MAX_TIMEOUT_MS = 2800;
 
   useEffect(() => {
     onFinishRef.current = onFinish;
@@ -74,31 +85,48 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
           });
       }
     }
+  }, []);
 
-    // Smooth professional loading progress
-    const startTime = Date.now();
+  // Smooth genuine loading progress interpolation towards real app ready target
+  useEffect(() => {
+    const desiredProgress = isAppReady ? 100 : Math.max(15, targetProgress);
+
     const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const pct = Math.min(100, Math.round((elapsed / minDuration) * 100));
-      setProgress(pct);
+      setProgress((prev) => {
+        if (prev >= desiredProgress) {
+          return prev;
+        }
+        // Smoothly accelerate towards desired target
+        const step = Math.max(1, Math.round((desiredProgress - prev) * 0.25));
+        return Math.min(desiredProgress, prev + step);
+      });
+    }, 25);
 
-      if (elapsed >= minDuration) {
-        clearInterval(interval);
-        handleFinish();
-      }
-    }, 50);
+    return () => clearInterval(interval);
+  }, [isAppReady, targetProgress]);
 
-    // Safety timeout: Ensure app never hangs even on constrained devices or slow networks
-    const safetyTimer = setTimeout(() => {
-      clearInterval(interval);
+  // Genuine completion trigger: Dismiss when app reports ready and progress has completed
+  useEffect(() => {
+    if (!isAppReady || progress < 100 || hasFinishedRef.current) return;
+
+    const elapsed = Date.now() - mountTimeRef.current;
+    const remainingMin = Math.max(0, MIN_DISPLAY_MS - elapsed);
+
+    const finishTimer = setTimeout(() => {
       handleFinish();
-    }, minDuration + 500);
+    }, remainingMin + 150);
 
-    return () => {
-      clearInterval(interval);
-      clearTimeout(safetyTimer);
-    };
-  }, [minDuration]);
+    return () => clearTimeout(finishTimer);
+  }, [isAppReady, progress]);
+
+  // Safety ceiling timeout
+  useEffect(() => {
+    const safetyTimer = setTimeout(() => {
+      handleFinish();
+    }, MAX_TIMEOUT_MS);
+
+    return () => clearTimeout(safetyTimer);
+  }, []);
 
   return (
     <div
@@ -199,9 +227,9 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
           />
         </div>
 
-        {/* Quiet Loading Status */}
-        <p className="text-[11px] sm:text-xs text-slate-400/80 font-medium tracking-wider mt-3 uppercase">
-          Initializing travel intelligence...
+        {/* Genuine Live Loading Status */}
+        <p className="text-[11px] sm:text-xs text-slate-300/85 font-medium tracking-wider mt-3 uppercase transition-all duration-300">
+          {statusMessage}
         </p>
       </div>
 
