@@ -17,8 +17,7 @@ import {
   Info,
   ShieldCheck,
   Search,
-  BookOpen,
-  Mic
+  BookOpen
 } from 'lucide-react';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { searchLocations, PreciseLocation } from '../../services/locationService';
@@ -51,6 +50,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const [travelers, setTravelers] = useState(3);
   const [budget, setBudget] = useState(8000);
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
+  const [heroVideoError, setHeroVideoError] = useState(false);
 
   // Location suggestions state
   const [suggestions, setSuggestions] = useState<PreciseLocation[]>([]);
@@ -195,28 +195,33 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <img
               src="/videos/app-opening-poster.jpg"
               alt="Serene nature landscape with misty mountains and lake"
-              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
+              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
               loading="eager"
             />
 
             {/* Ambient Cross-Device Video Scenery */}
-            <video
-              src="/videos/app-opening.mp4"
-              poster="/videos/app-opening-poster.jpg"
-              autoPlay
-              loop
-              muted
-              playsInline
-              // @ts-ignore
-              webkit-playsinline="true"
-              x5-playsinline="true"
-              x5-video-player-type="h5"
-              preload="auto"
-              width={1280}
-              height={720}
-              className="relative z-10 w-full h-60 sm:h-72 md:h-84 lg:h-96 object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
-            />
-            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+            {!heroVideoError && (
+              <video
+                src="/videos/app-opening.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                controls={false}
+                // @ts-ignore
+                webkit-playsinline="true"
+                x5-playsinline="true"
+                x5-video-player-type="h5"
+                preload="auto"
+                disablePictureInPicture
+                disableRemotePlayback
+                onError={() => setHeroVideoError(true)}
+                width={1280}
+                height={720}
+                className="relative z-10 w-full h-60 sm:h-72 md:h-84 lg:h-96 object-cover object-center pointer-events-none select-none transition-transform duration-700 group-hover:scale-[1.01]"
+              />
+            )}
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none select-none" />
           </div>
 
           {/* Floating Pill Search Bar (Matching Reference Image Screen 1) */}

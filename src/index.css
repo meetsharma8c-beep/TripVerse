@@ -46,6 +46,28 @@ button, a, input, select, textarea {
   touch-action: manipulation;
 }
 
+/* Suppress all native browser video playback controls, play icons, and media overlays across WebKit, Blink & Firefox */
+video {
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+video::-webkit-media-controls,
+video::-webkit-media-controls-start-playback-button,
+video::-webkit-media-controls-play-button,
+video::-webkit-media-controls-overlay-play-button,
+video::-webkit-media-controls-panel,
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* Prevent iOS & Android browser auto-zoom on input focus while maintaining mobile layout integrity */
 @media screen and (max-width: 768px) {
   input:not([type="checkbox"]):not([type="radio"]),

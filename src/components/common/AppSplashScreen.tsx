@@ -54,6 +54,9 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
       video.muted = true;
       video.defaultMuted = true;
       video.playsInline = true;
+      video.controls = false;
+      video.setAttribute('webkit-playsinline', 'true');
+      video.setAttribute('playsinline', 'true');
 
       const playPromise = video.play();
       if (playPromise !== undefined) {
@@ -64,6 +67,10 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
           .catch((err) => {
             // Low-power mode or background policy: graceful poster fallback without error
             console.log('[App Loading] Silent background video fallback active:', err);
+            // If autoplay is blocked by browser/OS, immediately unmount the video
+            // so no paused video frame or native play icon is ever displayed to the user.
+            setVideoLoaded(false);
+            setVideoError(true);
           });
       }
     }
@@ -115,22 +122,22 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
         <img
           src="/videos/app-opening-poster.jpg"
           alt="TripVerse opening visual"
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+          className={`absolute inset-0 w-full h-full object-cover pointer-events-none select-none transition-opacity duration-700 ${
             videoLoaded && !videoError ? 'opacity-0' : 'opacity-100 scale-100'
           }`}
           loading="eager"
         />
 
-        {/* Ambient background video (muted, looping, playsInline for 100% device compatibility) */}
+        {/* Ambient background video (muted, looping, playsInline, strictly no native controls or play icons) */}
         {!videoError && (
           <video
             ref={videoRef}
             src="/videos/app-opening.mp4"
-            poster="/videos/app-opening-poster.jpg"
             autoPlay
             loop
             muted
             playsInline
+            controls={false}
             // @ts-ignore iOS & Android webview specific attributes
             webkit-playsinline="true"
             x5-playsinline="true"
@@ -139,10 +146,13 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
             disablePictureInPicture
             disableRemotePlayback
             onLoadedData={() => setVideoLoaded(true)}
-            onError={() => setVideoError(true)}
+            onError={() => {
+              setVideoLoaded(false);
+              setVideoError(true);
+            }}
             width={1280}
             height={720}
-            className={`w-full h-full object-cover transition-opacity duration-700 ${
+            className={`w-full h-full object-cover pointer-events-none select-none transition-opacity duration-700 ${
               videoLoaded ? 'opacity-100' : 'opacity-0'
             }`}
           />
