@@ -120,7 +120,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                   <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-extrabold text-[#152A1C] shadow-xs">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                     <span>{dest.rating}</span>
-                    <span className="text-[10px] text-[#2D5A3D] font-bold">Verified</span>
+                    <span className="text-[10px] text-[#2D5A3D] font-bold">Curated</span>
                   </span>
 
                   <button

@@ -165,7 +165,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               </div>
             </div>
             <span className="text-xs font-bold text-[#2D5A3D] bg-[#E8EFE7] px-3 py-1 rounded-full border border-[#8EA78D]/30 self-start sm:self-auto">
-              98% AI Match
+              Style Match
             </span>
           </div>
 

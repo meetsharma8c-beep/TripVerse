@@ -136,7 +136,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
               <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black text-slate-800 shadow-sm">
                 <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                 <span>{destination.rating} / 5.0</span>
-                <span className="text-[10px] text-slate-500 font-semibold">({(Math.round(destination.rating * 540 + 420)).toLocaleString()} reviews)</span>
+                <span className="text-[10px] text-slate-500 font-semibold">(Curated Index)</span>
               </span>
 
               <span className="bg-emerald-500/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider backdrop-blur-md">
@@ -254,13 +254,13 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
               <div className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-1">
                 <span className="font-bold text-slate-800 block text-xs flex items-center gap-1.5 text-emerald-700">
                   <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>What's Included:</span>
+                  <span>Included in Budget Estimate:</span>
                 </span>
                 <ul className="text-slate-600 space-y-1 pl-1 text-[11px]">
-                  <li>• Verified 3-star/4-star Heritage stay recommendation</li>
-                  <li>• FastTag expressway toll tariffs computation</li>
-                  <li>• Recommended highway break stop dining costs</li>
-                  <li>• Primary destination entry & parking estimates</li>
+                  <li>• Curated 3-star/4-star stay nightly rate estimate</li>
+                  <li>• Estimated highway toll & transit cost allowance</li>
+                  <li>• Daily regional meal & pitstop dining budget</li>
+                  <li>• Primary attraction entry & local transit estimates</li>
                 </ul>
               </div>
               <div className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-1">

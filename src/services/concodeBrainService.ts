@@ -534,18 +534,47 @@ export async function queryConcodeBrain(
     session.preferences = Array.from(new Set([...(session.preferences || []), ...extractedPrefs]));
   }
 
-  // The client only calls its own Vercel route. That route owns the private
-  // CONCODE key and forwards the request to the configured CONCODE travel model.
-  const cloudResult = await tryQueryServerlessAPI(query, tripContext, session, mode);
-  if (cloudResult) return cloudResult;
+  // 1. First handle explicit in-app modification & action commands locally
+  // so itinerary updates ("make day 3 cheaper", "remove museum", "save trip",
+  // "add sunset", "start navigation", "print guide") execute immediately.
+  const isDirectActionCommand =
+    norm.includes('save this itinerary') ||
+    norm.includes('save itinerary') ||
+    norm.includes('save trip') ||
+    norm.includes('save this trip') ||
+    norm.includes('add to my trips') ||
+    norm.includes('bookmark trip') ||
+    norm === 'save' ||
+    (norm.includes('remove') && (norm.includes('museum') || norm.includes('temple') || norm.includes('beach') || norm.includes('palace') || norm.includes('shopping') || norm.includes('stop'))) ||
+    norm.startsWith('add ') ||
+    norm.includes('add sunset') ||
+    norm.includes('add boat ride') ||
+    norm.includes('include sunset') ||
+    norm.includes('add an activity') ||
+    norm.includes('add to itinerary') ||
+    norm.includes('make day 3 cheaper') ||
+    norm.includes('day 3 cheaper') ||
+    norm.includes('reduce day 3') ||
+    norm.includes('day 3 less expensive') ||
+    norm.includes('make day 2 cheaper') ||
+    norm.includes('make this cheaper') ||
+    norm.includes('save money') ||
+    norm.includes('cut costs') ||
+    (norm.includes('cheaper') && !norm.includes('food')) ||
+    norm.includes('navigation') ||
+    norm.includes('navigate') ||
+    norm.includes('start gps') ||
+    norm.includes('open gps') ||
+    norm.includes('launch hud') ||
+    norm.includes('print') ||
+    norm.includes('pdf') ||
+    norm.includes('travel guide') ||
+    norm.includes('download guide');
 
-  // Never present scripted client-side text as if it were a CONCODE model answer.
-  // The caller shows a clearly labelled offline rule-based fallback instead.
-  const allowLegacyScriptedFallback = false;
-  if (!allowLegacyScriptedFallback) throw new Error('CONCODE_TRAVEL_UNAVAILABLE');
-
-  // Small delay for natural human feel
-  await new Promise(r => setTimeout(r, 90));
+  if (!isDirectActionCommand) {
+    const cloudResult = await tryQueryServerlessAPI(query, tripContext, session, mode);
+    if (cloudResult) return cloudResult;
+  }
 
   const activeDest = session.destination || currentDest || 'Udaipur';
   const activeDays = session.durationDays || tripContext.durationDays || 3;

@@ -1171,49 +1171,91 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3 text-left">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-                Complete Booking Directly on Official Partner Portals
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <a
-                  href={`https://www.google.com/travel/flights?q=${encodeURIComponent(`${origin} to ${destination}`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+            {packageType === 'pro_subscription' ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-3 text-left">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">
+                  Complimentary Pro Preview Available
+                </span>
+                <p className="text-xs text-emerald-950 leading-relaxed">
+                  Since live merchant billing is not active on this server, you can unlock <strong>TripVerse Pro</strong> immediately at zero cost (no payment charged).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onBookingSuccess) {
+                      onBookingSuccess({
+                        id: `PRO-FREE-${Date.now()}`,
+                        tripId: 'pro-membership',
+                        tripName: 'TripVerse Pro Complimentary Access',
+                        origin,
+                        destination: 'TripVerse Pro',
+                        startDate: new Date().toISOString().split('T')[0],
+                        endDate: new Date(Date.now() + 86400000 * 365).toISOString().split('T')[0],
+                        travelersCount: 1,
+                        amount: 0,
+                        currency,
+                        paymentMethod: 'Complimentary Preview (No Charge)',
+                        paymentMethodType: 'wallet',
+                        transactionId: `FREE-${Date.now()}`,
+                        pnr: 'N/A',
+                        hotelVoucher: 'N/A',
+                        createdAt: new Date().toISOString(),
+                        status: 'confirmed',
+                        packageType: 'pro_subscription',
+                        items: [{ title: 'TripVerse Pro Preview Access', category: 'Subscription', amount: 0 }]
+                      });
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs transition-colors cursor-pointer"
                 >
-                  <span>Google Flights</span>
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                </a>
-                <a
-                  href="https://www.irctc.co.in/nget/train-search"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
-                >
-                  <span>IRCTC Official Trains</span>
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                </a>
-                <a
-                  href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(trip?.selectedHotel?.name || destination)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
-                >
-                  <span>Booking.com Stays</span>
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                </a>
-                <a
-                  href="https://www.redbus.in/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
-                >
-                  <span>redBus Intercity</span>
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                </a>
+                  Activate Complimentary Pro Preview (₹0)
+                </button>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3 text-left">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Complete Booking Directly on Official Partner Portals
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <a
+                    href={`https://www.google.com/travel/flights?q=${encodeURIComponent(`${origin} to ${destination}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                  >
+                    <span>Google Flights</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                  </a>
+                  <a
+                    href="https://www.irctc.co.in/nget/train-search"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                  >
+                    <span>IRCTC Official Trains</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                  </a>
+                  <a
+                    href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(trip?.selectedHotel?.name || destination)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                  >
+                    <span>Booking.com Stays</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                  </a>
+                  <a
+                    href="https://www.redbus.in/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                  >
+                    <span>redBus Intercity</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                  </a>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               <button
