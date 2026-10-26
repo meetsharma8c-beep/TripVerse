@@ -349,30 +349,20 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={handleUpgrade}
-                  disabled={isProcessing}
-                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#1E3B27] via-[#2D5A3D] to-[#234730] hover:brightness-105 text-white font-display font-bold text-sm shadow-[0_8px_30px_rgba(45,90,61,0.3)] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-75"
-                >
-                  <Crown className="w-4 h-4 text-amber-300 fill-amber-300 shrink-0" />
-                  <span className="truncate">
-                    {isProcessing 
-                      ? 'Activating Pro Pass...' 
-                      : `Upgrade to Pro — ${billingCycle === 'annual' ? formattedAnnual : formattedMonthly}`}
-                  </span>
-                  <ChevronRight className="w-4 h-4 ml-0.5 shrink-0" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleGatewaySuccess}
-                  disabled={isProcessing}
-                  className="w-full py-2.5 px-4 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/40 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/50 text-[#1E3B27] dark:text-emerald-300 font-bold text-xs transition-colors cursor-pointer"
-                >
-                  Activate Complimentary Pro Preview (No Charge)
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleUpgrade}
+                disabled={isProcessing}
+                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#1E3B27] via-[#2D5A3D] to-[#234730] hover:brightness-105 text-white font-display font-bold text-sm shadow-[0_8px_30px_rgba(45,90,61,0.3)] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-75"
+              >
+                <Crown className="w-4 h-4 text-amber-300 fill-amber-300 shrink-0" />
+                <span className="truncate">
+                  {isProcessing 
+                    ? 'Activating Pro Pass...' 
+                    : `Upgrade to Pro — ${billingCycle === 'annual' ? formattedAnnual : formattedMonthly}`}
+                </span>
+                <ChevronRight className="w-4 h-4 ml-0.5 shrink-0" />
+              </button>
             )}
 
             <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#5A7362] dark:text-slate-400 text-center">

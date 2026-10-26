@@ -11,7 +11,7 @@ import { resetConcodeSession } from '../../services/concodeSession';
 import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Settings, Crown } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { ConcodeBrainConfigModal } from './ConcodeBrainConfigModal';
-import { getUserSubscriptionQuota } from '../../services/authService';
+import { getUserSubscriptionQuota, consumeAssistantMinute } from '../../services/authService';
 
 interface AIChatDrawerProps {
   trip: Trip;
@@ -437,6 +437,11 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     const query = textToSend || inputQuery;
     if (!query.trim() || isProcessing) return;
 
+    if (!quota.isPro && quota.weeklyAssistantMinutesRemaining <= 0) {
+      if (onOpenProModal) onOpenProModal();
+      return;
+    }
+
     triggerHaptic('light');
 
     const userMessage: ChatMessage = {
@@ -449,6 +454,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     setMessages(prev => [...prev, userMessage]);
     setInputQuery('');
     setIsProcessing(true);
+    consumeAssistantMinute(1);
 
     try {
       const response = await processTravelCoPilotQuery(query, trip);
@@ -591,7 +597,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                     title="TripVerse Pro Active (30 Hours/Week Full ConCode Facility)"
                   >
                     <Crown className="w-2.5 h-2.5 fill-amber-300" />
-                    <span>30h/Wk Facility</span>
+                    <span>{quota.weeklyQuotaHoursFormatted} / 30h Pro</span>
                   </button>
                 ) : (
                   <button
@@ -601,7 +607,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                     title="Free Explorer Tier • Upgrade to Pro for 30h/week Facility"
                   >
                     <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-                    <span>Free Demo • Upgrade</span>
+                    <span>{quota.weeklyAssistantMinutesRemaining}m Free • Upgrade</span>
                   </button>
                 )}
               </div>

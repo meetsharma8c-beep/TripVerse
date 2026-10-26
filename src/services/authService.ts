@@ -1468,6 +1468,61 @@ export function consumeTripCredit(userParam?: AuthUser | null): { allowed: boole
   return { allowed: true, remaining: newRemaining };
 }
 
+export function consumeAssistantMinute(minutesToDeduct: number = 1, userParam?: AuthUser | null): { allowed: boolean; remaining: number } {
+  const user = userParam !== undefined ? userParam : getCurrentUser();
+
+  if (!user) {
+    let guestMinutes = 30;
+    let guestTrips = 3;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem(GUEST_QUOTA_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed.freeTripsRemaining === 'number') guestTrips = parsed.freeTripsRemaining;
+          if (typeof parsed.weeklyAssistantMinutesRemaining === 'number') guestMinutes = parsed.weeklyAssistantMinutesRemaining;
+        }
+      }
+    } catch {}
+
+    if (guestMinutes <= 0) {
+      return { allowed: false, remaining: 0 };
+    }
+
+    const nextMinutes = Math.max(0, guestMinutes - minutesToDeduct);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(GUEST_QUOTA_STORAGE_KEY, JSON.stringify({
+          freeTripsRemaining: guestTrips,
+          weeklyAssistantMinutesRemaining: nextMinutes
+        }));
+      }
+    } catch {}
+
+    window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { assistantMinutesRemaining: nextMinutes } }));
+    return { allowed: true, remaining: nextMinutes };
+  }
+
+  // If user is Pro, full 30h/week (1800 minutes) pool
+  if (user.subscriptionTier === 'pro') {
+    const current = typeof user.weeklyAssistantMinutesRemaining === 'number' ? user.weeklyAssistantMinutesRemaining : 1800;
+    const next = Math.max(0, current - minutesToDeduct);
+    updateAuthProfile({ weeklyAssistantMinutesRemaining: next }).catch(() => {});
+    return { allowed: true, remaining: next };
+  }
+
+  // Free registered user
+  const currentRemaining = typeof user.weeklyAssistantMinutesRemaining === 'number' ? user.weeklyAssistantMinutesRemaining : 30;
+  if (currentRemaining <= 0) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  const nextRemaining = Math.max(0, currentRemaining - minutesToDeduct);
+  updateAuthProfile({ weeklyAssistantMinutesRemaining: nextRemaining }).catch(() => {});
+  window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { assistantMinutesRemaining: nextRemaining } }));
+  return { allowed: true, remaining: nextRemaining };
+}
+
 export async function upgradeUserToPro(userParam?: AuthUser | null, durationDays: number = 30): Promise<AuthUser | null> {
   const user = userParam !== undefined ? userParam : getCurrentUser();
   const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
