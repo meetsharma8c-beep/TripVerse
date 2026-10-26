@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Logo, BrandIconMark } from './Logo';
-import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, PlaneTakeoff, Globe, Search, Moon, Sun, Crown } from 'lucide-react';
+import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut } from 'lucide-react';
 import { UserProfile, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
 import { isStandalone } from '../../services/deviceService';
@@ -14,6 +14,7 @@ interface NavbarProps {
   onOpenNotifications?: () => void;
   unreadNotificationCount?: number;
   onOpenAuthModal?: () => void;
+  onSignOut?: () => void;
   isAuthenticated?: boolean;
   onOpenSearch?: () => void;
   onOpenChat?: () => void;
@@ -28,6 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenNotifications,
   unreadNotificationCount = 0,
   onOpenAuthModal,
+  onSignOut,
   isAuthenticated = true,
   onOpenSearch,
   onOpenChat,
@@ -180,13 +182,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
       </div>
 
-      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-6 xl:px-8">
-        {/* DESKTOP HEADER (Preserved 100% for lg+) */}
-        <div className="hidden lg:flex items-center justify-between h-18 gap-2 sm:gap-3">
+      <div className="max-w-[1536px] mx-auto px-3 sm:px-5 lg:px-4 xl:px-8">
+        {/* DESKTOP HEADER (Responsive across lg 1024px through 2xl 1536px+ without clipping) */}
+        <div className="hidden lg:flex items-center justify-between h-16 xl:h-18 gap-2 xl:gap-3">
           
           {/* Left: Brand Logo & Navigation Links */}
-          <div className="flex flex-1 lg:flex-none items-center gap-2.5 xl:gap-4 min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 xl:gap-4 min-w-0 shrink-0">
+            <div className="flex items-center gap-1.5 xl:gap-2 min-w-0 shrink-0">
               <Logo 
                 size="adaptive" 
                 taglineClassName="hidden 2xl:block"
@@ -211,13 +213,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     key={link.id}
                     onClick={() => handleLinkClick(link.id)}
-                    className={`relative flex items-center gap-1 xl:gap-1.5 px-2.5 xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold transition-all duration-200 cursor-pointer ${
+                    className={`relative flex items-center gap-1 xl:gap-1.5 px-2 xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                       isActive 
                         ? 'text-[#2D5A3D] dark:text-emerald-400 bg-[#E8EFE7] dark:bg-emerald-950/40 shadow-xs' 
                         : 'text-slate-600 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/60'
                     }`}
                   >
-                    {Icon && <Icon className={`w-3.5 h-3.5 xl:w-4 xl:h-4 ${isActive ? 'text-[#2D5A3D] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-400'}`} />}
+                    {Icon && <Icon className={`hidden xl:block w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0 ${isActive ? 'text-[#2D5A3D] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-400'}`} />}
                     <span>{link.label}</span>
                     {link.badge && (
                       <span className="text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-gradient-to-r from-[#386B49] to-[#2D5A3D] text-white shadow-xs">
@@ -225,7 +227,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       </span>
                     )}
                     {isActive && (
-                      <span className="absolute bottom-0 left-2.5 right-2.5 h-0.5 bg-[#2D5A3D] dark:bg-emerald-400 rounded-full" />
+                      <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#2D5A3D] dark:bg-emerald-400 rounded-full" />
                     )}
                   </button>
                 );
@@ -233,12 +235,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             </nav>
           </div>
 
-          {/* Right Action & Profile: Search, Currency, CTA, Profile */}
-          <div className="flex items-center gap-2 xl:gap-2.5 shrink-0">
+          {/* Right Action & Profile: Search, Currency, CTA, Sign In / Sign Out */}
+          <div className="flex items-center gap-1.5 xl:gap-2.5 shrink-0">
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer"
+              className="flex h-8 w-8 xl:h-9 xl:w-9 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer"
               aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
               title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
             >
@@ -248,7 +250,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {onOpenSearch && (
               <button
                 onClick={onOpenSearch}
-                className="flex items-center gap-1.5 xl:gap-2 px-2.5 xl:px-3 py-1.5 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white text-xs font-semibold transition-all border border-[#DCE7DB] dark:border-slate-700 cursor-pointer shadow-2xs hover:border-[#C4D9C3] dark:hover:border-slate-600"
+                className="flex items-center gap-1.5 xl:gap-2 h-8 xl:h-9 px-2.5 xl:px-3 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white text-xs font-semibold transition-all border border-[#DCE7DB] dark:border-slate-700 cursor-pointer shadow-2xs hover:border-[#C4D9C3] dark:hover:border-slate-600 shrink-0"
                 title={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
                 aria-label={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
               >
@@ -261,8 +263,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             {/* Currency Selector */}
-            <div className="flex items-center gap-1 xl:gap-1.5 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full px-2 xl:px-2.5 py-1.5 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs">
-              <Globe className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-8 xl:h-9 px-2 xl:px-2.5 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0">
+              <Globe className="hidden 2xl:block w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
               <select
                 value={currency}
                 onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
@@ -282,53 +284,73 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenProModal}
-                className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs border ${
+                className={`flex items-center gap-1 xl:gap-1.5 h-8 xl:h-9 px-2.5 xl:px-3 rounded-full text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer shadow-2xs border ${
                   quota.isPro
                     ? 'bg-amber-500/10 border-amber-300/40 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20'
                     : 'bg-[#E8EFE7] dark:bg-emerald-950/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400'
                 }`}
                 title={quota.isPro ? 'TripVerse Pro Active (30h/week AI Co-Pilot)' : 'Unlock Unlimited Trips with TripVerse Pro'}
               >
-                <Crown className={`w-3.5 h-3.5 ${quota.isPro ? 'text-amber-500 fill-amber-500' : 'text-[#2D5A3D] dark:text-emerald-400'}`} />
-                <span>{quota.isPro ? 'PRO' : 'Get Pro'}</span>
+                <Crown className={`w-3.5 h-3.5 shrink-0 ${quota.isPro ? 'text-amber-500 fill-amber-500' : 'text-[#2D5A3D] dark:text-emerald-400'}`} />
+                <span className="hidden xl:inline">{quota.isPro ? 'PRO' : 'Get Pro'}</span>
+                <span className="xl:hidden">{quota.isPro ? 'PRO' : 'Pro'}</span>
               </button>
             )}
 
             {/* Primary CTA: "Plan My Trip" */}
             <button
               onClick={onOpenPlanner}
-              className="btn-liquid-primary flex items-center gap-1.5 xl:gap-2 px-4 xl:px-5 py-2 xl:py-2.5 rounded-full text-white font-bold text-xs xl:text-sm group shrink-0"
+              className="btn-liquid-primary flex items-center gap-1.5 xl:gap-2 px-3.5 xl:px-4.5 py-1.5 xl:py-2 rounded-full text-white font-bold text-xs xl:text-sm whitespace-nowrap group shrink-0"
             >
-              <PlaneTakeoff className="w-3.5 h-3.5 xl:w-4 xl:h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <PlaneTakeoff className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               <span>Plan My Trip</span>
-              <ChevronRight className="w-3.5 h-3.5 opacity-80" />
+              <ChevronRight className="hidden xl:block w-3.5 h-3.5 opacity-80 shrink-0" />
             </button>
 
-            {/* User Profile Pill or Sign In Button */}
+            {/* User Profile Pill & Sign In / Sign Out Button */}
             {!isAuthenticated ? (
               <button
+                type="button"
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1.5 px-3.5 xl:px-4 py-1.5 xl:py-2 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="flex items-center gap-1.5 h-8 xl:h-9 px-3.5 xl:px-4 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold whitespace-nowrap shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95"
                 title="Sign In / Register"
               >
-                <User className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400" />
+                <User className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
                 <span>Sign In</span>
               </button>
             ) : (
-              <button
-                onClick={() => onNavigate('profile')}
-                className="flex items-center gap-2.5 pl-1.5 pr-3 py-1 rounded-full bg-white dark:bg-slate-800 border border-[#DCE7DB] dark:border-slate-700 hover:border-[#2D5A3D] dark:hover:border-emerald-500 transition-colors cursor-pointer shadow-2xs"
-                title="View Profile"
-              >
-                <img
-                  src={userProfile.avatar}
-                  alt={userProfile.name}
-                  className="w-7 h-7 rounded-full object-cover ring-2 ring-[#2D5A3D]/30"
-                />
-                <span className="text-xs font-bold text-[#152A1C] dark:text-slate-100 max-w-[90px] truncate">
-                  {(userProfile?.name || 'Traveler').split(' ')[0]}
-                </span>
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('profile')}
+                  className="flex items-center gap-2 pl-1 pr-1 xl:pr-3 py-1 rounded-full bg-white dark:bg-slate-800 border border-[#DCE7DB] dark:border-slate-700 hover:border-[#2D5A3D] dark:hover:border-emerald-500 transition-colors cursor-pointer shadow-2xs shrink-0"
+                  title="View Profile"
+                >
+                  <img
+                    src={userProfile.avatar}
+                    alt={userProfile.name}
+                    className="w-6.5 h-6.5 xl:w-7 xl:h-7 rounded-full object-cover ring-2 ring-[#2D5A3D]/30 shrink-0"
+                  />
+                  <span className="hidden xl:inline text-xs font-bold text-[#152A1C] dark:text-slate-100 max-w-[80px] truncate">
+                    {(userProfile?.name || 'Traveler').split(' ')[0]}
+                  </span>
+                </button>
+                {onSignOut && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('Are you sure you want to sign out of your TripVerse account?')) {
+                        onSignOut();
+                      }
+                    }}
+                    className="flex items-center gap-1.5 h-8 xl:h-9 px-3 xl:px-3.5 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-bold whitespace-nowrap shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95"
+                    title="Sign Out"
+                  >
+                    <LogOut className="w-3.5 h-3.5 shrink-0" />
+                    <span>Sign Out</span>
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
@@ -357,32 +379,53 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Right: Clean Profile Avatar / Auth (Matching Reference Screen 1) */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             {!isAuthenticated ? (
               <button
+                type="button"
                 onClick={onOpenAuthModal}
-                className="h-10 px-4 min-h-[40px] rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="h-10 px-3.5 min-h-[40px] rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer active:scale-95"
               >
-                Sign In
+                <User className="w-3.5 h-3.5 shrink-0" />
+                <span>Sign In</span>
               </button>
             ) : (
-              <button
-                onClick={() => onNavigate('profile')}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full ring-2 ring-white dark:ring-slate-700 shadow-xs overflow-hidden cursor-pointer active:scale-95 transition-transform shrink-0 relative"
-                title="Profile"
-                aria-label="Profile"
-              >
-                <img
-                  src={userProfile.avatar}
-                  alt={userProfile.name}
-                  className="w-full h-full object-cover"
-                />
-                {quota.isPro && (
-                  <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-amber-400 ring-2 ring-white dark:ring-slate-800 flex items-center justify-center">
-                    <Crown className="w-2 h-2 text-amber-900 fill-amber-900" />
-                  </span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('profile')}
+                  className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full ring-2 ring-white dark:ring-slate-700 shadow-xs overflow-hidden cursor-pointer active:scale-95 transition-transform shrink-0 relative"
+                  title="Profile"
+                  aria-label="Profile"
+                >
+                  <img
+                    src={userProfile.avatar}
+                    alt={userProfile.name}
+                    className="w-full h-full object-cover"
+                  />
+                  {quota.isPro && (
+                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-amber-400 ring-2 ring-white dark:ring-slate-800 flex items-center justify-center">
+                      <Crown className="w-2 h-2 text-amber-900 fill-amber-900" />
+                    </span>
+                  )}
+                </button>
+                {onSignOut && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('Are you sure you want to sign out of your TripVerse account?')) {
+                        onSignOut();
+                      }
+                    }}
+                    className="h-9 px-2.5 sm:px-3 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1 transition-all shadow-2xs cursor-pointer active:scale-95"
+                    title="Sign Out"
+                    aria-label="Sign Out"
+                  >
+                    <LogOut className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">Sign Out</span>
+                  </button>
                 )}
-              </button>
+              </div>
             )}
           </div>
         </div>
@@ -539,7 +582,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-xs text-slate-500 dark:text-slate-400">{isDarkMode ? 'On' : 'Off'}</span>
           </button>
 
-          <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800">
+          <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 space-y-2">
             <button
               onClick={() => {
                 onOpenPlanner();
@@ -550,6 +593,36 @@ export const Navbar: React.FC<NavbarProps> = ({
               <PlaneTakeoff className="w-4 h-4" />
               <span>Plan My Trip With AI</span>
             </button>
+
+            {!isAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenAuthModal?.();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#E8EFE7] dark:bg-emerald-950/60 border border-[#DCE7DB] dark:border-emerald-800/50 text-[#2D5A3D] dark:text-emerald-300 font-bold text-sm transition-colors cursor-pointer"
+              >
+                <User className="w-4 h-4" />
+                <span>Sign In / Register</span>
+              </button>
+            ) : (
+              onSignOut && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (confirm('Are you sure you want to sign out of your TripVerse account?')) {
+                      onSignOut();
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 font-bold text-sm transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
+              )
+            )}
           </div>
         </div>
       )}

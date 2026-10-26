@@ -77,7 +77,8 @@ import {
   onAuthStateChanged, 
   toUserProfile, 
   getUserSubscriptionQuota, 
-  consumeTripCredit 
+  consumeTripCredit,
+  signOut as authSignOut
 } from './services/authService';
 import { TripVerseProModal } from './components/subscription/TripVerseProModal';
 import { AuthUser } from './types/auth';
@@ -1446,8 +1447,25 @@ export function App() {
     }
   };
 
+  const handleUserSignOut = () => {
+    authSignOut();
+    setCurrentUser(null);
+    resetGuestStorage();
+    const cleanGuest = loadUserProfile(null);
+    setUserProfile(cleanGuest);
+    const guestTrips = loadTrips(null);
+    setTrips(guestTrips);
+    const guestActiveTripId = getActiveTripId(null);
+    setActiveTripIdState(guestActiveTripId);
+    const guestSaved = loadSavedItemIds(null);
+    setSavedItemIds(guestSaved);
+    const guestStates = loadUserVisitedStates(null);
+    window.dispatchEvent(new CustomEvent('tripverse_visited_states_change', { detail: guestStates }));
+    setIsAuthModalOpen(true);
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#070C16] text-slate-900 dark:text-slate-100 selection:bg-[#2D5A3D] selection:text-white antialiased">
+    <div className="min-h-screen w-full overflow-x-hidden flex flex-col bg-[#F8FAFC] dark:bg-[#070C16] text-slate-900 dark:text-slate-100 selection:bg-[#2D5A3D] selection:text-white antialiased">
 
       {/* 0. Native iOS & Android App Opening Animation Splash Screen */}
       {showSplash && (
@@ -1484,6 +1502,7 @@ export function App() {
         onOpenNotifications={() => setIsNotificationCenterOpen(true)}
         unreadNotificationCount={unreadNotificationCount}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onSignOut={handleUserSignOut}
         isAuthenticated={currentUser !== null}
         onOpenProModal={() => setIsProModalOpen(true)}
       />
@@ -2110,21 +2129,7 @@ export function App() {
                 onReplayTour={() => setIsOnboardingOpen(true)}
                 onOpenNotifications={() => setIsNotificationCenterOpen(true)}
                 unreadNotificationCount={unreadNotificationCount}
-                onSignOut={() => {
-                  setCurrentUser(null);
-                  resetGuestStorage();
-                  const cleanGuest = loadUserProfile(null);
-                  setUserProfile(cleanGuest);
-                  const guestTrips = loadTrips(null);
-                  setTrips(guestTrips);
-                  const guestActiveTripId = getActiveTripId(null);
-                  setActiveTripIdState(guestActiveTripId);
-                  const guestSaved = loadSavedItemIds(null);
-                  setSavedItemIds(guestSaved);
-                  const guestStates = loadUserVisitedStates(null);
-                  window.dispatchEvent(new CustomEvent('tripverse_visited_states_change', { detail: guestStates }));
-                  setIsAuthModalOpen(true);
-                }}
+                onSignOut={handleUserSignOut}
                 onOpenLegal={(tab) => setLegalModalState({ isOpen: true, tab })}
               />
             </div>
