@@ -1,19 +1,6 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
-import { 
-  Crown, 
-  Sparkles, 
-  Check, 
-  X, 
-  ShieldCheck, 
-  Compass, 
-  ChevronRight,
-  CheckCircle2,
-  Lock,
-  Zap,
-  MapPin,
-  CloudRain,
-  FileText
-} from 'lucide-react';
+import { Crown, Check, X, ShieldCheck, Compass, ChevronRight, CheckCircle2, Lock, Zap, CloudRain, FileText } from 'lucide-react';
 import { AuthUser, UserSubscriptionQuota } from '../../types/auth';
 import { 
   upgradeUserToPro, 
@@ -60,6 +47,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
     return () => window.removeEventListener('tripverse_currency_change', handleCurrencyEvent);
   }, []);
 
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   const quota: UserSubscriptionQuota = getUserSubscriptionQuota(currentUser);

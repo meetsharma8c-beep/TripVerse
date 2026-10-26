@@ -1,27 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Trip, CurrencyCode } from '../../types/trip';
-import { 
-  ArrowRight, 
-  Bed, 
-  Bus, 
-  Car, 
-  ExternalLink, 
-  Plane, 
-  Train, 
-  X, 
-  Star, 
-  CheckCircle2, 
-  Clock, 
-  Tag, 
-  Calendar, 
-  Ticket, 
-  MapPin, 
-  ShieldCheck,
-  Sparkles,
-  CreditCard,
-  QrCode,
-  Download
-} from 'lucide-react';
+import { ArrowRight, Bed, Bus, Car, ExternalLink, Plane, Train, X, Star, CheckCircle2, Clock, Tag, Ticket, MapPin, ShieldCheck, Sparkles, CreditCard, QrCode, Download } from 'lucide-react';
 import { formatCurrency } from '../../services/currencyService';
 import { buildHotelBookingUrl } from '../../services/hotelService';
 import { buildFlightBookingUrl, buildTrainBookingUrl, buildBusBookingUrl, buildCabBookingUrl } from '../../services/dealService';
@@ -55,16 +34,17 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
     title: 'TripVerse Complete Package Checkout'
   });
 
-  const [existingBooking, setExistingBooking] = useState<BookingRecord | null>(null);
+  const [existingBooking, setExistingBooking] = useState<BookingRecord | null>(() => trip?.id ? getBookingForTrip(trip.id) : null);
+  const [prevTripId, setPrevTripId] = useState(trip?.id);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (trip?.id !== prevTripId || isOpen !== prevIsOpen) {
+    setPrevTripId(trip?.id);
+    setPrevIsOpen(isOpen);
+    setExistingBooking(trip?.id ? getBookingForTrip(trip.id) : null);
+  }
 
   // Declarative download anchor ref (zero manual DOM manipulation, top-level hook)
   const downloadAnchorRef = useRef<HTMLAnchorElement>(null);
-
-  useEffect(() => {
-    if (trip?.id) {
-      setExistingBooking(getBookingForTrip(trip.id));
-    }
-  }, [trip?.id, isOpen]);
 
   if (!isOpen || !trip) return null;
 
@@ -139,7 +119,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
   return (
     <>
       <div
-        className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-slate-950/80 p-2 sm:p-4 md:p-6 backdrop-blur-md overflow-y-auto min-h-screen"
+        className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-slate-950/80 p-2 sm:p-4 md:p-6 backdrop-blur-md overflow-y-auto overscroll-contain"
         onClick={onClose}
       >
         <section

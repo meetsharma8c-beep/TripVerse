@@ -1,5 +1,4 @@
 import puppeteer from 'puppeteer-core';
-import fs from 'fs';
 import path from 'path';
 
 const ARTIFACTS_DIR = '/Users/ms/.gemini/antigravity-ide/brain/bb5f96a0-49d0-4016-8da4-7f335a5f249a';

@@ -50,7 +50,6 @@ import { PopularDestinations } from './components/home/PopularDestinations';
 import { HighwayBreakstopsShowcase } from './components/home/HighwayBreakstopsShowcase';
 import { PublicLaunchSpotlight } from './components/home/PublicLaunchSpotlight';
 import { AIGenerationSkeleton } from './components/common/AIGenerationSkeleton';
-import { POPULAR_DESTINATIONS } from './data/destinations';
 
 // Itinerary Components
 import { TripHeader } from './components/itinerary/TripHeader';
@@ -58,21 +57,21 @@ import { DayTimeline } from './components/itinerary/DayTimeline';
 import { BreakStopCard } from './components/itinerary/BreakStopCard';
 import { BudgetOptimizer } from './components/itinerary/BudgetOptimizer';
 import { SafetyEmergency } from './components/itinerary/SafetyEmergency';
-import { PackingWeatherView } from './components/itinerary/PackingWeatherView';
-import { TripSplitExpenses } from './components/itinerary/TripSplitExpenses';
-import { LocalGemsView } from './components/itinerary/LocalGemsView';
+const PackingWeatherView = lazy(() => import('./components/itinerary/PackingWeatherView').then(m => ({ default: m.PackingWeatherView })));
+const TripSplitExpenses = lazy(() => import('./components/itinerary/TripSplitExpenses').then(m => ({ default: m.TripSplitExpenses })));
+const LocalGemsView = lazy(() => import('./components/itinerary/LocalGemsView').then(m => ({ default: m.LocalGemsView })));
 import { ActivityModal } from './components/itinerary/ActivityModal';
 
 // Transport Deals & Views
-import { TransportDealsView } from './components/deals/TransportDealsView';
+const TransportDealsView = lazy(() => import('./components/deals/TransportDealsView').then(m => ({ default: m.TransportDealsView })));
 
 // Trips & Explore Views
-import { MyTripsView } from './components/trips/MyTripsView';
-import { ExploreView } from './components/explore/ExploreView';
+const MyTripsView = lazy(() => import('./components/trips/MyTripsView').then(m => ({ default: m.MyTripsView })));
+const ExploreView = lazy(() => import('./components/explore/ExploreView').then(m => ({ default: m.ExploreView })));
 import { DestinationDetailModal } from './components/explore/DestinationDetailModal';
-import { SavedItemsView } from './components/saved/SavedItemsView';
-import { ProfileView } from './components/profile/ProfileView';
-import { AuthModal } from './components/profile/AuthModal';
+const SavedItemsView = lazy(() => import('./components/saved/SavedItemsView').then(m => ({ default: m.SavedItemsView })));
+const ProfileView = lazy(() => import('./components/profile/ProfileView').then(m => ({ default: m.ProfileView })));
+const AuthModal = lazy(() => import('./components/profile/AuthModal').then(m => ({ default: m.AuthModal })));
 import { 
   getCurrentUser, 
   onAuthStateChanged, 
@@ -113,7 +112,7 @@ const OnboardingModal = lazy(() => import('./components/onboarding/OnboardingMod
 const TripReviewModal = lazy(() => import('./components/reviews/TripReviewModal').then(m => ({ default: m.TripReviewModal })));
 const TripCollaborationModal = lazy(() => import('./components/collaboration/TripCollaborationModal').then(m => ({ default: m.TripCollaborationModal })));
 
-import { TripPassesHubView } from './components/booking/TripPassesHubView';
+const TripPassesHubView = lazy(() => import('./components/booking/TripPassesHubView').then(m => ({ default: m.TripPassesHubView })));
 
 // Icons
 import {
@@ -136,114 +135,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-// Browser Route & Deep Link URL Resolver
-function resolveRouteFromBrowser(loadedTrips: Trip[]) {
-  if (typeof window === 'undefined') {
-    return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: false };
-  }
-  const pathname = (window.location.pathname || '/').toLowerCase();
-  const searchParams = new URLSearchParams(window.location.search);
-  const rawHash = (window.location.hash || '').toLowerCase().replace('#', '');
-
-  // 1. Direct pathname routing (/destination/:slug, /trip/:id, /itinerary/:id, /booking, /explore, /mytrips, /saved, /profile, /planner)
-  if (pathname.startsWith('/destination/')) {
-    const slug = pathname.replace('/destination/', '').trim();
-    if (slug) {
-      const match = POPULAR_DESTINATIONS.find(d =>
-        d.id.toLowerCase() === slug ||
-        d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug ||
-        d.name.toLowerCase() === slug
-      );
-      if (match) {
-        return { tab: 'explore', dest: match, tripId: null, openBooking: false, openPlanner: false };
-      }
-    }
-    return { tab: 'explore', dest: null, tripId: null, openBooking: false, openPlanner: false };
-  }
-
-  if (pathname.startsWith('/trip/') || pathname.startsWith('/itinerary/')) {
-    const tripId = pathname.replace('/trip/', '').replace('/itinerary/', '').trim();
-    const found = loadedTrips.find(t => t.id.toLowerCase() === tripId);
-    if (found) {
-      return { tab: 'trip-detail', dest: null, tripId: found.id, openBooking: false, openPlanner: false };
-    }
-    return { tab: 'trips', dest: null, tripId: null, openBooking: false, openPlanner: false };
-  }
-
-  if (pathname.startsWith('/booking')) {
-    const bookingTripId = pathname.replace('/booking/', '').replace('/booking', '').trim();
-    const found = (bookingTripId ? loadedTrips.find(t => t.id.toLowerCase() === bookingTripId) : null) || loadedTrips[0];
-    if (found) {
-      return { tab: 'trip-detail', dest: null, tripId: found.id, openBooking: true, openPlanner: false };
-    }
-    return { tab: 'trips', dest: null, tripId: null, openBooking: false, openPlanner: false };
-  }
-
-  if (pathname === '/explore') {
-    return { tab: 'explore', dest: null, tripId: null, openBooking: false, openPlanner: false };
-  }
-  if (pathname === '/mytrips' || pathname === '/trips') {
-    return { tab: 'trips', dest: null, tripId: null, openBooking: false, openPlanner: false };
-  }
-  if (pathname === '/saved') {
-    return { tab: 'saved', dest: null, tripId: null, openBooking: false, openPlanner: false };
-  }
-  if (pathname === '/profile') {
-    return { tab: 'profile', dest: null, tripId: null, openBooking: false, openPlanner: false };
-  }
-  if (pathname === '/planner') {
-    return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: true };
-  }
-
-  // 2. Query parameters fallback (?tripId=..., ?action=..., ?collab=..., ?tab=...)
-  const tripIdParam = searchParams.get('tripId') || searchParams.get('trip');
-  const actionParam = searchParams.get('action');
-  const collabParam = searchParams.get('collab');
-  const tabParam = searchParams.get('tab');
-
-  if (collabParam) {
-    const targetTrip = (tripIdParam ? loadedTrips.find(t => t.id === tripIdParam) : null)
-      || loadedTrips.find(t => t.collaboration?.inviteCode === collabParam)
-      || loadedTrips[0];
-    if (targetTrip) {
-      return { tab: 'trip-detail', dest: null, tripId: targetTrip.id, openBooking: false, openPlanner: false, openCollab: true };
-    }
-  }
-
-  if (tripIdParam) {
-    const found = loadedTrips.find(t => t.id === tripIdParam);
-    if (found) {
-      return { tab: 'trip-detail', dest: null, tripId: found.id, openBooking: actionParam === 'book', openPlanner: false, openCollab: false };
-    }
-  }
-  if (actionParam === 'pro' || actionParam === 'subscription') {
-    return { tab: 'profile', dest: null, tripId: null, openBooking: false, openPlanner: false, openPro: true };
-  }
-  if (actionParam === 'plan') {
-    return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: true };
-  }
-  if (actionParam === 'book') {
-    return { tab: 'trip-detail', dest: null, tripId: null, openBooking: true, openPlanner: false };
-  }
-  if (tabParam && ['home', 'explore', 'trips', 'saved', 'profile'].includes(tabParam)) {
-    return { tab: tabParam, dest: null, tripId: null, openBooking: false, openPlanner: false };
-  }
-
-  // 3. Hash fallback (#explore, #mytrips, #saved, #profile, #trip-...)
-  if (rawHash.startsWith('trip-') && rawHash.length > 5) {
-    const hashTripId = rawHash.replace('trip-', '');
-    const found = loadedTrips.find(t => t.id === hashTripId);
-    if (found) {
-      return { tab: 'trip-detail', dest: null, tripId: found.id, openBooking: false, openPlanner: false };
-    }
-  }
-  if (rawHash === 'mytrips') return { tab: 'trips', dest: null, tripId: null, openBooking: false, openPlanner: false };
-  if (['home', 'explore', 'trips', 'saved', 'profile', 'trip-detail'].includes(rawHash)) {
-    return { tab: rawHash, dest: null, tripId: null, openBooking: false, openPlanner: false };
-  }
-
-  return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: false };
-}
+import { resolveRouteFromBrowser } from './utils/routeResolver';
 
 export function App() {
   const initialTrips = React.useMemo(() => loadTrips(), []);
@@ -427,6 +319,7 @@ export function App() {
   const [isReplanningOpen, setIsReplanningOpen] = useState(false);
   const [replanningInitialScreen, setReplanningInitialScreen] = useState<1 | 2 | 3 | 4 | 5 | 'refund'>(2);
   const [activeDisruption, setActiveDisruption] = useState<DisruptionAlert | null>(null);
+  const [prevActiveTripId, setPrevActiveTripId] = useState<string | undefined>(undefined);
   const [isDisruptionDismissed, setIsDisruptionDismissed] = useState(false);
   const [activeChatQuery, setActiveChatQuery] = useState<string | undefined>(undefined);
 
@@ -505,7 +398,7 @@ export function App() {
           message: 'Welcome to TripVerse'
         });
         setIsAppReady(true);
-      } catch (err) {
+      } catch {
         if (isMounted) {
           setIsAppReady(true);
         }
@@ -790,6 +683,10 @@ export function App() {
 
 
   const activeTrip = trips.find(t => t.id === activeTripIdState) || trips[0];
+  if (activeTrip?.id !== prevActiveTripId) {
+    setPrevActiveTripId(activeTrip?.id);
+    setActiveDisruption(null);
+  }
   const tripsRef = React.useRef(trips);
   const userIdRef = React.useRef(currentUser?.uid);
   useEffect(() => {
@@ -981,11 +878,6 @@ export function App() {
     window.addEventListener('tripverse_notifications_updated', updateNotifs);
     return () => window.removeEventListener('tripverse_notifications_updated', updateNotifs);
   }, [trips, activeTrip]);
-
-  // Active disruption is clean by default; only shown if explicitly triggered by the traveler
-  useEffect(() => {
-    setActiveDisruption(null);
-  }, [activeTrip?.id]);
 
   // Action Handlers
   const handleOpenMemories = (targetTrip?: Trip) => {
@@ -1343,7 +1235,7 @@ export function App() {
         origin: { y: 0.7 },
         colors: ['#2D5A3D', '#386B49', '#F59E0B']
       });
-    } catch (e) {
+    } catch {
       // safe fallback
     }
   };
@@ -1601,6 +1493,7 @@ export function App() {
 
         {/* Main Content View Switcher */}
         <main className="flex-1 pb-28 lg:pb-12">
+          <Suspense fallback={<div className="min-h-[60vh]" aria-busy="true" />}>
 
           {/* VIEW 1: HOME */}
           {currentTab === 'home' && (
@@ -2237,12 +2130,13 @@ export function App() {
             </div>
           )}
 
+          </Suspense>
         </main>
 
         {/* Modern Footer */}
-        <footer className="bg-white border-t border-[#E2EBE1] py-8 lg:py-10 mt-auto pb-24 lg:pb-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+        <footer className="bg-white border-t border-[#E2EBE1] py-8 lg:py-10 mt-auto pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left lg:max-w-[50%]">
               <Logo size="adaptive" showTagline={false} />
               <span className="hidden sm:inline text-[#DCE7DB]">|</span>
               <span className="text-xs font-semibold text-[#5A7362]">
@@ -2444,7 +2338,7 @@ export function App() {
         )}
       </Suspense>
 
-      <AuthModal
+      {isAuthModalOpen && (<Suspense fallback={<ModalSkeleton />}><AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={(updated) => {
@@ -2453,7 +2347,7 @@ export function App() {
           setUserProfile(updated);
           saveUserProfile(updated, activeUser?.uid);
         }}
-      />
+      /></Suspense>)}
 
       {/* Add/Edit Activity Modal */}
       {activeTrip && (

@@ -1,17 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ArrowRight, 
-  X, 
-  QrCode, 
-  Clock, 
-  RefreshCw, 
-  Copy, 
-  Check, 
-  CheckCircle2, 
-  ShieldCheck, 
-  Smartphone,
-  Sparkles
-} from 'lucide-react';
+import { useModalBehavior } from '../../hooks/useModalBehavior';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ArrowRight, X, Clock, RefreshCw, Copy, Check, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatCurrency, SupportedCurrency } from '../../services/currencyService';
 import { triggerHaptic } from '../../services/deviceService';
@@ -46,15 +35,16 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
   // Recipient VPA derivation
   const recipientVpa = `${toUser.toLowerCase().replace(/[^a-z0-9]/g, '')}.travel@okhdfcbank`;
 
-  // Build UPI URI & QR Code
-  const upiUri = buildUpiPaymentUri({
+  // Build UPI URI & QR Code (memoized to prevent re-requesting QR code every second on timer ticks)
+  const transactionRef = useMemo(() => `SETTLE${Date.now().toString().slice(-6)}`, [isOpen, toUser, fromUser, amount]);
+  const upiUri = useMemo(() => buildUpiPaymentUri({
     payeeVpa: recipientVpa,
     payeeName: toUser,
     amount: amount,
-    transactionRef: `SETTLE${Date.now().toString().slice(-6)}`,
+    transactionRef,
     transactionNote: `TripVerse Settlement ${fromUser} to ${toUser}`
-  });
-  const qrCodeUrl = getUpiQrCodeUrl(upiUri, 240);
+  }), [recipientVpa, toUser, amount, transactionRef, fromUser]);
+  const qrCodeUrl = useMemo(() => getUpiQrCodeUrl(upiUri, 240), [upiUri]);
 
   // Countdown Timer Engine
   useEffect(() => {
@@ -74,6 +64,7 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
     return () => clearInterval(timer);
   }, [isOpen, isTimerActive, isSettled]);
 
+  useModalBehavior(isOpen, undefined);
   if (!isOpen) return null;
 
   const handleRegenerate = () => {

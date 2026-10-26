@@ -21,7 +21,7 @@ export function getStoredReadNotificationIds(): string[] {
     const key = getReadNotificationsKey();
     const raw = storage.getItem(key);
     return raw ? JSON.parse(raw) : [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }

@@ -825,31 +825,151 @@ h6 {
 @keyframes fadeInView {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translate3d(0, 10px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.6);
+    transform: scale3d(0.88, 0.88, 1);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes tvSplashKenBurns {
+  0% {
+    transform: scale3d(1.07, 1.07, 1);
+  }
+  100% {
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes tvSplashLogoReveal {
+  0% {
+    opacity: 0;
+    transform: scale3d(0.86, 0.86, 1) translate3d(0, 12px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale3d(1, 1, 1) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes tvSplashAuraPulse {
+  0%, 100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale3d(0.92, 0.92, 1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale3d(1.08, 1.08, 1);
+  }
+}
+
+@keyframes tvStaggerReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .animate-fade-in {
-  animation: fadeInView 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInView 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: scaleIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tv-splash-kenburns {
+  animation: tvSplashKenBurns 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.tv-splash-logo-reveal {
+  animation: tvSplashLogoReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+.tv-splash-aura-pulse {
+  animation: tvSplashAuraPulse 3s ease-in-out infinite;
+}
+
+.tv-stagger-1 {
+  animation: tvStaggerReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.tv-stagger-2 {
+  animation: tvStaggerReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+}
+
+.tv-stagger-3 {
+  animation: tvStaggerReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
+}
+
+.tv-stagger-4 {
+  animation: tvStaggerReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.32s both;
+}
+
+/* Smooth GPU-accelerated card elevation & micro-interaction */
+.card-elevate {
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.24s ease-out;
+  will-change: transform;
+}
+
+.card-elevate:hover {
+  transform: translate3d(0, -4px, 0);
+  box-shadow:
+    0 20px 38px -12px rgba(45, 90, 61, 0.14),
+    0 6px 16px -4px rgba(45, 90, 61, 0.06);
+}
+
+.card-elevate:active {
+  transform: translate3d(0, -1px, 0) scale(0.99);
+  transition-duration: 90ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-scale-in,
+  .tv-splash-kenburns,
+  .tv-splash-logo-reveal,
+  .tv-splash-aura-pulse,
+  .tv-stagger-1,
+  .tv-stagger-2,
+  .tv-stagger-3,
+  .tv-stagger-4 {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .card-elevate,
+  .card-elevate:hover,
+  .card-elevate:active,
+  .btn-liquid-primary:hover,
+  .btn-liquid-glass:hover,
+  .btn-liquid-navy:hover {
+    transform: none !important;
+    transition: none !important;
+  }
 }
 
 /* ==========================================================================

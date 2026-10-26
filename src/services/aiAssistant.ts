@@ -1,18 +1,8 @@
-import { 
-  Trip, 
-  ChatMessage, 
-  DayPlan, 
-  BreakStop, 
-  RouteType, 
-  ExpenseItem, 
-  ExpenseCategory, 
-  PackingItem, 
-  ItineraryActivity 
-} from '../types/trip';
+import { Trip, ChatMessage, DayPlan, BreakStop, ExpenseItem, ExpenseCategory, PackingItem, ItineraryActivity } from '../types/trip';
 import { queryConcodeBrain } from './concodeBrainService';
 import { generateAITrip } from './plannerEngine';
 import { generateTransportDeals } from './dealService';
-import { evaluateTransportFeasibility, resolveTransitContext } from './transportFeasibilityEngine';
+import { evaluateTransportFeasibility } from './transportFeasibilityEngine';
 import { 
   loadTrips, 
   loadTripExpenses, 

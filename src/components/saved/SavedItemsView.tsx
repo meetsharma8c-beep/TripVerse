@@ -1,18 +1,8 @@
 import React, { useState } from 'react';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { HIGHWAY_BREAK_STOPS } from '../../data/highwayFacilities';
-import { Trip, Destination, BreakStop } from '../../types/trip';
-import { 
-  Bookmark, 
-  MapPin, 
-  Coffee, 
-  Trash2, 
-  Sparkles, 
-  ArrowRight,
-  Star,
-  ExternalLink,
-  Compass
-} from 'lucide-react';
+import { Trip, Destination } from '../../types/trip';
+import { Bookmark, Trash2, Sparkles, Star, Compass } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 

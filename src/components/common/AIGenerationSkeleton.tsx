@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, MapPin, ShieldCheck, Car, Bed, Coffee, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ShieldCheck, Car, Bed, Coffee, CheckCircle2 } from 'lucide-react';
 
 interface AIGenerationSkeletonProps {
   destination: string;

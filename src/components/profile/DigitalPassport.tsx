@@ -1,28 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Award, 
-  MapPin, 
-  Sparkles, 
-  Check, 
-  Compass, 
-  ShieldCheck, 
-  TrendingUp, 
-  Layers, 
-  CheckCircle2,
-  Lock,
-  Globe,
-  Share2,
-  Mountain,
-  Waves,
-  Landmark,
-  Snowflake,
-  Trees,
-  Sun,
-  Coffee,
-  Train,
-  Route,
-  Leaf
-} from 'lucide-react';
+import { Award, Sparkles, Check, Compass, Lock, Globe, Share2, Mountain, Waves, Landmark, Snowflake, Trees, Sun, Coffee, Train, Route, Leaf } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { openExternalUrl, triggerHaptic } from '../../services/deviceService';
 
@@ -127,7 +104,7 @@ export const DigitalPassport: React.FC = () => {
           origin: { y: 0.7 },
           colors: ['#2D5A3D', '#38BDF8', '#F59E0B']
         });
-      } catch (e) {}
+      } catch {}
     }
 
     setVisitedStates(updated);

@@ -1,20 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trip } from '../../types/trip';
-import { 
-  Calendar, 
-  Users, 
-  Wallet, 
-  MapPin, 
-  ArrowRight, 
-  Share2, 
-  Trash2, 
-  Plus, 
-  Sparkles,
-  CheckCircle2,
-  Clock,
-  Camera,
-  Star
-} from 'lucide-react';
+import { MapPin, ArrowRight, Share2, Trash2, Sparkles, Clock, Camera, Star } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 

@@ -1,10 +1,4 @@
-import { 
-  Trip, 
-  StructuredItinerary, 
-  StructuredItineraryDay, 
-  AIChatBudgetBreakdown, 
-  DayPlan 
-} from '../types/trip';
+import { Trip, StructuredItinerary, StructuredItineraryDay, AIChatBudgetBreakdown } from '../types/trip';
 import { 
   getConcodeSession, 
   updateConcodeSession, 

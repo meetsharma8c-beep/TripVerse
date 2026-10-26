@@ -2,31 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trip, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
-import { 
-  Users, 
-  Calendar, 
-  Wallet, 
-  Sparkles, 
-  Share2, 
-  Download, 
-  AlertTriangle, 
-  CheckCircle2, 
-  MessageSquareQuote,
-  TrendingDown,
-  Navigation,
-  Compass,
-  RotateCcw,
-  Camera,
-  Star,
-  ShieldCheck,
-  MapPin,
-  Leaf,
-  ChevronRight,
-  Edit3,
-  Bed,
-  Clock,
-  Ticket
-} from 'lucide-react';
+import { Users, Wallet, Sparkles, Share2, Download, AlertTriangle, CheckCircle2, MessageSquareQuote, TrendingDown, Navigation, RotateCcw, Camera, Star, Leaf, ChevronRight, Edit3, Bed, Clock, Ticket } from 'lucide-react';
 
 interface TripHeaderProps {
   trip: Trip;

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Trip, ChatMessage, StructuredItinerary, AIChatBudgetBreakdown } from '../../types/trip';
+import { Trip, ChatMessage } from '../../types/trip';
 import { processTravelCoPilotQuery, AIAppAction } from '../../services/aiAssistant';
 import { 
   checkBrainStatus, 
@@ -8,39 +8,7 @@ import {
   resetBrainSession 
 } from '../../services/concodeBrainService';
 import { resetConcodeSession } from '../../services/concodeSession';
-import { 
-  X, 
-  Send, 
-  Sparkles, 
-  Bot, 
-  User, 
-  Check, 
-  RefreshCw,
-  Zap,
-  Activity,
-  ShieldCheck,
-  Fuel,
-  Camera,
-  Coins,
-  RotateCcw,
-  CloudSun,
-  Utensils,
-  Navigation,
-  FileText,
-  Briefcase,
-  Copy,
-  Trash2,
-  Calendar,
-  MapPin,
-  Clock,
-  DollarSign,
-  Sun,
-  Sunset,
-  ArrowRight,
-  TrendingDown,
-  Settings,
-  Crown
-} from 'lucide-react';
+import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Settings, Crown } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { ConcodeBrainConfigModal } from './ConcodeBrainConfigModal';
 import { getUserSubscriptionQuota } from '../../services/authService';
@@ -257,7 +225,7 @@ const FormattedAIMessage: React.FC<{ text: string }> = ({ text }) => {
 
     // Bullet point checks
     if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
-      const content = trimmed.replace(/^[\*\-•]\s+/, '');
+      const content = trimmed.replace(/^[*\-•]\s+/, '');
       elements.push(
         <div key={`bullet-${i}`} className="flex items-start gap-1.5 text-slate-700 py-0.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
@@ -403,13 +371,15 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     }
   }, [messages]);
 
+  const handleSendMessageRef = useRef<(textToSend?: string) => Promise<void>>(async () => {});
+
   const hasHandledInitialQuery = useRef(false);
   useEffect(() => {
     if (isOpen) {
       refreshBrainHealth();
       if (initialQuery && !hasHandledInitialQuery.current) {
         hasHandledInitialQuery.current = true;
-        handleSendMessage(initialQuery);
+        handleSendMessageRef.current(initialQuery);
       }
     } else {
       hasHandledInitialQuery.current = false;
@@ -421,8 +391,6 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isProcessing]);
-
-  if (!isOpen) return null;
 
   const handleClearChat = () => {
     resetBrainSession();
@@ -578,6 +546,8 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     }
   };
 
+  handleSendMessageRef.current = handleSendMessage;
+
   const scenarioChips = [
     { label: '5-Day Dubai', prompt: 'Plan a 5-day trip to Dubai' },
     { label: 'Budget ₹1 Lakh', prompt: 'I have ₹1,00,000' },
@@ -590,6 +560,8 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     { label: 'Get Directions', prompt: 'Get directions to my destination' },
     { label: 'PDF Guide', prompt: 'Print official travel guide and offline itinerary' }
   ];
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/60 backdrop-blur-xs flex justify-end items-end sm:items-stretch">

@@ -1,4 +1,4 @@
-import { StructuredItinerary, StructuredItineraryDay, Trip } from '../types/trip';
+import { StructuredItinerary } from '../types/trip';
 
 export interface ConcodeSessionState {
   sessionId?: string;

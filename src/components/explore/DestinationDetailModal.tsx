@@ -1,22 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Destination, CurrencyCode } from '../../types/trip';
-import { 
-  X, 
-  Sparkles, 
-  MapPin, 
-  Calendar, 
-  Wallet, 
-  Star, 
-  Bookmark, 
-  Check, 
-  Compass, 
-  Car, 
-  Utensils, 
-  Clock, 
-  Sun,
-  Share2,
-  ShieldCheck
-} from 'lucide-react';
+import { X, Sparkles, MapPin, Wallet, Star, Bookmark, Check, Car, Utensils, Share2, ShieldCheck } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { triggerHaptic } from '../../services/deviceService';

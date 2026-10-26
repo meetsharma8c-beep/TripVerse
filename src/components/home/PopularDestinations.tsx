@@ -4,6 +4,7 @@ import { Destination } from '../../types/trip';
 import { Star, ArrowRight, Sparkles, Compass, Bookmark } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
+import { ScrollReveal } from '../common/ScrollReveal';
 
 interface PopularDestinationsProps {
   onSelectDestination: (dest: Destination) => void;
@@ -91,13 +92,14 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
 
       {/* Destination Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filtered.map((dest) => {
+        {filtered.map((dest, idx) => {
           const isSaved = savedItemIds.includes(dest.id);
 
           return (
-            <div
+            <ScrollReveal
               key={dest.id}
-              className="group bg-white rounded-3xl overflow-hidden border border-[#E2EBE1] shadow-sm hover:shadow-xl hover:border-[#2D5A3D] transition-all duration-300 flex flex-col"
+              delayMs={(idx % 4) * 55}
+              className="group bg-white rounded-3xl overflow-hidden border border-[#E2EBE1] shadow-sm hover:shadow-xl hover:border-[#2D5A3D] card-elevate flex flex-col"
             >
               {/* Image Container with bleed, dark gradient & action arrow (Matching Reference Image) */}
               <div 
@@ -182,7 +184,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                 <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#E2EBE1]">
                   <button
                     onClick={() => onSelectDestination(dest)}
-                    className="py-2.5 px-3 rounded-xl bg-[#E8EFE7] hover:bg-[#DCE7DB] text-[#2D5A3D] font-bold text-xs transition-colors text-center whitespace-nowrap truncate cursor-pointer"
+                    className="py-2.5 px-3 rounded-xl bg-[#E8EFE7] hover:bg-[#DCE7DB] text-[#2D5A3D] font-bold text-xs transition-all active:scale-95 text-center whitespace-nowrap truncate cursor-pointer"
                   >
                     Explore Details
                   </button>
@@ -197,7 +199,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                 </div>
               </div>
 
-            </div>
+            </ScrollReveal>
           );
         })}
       </div>

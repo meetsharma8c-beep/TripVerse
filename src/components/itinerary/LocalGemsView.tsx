@@ -4,23 +4,7 @@ import { fetchGenuineDestinationGems, DestinationGems } from '../../services/loc
 import { triggerHaptic } from '../../services/deviceService';
 import { getStoredCurrency, formatCurrency, Currency } from '../../services/currencyService';
 import confetti from 'canvas-confetti';
-import { 
-  Utensils, 
-  Sparkles, 
-  MapPin, 
-  Star, 
-  Plus, 
-  Check, 
-  Compass, 
-  Clock, 
-  Eye, 
-  Leaf, 
-  Coffee,
-  CheckCircle2,
-  ExternalLink,
-  ShieldCheck,
-  RefreshCw
-} from 'lucide-react';
+import { Utensils, Sparkles, MapPin, Star, Plus, Check, Compass, Clock, Leaf, ExternalLink, ShieldCheck, RefreshCw } from 'lucide-react';
 
 interface LocalGemsViewProps {
   trip: Trip;
@@ -57,7 +41,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
     return () => {
       isMounted = false;
     };
-  }, [trip.destination, trip.destinationDetails?.coordinates]);
+  }, [trip.destination, trip.destinationDetails?.coordinates, trip.preferences]);
 
   const handleRefreshGems = async () => {
     triggerHaptic('medium');
@@ -108,7 +92,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
         origin: { y: 0.6 },
         colors: ['#386B49', '#F59E0B', '#38BDF8']
       });
-    } catch (e) {}
+    } catch {}
   };
 
   const filteredFood = vegOnly 

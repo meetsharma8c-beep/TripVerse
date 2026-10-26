@@ -1,28 +1,7 @@
 import { Trip, UserProfile, TripPhotoMemory, TripReview, ExpenseItem, PackingItem } from '../types/trip';
 import { DEFAULT_USER_PROFILE } from '../data/initialTrips';
 import { getCurrentUser, toUserProfile } from './authService';
-import {
-  saveTripToSupabase,
-  loadTripsFromSupabase,
-  deleteTripFromSupabase,
-  saveAllUserTripsToSupabase,
-  saveProfileToSupabase,
-  loadProfileFromSupabase,
-  savePassportToSupabase,
-  loadPassportFromSupabase,
-  saveSavedPlaceToSupabase,
-  deleteSavedPlaceFromSupabase,
-  loadSavedPlacesFromSupabase,
-  saveUserSavedItemsToSupabase,
-  saveUserActiveTripToSupabase,
-  loadUserActiveTripFromSupabase,
-  saveExpenseToSupabase,
-  deleteExpenseFromSupabase,
-  saveReviewToSupabase,
-  savePhotoToSupabase,
-  deletePhotoFromSupabase,
-  savePackingToSupabase
-} from './supabaseSyncService';
+import { saveTripToSupabase, loadTripsFromSupabase, deleteTripFromSupabase, saveAllUserTripsToSupabase, saveProfileToSupabase, loadProfileFromSupabase, savePassportToSupabase, loadPassportFromSupabase, saveSavedPlaceToSupabase, deleteSavedPlaceFromSupabase, loadSavedPlacesFromSupabase, saveUserSavedItemsToSupabase, saveUserActiveTripToSupabase, loadUserActiveTripFromSupabase, saveExpenseToSupabase, saveReviewToSupabase, savePhotoToSupabase, deletePhotoFromSupabase, savePackingToSupabase } from './supabaseSyncService';
 
 /**
  * Detect if current context is an unauthenticated guest session
@@ -87,7 +66,7 @@ export function safeStorageSet(key: string, value: string, userId?: string | nul
         }
         storage.setItem(key, value);
         return true;
-      } catch (retryErr) {
+      } catch {
         console.error('[TripVerse] Storage quota exceeded permanently.');
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('tripverse_storage_quota_warning', {
@@ -291,7 +270,7 @@ export function loadUserProfile(userId?: string | null): UserProfile {
     }
     const parsed: UserProfile = JSON.parse(raw);
     return parsed;
-  } catch (e) {
+  } catch {
     return { ...DEFAULT_USER_PROFILE };
   }
 }
@@ -322,7 +301,7 @@ export function loadSavedItemIds(userId?: string | null): string[] {
     const key = getUserStorageKey('tripverse_saved_items', uid);
     const raw = getStorageItem(key, uid);
     return raw ? JSON.parse(raw) : [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
@@ -378,7 +357,7 @@ export function loadUserVisitedStates(userId?: string | null): string[] {
       }
       return Array.isArray(parsed) ? parsed : [];
     }
-  } catch (e) {}
+  } catch {}
   return [];
 }
 
@@ -411,7 +390,7 @@ export function loadTripExpenses(tripId: string, userId?: string | null): Expens
 
     const trip = getTripById(tripId, uid);
     return trip?.expenses || [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
@@ -454,7 +433,7 @@ export function loadTripPacking(tripId: string, userId?: string | null): Packing
 
     const trip = getTripById(tripId, uid);
     return trip?.packingList || null;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -494,7 +473,7 @@ export function loadTripPhotos(tripId: string, userId?: string | null): TripPhot
     if (raw) return JSON.parse(raw);
     const trip = getTripById(tripId, uid);
     return trip?.photos || [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
@@ -778,7 +757,7 @@ export function hasCompletedOnboarding(): boolean {
     }
 
     return false;
-  } catch (e) {
+  } catch {
     return true; // Fail safe: never annoy users if storage is blocked or throws
   }
 }

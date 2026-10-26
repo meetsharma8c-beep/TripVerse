@@ -332,9 +332,69 @@ GST & Taxes     : 18% (Included)
 TOTAL PAID      : ${formatCurrency(booking.amount, currency)}
 ------------------------------------------------------
 
+
 100% Refundable if canceled 24 hours prior to departure.
 TripVerse 24/7 Traveler Helpdesk: support@tripverse.app
 Thank you for exploring the world with TripVerse!
 ======================================================
 `;
 }
+
+/**
+ * Asynchronously load the official Razorpay Checkout SDK
+ */
+export function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') return resolve(false);
+    if ((window as any).Razorpay) return resolve(true);
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
+/**
+ * Create a Razorpay Order via serverless proxy
+ */
+export async function createRazorpayOrder(params: {
+  amount: number;
+  currency?: string;
+  receipt?: string;
+  notes?: Record<string, string>;
+}): Promise<{ ok: boolean; mode: 'live' | 'simulation'; keyId?: string; orderId?: string; error?: string }> {
+  try {
+    const res = await fetch('/api/create-razorpay-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { ok: false, mode: 'simulation', error: err?.message };
+  }
+}
+
+/**
+ * Verify Razorpay payment signature via serverless proxy
+ */
+export async function verifyRazorpayPayment(params: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}): Promise<{ ok: boolean; verified: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/verify-razorpay-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { ok: false, verified: false, error: err?.message };
+  }
+}
+

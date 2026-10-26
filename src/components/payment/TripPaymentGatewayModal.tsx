@@ -1,3 +1,4 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
@@ -40,7 +41,10 @@ import {
   detectCardBrand, 
   formatCardNumber, 
   formatCardExpiry,
-  generateTicketReceiptText
+  generateTicketReceiptText,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+  loadRazorpayScript
 } from '../../services/paymentGatewayService';
 
 interface TripPaymentGatewayModalProps {
@@ -198,6 +202,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
     return 'text-rose-500 stroke-rose-500 animate-pulse';
   };
 
+  useModalBehavior(isOpen, undefined);
   if (!isOpen) return null;
 
   // Apply Coupon Handler
@@ -233,30 +238,79 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   // =========================================================================
   // EXECUTE PAYMENT & CONFIRMATION
   // =========================================================================
-  const initiatePayment = (methodName: string) => {
+  const initiatePayment = async (methodName: string) => {
     triggerHaptic('medium');
+    setGatewayStage('authorizing');
 
-    // If Card or NetBanking, trigger realistic 3D Secure OTP verification first
+    // 1. Attempt Live Gateway Checkout (if Razorpay credentials are configured)
+    try {
+      const orderRes = await createRazorpayOrder({
+        amount: finalPayableINR,
+        currency: 'INR',
+        notes: {
+          tripId: trip?.id || 'pro-membership',
+          tripName: trip?.name || 'TripVerse Experience Booking'
+        }
+      });
+
+      if (orderRes?.ok && orderRes.mode === 'live' && orderRes.orderId && orderRes.keyId) {
+        const loaded = await loadRazorpayScript();
+        if (loaded && (window as any).Razorpay) {
+          const rzp = new (window as any).Razorpay({
+            key: orderRes.keyId,
+            amount: finalPayableINR * 100,
+            currency: 'INR',
+            name: 'TripVerse Travel Tech',
+            description: customTitle || trip?.name || 'TripVerse Experience Booking',
+            order_id: orderRes.orderId,
+            handler: async (response: any) => {
+              const verifyRes = await verifyRazorpayPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              });
+              if (verifyRes?.verified) {
+                finalizeSuccessfulBooking(methodName, response.razorpay_payment_id);
+              } else {
+                setGatewayStage('checkout');
+                alert('Payment verification could not be completed.');
+              }
+            },
+            modal: {
+              ondismiss: () => {
+                setGatewayStage('checkout');
+              }
+            },
+            theme: { color: '#2D5A3D' }
+          });
+          rzp.open();
+          return;
+        }
+      }
+    } catch {
+      // Fall through to built-in simulation if offline or keys not configured
+    }
+
+    // 2. Direct Built-In Gateway Flow (Supports instant demo & OTP simulation)
     if (activeTab === 'card' || activeTab === 'netbanking') {
-      setGatewayStage('authorizing');
       setTimeout(() => {
         setGatewayStage('otp_modal');
         setOtpValue('749201'); // pre-fill helper test OTP
-      }, 1200);
+      }, 1000);
       return;
     }
 
     // Direct Instant Gateway Authorization (for UPI QR, UPI Apps, Wallets)
-    setGatewayStage('authorizing');
     setTimeout(() => {
       finalizeSuccessfulBooking(methodName);
-    }, 1600);
+    }, 1200);
   };
 
-  const finalizeSuccessfulBooking = (methodName: string) => {
+  const finalizeSuccessfulBooking = (methodName: string, customTxnId?: string) => {
     const pnrGenerated = generatePNR('TRV');
     const voucherGenerated = generateHotelVoucher();
     const bookingId = `TRV-BKG-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
+    const effectiveTxnId = customTxnId || txnRef;
 
     const items = [
       { title: `Stay in ${destination} (${durationDays} Nights)`, category: 'Accommodation', amount: baseAccommodation },
@@ -277,7 +331,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
       currency,
       paymentMethod: methodName,
       paymentMethodType: activeTab,
-      transactionId: txnRef,
+      transactionId: effectiveTxnId,
       pnr: pnrGenerated,
       hotelVoucher: voucherGenerated,
       createdAt: new Date().toISOString(),
@@ -328,7 +382,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
   return (
     <div 
-      className="fixed inset-0 z-[250] flex items-start sm:items-center justify-center bg-slate-950/85 p-2 sm:p-4 backdrop-blur-md overflow-y-auto min-h-screen"
+      className="fixed inset-0 z-[250] flex items-start sm:items-center justify-center bg-slate-950/85 p-2 sm:p-4 backdrop-blur-md overflow-y-auto overscroll-contain"
       onClick={onClose}
     >
       <div 
@@ -352,7 +406,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   <Lock className="h-2.5 w-2.5" /> 256-Bit SSL
                 </span>
               </div>
-              <h2 className="text-sm sm:text-base font-black text-white truncate max-w-[260px] sm:max-w-md">
+              <h2 className="text-sm sm:text-base font-black text-white truncate max-w-[55vw] sm:max-w-md">
                 {customTitle || `Secure Checkout • ${destination} Package`}
               </h2>
             </div>

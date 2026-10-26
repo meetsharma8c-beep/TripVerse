@@ -1,19 +1,8 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
 import { Trip } from '../../types/trip';
 import { getStoredCurrency, formatCurrency, Currency } from '../../services/currencyService';
-import { 
-  X, 
-  Share2, 
-  Copy, 
-  Check, 
-  Download, 
-  QrCode, 
-  Sparkles,
-  MapPin,
-  Calendar,
-  Users,
-  Wallet
-} from 'lucide-react';
+import { X, Share2, Copy, Check } from 'lucide-react';
 
 interface ShareTripModalProps {
   trip: Trip;
@@ -35,6 +24,7 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
     return () => window.removeEventListener('tripverse_currency_change', handleCurrency);
   }, []);
 
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   const shareUrl = typeof window !== 'undefined' 
@@ -55,7 +45,7 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
           text: `Check out our verified AI journey from ${trip.origin} to ${trip.destination} on TripVerse:`,
           url: shareUrl,
         });
-      } catch (e) {
+      } catch {
         // Share cancelled or closed by user
       }
     } else {

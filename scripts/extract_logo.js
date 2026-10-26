@@ -1,5 +1,4 @@
 import sharp from 'sharp';
-import fs from 'fs';
 
 async function extractTransparentLogo() {
   console.log('🚀 Extracting Ultra-HD Master Logo with Flawless Edge Outline...');

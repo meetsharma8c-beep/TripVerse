@@ -1,7 +1,7 @@
 import { getSupabaseClient } from './supabase';
 import { Trip, UserProfile, ExpenseItem, TripReview, TripPhotoMemory, PackingItem } from '../types/trip';
 import { getActiveCurrency } from './currencyService';
-import { DisruptionAlert, ReplanOption, RefundGuidance } from '../types/replanning';
+import { DisruptionAlert, RefundGuidance } from '../types/replanning';
 import { toDeterministicUuid } from '../utils/uuid';
 
 /**

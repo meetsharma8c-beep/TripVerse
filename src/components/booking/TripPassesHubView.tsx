@@ -5,26 +5,7 @@ import { loadTripPacking, saveTripPacking } from '../../services/storageService'
 import { generateSmartPackingList } from '../../services/packingService';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
 import { triggerHaptic } from '../../services/deviceService';
-import { 
-  ArrowLeft, 
-  Bell, 
-  MoreVertical, 
-  Plane, 
-  Bed, 
-  ChevronRight, 
-  Sun, 
-  CloudSun, 
-  CloudRain, 
-  CheckCircle2, 
-  Circle, 
-  Download, 
-  Share2, 
-  ShieldCheck, 
-  Calendar,
-  Sparkles,
-  QrCode,
-  CreditCard
-} from 'lucide-react';
+import { ArrowLeft, Bell, MoreVertical, Plane, ChevronRight, Sun, CloudSun, CloudRain, CheckCircle2, Circle, Download, Share2, CreditCard } from 'lucide-react';
 import { getBookingForTrip, BookingRecord, generateTicketReceiptText } from '../../services/paymentGatewayService';
 import { getActiveCurrency } from '../../services/currencyService';
 
@@ -85,7 +66,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
     } else {
       setPackingItems(generateSmartPackingList(trip));
     }
-  }, [trip.id]);
+  }, [trip]);
 
   useEffect(() => {
     let isMounted = true;

@@ -1,3 +1,4 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
 import { Trip } from '../../types/trip';
 import { TripNotification, TripCountdownInfo } from '../../types/notification';
@@ -63,8 +64,9 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isOpen, activeTrip]);
+  }, [isOpen, activeTrip, hasUpcomingActiveTrip]);
 
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   const handleMarkAllRead = () => {

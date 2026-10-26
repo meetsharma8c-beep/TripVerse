@@ -1,26 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  Users, 
-  Copy, 
-  Check, 
-  Share2, 
-  ThumbsUp, 
-  ThumbsDown, 
-  Plus, 
-  Sparkles, 
-  ShieldCheck, 
-  Crown, 
-  Clock, 
-  MapPin, 
-  Utensils, 
-  Flame, 
-  MessageSquare,
-  QrCode,
-  ArrowRight,
-  Send,
-  CheckCircle2
-} from 'lucide-react';
+import { useModalBehavior } from '../../hooks/useModalBehavior';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Users, Copy, Check, Share2, ThumbsUp, ThumbsDown, Plus, Sparkles, Crown, Clock, MapPin, Flame, MessageSquare, Send, CheckCircle2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Trip, CollaborationSession, TripCollaborator, GroupSuggestion } from '../../types/trip';
 import { AuthUser } from '../../types/auth';
@@ -63,19 +43,27 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
   const [suggestCategory, setSuggestCategory] = useState<'food' | 'spot' | 'activity' | 'stay'>('food');
   const [isSubmittingSuggest, setIsSubmittingSuggest] = useState(false);
 
+  const tripRef = useRef(trip);
+  const onTripUpdatedRef = useRef(onTripUpdated);
+  useEffect(() => {
+    tripRef.current = trip;
+    onTripUpdatedRef.current = onTripUpdated;
+  });
+
   // Real-time synchronization subscription
   useEffect(() => {
     if (!isOpen) return;
     const unsub = subscribeToTripCollaboration(trip.id, (updatedSession) => {
       setSession(updatedSession);
-      onTripUpdated({
-        ...trip,
+      onTripUpdatedRef.current({
+        ...tripRef.current,
         collaboration: updatedSession
       });
     });
     return () => unsub();
   }, [trip.id, isOpen]);
 
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   const currentUserId = currentUser?.uid || 'guest-user';

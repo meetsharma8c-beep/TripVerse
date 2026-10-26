@@ -179,7 +179,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
         spread: 60,
         origin: { y: 0.7 }
       });
-    } catch (e) {}
+    } catch {}
   };
 
   const toggleSplitMember = (name: string) => {

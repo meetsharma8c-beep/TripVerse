@@ -2,31 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DayPlan, ItineraryActivity, TransportDeal, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
-import { 
-  Clock, 
-  MapPin, 
-  Car, 
-  CheckCircle2, 
-  Circle,
-  Utensils, 
-  Bed, 
-  Camera, 
-  Sun, 
-  Sparkles, 
-  Coffee,
-  Navigation,
-  ChevronDown,
-  ChevronRight,
-  Tag,
-  Plus,
-  Edit2,
-  Trash2,
-  ArrowUp,
-  ArrowDown,
-  ExternalLink,
-  SlidersHorizontal,
-  Compass
-} from 'lucide-react';
+import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 
 interface DayTimelineProps {

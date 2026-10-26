@@ -1,25 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Bus, 
-  Car, 
-  ExternalLink, 
-  Plane, 
-  Train, 
-  Bike, 
-  QrCode, 
-  Sun, 
-  CloudSun, 
-  CheckCircle2, 
-  Circle, 
-  ArrowRight, 
-  Download, 
-  Bed, 
-  ChevronRight, 
-  Ticket,
-  Sparkles,
-  Luggage,
-  Calendar
-} from 'lucide-react';
+import { Bus, Car, ExternalLink, Plane, Train, Bike, QrCode, CloudSun, CheckCircle2, Circle, Download, ChevronRight, Ticket, Sparkles, Luggage } from 'lucide-react';
 import { Trip, TransportMode } from '../../types/trip';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
 

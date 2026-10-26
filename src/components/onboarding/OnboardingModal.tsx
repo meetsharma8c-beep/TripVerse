@@ -1,17 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Sparkles, 
-  MapPin, 
-  ShieldCheck, 
-  Wallet, 
-  ArrowRight, 
-  Check, 
-  X, 
-  Navigation, 
-  Coffee, 
-  FileText,
-  PlaneTakeoff,
-} from 'lucide-react';
+import { Sparkles, MapPin, ShieldCheck, Wallet, ArrowRight, Check, X, Navigation } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { setOnboardingCompleted } from '../../services/storageService';
 

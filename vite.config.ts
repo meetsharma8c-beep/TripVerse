@@ -210,6 +210,23 @@ function smsApiDevPlugin(): Plugin {
   };
 }
 
+function dropConsolePlugin(): Plugin {
+  return {
+    name: 'drop-console',
+    apply: 'build',
+    enforce: 'post',
+    transform(code, id) {
+      if (id.includes('node_modules')) return null;
+      if (!/\.[jt]sx?$/.test(id)) return null;
+      if (!code.includes('console.')) return null;
+      return {
+        code: code.replace(/\bconsole\.(log|debug)\([^)]*\);?/g, 'void 0;'),
+        map: null
+      };
+    }
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -221,7 +238,8 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       concodeApiDevPlugin(concodeUrl, concodeKey),
-      smsApiDevPlugin()
+      smsApiDevPlugin(),
+      dropConsolePlugin()
     ],
     build: {
       target: ['es2020', 'edge88', 'firefox78', 'chrome80', 'safari14'],
@@ -243,6 +261,9 @@ export default defineConfig(({ mode }) => {
             }
             if (id.includes('node_modules/leaflet/')) {
               return 'vendor-leaflet';
+            }
+            if (id.includes('node_modules/firebase/') || id.includes('node_modules/@firebase/')) {
+              return 'vendor-firebase';
             }
             if (id.includes('node_modules/canvas-confetti/')) {
               return 'vendor-confetti';

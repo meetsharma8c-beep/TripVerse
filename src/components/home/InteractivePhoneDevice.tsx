@@ -1,28 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Wifi, 
-  Battery, 
-  MapPin, 
-  Navigation, 
-  Sparkles, 
-  Calendar, 
-  Compass, 
-  Volume2, 
-  Power, 
-  ChevronRight, 
-  ArrowRight, 
-  ShieldCheck, 
-  Clock, 
-  Fuel, 
-  Star,
-  CheckCircle2,
-  Send,
-  Flashlight,
-  Camera,
-  Layers,
-  Flame,
-  Bot
-} from 'lucide-react';
+import { Wifi, Battery, Navigation, Sparkles, Calendar, Compass, Volume2, ArrowRight, Send, Flashlight, Camera, Bot } from 'lucide-react';
 import { Trip } from '../../types/trip';
 import { formatCurrency, SupportedCurrency } from '../../services/currencyService';
 import { triggerHaptic } from '../../services/deviceService';
@@ -117,7 +94,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
       const brainRes = await queryConcodeBrain(userText, heroTripContext);
       setMiniChatMessages(prev => [...prev, { sender: 'ai', text: brainRes.response }]);
       triggerHaptic('success');
-    } catch (_) {
+    } catch {
       setMiniChatMessages(prev => [...prev, { sender: 'ai', text: 'ConCode AI Co-Pilot synchronized. How can I adjust your Udaipur route?' }]);
     }
   };

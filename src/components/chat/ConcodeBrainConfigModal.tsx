@@ -1,22 +1,7 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  Server, 
-  Cpu, 
-  Zap, 
-  CheckCircle2, 
-  AlertCircle, 
-  ExternalLink, 
-  RefreshCw,
-  Trash2,
-  HelpCircle
-} from 'lucide-react';
-import { 
-  getStoredConcodeConfig, 
-  saveConcodeConfig, 
-  removeConcodeConfig, 
-  checkBrainStatus 
-} from '../../services/concodeBrainService';
+import { X, Server, Cpu, Zap, CheckCircle2, AlertCircle, RefreshCw, Trash2, HelpCircle } from 'lucide-react';
+import { getStoredConcodeConfig, saveConcodeConfig, removeConcodeConfig } from '../../services/concodeBrainService';
 import { triggerHaptic } from '../../services/deviceService';
 
 interface ConcodeBrainConfigModalProps {
@@ -49,6 +34,7 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
     }
   }, [isOpen]);
 
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   const handleTest = async () => {

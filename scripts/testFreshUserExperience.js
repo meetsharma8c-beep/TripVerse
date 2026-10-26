@@ -1,5 +1,4 @@
 import puppeteer from 'puppeteer-core';
-import path from 'path';
 
 async function testFreshUser() {
   const browser = await puppeteer.launch({

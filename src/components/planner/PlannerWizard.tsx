@@ -1,3 +1,4 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState } from 'react';
 import {
   X,
@@ -71,6 +72,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   onOpenProModal
 }) => {
   const quota = getUserSubscriptionQuota();
+  useModalBehavior(true);
   const [currentStep, setCurrentStep] = useState<number>(1);
   const totalSteps = 9;
 
@@ -83,6 +85,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   const [selectedPreciseSpot, setSelectedPreciseSpot] = useState<PreciseLocation | null>(() =>
     initialDestination.trim() ? resolvePreciseLocationSync(initialDestination) : null
   );
+  const selectedPreciseSpotRef = React.useRef(selectedPreciseSpot);
+  React.useEffect(() => {
+    selectedPreciseSpotRef.current = selectedPreciseSpot;
+  });
   const [destSuggestions, setDestSuggestions] = useState<PreciseLocation[]>([]);
   const [isSearchingDest, setIsSearchingDest] = useState(false);
   const [showDestDropdown, setShowDestDropdown] = useState(false);
@@ -110,7 +116,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         );
         if (exact) {
           setSelectedPreciseSpot(exact);
-        } else if (!selectedPreciseSpot || selectedPreciseSpot.name.toLowerCase() !== destination.toLowerCase().trim()) {
+        } else if (!selectedPreciseSpotRef.current || selectedPreciseSpotRef.current.name.toLowerCase() !== destination.toLowerCase().trim()) {
           setSelectedPreciseSpot(resolvePreciseLocationSync(destination));
         }
       } catch {

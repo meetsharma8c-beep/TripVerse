@@ -5,29 +5,7 @@ import { generateSmartPackingList } from '../../services/packingService';
 import { loadTripPacking, saveTripPacking } from '../../services/storageService';
 import { openExternalUrl, triggerHaptic } from '../../services/deviceService';
 import confetti from 'canvas-confetti';
-import { 
-  Sun, 
-  CloudRain, 
-  Wind, 
-  Droplets, 
-  AlertTriangle, 
-  CheckCircle2, 
-  Circle, 
-  Plus, 
-  Trash2, 
-  RotateCcw, 
-  ShieldAlert, 
-  Sparkles,
-  Thermometer,
-  Share2,
-  Copy,
-  Check,
-  Luggage,
-  Compass,
-  Umbrella,
-  Flame,
-  Shirt
-} from 'lucide-react';
+import { Sun, CloudRain, Wind, Droplets, CheckCircle2, Circle, Plus, Trash2, RotateCcw, Sparkles, Thermometer, Share2, Check, Luggage, Compass, Umbrella, Shirt } from 'lucide-react';
 
 interface PackingWeatherViewProps {
   trip: Trip;
@@ -98,7 +76,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
           origin: { y: 0.6 },
           colors: ['#386B49', '#2D5A3D', '#38BDF8']
         });
-      } catch (e) {}
+      } catch {}
     }
   };
 
@@ -199,7 +177,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
           origin: { y: 0.7 },
           colors: ['#2D5A3D', '#38BDF8', '#F59E0B']
         });
-      } catch (e) {}
+      } catch {}
     }
   };
 
@@ -365,7 +343,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
                     setSelectedDayIndex(idx);
                     triggerHaptic('light');
                   }}
-                  className={`flex-1 min-w-[125px] p-3.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer relative group ${
+                  className={`flex-1 min-w-[110px] sm:min-w-[125px] p-3.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer relative group ${
                     isSelected
                       ? 'bg-white/20 border-emerald-400/80 shadow-lg ring-1 ring-emerald-400/50 backdrop-blur-md'
                       : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'

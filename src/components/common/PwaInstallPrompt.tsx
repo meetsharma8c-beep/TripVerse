@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrandIconMark } from './Logo';
 import { 
   Download, 
@@ -27,6 +27,7 @@ export const PwaInstallPrompt: React.FC = () => {
   const [showBanner, setShowBanner] = useState<boolean>(false);
   const [showIosModal, setShowIosModal] = useState<boolean>(false);
   const [isIosDevice, setIsIosDevice] = useState<boolean>(false);
+  const handleInstallClickRef = useRef<() => Promise<void>>(async () => {});
 
   useEffect(() => {
     // Check if already running standalone or native
@@ -63,7 +64,7 @@ export const PwaInstallPrompt: React.FC = () => {
     window.addEventListener('tripverse-can-install', handleCanInstall);
 
     const handleOpenInstall = () => {
-      handleInstallClick();
+      handleInstallClickRef.current();
     };
     window.addEventListener('tripverse-open-install', handleOpenInstall);
 
@@ -127,6 +128,7 @@ export const PwaInstallPrompt: React.FC = () => {
       setShowIosModal(true);
     }
   };
+  handleInstallClickRef.current = handleInstallClick;
 
   if (isInstalled) {
     return null;

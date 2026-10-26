@@ -180,6 +180,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  const googleCallbackRef = useRef(handleGoogleCredentialResponse);
+  useEffect(() => {
+    googleCallbackRef.current = handleGoogleCredentialResponse;
+  });
+
   // Google Identity Services (GIS) Button Lifecycle
   useEffect(() => {
     if (!isOpen) return;
@@ -194,7 +199,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       try {
         g.initialize({
           client_id: clientId,
-          callback: handleGoogleCredentialResponse
+          callback: (res: any) => googleCallbackRef.current(res)
         });
 
         const activeKey =

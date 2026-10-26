@@ -1,17 +1,6 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState } from 'react';
-import { 
-  X, 
-  ShieldCheck, 
-  FileText, 
-  AlertTriangle, 
-  MessageSquare, 
-  Star, 
-  Check, 
-  Send,
-  Lock,
-  Compass,
-  Heart
-} from 'lucide-react';
+import { X, ShieldCheck, FileText, AlertTriangle, MessageSquare, Star, Check, Send, Lock, Compass } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getSupabaseClient } from '../../services/supabase';
 
@@ -39,6 +28,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
   const [message, setMessage] = useState<string>('');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
 
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   const handleSubmitFeedback = async (e: React.FormEvent) => {

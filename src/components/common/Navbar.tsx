@@ -1,24 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Logo, BrandIconMark } from './Logo';
-import { 
-  Compass, 
-  MapPin, 
-  Bookmark, 
-  User, 
-  Sparkles, 
-  Menu, 
-  X, 
-  ChevronRight,
-  PlaneTakeoff,
-  Globe,
-  Bell,
-  Smartphone,
-  Download,
-  Search,
-  Moon,
-  Sun,
-  Crown
-} from 'lucide-react';
+import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, PlaneTakeoff, Globe, Search, Moon, Sun, Crown } from 'lucide-react';
 import { UserProfile, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
 import { isStandalone } from '../../services/deviceService';
@@ -271,8 +253,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 aria-label={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
               >
                 <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="hidden xl:inline">Search...</span>
-                <kbd className="text-[10px] font-mono bg-[#F4F6F2] dark:bg-slate-900 px-1.5 py-0.5 rounded border border-[#DCE7DB] dark:border-slate-700 text-slate-500 dark:text-slate-400 shadow-2xs">
+                <span className="hidden 2xl:inline">Search...</span>
+                <kbd className="hidden 2xl:inline text-[10px] font-mono bg-[#F4F6F2] dark:bg-slate-900 px-1.5 py-0.5 rounded border border-[#DCE7DB] dark:border-slate-700 text-slate-500 dark:text-slate-400 shadow-2xs">
                   {isMac ? '⌘K' : 'Ctrl+K'}
                 </kbd>
               </button>
@@ -421,7 +403,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           id="mobile-navigation-drawer"
           role="dialog"
           aria-label="Mobile Navigation"
-          className="relative z-40 lg:hidden border-t border-[#E2EBE1] dark:border-slate-800 bg-[#F4F6F2] dark:bg-[#0E1726] px-4 pt-3 pb-6 space-y-1 shadow-2xl animate-in slide-in-from-top duration-200 transition-colors max-h-[calc(100vh-4.5rem)] overflow-y-auto"
+          className="relative z-40 lg:hidden border-t border-[#E2EBE1] dark:border-slate-800 bg-[#F4F6F2] dark:bg-[#0E1726] px-4 pt-3 pb-6 space-y-1 shadow-2xl animate-in slide-in-from-top duration-200 transition-colors max-h-[calc(100vh-4.5rem)] max-h-[calc(100dvh-4.5rem)] overscroll-contain overflow-y-auto"
         >
           {onOpenSearch && (
             <button

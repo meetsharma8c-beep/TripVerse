@@ -1,22 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Play, 
-  Pause, 
-  SkipForward, 
-  Volume2, 
-  VolumeX, 
-  Headphones, 
-  Sparkles, 
-  Compass, 
-  MapPin, 
-  Clock, 
-  RotateCcw,
-  Sliders,
-  Radio,
-  ChevronRight,
-  ShieldCheck,
-  X
-} from 'lucide-react';
+import { Play, Pause, SkipForward, Volume2, VolumeX, Headphones, Sparkles, MapPin, RotateCcw, Radio, ChevronRight, X } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 
 interface AudioStory {

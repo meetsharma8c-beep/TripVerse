@@ -492,7 +492,7 @@ export async function searchLocations(
         });
       }
     }
-  } catch (err: any) {
+  } catch {
     // Network or abort error; fallback gracefully to local matches
   }
 

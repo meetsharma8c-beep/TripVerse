@@ -62,10 +62,7 @@ export async function sendRealSmsOtp(
   rawPhoneNumber: string,
   otpCode: string
 ): Promise<Fast2SmsResult> {
-  const apiKey = getFast2SmsApiKey();
-  if (!apiKey) {
-    throw new Error('Fast2SMS API Key is not configured.');
-  }
+  const customApiKey = getFast2SmsApiKey();
 
   // Extract pure digits
   const cleanDigits = rawPhoneNumber.trim().replace(/\D/g, '');
@@ -86,7 +83,7 @@ export async function sendRealSmsOtp(
     let response: Response | null = null;
     let data: any = null;
 
-    // 1. Attempt Vercel serverless proxy (/api/sms) to bypass browser CORS restrictions
+    // 1. Attempt Vercel serverless proxy (/api/sms) which securely holds server-side FAST2SMS_API_KEY
     try {
       const proxyRes = await fetch('/api/sms', {
         method: 'POST',
@@ -94,33 +91,35 @@ export async function sendRealSmsOtp(
         body: JSON.stringify({
           numbers: tenDigit,
           variables_values: otpCode,
-          apiKey
+          ...(customApiKey ? { apiKey: customApiKey } : {})
         })
       });
-      if (proxyRes.ok) {
-        data = await proxyRes.json();
+      data = await proxyRes.json().catch(() => null);
+      if (!proxyRes.ok) {
+        throw new Error(data?.message || 'SMS Gateway error');
       }
-    } catch {
-      // Offline or local dev fallback to direct endpoint
-    }
-
-    // 2. Direct Fast2SMS endpoint fallback
-    if (!data) {
-      try {
-        response = await fetch(FAST2SMS_API_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'authorization': apiKey,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-      } catch (postErr) {
-        console.warn('Fast2SMS POST attempt failed, attempting GET fallback:', postErr);
-        const getUrl = `${FAST2SMS_API_ENDPOINT}?authorization=${encodeURIComponent(apiKey)}&route=otp&variables_values=${encodeURIComponent(otpCode)}&numbers=${encodeURIComponent(tenDigit)}`;
-        response = await fetch(getUrl, { method: 'GET' });
+    } catch (proxyErr: any) {
+      if (proxyErr?.message && !proxyErr.message.includes('fetch')) {
+        throw proxyErr;
       }
-      data = await response.json();
+      // If proxy network failed and user entered a custom client-side key, fallback to direct
+      if (customApiKey) {
+        try {
+          response = await fetch(FAST2SMS_API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+              'authorization': customApiKey,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+          data = await response.json();
+        } catch {
+          // direct failed
+        }
+      } else {
+        throw new Error(proxyErr?.message || 'SMS service is temporarily unavailable.');
+      }
     }
 
     if (data.return === true || (response?.ok && data.status_code === 200) || data.status_code === 200) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { CheckCircle2, Sparkles, Compass } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -32,7 +32,7 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
     }
   };
 
-  const steps = [
+  const steps = useMemo(() => [
     'Connecting to ConCode AI Brain on GPU...',
     'Analyzing your traveler choices & constraints...',
     getModeStepText(transportMode),
@@ -41,7 +41,7 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
     'Scheduling day-by-day timing & activities...',
     'Optimizing budget allocation across your trip...',
     'Finalizing personalized journey blueprint...'
-  ];
+  ], [transportMode]);
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
@@ -60,7 +60,7 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
               origin: { y: 0.6 },
               colors: ['#386B49', '#2D5A3D', '#0B2545', '#38BDF8']
             });
-          } catch (e) {
+          } catch {
             // ignore if confetti fails
           }
           setTimeout(() => {
@@ -72,7 +72,7 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
     }, 450);
 
     return () => clearInterval(interval);
-  }, [onComplete]);
+  }, [onComplete, steps.length]);
 
   const progressPct = Math.round(((currentStepIndex + 1) / steps.length) * 100);
 

@@ -1,13 +1,4 @@
-import { 
-  AuthUser, 
-  AuthSession, 
-  SignUpData, 
-  LoginData, 
-  GoogleCredentialPayload,
-  VerificationCodeRecord,
-  SubscriptionTier,
-  UserSubscriptionQuota 
-} from '../types/auth';
+import { AuthUser, AuthSession, SignUpData, LoginData, GoogleCredentialPayload, SubscriptionTier, UserSubscriptionQuota } from '../types/auth';
 
 export type { AuthUser, AuthSession, SubscriptionTier, UserSubscriptionQuota };
 import { UserProfile } from '../types/trip';
@@ -33,14 +24,7 @@ import {
   saveProfileToSupabase, 
   loadProfileFromSupabase 
 } from './supabaseSyncService';
-import { 
-  sendRealSmsOtp, 
-  verifyRealSmsOtp, 
-  getPendingSmsSession, 
-  clearPendingSmsSession, 
-  getFast2SmsApiKey,
-  savePendingSmsSession 
-} from './smsService';
+import { sendRealSmsOtp, verifyRealSmsOtp, getPendingSmsSession, clearPendingSmsSession, getFast2SmsApiKey } from './smsService';
 
 const USERS_STORAGE_KEY = 'tripverse_auth_users_v3';
 const SESSION_STORAGE_KEY = 'tripverse_auth_session_v3';
@@ -59,14 +43,13 @@ function purgeLegacyMockSessions(): void {
       const uid = s?.user?.uid || '';
       const email = s?.user?.email || '';
       const name = s?.user?.displayName || '';
+      const isMock = s?.isMock === true || s?.user?.isMock === true;
       if (
-        name === 'Meet Sharma' ||
-        name === 'Rahul Mehta' ||
-        email === 'meet.sharma8c@gmail.com' ||
-        email === 'rahul.mehta22@gmail.com' ||
-        email === 'explorer.google@gmail.com' ||
+        isMock ||
         uid.startsWith('user-email-') ||
-        uid.startsWith('user-google-')
+        uid.startsWith('user-google-') ||
+        uid.startsWith('mock-') ||
+        uid.startsWith('test-')
       ) {
         localStorage.removeItem(SESSION_STORAGE_KEY);
       }
@@ -76,13 +59,10 @@ function purgeLegacyMockSessions(): void {
     if (rawAccounts) {
       const accounts: StoredAccount[] = JSON.parse(rawAccounts) || [];
       const cleaned = accounts.filter(a =>
-        a.user.displayName !== 'Meet Sharma' &&
-        a.user.displayName !== 'Rahul Mehta' &&
-        a.user.email !== 'meet.sharma8c@gmail.com' &&
-        a.user.email !== 'rahul.mehta22@gmail.com' &&
-        a.user.email !== 'explorer.google@gmail.com' &&
         !a.user.uid.startsWith('user-email-') &&
-        !a.user.uid.startsWith('user-google-')
+        !a.user.uid.startsWith('user-google-') &&
+        !a.user.uid.startsWith('mock-') &&
+        !a.user.uid.startsWith('test-')
       );
       if (cleaned.length !== accounts.length) {
         localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(cleaned));

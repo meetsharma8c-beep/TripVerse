@@ -24,6 +24,7 @@ import { searchLocations, PreciseLocation } from '../../services/locationService
 import { Trip, Destination } from '../../types/trip';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { InteractivePhoneDevice } from './InteractivePhoneDevice';
+import { ScrollReveal } from '../common/ScrollReveal';
 
 interface HeroSectionProps {
   activeTrip?: Trip | null;
@@ -175,22 +176,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
         {/* PRIMARY HERO HEADER (Matching Reference Image Screen 1) */}
         <div className="max-w-4xl mx-auto mb-8 sm:mb-10 text-center sm:text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] text-[#2D5A3D] text-xs font-bold shadow-2xs mb-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] text-[#2D5A3D] text-xs font-bold shadow-2xs mb-4 tv-stagger-1">
             <Sparkles className="w-4 h-4 text-[#2D5A3D] shrink-0 animate-pulse" />
             <span>AI-Powered Travel Planning Made Effortless</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-black text-[#152A1C] dark:text-slate-100 tracking-tight leading-[1.1] mb-3 text-balance">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-black text-[#152A1C] dark:text-slate-100 tracking-tight leading-[1.08] mb-3.5 text-balance tv-stagger-1">
             Your Journey,<br className="hidden sm:inline" />
             <span className="font-serif italic font-normal text-[#2D5A3D] dark:text-[#34D399]">Intelligently </span>Planned.
           </h1>
 
-          <p className="text-base sm:text-lg text-[#57685D] max-w-2xl font-normal leading-relaxed text-pretty mb-6">
+          <p className="text-base sm:text-lg text-[#57685D] max-w-2xl font-normal leading-relaxed text-pretty mb-6 tv-stagger-2">
             AI-powered travel planning made effortless. Plan custom day-by-day itineraries, highway pit stops, and budget-optimized routes.
           </p>
 
           {/* Serene Dynamic Landscape Visual */}
-          <div className="relative rounded-[32px] overflow-hidden border border-[#E2EBE1] dark:border-slate-800 shadow-[0_12px_40px_rgba(45,90,61,0.08)] bg-[#EAF0E9] dark:bg-slate-900 group">
+          <div className="relative rounded-[32px] overflow-hidden border border-[#E2EBE1] dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(45,90,61,0.14)] bg-[#EAF0E9] dark:bg-slate-900 group tv-stagger-2">
             {/* Fallback image */}
             <img
               src="/videos/app-opening-poster.jpg"
@@ -218,16 +219,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 onError={() => setHeroVideoError(true)}
                 width={1280}
                 height={720}
-                className="relative z-10 w-full h-60 sm:h-72 md:h-84 lg:h-96 object-cover object-center pointer-events-none select-none transition-transform duration-700 group-hover:scale-[1.01]"
+                className="relative z-10 w-full h-60 sm:h-72 md:h-84 lg:h-96 object-cover object-center pointer-events-none select-none transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.015]"
               />
             )}
-            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none select-none" />
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none select-none" />
           </div>
 
           {/* Floating Pill Search Bar (Matching Reference Image Screen 1) */}
-          <div className="relative max-w-2xl mx-auto -mt-7 sm:-mt-8 z-30 px-2 sm:px-4">
+          <div className="relative max-w-2xl mx-auto -mt-7 sm:-mt-8 z-30 px-2 sm:px-4 tv-stagger-3">
             <form onSubmit={handleSubmit} className="relative">
-              <div className="bg-white rounded-full p-2 pl-4 sm:pl-6 shadow-[0_12px_36px_-6px_rgba(45,90,61,0.20)] border border-[#E2EBE1] flex items-center justify-between gap-2.5 transition-all focus-within:ring-4 focus-within:ring-[#2D5A3D]/15 focus-within:border-[#2D5A3D]">
+              <div className="bg-white/95 backdrop-blur-md rounded-full p-2 pl-4 sm:pl-6 shadow-[0_16px_40px_-8px_rgba(45,90,61,0.22)] border border-[#DCE7DB] flex items-center justify-between gap-2.5 transition-all duration-300 focus-within:ring-4 focus-within:ring-[#2D5A3D]/15 focus-within:border-[#2D5A3D] focus-within:shadow-[0_20px_48px_-8px_rgba(45,90,61,0.28)]">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <Search className="w-5 h-5 text-slate-400 shrink-0" />
                   <input
@@ -394,7 +395,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           {/* Quick Actions Grid (Matching Reference Image Screen 1) */}
-          <div className="mt-8 sm:mt-12">
+          <div className="mt-8 sm:mt-12 tv-stagger-4">
             <div className="flex items-center justify-between mb-3 px-1">
               <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#57685D]">
                 Quick Actions
@@ -407,9 +408,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 onClick={() => {
                   if (onOpenPlanner) onOpenPlanner();
                 }}
-                className="flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs hover:shadow-md transition-all group cursor-pointer text-center"
+                className="card-elevate flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-center"
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all shadow-2xs">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
                 <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">AI Itinerary</span>
@@ -426,9 +427,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     budget
                   });
                 }}
-                className="flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs hover:shadow-md transition-all group cursor-pointer text-center"
+                className="card-elevate flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-center"
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all shadow-2xs">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <Compass className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
                 <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">Smart Route</span>
@@ -438,9 +439,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setShowGuaranteeModal(true)}
-                className="flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs hover:shadow-md transition-all group cursor-pointer text-center"
+                className="card-elevate flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-center"
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all shadow-2xs">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <Wallet className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
                 <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">Budget Plan</span>
@@ -450,9 +451,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <button
                 type="button"
                 onClick={onExplore}
-                className="flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs hover:shadow-md transition-all group cursor-pointer text-center"
+                className="card-elevate flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-center"
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all shadow-2xs">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
                 <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">Travel Guide</span>
@@ -465,10 +466,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             onClick={() => {
               if (onOpenPlanner) onOpenPlanner();
             }}
-            className="mt-6 rounded-3xl bg-[#EAF0E9] border border-[#DCE6DA] p-4 sm:p-5 flex items-center justify-between gap-4 cursor-pointer hover:border-[#2D5A3D] hover:shadow-md transition-all group"
+            className="card-elevate mt-6 rounded-3xl bg-[#EAF0E9] border border-[#DCE6DA] p-4 sm:p-5 flex items-center justify-between gap-4 cursor-pointer hover:border-[#2D5A3D] group tv-stagger-4"
           >
             <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-11 h-11 rounded-2xl bg-white text-[#2D5A3D] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+              <div className="w-11 h-11 rounded-2xl bg-white text-[#2D5A3D] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform duration-300">
                 <Sparkles className="w-5 h-5 text-[#2D5A3D]" />
               </div>
               <div>
@@ -480,7 +481,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </p>
               </div>
             </div>
-            <div className="shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-white p-1 shadow-xs border border-white group-hover:scale-105 transition-transform">
+            <div className="shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-white p-1 shadow-xs border border-white group-hover:scale-105 transition-transform duration-300">
               <img
                 src="/images/ai-robot-mascot.jpg"
                 alt="TripVerse AI Travel Mascot"
@@ -492,10 +493,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
 
         {/* Two-Column Grid: Interactive Setup Card + Live Device Showcase */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-w-6xl mx-auto mt-6">
+        <ScrollReveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-w-6xl mx-auto mt-6">
 
           {/* Left Column: Interactive Planning Setup Card */}
-          <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 shadow-xl shadow-[#2D5A3D]/5 border border-[#E2EBE1] relative">
+          <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 shadow-[0_20px_48px_-12px_rgba(45,90,61,0.08)] border border-[#E2EBE1] relative">
             <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#E2EBE1] flex-wrap gap-2">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Trip Parameters</span>
@@ -833,7 +834,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <InteractivePhoneDevice currency={currency} activeTrip={activeTrip} onQuickPlan={onQuickPlan} />
           </div>
 
-        </div>
+        </ScrollReveal>
 
       </div>
     </section>

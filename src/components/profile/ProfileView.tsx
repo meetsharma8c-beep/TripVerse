@@ -1,32 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, Trip } from '../../types/trip';
 import { getStoredCurrency, formatCurrency, Currency } from '../../services/currencyService';
-import { 
-  User, 
-  MapPin, 
-  Briefcase, 
-  Mail, 
-  Phone,
-  Sparkles, 
-  Check, 
-  RotateCcw,
-  Edit3, 
-  ShieldCheck, 
-  Compass,
-  LogOut,
-  Users,
-  X,
-  Image as ImageIcon,
-  Bell,
-  Lock,
-  FileText,
-  MessageSquare,
-  ChevronRight,
-  Crown,
-  CheckCircle2,
-  Radio,
-  Zap
-} from 'lucide-react';
+import { User, MapPin, Briefcase, Mail, Phone, Sparkles, Check, RotateCcw, Edit3, ShieldCheck, Compass, LogOut, Users, X, Image as ImageIcon, Bell, Lock, FileText, MessageSquare, ChevronRight, Crown, CheckCircle2, Zap } from 'lucide-react';
 import { DigitalPassport } from './DigitalPassport';
 import { loadUserVisitedStates, resetGuestStorage } from '../../services/storageService';
 import { 
@@ -143,9 +118,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     return () => window.removeEventListener('tripverse_visited_states_change', updateBadges);
   }, [currentUser]);
 
-  useEffect(() => {
+  const [prevProfile, setPrevProfile] = useState(userProfile);
+  if (userProfile !== prevProfile) {
+    setPrevProfile(userProfile);
     setFormData(userProfile);
-  }, [userProfile]);
+  }
 
   useEffect(() => {
     const handleCurrency = () => setCurrency(getStoredCurrency());

@@ -1,6 +1,6 @@
 import React from 'react';
 import { DisruptionAlert } from '../../types/replanning';
-import { AlertTriangle, RotateCcw, ArrowRight, X, ShieldAlert, Sparkles } from 'lucide-react';
+import { AlertTriangle, RotateCcw, ArrowRight, X } from 'lucide-react';
 
 interface DisruptionBannerProps {
   disruption: DisruptionAlert;

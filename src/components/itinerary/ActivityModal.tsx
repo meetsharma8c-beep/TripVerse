@@ -1,8 +1,9 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
 import { ItineraryActivity } from '../../types/trip';
 import { triggerHaptic } from '../../services/deviceService';
 import { getStoredCurrency, Currency } from '../../services/currencyService';
-import { Clock, MapPin, Tag, Plus, Check, Coins, X } from 'lucide-react';
+import { Clock, MapPin, Check, Coins, X } from 'lucide-react';
 
 interface ActivityModalProps {
   isOpen: boolean;
@@ -34,7 +35,12 @@ export function ActivityModal({
     return () => window.removeEventListener('tripverse_currency_change', handleCurrency);
   }, []);
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+  const [prevActivityId, setPrevActivityId] = useState(existingActivity?.id);
+
+  if (isOpen !== prevOpen || existingActivity?.id !== prevActivityId) {
+    setPrevOpen(isOpen);
+    setPrevActivityId(existingActivity?.id);
     if (existingActivity) {
       setTitle(existingActivity.title);
       setTime(existingActivity.time);
@@ -52,8 +58,9 @@ export function ActivityModal({
       setDescription('');
       setTag('Sightseeing');
     }
-  }, [existingActivity, isOpen]);
+  }
 
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -1,17 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trip, BudgetBreakdown, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
-import { 
-  Wallet, 
-  TrendingDown, 
-  Sparkles, 
-  Check, 
-  Car, 
-  Bed, 
-  Utensils, 
-  Ticket, 
-  Shield 
-} from 'lucide-react';
+import { TrendingDown, Sparkles, Check, Car, Bed, Utensils, Ticket, Shield } from 'lucide-react';
 
 interface BudgetOptimizerProps {
   trip: Trip;

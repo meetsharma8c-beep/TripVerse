@@ -1,5 +1,6 @@
 import React from 'react';
 import { CloudRain, Coffee, ShieldCheck, Navigation, Percent } from 'lucide-react';
+import { ScrollReveal } from '../common/ScrollReveal';
 
 export const FeaturePillars: React.FC = () => {
   const pillars = [
@@ -43,26 +44,27 @@ export const FeaturePillars: React.FC = () => {
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
-        {pillars.map((item) => {
+        {pillars.map((item, idx) => {
           const Icon = item.icon;
           return (
-            <div
+            <ScrollReveal
               key={item.id}
-              className="flex flex-col items-center text-center p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-lg hover:border-emerald-400 hover:-translate-y-0.5 transition-all duration-300 group relative"
+              delayMs={idx * 55}
+              className="flex flex-col items-center text-center p-4 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] shadow-xs hover:shadow-lg hover:border-[#2D5A3D]/60 card-elevate group relative"
             >
-              <span className="inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 mb-2.5">
+              <span className="inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EAF0E9] text-[#2D5A3D] border border-[#DCE7DB] mb-2.5">
                 {item.badge}
               </span>
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#2D5A3D] flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-xs">
                 <Icon className="w-6 h-6 stroke-[1.8]" />
               </div>
-              <h3 className="font-bold text-slate-800 text-sm sm:text-base leading-tight mb-1">
+              <h3 className="font-bold text-[#152A1C] text-sm sm:text-base leading-tight mb-1">
                 {item.title}
               </h3>
-              <p className="text-xs text-slate-500 leading-snug">
+              <p className="text-xs text-[#57685D] leading-snug">
                 {item.desc}
               </p>
-            </div>
+            </ScrollReveal>
           );
         })}
       </div>

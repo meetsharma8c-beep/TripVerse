@@ -1,3 +1,4 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
 import { Trip, CurrencyCode } from '../../types/trip';
 import { 
@@ -12,31 +13,7 @@ import {
   applyReplanToTrip 
 } from '../../services/replanningService';
 import { formatCurrency, getActiveCurrency } from '../../services/currencyService';
-import { 
-  AlertTriangle, 
-  X, 
-  ArrowRight, 
-  ArrowLeft, 
-  CheckCircle2, 
-  Home,
-  RotateCcw, 
-  Receipt, 
-  Bot, 
-  MapPin, 
-  Calendar, 
-  Wallet, 
-  ShieldCheck, 
-  Wifi,
-  ChevronRight,
-  Plane,
-  CloudRain,
-  Train,
-  AlertOctagon,
-  Briefcase,
-  UserCheck,
-  Battery,
-  ExternalLink
-} from 'lucide-react';
+import { AlertTriangle, X, ArrowRight, ArrowLeft, CheckCircle2, Home, RotateCcw, Receipt, Bot, MapPin, Calendar, Wallet, Wifi, ChevronRight, Plane, CloudRain, Train, AlertOctagon, Briefcase, UserCheck, Battery, ExternalLink } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface TripReplanningModalProps {
@@ -97,6 +74,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
   // Refund guidance
   const refundInfo = getCancellationPolicy(trip, disruption);
 
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   // Handle reason switch

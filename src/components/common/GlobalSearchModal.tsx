@@ -1,19 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, 
-  X, 
-  MapPin, 
-  Compass, 
-  Sparkles, 
-  Navigation, 
-  FileText, 
-  ArrowRight, 
-  ShieldCheck, 
-  Wallet,
-  Calendar,
-  Bookmark,
-  Star
-} from 'lucide-react';
+import { Search, X, MapPin, Compass, Sparkles, Navigation, ArrowRight, Star } from 'lucide-react';
 import { Trip, Destination } from '../../types/trip';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { triggerHaptic } from '../../services/deviceService';

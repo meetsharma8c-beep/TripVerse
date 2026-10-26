@@ -1,23 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { Destination, UserProfile } from '../../types/trip';
-import { 
-  Search, 
-  Compass, 
-  Star, 
-  MapPin, 
-  Calendar, 
-  Wallet, 
-  Sparkles, 
-  ArrowRight,
-  Bookmark,
-  X,
-  Check,
-  Plus
-} from 'lucide-react';
+import { Search, Compass, Star, Sparkles, Bookmark } from 'lucide-react';
 import { handleImageError, synthesizeDestination } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { DestinationDetailModal } from './DestinationDetailModal';
+import { ScrollReveal } from '../common/ScrollReveal';
 
 interface ExploreViewProps {
   onPlanTripForDestination: (destName: string) => void;
@@ -128,7 +116,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by destination (e.g. Bali, Kyoto, Udaipur, Manali)..."
+              placeholder="Search destinations (e.g. Bali, Kyoto)..."
               className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white text-[#152A1C] placeholder:text-[#5A7362] font-semibold text-sm focus:outline-none focus:ring-4 focus:ring-[#8EA78D]/30 shadow-md"
             />
           </div>
@@ -244,15 +232,16 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
       {/* Destination Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filtered.map(dest => {
+        {filtered.map((dest, idx) => {
           const isSaved = savedItemIds.includes(dest.id);
 
           return (
-            <div
+            <ScrollReveal
               key={dest.id}
-              className="bg-white rounded-[28px] overflow-hidden border border-[#E2EBE1] shadow-[0_4px_20px_rgba(45,90,61,0.05)] hover:shadow-[0_16px_36px_rgba(45,90,61,0.12)] hover:border-[#2D5A3D] transition-all duration-300 flex flex-col justify-between group cursor-pointer"
-              onClick={() => setActiveModalDest(dest)}
+              delayMs={(idx % 4) * 55}
+              className="bg-white rounded-[28px] overflow-hidden border border-[#E2EBE1] shadow-[0_4px_20px_rgba(45,90,61,0.05)] hover:shadow-[0_16px_36px_rgba(45,90,61,0.12)] hover:border-[#2D5A3D] card-elevate flex flex-col justify-between group cursor-pointer"
             >
+              <div onClick={() => setActiveModalDest(dest)} className="flex-1 flex flex-col justify-between">
               <div>
                 <div className="relative h-52 overflow-hidden">
                   <img
@@ -345,8 +334,9 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                   <span className="truncate">Plan Trip</span>
                 </button>
               </div>
+              </div>
 
-            </div>
+            </ScrollReveal>
           );
         })}
 

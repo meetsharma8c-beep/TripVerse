@@ -1,3 +1,4 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React from 'react';
 import { Trip, PackingItem } from '../../types/trip';
 import { loadTripPacking } from '../../services/storageService';
@@ -26,6 +27,7 @@ interface PrintTravelGuideModalProps {
 }
 
 export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuideModalProps) {
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   const packingItems: PackingItem[] = loadTripPacking(trip.id) || [];

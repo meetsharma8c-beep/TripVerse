@@ -1,19 +1,8 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState } from 'react';
 import { Trip, TripReview } from '../../types/trip';
 import { saveTripReview } from '../../services/storageService';
-import { 
-  Star, 
-  X, 
-  Check, 
-  Sparkles, 
-  ThumbsUp, 
-  ThumbsDown, 
-  Heart, 
-  Wallet, 
-  MapPin, 
-  Award,
-  Compass
-} from 'lucide-react';
+import { Star, X, Check, Sparkles, ThumbsUp, ThumbsDown, Award } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface TripReviewModalProps {
@@ -63,6 +52,7 @@ export const TripReviewModal: React.FC<TripReviewModalProps> = ({
     existingReview?.favoriteSpot || ''
   );
 
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   const handleToggleHighlight = (tag: string) => {

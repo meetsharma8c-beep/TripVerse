@@ -1,12 +1,12 @@
 import React from 'react';
 
 export const SkeletonPulse: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <div className={`animate-pulse bg-slate-200/80 rounded-xl ${className}`} />
+  <div className={`animate-pulse bg-slate-200/80 dark:bg-slate-800/80 rounded-xl ${className}`} />
 );
 
 export const TripCardSkeleton: React.FC = () => (
-  <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-sm p-0 flex flex-col justify-between">
-    <div className="h-44 bg-slate-200 animate-pulse relative" />
+  <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200/90 dark:border-slate-800 shadow-sm p-0 flex flex-col justify-between">
+    <div className="h-44 bg-slate-200 dark:bg-slate-800 animate-pulse relative" />
     <div className="p-5 space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <SkeletonPulse className="h-14" />
@@ -33,7 +33,7 @@ export const TimelineSkeleton: React.FC = () => (
 
 export const ModalSkeleton: React.FC<{ title?: string }> = ({ title = 'Loading...' }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-    <div className="bg-white rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-6 shadow-2xl border border-slate-200">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-6 shadow-2xl border border-slate-200 dark:border-slate-800">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <SkeletonPulse className="h-6 w-48" />

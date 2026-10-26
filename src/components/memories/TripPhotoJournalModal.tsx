@@ -1,3 +1,4 @@
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
 import { Trip, TripPhotoMemory } from '../../types/trip';
 import { loadTripPhotos, saveTripPhoto, deleteTripPhoto } from '../../services/storageService';
@@ -82,6 +83,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
     }
   }, [isOpen, trip]);
 
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

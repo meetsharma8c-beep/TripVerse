@@ -183,7 +183,7 @@ export async function promptPWAInstall(): Promise<'accepted' | 'dismissed' | 'un
     const { outcome } = await deferredInstallPrompt.userChoice;
     deferredInstallPrompt = null;
     return outcome;
-  } catch (e) {
+  } catch {
     return 'unavailable';
   }
 }
@@ -220,7 +220,7 @@ export function triggerHaptic(type: 'light' | 'medium' | 'heavy' | 'success' | '
           break;
       }
     }
-  } catch (e) {
+  } catch {
     // Ignore unsupported environments
   }
 }

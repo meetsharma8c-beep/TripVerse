@@ -1,4 +1,5 @@
 import { CONCODE_MASTER_PROMPT } from './concodePrompt.js';
+import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js';
 
 // Vercel Serverless Function: private TripVerse-to-CONCODE travel proxy.
 // The CONCODE key exists only in Vercel environment variables, never in the app bundle.
@@ -71,12 +72,12 @@ function buildTravelContext(tripContext = {}, sessionState = {}) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
-  res.setHeader('Cache-Control', 'no-store');
+  // CORS & Security headers
+  applyCorsHeaders(req, res, 'GET, POST, OPTIONS');
 
   if (req.method === 'OPTIONS') return res.status(204).end();
+
+  const clientIp = getClientIp(req);
 
   const concodeUrl = configuredConcodeUrl();
   const apiKey = (process.env.CONCODE_API_KEY || '').trim();
@@ -117,6 +118,21 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'METHOD_NOT_ALLOWED' });
+
+  // Rate Limiting: Max 30 AI queries per minute per client IP
+  const rateLimitResult = checkRateLimit(`chat:${clientIp}`, 30, 60 * 1000);
+  res.setHeader('X-RateLimit-Limit', '30');
+  res.setHeader('X-RateLimit-Remaining', String(rateLimitResult.remaining));
+
+  if (!rateLimitResult.allowed) {
+    const retrySec = Math.ceil(rateLimitResult.resetMs / 1000);
+    res.setHeader('Retry-After', String(retrySec));
+    return res.status(429).json({
+      ok: false,
+      error: 'RATE_LIMIT_EXCEEDED',
+      message: `Too many AI travel assistant queries. Please wait ${retrySec} seconds before sending another message.`
+    });
+  }
 
   const query = text(req.body?.query, MAX_QUERY_LENGTH);
   if (!query) return res.status(400).json({ ok: false, error: 'INVALID_QUERY' });

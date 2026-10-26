@@ -218,7 +218,7 @@ Respond ONLY with valid JSON in this exact structure:
         }))
       };
     }
-  } catch (err) {
+  } catch {
     clearTimeout(timeoutId);
   }
 
