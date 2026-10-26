@@ -91,7 +91,7 @@ export function generateTransportDeals(params: DealQueryParams): {
   // =========================================================================
   // FLIGHT DEALS (Location-Aware & Non-Hallucinated Gateway)
   // =========================================================================
-  if (mode === 'flight' || mode === 'any') {
+  if ((mode === 'flight' || mode === 'any') && transit.primaryAirport !== null) {
     const flightUrls = buildFlightBookingUrl(cleanOrigin, rawDest, travelDate);
     const airportName = transit.primaryAirport?.name || `${cleanDest} Airport`;
     const isMultiModalAir = !transit.hasDirectAirport && transit.primaryAirport !== null;
@@ -180,7 +180,7 @@ export function generateTransportDeals(params: DealQueryParams): {
   // =========================================================================
   // TRAIN DEALS (Destination != Station & Real Railhead Resolution)
   // =========================================================================
-  if (mode === 'train' || mode === 'any') {
+  if ((mode === 'train' || mode === 'any') && transit.primaryRailwayStation !== null) {
     const irctcUrl = buildTrainBookingUrl(cleanOrigin, rawDest, travelDate);
     const stationName = transit.primaryRailwayStation?.name || `${cleanDest} Railway Station`;
     const isMultiModalRail = !transit.hasDirectTrain && transit.primaryRailwayStation !== null;
@@ -266,20 +266,26 @@ export function generateTransportDeals(params: DealQueryParams): {
   }
 
   // =========================================================================
-  // CAR / CAB / SELF-DRIVE DEALS
+  // CAR / CAB / SELF-DRIVE DEALS (Capacity-Aware for Group Size)
   // =========================================================================
-  if (mode === 'car' || mode === 'any') {
+  if (mode === 'car' || mode === 'any' || (mode === 'flight' && transit.primaryAirport === null) || (mode === 'train' && transit.primaryRailwayStation === null)) {
     const cabUrls = buildCabBookingUrl(cleanOrigin, cleanDest);
+    const needsSuvOrVan = travelers > 4;
+    const vehiclesNeeded = Math.max(1, Math.ceil(travelers / (needsSuvOrVan ? 6 : 4)));
+    const baseCabPrice = needsSuvOrVan ? 7800 : 5400;
+    const baseOrigPrice = needsSuvOrVan ? 9200 : 6500;
 
     deals.push({
       id: `deal-car-sedan-${Date.now()}`,
       mode: 'car',
       provider: 'TripVerse Verified Chauffeur Cab',
       providerLogo: 'car',
-      title: `Private AC Sedan (Dzire / Etios) Door-to-Door`,
-      subtitle: 'Dedicated Chauffeur • Tolls & Fuel Included • Flexible Stops',
+      title: needsSuvOrVan
+        ? `Private AC SUV / Innova Crysta (${travelers} Travelers)`
+        : `Private AC Sedan (Dzire / Etios) Door-to-Door`,
+      subtitle: 'Dedicated Chauffeur • Tolls & Fuel Estimate • Flexible Stops',
       badge: 'AI Recommended for Comfort',
-      isBestDeal: mode === 'car',
+      isBestDeal: mode === 'car' || deals.length === 0,
       route: {
         from: `${cleanOrigin} (Home Pickup)`,
         to: `${cleanDest} (Hotel Drop-off)`,
@@ -288,23 +294,23 @@ export function generateTransportDeals(params: DealQueryParams): {
         duration: '6h 30m',
         stopsText: 'Unlimited en-route rest breaks'
       },
-      originalPrice: 6500,
-      dealPrice: 5400,
+      originalPrice: baseOrigPrice * vehiclesNeeded,
+      dealPrice: baseCabPrice * vehiclesNeeded,
       discountPercent: 17,
-      savingsAmount: 1100,
+      savingsAmount: (baseOrigPrice - baseCabPrice) * vehiclesNeeded,
       priceUnit: 'total',
       rating: 4.9,
       reviewCount: 3200,
-      features: ['State Toll Taxes Included', 'Verified Commercial Chauffeur', 'Luggage Assistance', 'Music AUX & Mobile Charger'],
+      features: ['State Toll Taxes Estimate Included', 'Verified Commercial Chauffeur', 'Luggage Assistance', 'Music AUX & Mobile Charger'],
       couponCode: 'ROADTRIP10',
       bookingUrl: cabUrls.makemytripCabs,
       partnerVerified: true,
       vehicleDetails: {
-        model: 'Maruti Suzuki Dzire / Toyota Etios',
-        type: 'Air-Conditioned Sedan',
-        seats: 4,
+        model: needsSuvOrVan ? 'Toyota Innova Crysta / Ertiga (6+1)' : 'Maruti Suzuki Dzire / Toyota Etios',
+        type: needsSuvOrVan ? 'Air-Conditioned MUV / SUV' : 'Air-Conditioned Sedan',
+        seats: needsSuvOrVan ? 6 * vehiclesNeeded : 4,
         fuelType: 'CNG / Diesel',
-        luggage: '2 Large Bags + 2 Handbags'
+        luggage: needsSuvOrVan ? '4 Large Bags + Roof Carrier' : '2 Large Bags + 2 Handbags'
       }
     });
 
@@ -322,13 +328,13 @@ export function generateTransportDeals(params: DealQueryParams): {
         to: `${cleanDest} & Return`,
         departureTime: 'Flexible Pickup',
         arrivalTime: 'Round Trip',
-        duration: `${params.durationDays} Days Rental`,
+        duration: `${Math.max(1, params.durationDays)} Days Rental`,
         stopsText: 'Self-driven total freedom'
       },
-      originalPrice: Math.round(2800 * params.durationDays),
-      dealPrice: Math.round(2250 * params.durationDays),
+      originalPrice: Math.round(2800 * Math.max(1, params.durationDays) * vehiclesNeeded),
+      dealPrice: Math.round(2250 * Math.max(1, params.durationDays) * vehiclesNeeded),
       discountPercent: 20,
-      savingsAmount: 550 * params.durationDays,
+      savingsAmount: 550 * Math.max(1, params.durationDays) * vehiclesNeeded,
       priceUnit: 'total',
       rating: 4.7,
       reviewCount: 7800,
@@ -339,9 +345,53 @@ export function generateTransportDeals(params: DealQueryParams): {
       vehicleDetails: {
         model: 'Creta / Thar 4x4',
         type: 'Compact SUV',
-        seats: 5,
+        seats: 5 * vehiclesNeeded,
         transmission: 'Automatic / Manual',
         fuelType: 'Diesel'
+      }
+    });
+  }
+
+  // =========================================================================
+  // BIKE / MOTORCYCLE TOURING DEALS
+  // =========================================================================
+  if (mode === 'bike' || mode === 'any') {
+    const bikesNeeded = Math.max(1, Math.ceil(travelers / 2));
+    const days = Math.max(1, params.durationDays);
+    deals.push({
+      id: `deal-bike-himalayan-${Date.now()}`,
+      mode: 'bike',
+      provider: 'Royal Brothers / Touring Moto Rentals',
+      providerLogo: 'bike',
+      title: `Royal Enfield Himalayan 450 / Scram Touring (${bikesNeeded} Bike${bikesNeeded > 1 ? 's' : ''})`,
+      subtitle: 'Pannier Racks • DOT Helmets Included • Unlimited Highway Km',
+      badge: 'Adventure Rider Pick',
+      isBestDeal: mode === 'bike',
+      route: {
+        from: `${cleanOrigin} Rider Hub`,
+        to: `${cleanDest} & Return`,
+        departureTime: '06:00 AM (Sunrise Ride)',
+        arrivalTime: 'Round Trip',
+        duration: `${days} Days Rental`,
+        stopsText: 'Scenic highway & ghat riding'
+      },
+      originalPrice: Math.round(1800 * days * bikesNeeded),
+      dealPrice: Math.round(1450 * days * bikesNeeded),
+      discountPercent: 19,
+      savingsAmount: 350 * days * bikesNeeded,
+      priceUnit: 'total',
+      rating: 4.8,
+      reviewCount: 4100,
+      features: ['Dual-Channel ABS Touring Bike', '2 Certified Helmets & Saddlebag Stays', 'Roadside Mechanical Support'],
+      couponCode: 'RIDETRIP',
+      bookingUrl: `https://www.royalbrothers.com/`,
+      partnerVerified: true,
+      vehicleDetails: {
+        model: 'Royal Enfield Himalayan / Classic 350',
+        type: 'Adventure Cruiser Motorcycle',
+        seats: 2 * bikesNeeded,
+        transmission: 'Manual',
+        fuelType: 'Petrol'
       }
     });
   }

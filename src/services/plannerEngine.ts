@@ -4,6 +4,7 @@ import { synthesizeDestination, resolveDestinationImage } from '../utils/destina
 import { generateTransportDeals } from './dealService';
 import { resolvePreciseLocationSync, PreciseLocation } from './locationService';
 import { selectHotelForTrip } from './hotelService';
+import { resolveTransitContext } from './transportFeasibilityEngine';
 
 export interface PlannerInput {
   origin: string;
@@ -66,27 +67,37 @@ function resolveOriginCoords(originName: string): Coordinates {
 }
 
 /**
- * Dynamic Regional Cuisine helper for ANY Indian state or global country
+ * Dynamic Regional Cuisine helper for ANY Indian state or global country,
+ * strictly honoring dietary preferences (veg, jain, vegan, non-veg, all).
  */
-function getRegionalCuisine(state: string, country: string) {
+function getRegionalCuisine(state: string, country: string, foodPreference: string = 'veg') {
   const normState = (state || '').toLowerCase();
   const normCountry = (country || '').toLowerCase();
+  const pref = (foodPreference || 'veg').toLowerCase();
+  const isStrictVeg = pref === 'veg' || pref === 'jain' || pref === 'vegan' || pref === 'street_food';
+  const isJain = pref === 'jain';
 
   if (normState.includes('gujarat')) {
     return {
-      cuisineName: 'Kathiyawadi & Gujarati',
+      cuisineName: isJain ? 'Jain Kathiyawadi & Gujarati' : 'Kathiyawadi & Gujarati',
       breakfast: 'Fresh Fafda, Jalebi, Khaman & Adrak Chai',
       lunch: 'Unlimited Gujarati Thali with Puran Poli, Dal-Bhat & Kadhi',
-      dinner: 'Coal-fired Bajra Rotla with Ringna No Olo, Garlic Chutney & Chaas',
+      dinner: isJain
+        ? 'Bajra Rotla with Jain Sev Tameta, Panchkutiyu Shaak & Chaas'
+        : 'Coal-fired Bajra Rotla with Ringna No Olo, Sev Tameta & Chaas',
       snack: 'Steamed Sev Khamani & Masala Soda'
     };
   }
   if (normState.includes('rajasthan') || normState.includes('jaipur') || normState.includes('jodhpur') || normState.includes('udaipur')) {
     return {
-      cuisineName: 'Rajasthani & Mewari',
-      breakfast: 'Pyaaz Kachori with Tangy Tamarind & Mint Chutney with Kulhad Chai',
+      cuisineName: isJain ? 'Jain Rajasthani & Mewari' : 'Rajasthani & Mewari',
+      breakfast: isJain
+        ? 'Dal Kachori with Tangy Tamarind & Mint Chutney with Kulhad Chai'
+        : 'Pyaaz & Dal Kachori with Tangy Tamarind Chutney & Kulhad Chai',
       lunch: 'Traditional Dal Baati Churma with Gatte Ki Sabzi & Ker Sangri',
-      dinner: 'Royal Mewari Thali with Laal Maas / Paneer Kunda and Crisp Missi Roti',
+      dinner: isStrictVeg
+        ? 'Royal Mewari Vegetarian Thali with Paneer Rajwadi, Papad Ki Sabzi & Crisp Missi Roti'
+        : 'Royal Mewari Thali with Laal Maas / Paneer Rajwadi and Crisp Missi Roti',
       snack: 'Mawa Kachori & Ghevar'
     };
   }
@@ -95,7 +106,7 @@ function getRegionalCuisine(state: string, country: string) {
       cuisineName: 'Pahadi & Himalayan',
       breakfast: 'Stuffed Pahadi Parathas with Fresh Curd & Mountain Herb Chai',
       lunch: 'Steamed Siddu with Pure Ghee & Slow-cooked Pahadi Dal',
-      dinner: 'Hot Himalayan Thukpa, Steamed Momos & Kashmiri Kahwa',
+      dinner: 'Hot Himalayan Veg Thukpa, Steamed Momos & Kashmiri Kahwa',
       snack: 'Rhododendron Juice & Warm Apple Strudel'
     };
   }
@@ -104,7 +115,7 @@ function getRegionalCuisine(state: string, country: string) {
       cuisineName: 'Coastal Karnataka & South Indian',
       breakfast: 'Crispy Ghee Podi Dosa with Filter Coffee',
       lunch: 'Coastal Banana Leaf Thali with Neer Dosa & Coconut Chutney',
-      dinner: 'Kundapura Spiced Curry with Akki Rotti and Coconut Payasam',
+      dinner: 'Kundapura Spiced Vegetable Curry with Akki Rotti and Coconut Payasam',
       snack: 'Mangalore Buns & Fresh Filter Coffee'
     };
   }
@@ -113,26 +124,32 @@ function getRegionalCuisine(state: string, country: string) {
       cuisineName: 'Chettinad & Tamil',
       breakfast: 'Steaming Idlis, Medu Vada & Traditional Kumbakonam Degree Coffee',
       lunch: 'Authentic Chettinad Spice Feast on Banana Leaf with Kuzhambu & Rasam',
-      dinner: 'Crisp Kothu Parotta with Coconut Stew & Elaneer Payasam',
+      dinner: 'Crisp Kothu Parotta with Vegetable Coconut Stew & Elaneer Payasam',
       snack: 'Banana Bajjis & Madurai Jigarthanda'
     };
   }
   if (normState.includes('kerala') || normState.includes('varkala') || normState.includes('munnar') || normState.includes('kochi')) {
     return {
       cuisineName: 'Malabar & Coastal Kerala',
-      breakfast: 'Soft Appam with Vegetable / Egg Stew and Cardamom Tea',
+      breakfast: isStrictVeg
+        ? 'Soft Appam with Coconut Milk Vegetable Stew and Cardamom Tea'
+        : 'Soft Appam with Vegetable / Egg Stew and Cardamom Tea',
       lunch: 'Traditional Kerala Sadhya served on fresh Plantain Leaf',
-      dinner: 'Malabar Parotta with Roast Masala, Coconut Rice & Sol Kadhi',
-      snack: 'Crisp Banana Chips & Spiced Buttermilk (Sambhram)'
+      dinner: 'Malabar Parotta with Spiced Vegetable Kurma, Coconut Rice & Sol Kadhi',
+      snack: 'Crisp Banana Chips & Spiced Buttermilk (Sambharam)'
     };
   }
   if (normState.includes('goa')) {
     return {
-      cuisineName: 'Goan Coastal',
-      breakfast: 'Fresh Poee Bread with Goan Omelette & Spiced Chai',
-      lunch: 'Coconut-laced Coastal Curry Thali with Red Rice & Kokum Kadhi',
-      dinner: 'Beachfront Grilled Delicacies with Bebinca Dessert',
-      snack: 'Feni Cocktail or Sol Kadhi with Cashew Farsan'
+      cuisineName: isStrictVeg ? 'Goan Saraswat Vegetarian' : 'Goan Coastal',
+      breakfast: isStrictVeg
+        ? 'Fresh Poee Bread with GoanPatal Bhaji & Spiced Chai'
+        : 'Fresh Poee Bread with Goan Omelette & Spiced Chai',
+      lunch: 'Coconut-laced Goan Cashew & Mushroom Xacuti with Red Rice & Kokum Kadhi',
+      dinner: isStrictVeg
+        ? 'Beachfront Goan Vegetable Caldinho & Paneer Cafreal with Bebinca'
+        : 'Beachfront Grilled Coastal Delicacies with Bebinca Dessert',
+      snack: 'Kokum Sol Kadhi with Roasted Cashew Farsan'
     };
   }
   if (normState.includes('maharashtra') || normState.includes('mumbai') || normState.includes('pune')) {
@@ -248,13 +265,16 @@ function getActivityTicketFee(title: string, spotType: string, category: string)
 }
 
 export function generateAITrip(input: PlannerInput): Trip {
+  const safeTravelers = Math.max(1, Math.min(30, Math.round(Number(input.travelersCount) || 1)));
+  const daysCount = Math.max(1, Math.min(30, Math.round(Number(input.durationDays) || 3)));
+  const rawBudget = Math.max(500, Number(input.budgetAmount) || 8000);
   const totalBudget = input.budgetMode === 'total'
-    ? input.budgetAmount
-    : input.budgetAmount * input.travelersCount;
+    ? rawBudget
+    : rawBudget * safeTravelers;
 
-  const budgetPerPerson = Math.round(totalBudget / Math.max(1, input.travelersCount));
+  const budgetPerPerson = Math.round(totalBudget / safeTravelers);
 
-  const rawDestName = (input.destinationName || input.destination || 'Scenic Getaway').trim();
+  const rawDestName = (input.destinationName || input.destination || 'Scenic Getaway').trim() || 'Scenic Getaway';
   const preciseLoc: PreciseLocation = input.preciseLocation || resolvePreciseLocationSync(rawDestName);
 
   // Exact catalog match only if user typed exact name; otherwise synthesize to keep spot name
@@ -278,6 +298,7 @@ export function generateAITrip(input: PlannerInput): Trip {
   const country = preciseLoc.country || 'India';
   const spotType = preciseLoc.spotType || 'nature';
   const category = preciseLoc.category || matchedDest.category || 'roadtrip';
+  const transitContext = resolveTransitContext(spotName);
 
   // Determine true destination coordinates
   const destCoords: Coordinates = input.destinationCoords || preciseLoc.coordinates || matchedDest.coordinates || { lat: 26.9124, lng: 75.7873 };
@@ -291,51 +312,63 @@ export function generateAITrip(input: PlannerInput): Trip {
   const avgSpeed = input.transportMode === 'flight' ? 450 : input.transportMode === 'bike' ? 55 : 68;
   const routeHours = Math.max(1, Math.round((routeDistKm / avgSpeed) * 10) / 10);
 
-  // Calculate budget allocation percentages
-  let transportPct = 0.25;
-  let stayPct = 0.32;
-  let foodPct = 0.20;
-  let actPct = 0.16;
+  // Calculate budget allocation percentages (1-day trip needs 0 overnight stay budget)
+  const isSingleDay = daysCount === 1;
+  let transportPct = isSingleDay ? 0.42 : 0.25;
+  let stayPct = isSingleDay ? 0 : 0.32;
+  let foodPct = isSingleDay ? 0.28 : 0.20;
+  let actPct = isSingleDay ? 0.22 : 0.16;
 
-  if (input.transportMode === 'flight') transportPct = 0.38;
-  if (input.transportMode === 'bike' || input.transportMode === 'bus') transportPct = 0.18;
-  if (input.accommodationType === '5star' || input.accommodationType === '4star') stayPct = 0.40;
-  if (input.accommodationType === 'hostel') stayPct = 0.20;
-
-  // Calculate preliminary estimated total
-  let estimatedTotal = Math.round(totalBudget * 0.94);
-  if (estimatedTotal < 2000 * input.travelersCount) {
-    estimatedTotal = 2100 * input.travelersCount;
+  if (!isSingleDay) {
+    if (input.transportMode === 'flight') { transportPct = 0.36; stayPct = 0.28; }
+    if (input.transportMode === 'bike' || input.transportMode === 'bus') transportPct = 0.18;
+    if (input.accommodationType === '5star' || input.accommodationType === '4star') { stayPct = 0.38; transportPct = Math.min(transportPct, 0.25); }
+    if (input.accommodationType === 'hostel') stayPct = 0.20;
   }
+
+  // Respect user's budget constraint without exceeding totalBudget
+  const estimatedTotal = Math.max(Math.min(totalBudget, 500), Math.round(totalBudget * 0.94));
 
   const transportCost = Math.round(estimatedTotal * transportPct);
   const stayCost = Math.round(estimatedTotal * stayPct);
   const foodCost = Math.round(estimatedTotal * foodPct);
   const actCost = Math.round(estimatedTotal * actPct);
-  const miscCost = estimatedTotal - (transportCost + stayCost + foodCost + actCost);
+  const miscCost = Math.max(0, estimatedTotal - (transportCost + stayCost + foodCost + actCost));
 
   // Regional cuisine and activity metadata
-  const cuisine = getRegionalCuisine(state, country);
+  const foodPref = input.foodPreference || 'veg';
+  const cuisine = getRegionalCuisine(state, country, foodPref);
   const activityMeta = getActivityTypeMeta(spotType, category);
 
-  // Compile full highlights list - prioritize curated destination activities
-  const rawHighlights = [
+  // Compile full deduplicated highlights list with enough unique entries for up to 30 days
+  const rawHighlights = Array.from(new Set([
     ...(matchedDest.popularActivities || []),
-    ...(preciseLoc.highlights || [])
-  ].filter(Boolean);
-  const highlights = rawHighlights.length > 0 ? rawHighlights : [
+    ...(preciseLoc.highlights || []),
     `${spotName} Historic & Scenic Landmark Tour`,
-    `${spotName} Cultural Discovery & Views`,
+    `${spotName} Cultural Discovery & Panorama`,
     `${spotName} Local Artisan Heritage Market`,
     `${spotName} Panoramic Trail & Nature Walk`,
-    `${spotName} Sunset Overlook`
-  ];
+    `${spotName} Old Quarter Architecture Walk`,
+    `${spotName} Lakeside / Valley Promenade`,
+    `${spotName} Botanical & Heritage Gardens`,
+    `${spotName} Craft Village & Folk Museum`,
+    `${spotName} Morning Ridge & Viewpoint Trail`,
+    `${spotName} Sunset Overlook & Cultural Square`
+  ].filter(Boolean)));
+  const highlights = rawHighlights;
+  let nextHighlightCursor = 0;
+  const takeUniqueHighlight = (fallbackLabel: string): string => {
+    if (nextHighlightCursor < highlights.length) {
+      return highlights[nextHighlightCursor++];
+    }
+    const cycleIdx = nextHighlightCursor++;
+    return `${spotName} ${fallbackLabel} (Zone ${cycleIdx - highlights.length + 2})`;
+  };
 
   // Determine pacing preference and city cost multiplier
   const pacing: 'relaxed' | 'balanced' | 'fast_paced' = input.pacing ||
     (input.travelerType === 'couple' || input.travelerType === 'family' ? 'relaxed' : 'balanced');
   const cityMultiplier = getCityCostMultiplier(state, spotName);
-  const daysCount = Math.max(1, Math.min(input.durationDays, 7));
 
   // Select verified real hotel matching destination and accommodation tier
   const { recommendedHotel, alternativeHotels } = selectHotelForTrip({
@@ -343,9 +376,30 @@ export function generateAITrip(input: PlannerInput): Trip {
     accommodationType: input.accommodationType || 'budget',
     totalBudget,
     durationDays: daysCount,
-    travelersCount: input.travelersCount,
+    travelersCount: safeTravelers,
     startDate: input.startDate
   });
+
+  // Scale meal/ticket unit costs so low-budget trips stay within their food + activity allocation
+  const dailyFoodAndActBudget = (foodCost + actCost) / daysCount;
+  const baselineDailyFoodAct = (800 * cityMultiplier + 350) * safeTravelers;
+  const budgetScale = baselineDailyFoodAct > dailyFoodAndActBudget && baselineDailyFoodAct > 0
+    ? Math.max(0.15, dailyFoodAndActBudget / baselineDailyFoodAct)
+    : 1;
+  const scaleExpense = (rawAmount: number) => Math.max(0, Math.round(rawAmount * budgetScale));
+
+  const isAir = input.transportMode === 'flight' && transitContext.primaryAirport !== null;
+  const isRail = input.transportMode === 'train' && transitContext.primaryRailwayStation !== null;
+  const outboundTransitTitle = isAir
+    ? `Flight from ${input.origin || 'Origin'} to ${transitContext.primaryAirport?.name || spotName}`
+    : isRail
+      ? `Train from ${input.origin || 'Origin'} to ${transitContext.primaryRailwayStation?.name || spotName}`
+      : `${pacing === 'fast_paced' ? 'Early Sunrise' : pacing === 'relaxed' ? 'Leisurely' : 'Comfortable'} Departure from ${input.origin || 'City Center'}`;
+  const outboundHaltTitle = isAir && !transitContext.hasDirectAirport
+    ? `Road Transfer from ${transitContext.primaryAirport?.name} to ${spotName}`
+    : isRail && !transitContext.hasDirectTrain
+      ? `Road Transfer from ${transitContext.primaryRailwayStation?.name} to ${spotName}`
+      : 'En-Route Rest & Refreshment Halt';
 
   // Generate days
   const days: DayPlan[] = [];
@@ -353,11 +407,130 @@ export function generateAITrip(input: PlannerInput): Trip {
   for (let d = 1; d <= daysCount; d++) {
     const isFirstDay = d === 1;
     const isLastDay = d === daysCount;
-    const dayCost = Math.round(estimatedTotal / daysCount);
 
-    if (isFirstDay) {
-      // Day 1: Departure, Highway pitstop, Check-in at recommended hotel, Lunch, Prime Landmark & Golden Hour
-      const day1SightFee = getActivityTicketFee(highlights[0] || spotName, spotType, category);
+    if (isSingleDay) {
+      // 1-Day Day-Trip: Outbound Departure -> Refreshment Halt -> Sightseeing -> Lunch -> Afternoon Highlight -> Return Home
+      const sight1 = takeUniqueHighlight(activityMeta.morningVerb);
+      const sight2 = takeUniqueHighlight(activityMeta.afternoonVerb);
+      const sight1Fee = getActivityTicketFee(sight1, spotType, category);
+      const day1Acts: ItineraryActivity[] = [
+        {
+          id: 'act-1-dep',
+          dayNumber: 1,
+          time: '6:30 AM',
+          title: outboundTransitTitle,
+          type: 'departure',
+          location: `${input.origin || 'City Center'} Transit Hub`,
+          estimatedCost: Math.round(transportCost * 0.5),
+          travelTimeMin: 0,
+          distanceKm: 0,
+          description: `Outbound day-trip departure towards ${spotName} (${pacing.replace('_', ' ')} pace).`,
+          coordinates: originCoords,
+          tag: 'Start Point'
+        },
+        {
+          id: 'act-1-bs',
+          dayNumber: 1,
+          time: '8:30 AM',
+          title: outboundHaltTitle,
+          type: 'breakstop',
+          location: 'En-route Refreshment Stop',
+          estimatedCost: scaleExpense(120 * cityMultiplier * safeTravelers),
+          travelTimeMin: Math.round(routeHours * 30),
+          distanceKm: Math.round(routeDistKm * 0.5),
+          description: `Morning breakfast & tea halt en-route (${cuisine.breakfast}).`,
+          coordinates: {
+            lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.5,
+            lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.5
+          },
+          tag: 'Break Stop'
+        },
+        {
+          id: 'act-1-prime-sight',
+          dayNumber: 1,
+          time: '10:30 AM',
+          title: sight1,
+          type: 'attraction',
+          location: `${spotName} Landmark Core`,
+          estimatedCost: scaleExpense(sight1Fee * safeTravelers),
+          travelTimeMin: Math.round(routeHours * 30),
+          distanceKm: Math.round(routeDistKm * 0.5),
+          description: `${activityMeta.morningDesc} (Est. entry ticket: ~₹${sight1Fee}/person).`,
+          coordinates: { lat: destCoords.lat + 0.004, lng: destCoords.lng + 0.003 },
+          tag: 'Attraction'
+        },
+        {
+          id: 'act-1-lunch',
+          dayNumber: 1,
+          time: '1:15 PM',
+          title: `${cuisine.cuisineName} Lunch`,
+          type: 'food',
+          location: `${spotName} Regional Dining Kitchen`,
+          estimatedCost: scaleExpense(300 * cityMultiplier * safeTravelers),
+          travelTimeMin: 15,
+          distanceKm: 1.5,
+          description: `Authentic regional meal (${cuisine.lunch}) tailored for ${foodPref} preference.`,
+          coordinates: { lat: destCoords.lat - 0.003, lng: destCoords.lng + 0.003 },
+          tag: 'Lunch'
+        },
+        {
+          id: 'act-1-afternoon',
+          dayNumber: 1,
+          time: '3:15 PM',
+          title: sight2,
+          type: 'viewpoint',
+          location: `${spotName} Scenic Overlook`,
+          estimatedCost: scaleExpense(100 * safeTravelers),
+          travelTimeMin: 15,
+          distanceKm: 2.2,
+          description: `${activityMeta.afternoonDesc}`,
+          coordinates: { lat: destCoords.lat - 0.005, lng: destCoords.lng + 0.005 },
+          tag: 'Highlight'
+        },
+        {
+          id: 'act-1-return',
+          dayNumber: 1,
+          time: '5:45 PM',
+          title: `Commence Return Journey to ${input.origin || 'Origin'}`,
+          type: 'departure',
+          location: `${spotName} Departure Point`,
+          estimatedCost: Math.round(transportCost * 0.5),
+          travelTimeMin: 0,
+          distanceKm: 0,
+          description: `Evening return transit from ${spotName} to ${input.origin || 'Origin'}.`,
+          coordinates: {
+            lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.5,
+            lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.5
+          },
+          tag: 'Return'
+        },
+        {
+          id: 'act-1-home',
+          dayNumber: 1,
+          time: '9:30 PM',
+          title: `Safe Arrival in ${input.origin || 'Home'}`,
+          type: 'arrival',
+          location: input.origin || 'Home City',
+          estimatedCost: 0,
+          travelTimeMin: Math.round(routeHours * 60),
+          distanceKm: routeDistKm,
+          description: `1-day excursion to ${spotName} completed within target budget.`,
+          coordinates: originCoords,
+          tag: 'Destination'
+        }
+      ];
+
+      days.push({
+        dayNumber: 1,
+        title: `Day 1 — ${spotName} Express Day Excursion & Return (${pacing.replace('_', ' ')} pace)`,
+        theme: `Outbound Transit, ${sight1}, ${cuisine.cuisineName} Lunch & Evening Return`,
+        dayEstimatedCost: day1Acts.reduce((s, a) => s + a.estimatedCost, 0),
+        activities: day1Acts
+      });
+    } else if (isFirstDay) {
+      // Day 1 of Multi-Day Trip: Departure, Transit Halt, Check-in at recommended hotel, Lunch, Prime Landmark & Golden Hour
+      const firstSight = takeUniqueHighlight(activityMeta.afternoonVerb);
+      const day1SightFee = getActivityTicketFee(firstSight, spotType, category);
       const depTime = pacing === 'relaxed' ? '9:00 AM' : pacing === 'fast_paced' ? '6:00 AM' : '7:30 AM';
       const bsTime = pacing === 'relaxed' ? '11:15 AM' : pacing === 'fast_paced' ? '8:30 AM' : '10:00 AM';
       const checkinTime = pacing === 'relaxed' ? '2:00 PM' : pacing === 'fast_paced' ? '11:45 AM' : '1:00 PM';
@@ -366,118 +539,121 @@ export function generateAITrip(input: PlannerInput): Trip {
       const sunsetTime = pacing === 'relaxed' ? '7:00 PM' : pacing === 'fast_paced' ? '6:15 PM' : '6:30 PM';
       const dinnerTime = pacing === 'relaxed' ? '9:15 PM' : pacing === 'fast_paced' ? '8:30 PM' : '8:45 PM';
 
+      const day1Acts: ItineraryActivity[] = [
+        {
+          id: `act-1-dep`,
+          dayNumber: 1,
+          time: depTime,
+          title: outboundTransitTitle,
+          type: 'departure',
+          location: `${input.origin || 'City Center'} Transit Corridor`,
+          estimatedCost: Math.round(transportCost * 0.5),
+          travelTimeMin: 0,
+          distanceKm: 0,
+          description: `Departure towards ${spotName}.${transitContext.multiModalGuidance ? ' ' + transitContext.multiModalGuidance : ''}`,
+          coordinates: originCoords,
+          tag: 'Start Point'
+        },
+        {
+          id: `act-1-bs`,
+          dayNumber: 1,
+          time: bsTime,
+          title: outboundHaltTitle,
+          type: 'breakstop',
+          location: isAir ? (transitContext.primaryAirport?.name || 'Airport Transfer Hub') : isRail ? (transitContext.primaryRailwayStation?.name || 'Rail Transfer Hub') : 'En-route Highway Food Plaza',
+          estimatedCost: scaleExpense(140 * cityMultiplier * safeTravelers),
+          travelTimeMin: Math.round(routeHours * 30),
+          distanceKm: Math.round(routeDistKm * 0.5),
+          description: `Suggested refreshment break & transit connection en-route (~₹${scaleExpense(140 * cityMultiplier)}/person).`,
+          coordinates: {
+            lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.5,
+            lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.5
+          },
+          tag: 'Break Stop'
+        },
+        {
+          id: `act-1-hotel`,
+          dayNumber: 1,
+          time: checkinTime,
+          title: `Check in at ${recommendedHotel.name}`,
+          type: 'hotel',
+          location: `${recommendedHotel.name}, ${recommendedHotel.neighborhood}, ${spotName}`,
+          estimatedCost: Math.min(stayCost, Math.round(stayCost / Math.max(1, daysCount - 1))),
+          travelTimeMin: Math.round(routeHours * 30),
+          distanceKm: Math.round(routeDistKm * 0.5),
+          description: `${recommendedHotel.starRating}★ ${recommendedHotel.roomType}. Amenities: ${recommendedHotel.amenities.slice(0, 3).join(', ')}. ${recommendedHotel.cancellationPolicy}.`,
+          coordinates: { lat: destCoords.lat + 0.002, lng: destCoords.lng - 0.002 },
+          tag: `Suggested Stay • ${recommendedHotel.tier.toUpperCase()}`,
+          mapUrl: recommendedHotel.bookingUrl
+        },
+        {
+          id: `act-1-lunch`,
+          dayNumber: 1,
+          time: lunchTime,
+          title: `${cuisine.cuisineName} Welcome Lunch`,
+          type: 'food',
+          location: `${spotName} Regional Dining Kitchen`,
+          estimatedCost: scaleExpense(340 * cityMultiplier * safeTravelers),
+          travelTimeMin: 15,
+          distanceKm: 1.5,
+          description: `Authentic regional feast: ${cuisine.lunch}. Tailored for ${foodPref} dining (~₹${scaleExpense(340 * cityMultiplier)}/person).`,
+          coordinates: { lat: destCoords.lat - 0.003, lng: destCoords.lng + 0.003 },
+          tag: 'Lunch'
+        },
+        {
+          id: `act-1-prime-sight`,
+          dayNumber: 1,
+          time: sightTime,
+          title: firstSight,
+          type: 'attraction',
+          location: `${spotName} Landmark Core`,
+          estimatedCost: scaleExpense(day1SightFee * safeTravelers),
+          travelTimeMin: 20,
+          distanceKm: 2.5,
+          description: `${activityMeta.afternoonDesc} (Est. entry ticket: ~₹${day1SightFee}/person).`,
+          coordinates: { lat: destCoords.lat + 0.005, lng: destCoords.lng + 0.004 },
+          tag: 'Attraction'
+        },
+        {
+          id: `act-1-sunset`,
+          dayNumber: 1,
+          time: sunsetTime,
+          title: `${spotName} ${activityMeta.eveningVerb}`,
+          type: 'viewpoint',
+          location: `${spotName} Panoramic Viewpoint`,
+          estimatedCost: scaleExpense(30 * safeTravelers),
+          travelTimeMin: 15,
+          distanceKm: 2.0,
+          description: `${activityMeta.eveningDesc} (Golden Hour observation window).`,
+          coordinates: { lat: destCoords.lat - 0.005, lng: destCoords.lng + 0.005 },
+          tag: 'Sunset'
+        },
+        {
+          id: `act-1-dinner`,
+          dayNumber: 1,
+          time: dinnerTime,
+          title: `Dinner & ${cuisine.cuisineName} Delicacies`,
+          type: 'food',
+          location: `${spotName} Terrace / Courtyard Dining`,
+          estimatedCost: scaleExpense(440 * cityMultiplier * safeTravelers),
+          travelTimeMin: 10,
+          distanceKm: 1.2,
+          description: `Evening feast enjoying ${cuisine.dinner} under starry skies (~₹${scaleExpense(440 * cityMultiplier)}/person).`,
+          coordinates: { lat: destCoords.lat + 0.001, lng: destCoords.lng + 0.002 },
+          tag: 'Dinner'
+        }
+      ];
+
       days.push({
         dayNumber: 1,
         title: `Day 1 — Journey to ${spotName} & Prime Highlights (${pacing.replace('_', ' ')} pace)`,
-        theme: `Departure, Check-in at ${recommendedHotel.name}, ${highlights[0] || spotName + ' Tour'} & Golden Hour Sunset`,
-        dayEstimatedCost: dayCost,
-        activities: [
-          {
-            id: `act-1-dep`,
-            dayNumber: 1,
-            time: depTime,
-            title: `${pacing === 'fast_paced' ? 'Early Sunrise' : pacing === 'relaxed' ? 'Leisurely' : 'Comfortable'} Departure from ${input.origin || 'City Center'}`,
-            type: 'departure',
-            location: `${input.origin || 'City Center'} Highway Corridor`,
-            estimatedCost: 0,
-            travelTimeMin: 0,
-            distanceKm: 0,
-            description: `Departure towards ${spotName}. Planned for a ${pacing.replace('_', ' ')} rhythm.`,
-            coordinates: originCoords,
-            tag: 'Start Point'
-          },
-          {
-            id: `act-1-bs`,
-            dayNumber: 1,
-            time: bsTime,
-            title: 'Highway Rest & Refreshment Halt',
-            type: 'breakstop',
-            location: 'En-route Highway Food Plaza',
-            estimatedCost: Math.round(140 * cityMultiplier * input.travelersCount),
-            travelTimeMin: Math.round(routeHours * 30),
-            distanceKm: Math.round(routeDistKm * 0.5),
-            description: `Suggested refreshment break for breakfast/tea en-route (~₹${Math.round(140 * cityMultiplier)}/person).`,
-            coordinates: {
-              lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.5,
-              lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.5
-            },
-            tag: 'Break Stop'
-          },
-          {
-            id: `act-1-hotel`,
-            dayNumber: 1,
-            time: checkinTime,
-            title: `Check in at ${recommendedHotel.name}`,
-            type: 'hotel',
-            location: `${recommendedHotel.name}, ${recommendedHotel.neighborhood}, ${spotName}`,
-            estimatedCost: Math.min(stayCost, recommendedHotel.nightlyRate),
-            travelTimeMin: Math.round(routeHours * 30),
-            distanceKm: Math.round(routeDistKm * 0.5),
-            description: `${recommendedHotel.starRating}★ ${recommendedHotel.roomType}. Amenities: ${recommendedHotel.amenities.slice(0, 3).join(', ')}. ${recommendedHotel.cancellationPolicy}.`,
-            coordinates: { lat: destCoords.lat + 0.002, lng: destCoords.lng - 0.002 },
-            tag: `Verified Stay • ${recommendedHotel.tier.toUpperCase()}`,
-            mapUrl: recommendedHotel.bookingUrl
-          },
-          {
-            id: `act-1-lunch`,
-            dayNumber: 1,
-            time: lunchTime,
-            title: `${cuisine.cuisineName} Welcome Lunch`,
-            type: 'food',
-            location: `${spotName} Regional Dining Kitchen`,
-            estimatedCost: Math.round(340 * cityMultiplier * input.travelersCount),
-            travelTimeMin: 15,
-            distanceKm: 1.5,
-            description: `Authentic regional feast: ${cuisine.lunch}. Tailored for ${input.foodPreference} dining (~₹${Math.round(340 * cityMultiplier)}/person).`,
-            coordinates: { lat: destCoords.lat - 0.003, lng: destCoords.lng + 0.003 },
-            tag: 'Lunch'
-          },
-          {
-            id: `act-1-prime-sight`,
-            dayNumber: 1,
-            time: sightTime,
-            title: highlights[0] || `${spotName} ${activityMeta.afternoonVerb}`,
-            type: 'attraction',
-            location: `${spotName} Landmark Core`,
-            estimatedCost: Math.round(day1SightFee * input.travelersCount),
-            travelTimeMin: 20,
-            distanceKm: 2.5,
-            description: `${activityMeta.afternoonDesc} (Visitor entry ticket: ₹${day1SightFee}/person, ₹${day1SightFee * input.travelersCount} total).`,
-            coordinates: { lat: destCoords.lat + 0.005, lng: destCoords.lng + 0.004 },
-            tag: 'Attraction'
-          },
-          {
-            id: `act-1-sunset`,
-            dayNumber: 1,
-            time: sunsetTime,
-            title: `${spotName} ${activityMeta.eveningVerb}`,
-            type: 'viewpoint',
-            location: `${spotName} Panoramic Viewpoint`,
-            estimatedCost: Math.round(30 * input.travelersCount),
-            travelTimeMin: 15,
-            distanceKm: 2.0,
-            description: `${activityMeta.eveningDesc} (Golden Hour observation window).`,
-            coordinates: { lat: destCoords.lat - 0.005, lng: destCoords.lng + 0.005 },
-            tag: 'Sunset'
-          },
-          {
-            id: `act-1-dinner`,
-            dayNumber: 1,
-            time: dinnerTime,
-            title: `Dinner & ${cuisine.cuisineName} Delicacies`,
-            type: 'food',
-            location: `${spotName} Terrace / Courtyard Dining`,
-            estimatedCost: Math.round(440 * cityMultiplier * input.travelersCount),
-            travelTimeMin: 10,
-            distanceKm: 1.2,
-            description: `Evening feast enjoying ${cuisine.dinner} under starry skies (~₹${Math.round(440 * cityMultiplier)}/person).`,
-            coordinates: { lat: destCoords.lat + 0.001, lng: destCoords.lng + 0.002 },
-            tag: 'Dinner'
-          }
-        ]
+        theme: `Departure, Check-in at ${recommendedHotel.name}, ${firstSight} & Golden Hour Sunset`,
+        dayEstimatedCost: day1Acts.reduce((s, a) => s + a.estimatedCost, 0),
+        activities: day1Acts
       });
     } else if (isLastDay) {
-      // Final Day: Morning breakfast, artisan shopping, farewell lunch, and highway return drive
+      // Final Day: Morning breakfast, unique sight, artisan shopping, farewell lunch, and return journey
+      const finalSight = takeUniqueHighlight('Morning Panorama & Heritage Walk');
       const bfastTime = pacing === 'relaxed' ? '9:00 AM' : pacing === 'fast_paced' ? '7:00 AM' : '8:00 AM';
       const sightTime = pacing === 'relaxed' ? '10:45 AM' : pacing === 'fast_paced' ? '8:30 AM' : '9:30 AM';
       const shopTime = pacing === 'relaxed' ? '12:30 PM' : pacing === 'fast_paced' ? '10:45 AM' : '11:30 AM';
@@ -486,122 +662,124 @@ export function generateAITrip(input: PlannerInput): Trip {
       const bsTime = pacing === 'relaxed' ? '6:30 PM' : pacing === 'fast_paced' ? '4:45 PM' : '5:30 PM';
       const arrTime = pacing === 'relaxed' ? '9:30 PM' : pacing === 'fast_paced' ? '7:45 PM' : '8:30 PM';
 
+      const lastDayActs: ItineraryActivity[] = [
+        {
+          id: `act-${d}-bfast`,
+          dayNumber: d,
+          time: bfastTime,
+          title: `Traditional ${cuisine.cuisineName} Breakfast`,
+          type: 'food',
+          location: `${spotName} Local Morning Hub`,
+          estimatedCost: scaleExpense(120 * cityMultiplier * safeTravelers),
+          travelTimeMin: 10,
+          distanceKm: 0.8,
+          description: `Fresh morning breakfast enjoying ${cuisine.breakfast}.`,
+          coordinates: { lat: destCoords.lat - 0.001, lng: destCoords.lng + 0.001 },
+          tag: 'Breakfast'
+        },
+        {
+          id: `act-${d}-sight`,
+          dayNumber: d,
+          time: sightTime,
+          title: finalSight,
+          type: 'attraction',
+          location: `${spotName} Scenic Environs`,
+          estimatedCost: scaleExpense(100 * safeTravelers),
+          travelTimeMin: 15,
+          distanceKm: 2.0,
+          description: `Gentle morning exploration taking in the final scenic panoramas and iconic photo frames.`,
+          coordinates: { lat: destCoords.lat + 0.003, lng: destCoords.lng - 0.002 },
+          tag: 'Scenic Walk'
+        },
+        {
+          id: `act-${d}-shop`,
+          dayNumber: d,
+          time: shopTime,
+          title: `${spotName} Local Artisan Souvenirs & Market`,
+          type: 'attraction',
+          location: `${spotName} Artisan Market Square`,
+          estimatedCost: scaleExpense(200 * safeTravelers),
+          travelTimeMin: 15,
+          distanceKm: 1.5,
+          description: `Pick up unique handmade crafts, local specialties, organic produce, and memorable souvenirs.`,
+          coordinates: { lat: destCoords.lat - 0.003, lng: destCoords.lng - 0.003 },
+          tag: 'Shopping'
+        },
+        {
+          id: `act-${d}-lunch`,
+          dayNumber: d,
+          time: lunchTime,
+          title: `Farewell ${cuisine.cuisineName} Garden Lunch`,
+          type: 'food',
+          location: `${spotName} Regional Dining Hub`,
+          estimatedCost: scaleExpense(260 * cityMultiplier * safeTravelers),
+          travelTimeMin: 20,
+          distanceKm: 5.0,
+          description: `Hearty celebratory meal (${cuisine.lunch}) tailored for ${foodPref} preference before return transit.`,
+          coordinates: { lat: destCoords.lat + 0.008, lng: destCoords.lng + 0.005 },
+          tag: 'Lunch'
+        },
+        {
+          id: `act-${d}-return`,
+          dayNumber: d,
+          time: depTime,
+          title: `Commence Return Journey to ${input.origin || 'Origin'}`,
+          type: 'departure',
+          location: isAir ? (transitContext.primaryAirport?.name || `${spotName} Departure`) : isRail ? (transitContext.primaryRailwayStation?.name || `${spotName} Station`) : `${spotName} Highway Gateway`,
+          estimatedCost: Math.round(transportCost * 0.5),
+          travelTimeMin: 0,
+          distanceKm: 0,
+          description: `Return journey from ${spotName} towards ${input.origin || 'Origin'}.`,
+          coordinates: {
+            lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.75,
+            lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.75
+          },
+          tag: 'Return'
+        },
+        {
+          id: `act-${d}-bs`,
+          dayNumber: d,
+          time: bsTime,
+          title: 'Evening Transit Refreshment Halt',
+          type: 'breakstop',
+          location: 'Along the return route — confirm stop before travel',
+          estimatedCost: scaleExpense(100 * cityMultiplier * safeTravelers),
+          travelTimeMin: 120,
+          distanceKm: Math.round(routeDistKm * 0.5),
+          description: 'Suggested break timing only; confirm a suitable stop and its facilities before travel.',
+          coordinates: {
+            lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.35,
+            lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.35
+          },
+          tag: 'Break Stop'
+        },
+        {
+          id: `act-${d}-home`,
+          dayNumber: d,
+          time: arrTime,
+          title: `Safe Arrival in ${input.origin || 'Home'}`,
+          type: 'arrival',
+          location: input.origin || 'Home City',
+          estimatedCost: 0,
+          travelTimeMin: 150,
+          distanceKm: Math.round(routeDistKm * 0.5),
+          description: `Trip to ${spotName} concluded smoothly within planned budget.`,
+          coordinates: originCoords,
+          tag: 'Destination'
+        }
+      ];
+
       days.push({
         dayNumber: d,
-        title: `Day ${d} — Morning Panorama, Artisan Souvenirs & Safe Return (${pacing.replace('_', ' ')} pace)`,
-        theme: 'Morning Specialty Breakfast, Handcrafted Souvenirs, Farewell Lunch & Return Highway Drive',
-        dayEstimatedCost: dayCost,
-        activities: [
-          {
-            id: `act-${d}-bfast`,
-            dayNumber: d,
-            time: bfastTime,
-            title: `Traditional ${cuisine.cuisineName} Breakfast`,
-            type: 'food',
-            location: `${spotName} Local Morning Hub`,
-            estimatedCost: Math.round(120 * cityMultiplier * input.travelersCount),
-            travelTimeMin: 10,
-            distanceKm: 0.8,
-            description: `Fresh morning breakfast enjoying ${cuisine.breakfast}.`,
-            coordinates: { lat: destCoords.lat - 0.001, lng: destCoords.lng + 0.001 },
-            tag: 'Breakfast'
-          },
-          {
-            id: `act-${d}-sight`,
-            dayNumber: d,
-            time: sightTime,
-            title: highlights[Math.min(highlights.length - 1, 3)] || `${spotName} Scenic Morning Walk & Photoshoot`,
-            type: 'attraction',
-            location: `${spotName} Scenic Environs`,
-            estimatedCost: Math.round(100 * input.travelersCount),
-            travelTimeMin: 15,
-            distanceKm: 2.0,
-            description: `Gentle morning stroll taking in the final scenic panoramas and iconic photo frames.`,
-            coordinates: { lat: destCoords.lat + 0.003, lng: destCoords.lng - 0.002 },
-            tag: 'Scenic Walk'
-          },
-          {
-            id: `act-${d}-shop`,
-            dayNumber: d,
-            time: shopTime,
-            title: `${spotName} Local Artisan Souvenirs & Market`,
-            type: 'attraction',
-            location: `${spotName} Artisan Market Square`,
-            estimatedCost: Math.round(200 * input.travelersCount),
-            travelTimeMin: 15,
-            distanceKm: 1.5,
-            description: `Pick up unique handmade crafts, local specialties, organic produce, and memorable souvenirs.`,
-            coordinates: { lat: destCoords.lat - 0.003, lng: destCoords.lng - 0.003 },
-            tag: 'Shopping'
-          },
-          {
-            id: `act-${d}-lunch`,
-            dayNumber: d,
-            time: lunchTime,
-            title: `Farewell ${cuisine.cuisineName} Garden Lunch`,
-            type: 'food',
-            location: `${spotName} Highway Link Garden Dhaba`,
-            estimatedCost: Math.round(260 * cityMultiplier * input.travelersCount),
-            travelTimeMin: 20,
-            distanceKm: 5.0,
-            description: `Hearty celebratory meal before joining the return expressway corridor.`,
-            coordinates: { lat: destCoords.lat + 0.008, lng: destCoords.lng + 0.005 },
-            tag: 'Lunch'
-          },
-          {
-            id: `act-${d}-return`,
-            dayNumber: d,
-            time: depTime,
-            title: `Commence Return Journey to ${input.origin || 'Origin'}`,
-            type: 'departure',
-            location: `${spotName} Highway Toll Gateway`,
-            estimatedCost: Math.round(transportCost * 0.4),
-            travelTimeMin: 0,
-            distanceKm: 0,
-            description: `Smooth highway cruising on national corridor with scenic vistas and road trip playlist.`,
-            coordinates: {
-              lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.75,
-              lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.75
-            },
-            tag: 'Return'
-          },
-          {
-            id: `act-${d}-bs`,
-            dayNumber: d,
-            time: bsTime,
-            title: 'Evening Highway Chai & Snack Halt',
-            type: 'breakstop',
-            location: 'Along the route — choose a suitable stop',
-            estimatedCost: Math.round(100 * cityMultiplier * input.travelersCount),
-            travelTimeMin: 120,
-            distanceKm: Math.round(routeDistKm * 0.5),
-            description: 'Suggested break timing only; confirm a suitable stop and its facilities before travel.',
-            coordinates: {
-              lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.35,
-              lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.35
-            },
-            tag: 'Break Stop'
-          },
-          {
-            id: `act-${d}-home`,
-            dayNumber: d,
-            time: arrTime,
-            title: `Safe Arrival in ${input.origin || 'Home'}`,
-            type: 'arrival',
-            location: input.origin || 'Home City',
-            estimatedCost: 0,
-            travelTimeMin: 150,
-            distanceKm: Math.round(routeDistKm * 0.5),
-            description: `Trip to ${spotName} concluded smoothly and strictly within planned budget!`,
-            coordinates: originCoords,
-            tag: 'Destination'
-          }
-        ]
+        title: `Day ${d} — ${finalSight}, Artisan Souvenirs & Safe Return (${pacing.replace('_', ' ')} pace)`,
+        theme: 'Morning Specialty Breakfast, Handcrafted Souvenirs, Farewell Lunch & Return Journey',
+        dayEstimatedCost: lastDayActs.reduce((s, a) => s + a.estimatedCost, 0),
+        activities: lastDayActs
       });
     } else {
-      // Middle Days: Deep exploration of secondary highlights & culture
-      const highlightIdx = (d - 1) % highlights.length;
-      const dayHighlight = highlights[highlightIdx] || `${spotName} Hidden Trails & Heritage`;
+      // Middle Days: Deep exploration of unique highlights & culture
+      const dayHighlight = takeUniqueHighlight('Hidden Trails & Heritage');
+      const afternoonHighlight = takeUniqueHighlight('Scenic Overlook & Cultural Walk');
       const midSightFee = getActivityTicketFee(dayHighlight, spotType, category);
 
       const bfastTime = pacing === 'relaxed' ? '9:15 AM' : pacing === 'fast_paced' ? '7:15 AM' : '8:30 AM';
@@ -619,11 +797,11 @@ export function generateAITrip(input: PlannerInput): Trip {
           title: `Energizing ${cuisine.cuisineName} Breakfast`,
           type: 'food',
           location: `${spotName} Morning Eatery`,
-          estimatedCost: Math.round(110 * cityMultiplier * input.travelersCount),
+          estimatedCost: scaleExpense(110 * cityMultiplier * safeTravelers),
           travelTimeMin: 15,
           distanceKm: 1.0,
           description: `Start the day fresh with regional breakfast specialties: ${cuisine.breakfast}.`,
-          coordinates: { lat: destCoords.lat + 0.002, lng: destCoords.lng - 0.002 },
+          coordinates: { lat: destCoords.lat + 0.002 * d, lng: destCoords.lng - 0.002 * d },
           tag: 'Breakfast'
         },
         {
@@ -633,68 +811,68 @@ export function generateAITrip(input: PlannerInput): Trip {
           title: dayHighlight,
           type: 'attraction',
           location: `${spotName} Historic/Scenic Center`,
-          estimatedCost: Math.round(midSightFee * input.travelersCount),
+          estimatedCost: scaleExpense(midSightFee * safeTravelers),
           travelTimeMin: 25,
           distanceKm: 5.0,
-          description: `Prime sightseeing and photography with picturesque landscapes and architecture (Ticket: ₹${midSightFee}/person).`,
-          coordinates: { lat: destCoords.lat + 0.015, lng: destCoords.lng + 0.012 },
+          description: `Prime sightseeing and photography with picturesque landscapes and architecture (Est. ticket: ~₹${midSightFee}/person).`,
+          coordinates: { lat: destCoords.lat + 0.005 * d, lng: destCoords.lng + 0.004 * d },
           tag: 'Sightseeing'
         },
         {
           id: `act-${d}-lunch`,
           dayNumber: d,
           time: lunchTime,
-          title: 'Lunch at Scenic Countryside Garden',
+          title: `Regional ${cuisine.cuisineName} Lunch`,
           type: 'food',
-          location: 'Local Garden Restaurant',
-          estimatedCost: Math.round(280 * cityMultiplier * input.travelersCount),
+          location: `${spotName} Local Garden Restaurant`,
+          estimatedCost: scaleExpense(280 * cityMultiplier * safeTravelers),
           travelTimeMin: 20,
           distanceKm: 4.0,
-          description: `Fresh regional cuisine tailored for ${input.foodPreference} preference: ${cuisine.lunch}.`,
-          coordinates: { lat: destCoords.lat + 0.006, lng: destCoords.lng - 0.008 },
+          description: `Fresh regional cuisine tailored for ${foodPref} preference: ${cuisine.lunch}.`,
+          coordinates: { lat: destCoords.lat + 0.003 * d, lng: destCoords.lng - 0.004 * d },
           tag: 'Lunch'
         },
         {
           id: `act-${d}-afternoon`,
           dayNumber: d,
           time: aftSightTime,
-          title: pacing === 'relaxed' ? 'Scenic Cafe & Lakeside Afternoon Lounge' : 'Nature Trail & Hidden Spot Exploration',
+          title: afternoonHighlight,
           type: 'viewpoint',
-          location: 'Scenic Overlook Point',
-          estimatedCost: Math.round(150 * cityMultiplier * input.travelersCount),
+          location: `${spotName} Scenic Overlook`,
+          estimatedCost: scaleExpense(150 * cityMultiplier * safeTravelers),
           travelTimeMin: 20,
           distanceKm: 4.5,
           description: pacing === 'relaxed'
             ? 'Unhurried downtime sipping local beverage, taking photographs, and soaking in peaceful views.'
-            : 'Energizing nature walk away from crowds with fresh air and viewpoints.',
-          coordinates: { lat: destCoords.lat - 0.012, lng: destCoords.lng - 0.012 },
+            : 'Energizing nature & heritage walk away from crowds with fresh air and viewpoints.',
+          coordinates: { lat: destCoords.lat - 0.004 * d, lng: destCoords.lng - 0.004 * d },
           tag: pacing === 'relaxed' ? 'Leisure' : 'Nature'
         },
         {
           id: `act-${d}-culture`,
           dayNumber: d,
           time: cultureTime,
-          title: 'Cultural Folk Performance / Evening Stroll',
+          title: takeUniqueHighlight(`${spotName} Cultural Evening & Promenade`),
           type: 'attraction',
-          location: 'Cultural Amphitheater',
-          estimatedCost: Math.round(220 * input.travelersCount),
+          location: `${spotName} Cultural District`,
+          estimatedCost: scaleExpense(220 * safeTravelers),
           travelTimeMin: 20,
           distanceKm: 3.0,
-          description: 'Vibrant local live art, traditional instruments, and folk storytelling.',
-          coordinates: { lat: destCoords.lat + 0.008, lng: destCoords.lng + 0.008 },
+          description: 'Vibrant local live art, traditional instruments, and evening cultural walk.',
+          coordinates: { lat: destCoords.lat + 0.004 * d, lng: destCoords.lng + 0.003 * d },
           tag: 'Culture'
         },
         {
           id: `act-${d}-dinner`,
           dayNumber: d,
           time: dinnerTime,
-          title: 'Celebratory Dinner with Regional Sweets',
+          title: `Evening ${cuisine.cuisineName} Dinner`,
           type: 'food',
-          location: 'Heritage Dining Hall',
-          estimatedCost: Math.round(350 * cityMultiplier * input.travelersCount),
+          location: `${spotName} Heritage Dining Hall`,
+          estimatedCost: scaleExpense(350 * cityMultiplier * safeTravelers),
           travelTimeMin: 10,
           distanceKm: 1.2,
-          description: `Hearty evening dinner with traditional delicacies: ${cuisine.dinner}.`,
+          description: `Hearty evening dinner with traditional delicacies (${cuisine.dinner}) tailored for ${foodPref} preference.`,
           coordinates: { lat: destCoords.lat, lng: destCoords.lng },
           tag: 'Dinner'
         }
@@ -706,13 +884,13 @@ export function generateAITrip(input: PlannerInput): Trip {
           id: `act-${d}-sunrise`,
           dayNumber: d,
           time: '6:15 AM',
-          title: `${spotName} Sunrise Ridge Golden Hour`,
+          title: `${spotName} Sunrise Ridge Golden Hour (Day ${d})`,
           type: 'viewpoint',
           location: `${spotName} High Ridge Viewpoint`,
           estimatedCost: 0,
           travelTimeMin: 15,
           distanceKm: 3.0,
-          description: 'Early morning golden rays and mist-covered landscapes. Perfect for drone/camera photography.',
+          description: 'Early morning golden rays and mist-covered landscapes. Ideal for photography.',
           coordinates: { lat: destCoords.lat - 0.008, lng: destCoords.lng + 0.008 },
           tag: 'Sunrise'
         });
@@ -720,9 +898,9 @@ export function generateAITrip(input: PlannerInput): Trip {
 
       days.push({
         dayNumber: d,
-        title: `Day ${d} — Deep Dive into ${spotName} & ${dayHighlight} (${pacing.replace('_', ' ')} pace)`,
-        theme: `Heritage Exploration, Nature Trails, Scenic Photography & Authentic ${cuisine.cuisineName} Feasts`,
-        dayEstimatedCost: dayCost,
+        title: `Day ${d} — Deep Dive into ${spotName}: ${dayHighlight} (${pacing.replace('_', ' ')} pace)`,
+        theme: `${dayHighlight}, ${afternoonHighlight} & Authentic ${cuisine.cuisineName} Dining`,
+        dayEstimatedCost: middleActivities.reduce((s, a) => s + a.estimatedCost, 0),
         activities: middleActivities
       });
     }
@@ -740,15 +918,20 @@ export function generateAITrip(input: PlannerInput): Trip {
     origin: input.origin || 'Origin',
     destination: spotName,
     durationDays: daysCount,
-    travelersCount: input.travelersCount,
+    travelersCount: safeTravelers,
     totalBudget: totalBudget,
     priorities: input.priorities,
     startDate: input.startDate
   });
 
+  let safeStartDate = input.startDate;
+  if (!safeStartDate || Number.isNaN(new Date(safeStartDate).getTime())) {
+    safeStartDate = new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
+  }
+
   return {
     id: `trip-${Date.now()}`,
-    name: `${input.origin || 'Origin'} → ${spotName} | ${daysCount} Days`,
+    name: `${input.origin || 'Origin'} → ${spotName} | ${daysCount} ${daysCount === 1 ? 'Day' : 'Days'}`,
     origin: input.origin || 'Ahmedabad, Gujarat',
     originCoordinates: input.originCoords,
     destination: spotName,
@@ -763,21 +946,21 @@ export function generateAITrip(input: PlannerInput): Trip {
       highlights: highlights
     },
     durationDays: daysCount,
-    travelersCount: input.travelersCount,
+    travelersCount: safeTravelers,
     travelerType: input.travelerType || 'friends',
     totalBudget: totalBudget,
     budgetPerPerson: budgetPerPerson,
-    preferences: input.preferences || ['culture', 'nature', 'budget'],
+    preferences: input.preferences?.length ? input.preferences : ['culture', 'nature', 'budget'],
     transportMode: input.transportMode || 'car',
     accommodationType: input.accommodationType || 'budget',
-    foodPreference: input.foodPreference || 'veg',
-    priorities: input.priorities || ['budget', 'comfort'],
+    foodPreference: foodPref,
+    priorities: input.priorities?.length ? input.priorities : ['budget', 'comfort'],
     status: 'upcoming',
     isUserCreated: true,
     isSample: false,
     createdAt: new Date().toISOString(),
-    startDate: input.startDate || new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
-    aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state}) for ${input.travelersCount} traveler(s). Selected stay: ${recommendedHotel.name} (${recommendedHotel.starRating}★). Pacing: ${pacing.replace('_', ' ')}. Total budget calibrated to regional prices. Buffer estimate: ₹${Math.max(0, totalBudget - estimatedTotal).toLocaleString('en-IN')}.`,
+    startDate: safeStartDate,
+    aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state}) for ${safeTravelers} traveler(s).${isSingleDay ? '' : ` Selected stay: ${recommendedHotel.name} (${recommendedHotel.starRating}★).`} Pacing: ${pacing.replace('_', ' ')}. Total budget calibrated to regional prices. Buffer estimate: ₹${Math.max(0, totalBudget - estimatedTotal).toLocaleString('en-IN')}.`,
     breakStops: [],
     budgetBreakdown: {
       transportation: transportCost,
@@ -789,8 +972,8 @@ export function generateAITrip(input: PlannerInput): Trip {
     estimatedTotal: estimatedTotal,
     routeType: routeType,
     itinerary: days,
-    selectedHotel: recommendedHotel,
-    hotelOptions: alternativeHotels,
+    selectedHotel: isSingleDay ? undefined : recommendedHotel,
+    hotelOptions: isSingleDay ? [] : alternativeHotels,
     pacing: pacing,
     bestTransportDeal: bestDeal,
     transportDeals: allDeals,

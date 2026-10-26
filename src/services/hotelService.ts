@@ -477,13 +477,15 @@ export function selectHotelForTrip(params: HotelQueryParams): {
   const nightsCount = Math.max(1, params.durationDays - 1);
   const targetPerNight = Math.round(stayBudgetTotal / nightsCount);
 
-  // Compute dates (check-in tomorrow or from startDate)
+  // Compute dates (check-in tomorrow or from startDate, guarding against invalid dates)
   const today = new Date();
-  const checkInDate = params.startDate
-    ? params.startDate.split('T')[0]
-    : new Date(today.getTime() + 86400000 * 3).toISOString().split('T')[0];
-  const checkInObj = new Date(checkInDate);
-  const checkOutDate = new Date(checkInObj.getTime() + 86400000 * params.durationDays).toISOString().split('T')[0];
+  let checkInObj = params.startDate ? new Date(params.startDate) : new Date(today.getTime() + 86400000 * 3);
+  if (Number.isNaN(checkInObj.getTime())) {
+    checkInObj = new Date(today.getTime() + 86400000 * 3);
+  }
+  const checkInDate = checkInObj.toISOString().split('T')[0];
+  const safeDuration = Math.max(1, Number(params.durationDays) || 3);
+  const checkOutDate = new Date(checkInObj.getTime() + 86400000 * safeDuration).toISOString().split('T')[0];
 
   // Map user preference to hotel tier
   let targetTier: Hotel['tier'] = 'mid_range';
@@ -511,8 +513,28 @@ export function selectHotelForTrip(params: HotelQueryParams): {
   }
 
   if (candidateList.length > 0) {
-    const matched = candidateList.find(h => h.tier === targetTier) || candidateList[0];
-    const others = candidateList.filter(h => h.id !== matched.id);
+    // Tier fallback order so 'budget' never falls back to a ₹38,000+ 5-star palace
+    const tierFallbackOrder: Record<Hotel['tier'], Hotel['tier'][]> = {
+      budget: ['budget', 'mid_range', 'hostel', 'boutique', 'luxury'],
+      hostel: ['hostel', 'budget', 'mid_range', 'boutique', 'luxury'],
+      mid_range: ['mid_range', 'budget', 'boutique', 'hostel', 'luxury'],
+      boutique: ['boutique', 'mid_range', 'luxury', 'budget', 'hostel'],
+      luxury: ['luxury', 'boutique', 'mid_range', 'budget', 'hostel']
+    };
+    const fallbackChain = tierFallbackOrder[targetTier] || ['mid_range', 'budget', 'boutique', 'hostel', 'luxury'];
+    let matched: Hotel | undefined;
+    for (const tierOption of fallbackChain) {
+      matched = candidateList.find(h => h.tier === tierOption && h.nightlyRate <= Math.max(targetPerNight * 1.6, 4000));
+      if (matched) break;
+    }
+    if (!matched) {
+      for (const tierOption of fallbackChain) {
+        matched = candidateList.find(h => h.tier === tierOption);
+        if (matched) break;
+      }
+    }
+    matched = matched || candidateList[candidateList.length - 1];
+    const others = candidateList.filter(h => h.id !== matched!.id);
     return {
       recommendedHotel: matched,
       alternativeHotels: others

@@ -54,9 +54,13 @@ function transportOptions(value) {
 function buildTravelContext(tripContext = {}, sessionState = {}) {
   return {
     destination: text(tripContext.destination || sessionState.destination || '', 160),
+    destination_region: text(tripContext.destinationRegion || '', 120),
     origin: text(tripContext.origin || '', 160),
+    start_date: text(tripContext.startDate || '', 30),
+    pacing: text(tripContext.pacing || '', 30),
     duration_days: positiveNumber(tripContext.durationDays || sessionState.durationDays, 0, 60),
     total_budget: positiveNumber(tripContext.totalBudget || sessionState.budget, 0, 100_000_000),
+    budget_mode: text(tripContext.budgetMode || 'total', 20),
     currency: text(tripContext.currency || 'INR', 12) || 'INR',
     travelers_count: positiveNumber(tripContext.travelersCount || sessionState.travelersCount, 1, 30),
     traveler_type: text(tripContext.travelerType || '', 80),
@@ -67,6 +71,7 @@ function buildTravelContext(tripContext = {}, sessionState = {}) {
     food_preference: text(tripContext.foodPreference || '', 80),
     priorities: stringList(tripContext.priorities, 12),
     known_destination_highlights: stringList(tripContext.knownDestinationHighlights, 30),
+    transit_hubs: tripContext.transitHubs && typeof tripContext.transitHubs === 'object' ? tripContext.transitHubs : undefined,
     transport_options: transportOptions(tripContext.transportDeals)
   };
 }
@@ -175,21 +180,33 @@ export default async function handler(req, res) {
     let structuredItinerary = data.structured_itinerary || data.structuredItinerary;
 
     if (!itinerary && typeof replyText === 'string') {
+      const cleaned = replyText.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+      const extractDays = (obj) => {
+        if (!obj) return null;
+        if (Array.isArray(obj)) return obj;
+        if (Array.isArray(obj.itinerary)) return obj.itinerary;
+        if (Array.isArray(obj.days)) return obj.days;
+        if (Array.isArray(obj.structured_itinerary?.days)) return obj.structured_itinerary.days;
+        if (Array.isArray(obj.structuredItinerary?.days)) return obj.structuredItinerary.days;
+        return null;
+      };
       try {
-        const parsed = JSON.parse(replyText);
-        if (parsed && Array.isArray(parsed.itinerary)) {
-          itinerary = parsed.itinerary;
-          structuredItinerary = { days: parsed.itinerary };
+        const parsed = JSON.parse(cleaned);
+        const days = extractDays(parsed);
+        if (days) {
+          itinerary = days;
+          structuredItinerary = { days };
         }
       } catch {
-        const s = replyText.indexOf('{');
-        const e = replyText.lastIndexOf('}');
+        const s = cleaned.indexOf('{');
+        const e = cleaned.lastIndexOf('}');
         if (s >= 0 && e > s) {
           try {
-            const parsed = JSON.parse(replyText.slice(s, e + 1));
-            if (parsed && Array.isArray(parsed.itinerary)) {
-              itinerary = parsed.itinerary;
-              structuredItinerary = { days: parsed.itinerary };
+            const parsed = JSON.parse(cleaned.slice(s, e + 1));
+            const days = extractDays(parsed);
+            if (days) {
+              itinerary = days;
+              structuredItinerary = { days };
             }
           } catch {}
         }
