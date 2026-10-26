@@ -132,10 +132,10 @@ export const Logo: React.FC<LogoProps> = ({
 }) => {
   const sizeMap = {
     adaptive: {
-      imgHeight: 'h-8 max-[350px]:h-7 min-[380px]:h-8.5 sm:h-9 md:h-9.5 lg:h-8.5 xl:h-10.5',
-      textMain: 'text-[17px] max-[350px]:text-[15.5px] min-[380px]:text-[18.5px] sm:text-xl md:text-[22px] lg:text-xl xl:text-2xl',
+      imgHeight: 'h-8 max-[350px]:h-7 min-[380px]:h-8.5 sm:h-9 md:h-9.5 lg:h-8 xl:h-9 2xl:h-10.5',
+      textMain: 'text-[17px] max-[350px]:text-[15.5px] min-[380px]:text-[18.5px] sm:text-xl md:text-[22px] lg:text-lg xl:text-xl 2xl:text-2xl',
       textSub: 'text-[9.5px] min-[400px]:text-[10.5px] xl:text-[11.5px]',
-      gap: 'gap-1.5 max-[350px]:gap-1 min-[380px]:gap-2 sm:gap-2.5 lg:gap-2 xl:gap-3',
+      gap: 'gap-1.5 max-[350px]:gap-1 min-[380px]:gap-2 sm:gap-2.5 lg:gap-1.5 xl:gap-2 2xl:gap-3',
       defaultTaglineClass: 'hidden md:block'
     },
     sm: { 

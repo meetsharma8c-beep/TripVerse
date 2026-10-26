@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tripverse-cache-v30';
+const CACHE_NAME = 'tripverse-cache-v31';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

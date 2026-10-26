@@ -182,12 +182,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
       </div>
 
-      <div className="max-w-[1536px] mx-auto px-3 sm:px-5 lg:px-4 xl:px-8">
+      <div className="max-w-[1536px] mx-auto px-3 sm:px-5 lg:px-4 2xl:px-8">
         {/* DESKTOP HEADER (Responsive across lg 1024px through 2xl 1536px+ without clipping) */}
-        <div className="hidden lg:flex items-center justify-between h-16 xl:h-18 gap-2 xl:gap-3">
+        <div className="hidden lg:flex items-center justify-between h-16 xl:h-18 gap-2">
           
           {/* Left: Brand Logo & Navigation Links */}
-          <div className="flex items-center gap-2 xl:gap-4 min-w-0 shrink-0">
+          <div className="flex items-center gap-2 xl:gap-3 2xl:gap-4 min-w-0 shrink-0">
             <div className="flex items-center gap-1.5 xl:gap-2 min-w-0 shrink-0">
               <Logo 
                 size="adaptive" 
@@ -213,13 +213,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     key={link.id}
                     onClick={() => handleLinkClick(link.id)}
-                    className={`relative flex items-center gap-1 xl:gap-1.5 px-2 xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                    className={`relative flex items-center gap-1 2xl:gap-1.5 px-2 xl:px-2.5 2xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-[13px] 2xl:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                       isActive 
                         ? 'text-[#2D5A3D] dark:text-emerald-400 bg-[#E8EFE7] dark:bg-emerald-950/40 shadow-xs' 
                         : 'text-slate-600 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/60'
                     }`}
                   >
-                    {Icon && <Icon className={`hidden xl:block w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0 ${isActive ? 'text-[#2D5A3D] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-400'}`} />}
+                    {Icon && <Icon className={`hidden 2xl:block w-3.5 h-3.5 shrink-0 ${isActive ? 'text-[#2D5A3D] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-400'}`} />}
                     <span>{link.label}</span>
                     {link.badge && (
                       <span className="text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-gradient-to-r from-[#386B49] to-[#2D5A3D] text-white shadow-xs">
@@ -236,7 +236,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Right Action & Profile: Search, Currency, CTA, Sign In / Sign Out */}
-          <div className="flex items-center gap-1.5 xl:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 xl:gap-2 2xl:gap-2.5 shrink-0">
             <button
               type="button"
               onClick={toggleDarkMode}
@@ -250,7 +250,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {onOpenSearch && (
               <button
                 onClick={onOpenSearch}
-                className="flex items-center gap-1.5 xl:gap-2 h-8 xl:h-9 px-2.5 xl:px-3 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white text-xs font-semibold transition-all border border-[#DCE7DB] dark:border-slate-700 cursor-pointer shadow-2xs hover:border-[#C4D9C3] dark:hover:border-slate-600 shrink-0"
+                className="flex items-center gap-1.5 h-8 xl:h-9 px-2.5 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white text-xs font-semibold transition-all border border-[#DCE7DB] dark:border-slate-700 cursor-pointer shadow-2xs hover:border-[#C4D9C3] dark:hover:border-slate-600 shrink-0"
                 title={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
                 aria-label={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
               >
@@ -263,7 +263,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             {/* Currency Selector */}
-            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-8 xl:h-9 px-2 xl:px-2.5 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0">
+            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-8 xl:h-9 px-2 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0">
               <Globe className="hidden 2xl:block w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
               <select
                 value={currency}
@@ -284,7 +284,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenProModal}
-                className={`flex items-center gap-1 xl:gap-1.5 h-8 xl:h-9 px-2.5 xl:px-3 rounded-full text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer shadow-2xs border ${
+                className={`flex items-center gap-1 h-8 xl:h-9 px-2.5 xl:px-3 rounded-full text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer shadow-2xs border ${
                   quota.isPro
                     ? 'bg-amber-500/10 border-amber-300/40 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20'
                     : 'bg-[#E8EFE7] dark:bg-emerald-950/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400'
@@ -292,19 +292,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title={quota.isPro ? 'TripVerse Pro Active (30h/week AI Co-Pilot)' : 'Unlock Unlimited Trips with TripVerse Pro'}
               >
                 <Crown className={`w-3.5 h-3.5 shrink-0 ${quota.isPro ? 'text-amber-500 fill-amber-500' : 'text-[#2D5A3D] dark:text-emerald-400'}`} />
-                <span className="hidden xl:inline">{quota.isPro ? 'PRO' : 'Get Pro'}</span>
-                <span className="xl:hidden">{quota.isPro ? 'PRO' : 'Pro'}</span>
+                <span className="hidden 2xl:inline">{quota.isPro ? 'PRO' : 'Get Pro'}</span>
+                <span className="2xl:hidden">{quota.isPro ? 'PRO' : 'Pro'}</span>
               </button>
             )}
 
             {/* Primary CTA: "Plan My Trip" */}
             <button
               onClick={onOpenPlanner}
-              className="btn-liquid-primary flex items-center gap-1.5 xl:gap-2 px-3.5 xl:px-4.5 py-1.5 xl:py-2 rounded-full text-white font-bold text-xs xl:text-sm whitespace-nowrap group shrink-0"
+              className="btn-liquid-primary flex items-center gap-1.5 h-8 xl:h-9 px-3 xl:px-4 rounded-full text-white font-bold text-xs xl:text-[13px] whitespace-nowrap group shrink-0"
             >
-              <PlaneTakeoff className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <PlaneTakeoff className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               <span>Plan My Trip</span>
-              <ChevronRight className="hidden xl:block w-3.5 h-3.5 opacity-80 shrink-0" />
+              <ChevronRight className="hidden 2xl:block w-3.5 h-3.5 opacity-80 shrink-0" />
             </button>
 
             {/* User Profile Pill & Sign In / Sign Out Button */}
@@ -312,7 +312,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1.5 h-8 xl:h-9 px-3.5 xl:px-4 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold whitespace-nowrap shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="flex items-center gap-1.5 h-8 xl:h-9 px-3 xl:px-4 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 text-[#2D5A3D] dark:text-emerald-400 text-xs xl:text-[13px] font-bold whitespace-nowrap shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95"
                 title="Sign In / Register"
               >
                 <User className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
@@ -323,15 +323,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('profile')}
-                  className="flex items-center gap-2 pl-1 pr-1 xl:pr-3 py-1 rounded-full bg-white dark:bg-slate-800 border border-[#DCE7DB] dark:border-slate-700 hover:border-[#2D5A3D] dark:hover:border-emerald-500 transition-colors cursor-pointer shadow-2xs shrink-0"
+                  className="flex items-center gap-1.5 h-8 xl:h-9 pl-1 pr-1 xl:pr-2.5 rounded-full bg-white dark:bg-slate-800 border border-[#DCE7DB] dark:border-slate-700 hover:border-[#2D5A3D] dark:hover:border-emerald-500 transition-colors cursor-pointer shadow-2xs shrink-0"
                   title="View Profile"
                 >
                   <img
                     src={userProfile.avatar}
                     alt={userProfile.name}
-                    className="w-6.5 h-6.5 xl:w-7 xl:h-7 rounded-full object-cover ring-2 ring-[#2D5A3D]/30 shrink-0"
+                    className="w-6 h-6 xl:w-6.5 xl:h-6.5 rounded-full object-cover ring-2 ring-[#2D5A3D]/30 shrink-0"
                   />
-                  <span className="hidden xl:inline text-xs font-bold text-[#152A1C] dark:text-slate-100 max-w-[80px] truncate">
+                  <span className="hidden xl:inline text-xs font-bold text-[#152A1C] dark:text-slate-100 max-w-[68px] 2xl:max-w-[85px] truncate">
                     {(userProfile?.name || 'Traveler').split(' ')[0]}
                   </span>
                 </button>
@@ -343,7 +343,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         onSignOut();
                       }
                     }}
-                    className="flex items-center gap-1.5 h-8 xl:h-9 px-3 xl:px-3.5 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-bold whitespace-nowrap shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95"
+                    className="flex items-center gap-1 h-8 xl:h-9 px-2.5 xl:px-3 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-bold whitespace-nowrap shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95"
                     title="Sign Out"
                   >
                     <LogOut className="w-3.5 h-3.5 shrink-0" />
