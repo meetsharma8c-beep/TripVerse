@@ -249,10 +249,10 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
         {/* Forest Green Top Banner */}
         <div className="bg-[#2D5A3D] px-6 py-4 flex items-center justify-between text-white">
           <span className="text-[11px] font-mono tracking-widest uppercase text-white/90 font-bold">
-            {booking ? `BOARDING PASS • ${booking.pnr}` : 'BOARDING PASS'}
+            {booking ? `BOARDING PASS • ${booking.pnr}` : 'TRANSIT & ROUTE SUMMARY (ESTIMATE)'}
           </span>
           <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-xs">
-            <span>{booking ? 'Verified Ticket' : 'On Time'}</span>
+            <span>{booking ? 'Verified Ticket' : 'Unbooked Plan'}</span>
             <Plane className="w-3.5 h-3.5 text-white transform rotate-45" />
           </div>
         </div>
@@ -328,19 +328,19 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
             <div>
               <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Transit / Deal</span>
               <span className="text-xs sm:text-sm font-extrabold text-[#152A1C] block truncate">
-                {booking ? booking.pnr : (trip.bestTransportDeal?.provider || 'GA-422')}
+                {booking ? booking.pnr : (trip.bestTransportDeal?.provider || `${(trip.transportMode || 'car').toUpperCase()} Route`)}
               </span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Gate</span>
-              <span className="text-xs sm:text-sm font-extrabold text-[#152A1C] block">
-                A12
+              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Mode</span>
+              <span className="text-xs sm:text-sm font-extrabold text-[#152A1C] block capitalize">
+                {trip.transportMode || 'Car'}
               </span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Seat / Class</span>
+              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Travelers</span>
               <span className="text-xs sm:text-sm font-extrabold text-[#152A1C] block">
-                {booking ? '14A (Confirmed)' : '24A'}
+                {booking ? `${trip.travelersCount} Pax (Confirmed)` : `${trip.travelersCount} Pax (Unbooked)`}
               </span>
             </div>
           </div>

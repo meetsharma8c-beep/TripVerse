@@ -95,46 +95,48 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
               <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#152A1C] tracking-tight truncate">
                 {trip.destination}
               </h1>
-              <span className="p-1.5 rounded-full text-[#2D5A3D] bg-[#E8EFE7] hover:bg-[#d9e5d8] transition-colors cursor-pointer" title="Trip Destination">
-                <Edit3 className="w-3.5 h-3.5" />
-              </span>
+              {onOpenReplanning && (
+                <button
+                  type="button"
+                  onClick={onOpenReplanning}
+                  className="p-1.5 rounded-full text-[#2D5A3D] bg-[#E8EFE7] hover:bg-[#d9e5d8] transition-colors cursor-pointer"
+                  title="Modify or replan trip"
+                  aria-label="Modify or replan trip"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             <p className="text-xs sm:text-sm text-[#5A7362] font-medium">
               {formatDateRange()}
             </p>
 
-            {/* Travelers Avatar Stack matching Reference Image */}
+            {/* Accurate Travelers Avatar Stack */}
             <div className="flex items-center gap-2 pt-1">
               <div className="flex -space-x-2 overflow-hidden items-center">
-                <img
-                  className="inline-block h-7 w-7 rounded-full ring-2 ring-white object-cover"
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"
-                  alt="Traveler 1"
-                />
-                <img
-                  className="inline-block h-7 w-7 rounded-full ring-2 ring-white object-cover"
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80"
-                  alt="Traveler 2"
-                />
-                <img
-                  className="inline-block h-7 w-7 rounded-full ring-2 ring-white object-cover"
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"
-                  alt="Traveler 3"
-                />
+                {[
+                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+                  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
+                  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80'
+                ]
+                  .slice(0, Math.min(3, Math.max(1, trip.travelersCount)))
+                  .map((src, idx) => (
+                    <img
+                      key={src}
+                      className="inline-block h-7 w-7 rounded-full ring-2 ring-white object-cover"
+                      src={src}
+                      alt={`Traveler ${idx + 1}`}
+                    />
+                  ))}
                 {trip.travelersCount > 3 && (
                   <span className="flex items-center justify-center h-7 w-7 rounded-full bg-[#E8EFE7] text-[#2D5A3D] font-bold text-[10px] ring-2 ring-white">
                     +{trip.travelersCount - 3}
                   </span>
                 )}
-                {trip.travelersCount <= 3 && (
-                  <span className="flex items-center justify-center h-7 w-7 rounded-full bg-[#E8EFE7] text-[#2D5A3D] font-bold text-[10px] ring-2 ring-white">
-                    +{trip.travelersCount}
-                  </span>
-                )}
               </div>
               <span className="text-xs text-[#5A7362] font-medium capitalize">
-                {trip.travelerType} group
+                {trip.travelersCount} {trip.travelersCount === 1 ? 'traveler' : 'travelers'} • {trip.travelerType}
               </span>
             </div>
 

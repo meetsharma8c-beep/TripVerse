@@ -107,9 +107,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [couponMessage, setCouponMessage] = useState<{ text: string; isError: boolean } | null>(null);
 
-  // Gateway Processing & Bank 3D-Secure States
-  const [gatewayStage, setGatewayStage] = useState<'checkout' | 'authorizing' | 'otp_modal' | 'success'>('checkout');
-  const [otpValue, setOtpValue] = useState<string>('');
+  // Gateway Processing States
+  const [gatewayStage, setGatewayStage] = useState<'checkout' | 'authorizing' | 'unavailable' | 'success'>('checkout');
+  const [gatewayErrorMessage, setGatewayErrorMessage] = useState<string>('');
   const [confirmedBooking, setConfirmedBooking] = useState<BookingRecord | null>(null);
 
   // Unique Transaction Reference for this session
@@ -241,8 +241,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   const initiatePayment = async (methodName: string) => {
     triggerHaptic('medium');
     setGatewayStage('authorizing');
+    setGatewayErrorMessage('');
 
-    // 1. Attempt Live Gateway Checkout (if Razorpay credentials are configured)
+    // Attempt Live Gateway Checkout via Razorpay Serverless API
     try {
       const orderRes = await createRazorpayOrder({
         amount: finalPayableINR,
@@ -273,7 +274,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 finalizeSuccessfulBooking(methodName, response.razorpay_payment_id);
               } else {
                 setGatewayStage('checkout');
-                alert('Payment verification could not be completed.');
+                alert('Cryptographic payment signature verification could not be completed.');
               }
             },
             modal: {
@@ -287,23 +288,18 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
           return;
         }
       }
+
+      setGatewayErrorMessage(
+        orderRes?.message ||
+        'Live Razorpay merchant credentials (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) are not configured on the server.'
+      );
+      setGatewayStage('unavailable');
     } catch {
-      // Fall through to built-in simulation if offline or keys not configured
+      setGatewayErrorMessage(
+        'Could not reach the payment gateway server. Please complete your booking directly with official partner portals below.'
+      );
+      setGatewayStage('unavailable');
     }
-
-    // 2. Direct Built-In Gateway Flow (Supports instant demo & OTP simulation)
-    if (activeTab === 'card' || activeTab === 'netbanking') {
-      setTimeout(() => {
-        setGatewayStage('otp_modal');
-        setOtpValue('749201'); // pre-fill helper test OTP
-      }, 1000);
-      return;
-    }
-
-    // Direct Instant Gateway Authorization (for UPI QR, UPI Apps, Wallets)
-    setTimeout(() => {
-      finalizeSuccessfulBooking(methodName);
-    }, 1200);
   };
 
   const finalizeSuccessfulBooking = (methodName: string, customTxnId?: string) => {
@@ -627,15 +623,22 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                         </div>
                       )}
 
-                      {/* Simulation Actions */}
+                      {/* Direct Checkout Actions */}
                       <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
+                        <a
+                          href={upiPaymentUri}
+                          className="flex-1 py-2.5 px-4 rounded-xl border border-emerald-700 text-emerald-800 hover:bg-emerald-50 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <Smartphone className="w-3.5 h-3.5" />
+                          <span>Open Installed UPI App</span>
+                        </a>
                         <button
                           type="button"
-                          onClick={() => initiatePayment('Dynamic UPI QR (Simulated)')}
+                          onClick={() => initiatePayment('Dynamic UPI QR')}
                           className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
-                          <span>Simulate Payment Approval</span>
+                          <span>Verify via Razorpay Gateway</span>
                         </button>
                       </div>
                     </div>
@@ -1152,50 +1155,82 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         )}
 
         {/* ================================================================ */}
-        {/* STAGE C: 3D SECURE OTP SIMULATION MODAL                          */}
+        {/* STAGE C: HONEST GATEWAY UNAVAILABLE STATE (NO FAKE PNR/OTP)       */}
         {/* ================================================================ */}
-        {gatewayStage === 'otp_modal' && (
-          <div className="p-6 sm:p-8 space-y-4 max-w-md mx-auto my-auto min-h-[380px] flex flex-col justify-center">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <ShieldCheck className="w-5 h-5 text-emerald-700" />
-              <h3 className="text-sm font-bold text-slate-900">Bank 3D-Secure 2.0 Authentication</h3>
+        {gatewayStage === 'unavailable' && (
+          <div className="p-6 sm:p-8 space-y-5 max-w-lg mx-auto my-auto min-h-[400px] flex flex-col justify-center">
+            <div className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left">
+              <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <h3 className="text-sm font-black text-amber-950">
+                  Live In-App Payment Gateway Not Configured
+                </h3>
+                <p className="text-xs text-amber-900 leading-relaxed">
+                  {gatewayErrorMessage || 'RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are not configured on this server. No payment was charged and no PNR or hotel voucher has been issued.'}
+                </p>
+              </div>
             </div>
 
-            <p className="text-xs text-slate-600">
-              We sent a 6-digit verification code to your registered mobile number ending in <strong className="text-slate-900">•••• 9821</strong>.
-            </p>
-
-            <div>
-              <label className="text-[11px] font-bold text-slate-700 block mb-1">Enter Bank OTP</label>
-              <input
-                type="text"
-                value={otpValue}
-                onChange={e => setOtpValue(e.target.value)}
-                placeholder="749201"
-                maxLength={6}
-                className="w-full text-center tracking-widest text-lg font-mono font-black py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600"
-              />
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3 text-left">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                Complete Booking Directly on Official Partner Portals
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <a
+                  href={`https://www.google.com/travel/flights?q=${encodeURIComponent(`${origin} to ${destination}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                >
+                  <span>Google Flights</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                </a>
+                <a
+                  href="https://www.irctc.co.in/nget/train-search"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                >
+                  <span>IRCTC Official Trains</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                </a>
+                <a
+                  href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(trip?.selectedHotel?.name || destination)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                >
+                  <span>Booking.com Stays</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                </a>
+                <a
+                  href="https://www.redbus.in/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                >
+                  <span>redBus Intercity</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                </a>
+              </div>
             </div>
 
-            <div className="flex justify-between items-center text-[11px] text-slate-500">
-              <span>Resend OTP in 24s</span>
+            <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setOtpValue('749201')}
-                className="text-emerald-700 font-bold hover:underline cursor-pointer"
+                onClick={() => setGatewayStage('checkout')}
+                className="flex-1 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-colors cursor-pointer"
               >
-                Auto-fill Test OTP
+                ← Back to Payment Options
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
+              >
+                Close
               </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => finalizeSuccessfulBooking('Card 3DS Verified')}
-              className="w-full py-3.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-              <span>Verify & Complete Payment</span>
-            </button>
           </div>
         )}
 

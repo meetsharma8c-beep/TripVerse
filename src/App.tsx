@@ -721,8 +721,7 @@ export function App() {
   };
 
   useEffect(() => {
-    if (!activeTripId || !activeTripOrigin || !activeTripDestination ||
-      (activeTripTransportMode !== 'car' && activeTripTransportMode !== 'bike')) return;
+    if (!activeTripId || !activeTripOrigin || !activeTripDestination) return;
     const trip = tripsRef.current.find(item => item.id === activeTripId);
     if (!trip) return;
     if (activeTripRouteSource === 'geoapify_routing' &&
@@ -1650,6 +1649,7 @@ export function App() {
                 onOptimizeBudget={() => setTripSubTab('budget')}
                 onExportTrip={handleExportTrip}
                 onOpenLiveNav={() => setIsLiveNavOpen(true)}
+                onNavigateToRoute={() => setTripSubTab('route')}
                 onOpenDeals={() => setIsBestDealModalOpen(true)}
                 onOpenPrintDossier={() => setIsPrintModalOpen(true)}
                 onOpenBooking={() => setIsBookingModalOpen(true)}

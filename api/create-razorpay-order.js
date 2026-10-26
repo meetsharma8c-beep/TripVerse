@@ -27,10 +27,11 @@ export default async function handler(req, res) {
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
   if (!keyId || !keySecret) {
-    return res.status(200).json({
-      ok: true,
-      mode: 'simulation',
-      message: 'Razorpay keys not configured. Falling back to sandbox simulation mode.'
+    return res.status(503).json({
+      ok: false,
+      mode: 'unavailable',
+      error: 'RAZORPAY_NOT_CONFIGURED',
+      message: 'Live Razorpay merchant credentials (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) are not configured on the server.'
     });
   }
 

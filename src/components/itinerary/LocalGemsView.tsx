@@ -21,16 +21,22 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
   const [isLoadingGems, setIsLoadingGems] = useState(true);
   const [currency, setCurrency] = useState<Currency>(getStoredCurrency());
   const [activeTab, setActiveTab] = useState<'food' | 'secret'>('food');
-  const [vegOnly, setVegOnly] = useState(false);
+  const [vegOnly, setVegOnly] = useState(
+    trip.foodPreference === 'veg' || trip.foodPreference === 'vegan'
+  );
   const [targetDay, setTargetDay] = useState<number>(1);
   const [addedIds, setAddedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setVegOnly(trip.foodPreference === 'veg' || trip.foodPreference === 'vegan');
+  }, [trip.foodPreference]);
 
   useEffect(() => {
     let isMounted = true;
     setIsLoadingGems(true);
     fetchGenuineDestinationGems(trip.destination, {
       coordinates: trip.destinationDetails?.coordinates,
-      foodPreference: trip.preferences?.join(', ')
+      foodPreference: trip.foodPreference || trip.preferences?.join(', ')
     }).then(data => {
       if (isMounted) {
         setGemsData(data);
@@ -41,7 +47,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
     return () => {
       isMounted = false;
     };
-  }, [trip.destination, trip.destinationDetails?.coordinates, trip.preferences]);
+  }, [trip.destination, trip.destinationDetails?.coordinates, trip.foodPreference, trip.preferences]);
 
   const handleRefreshGems = async () => {
     triggerHaptic('medium');
@@ -50,7 +56,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
       const freshData = await fetchGenuineDestinationGems(trip.destination, {
         forceFresh: true,
         coordinates: trip.destinationDetails?.coordinates,
-        foodPreference: trip.preferences?.join(', ')
+        foodPreference: trip.foodPreference || trip.preferences?.join(', ')
       });
       setGemsData(freshData);
     } finally {
@@ -72,6 +78,10 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
     const type = isFood ? 'food' : 'viewpoint';
     const estimatedCost = 'pricePerPerson' in gem ? gem.pricePerPerson * trip.travelersCount : 150;
 
+    const baseCoords = trip.destinationDetails?.coordinates ||
+      trip.itinerary?.[0]?.activities?.[0]?.coordinates ||
+      { lat: 24.5854, lng: 73.7125 };
+
     onAddActivity(targetDay, {
       title,
       type,
@@ -81,7 +91,10 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
       distanceKm: 3.5,
       description: 'whySpecial' in gem ? gem.whySpecial : gem.description,
       tag: isFood ? 'Local Dining' : 'Secret Gem',
-      coordinates: gem.coordinates || { lat: 24.5854, lng: 73.7125 },
+      coordinates: gem.coordinates || {
+        lat: Number((baseCoords.lat + 0.008).toFixed(4)),
+        lng: Number((baseCoords.lng + 0.008).toFixed(4))
+      },
       isCustom: true
     });
 
@@ -109,7 +122,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
-                <span>Live AI Regional Discovery</span>
+                <span>{gemsData.isLiveGenerated ? 'Live AI Regional Discovery' : 'Curated Regional Discovery'}</span>
               </span>
               <button
                 type="button"

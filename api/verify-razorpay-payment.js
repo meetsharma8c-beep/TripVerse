@@ -24,12 +24,12 @@ export default async function handler(req, res) {
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
   if (!keySecret) {
-    // If running in simulation/demo mode without secret
-    return res.status(200).json({
-      ok: true,
-      verified: true,
-      mode: 'simulation',
-      message: 'Payment accepted in simulation mode'
+    return res.status(503).json({
+      ok: false,
+      verified: false,
+      mode: 'unavailable',
+      error: 'RAZORPAY_NOT_CONFIGURED',
+      message: 'Live Razorpay merchant secret (RAZORPAY_KEY_SECRET) is not configured on the server.'
     });
   }
 

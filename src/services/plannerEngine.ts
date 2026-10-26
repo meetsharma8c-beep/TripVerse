@@ -982,6 +982,6 @@ export function generateAITrip(input: PlannerInput): Trip {
       durationHours: routeHours,
       source: 'estimate'
     },
-    travelDataStatus: input.transportMode === 'car' || input.transportMode === 'bike' ? 'pending' : 'not_applicable'
+    travelDataStatus: 'pending'
   };
 }

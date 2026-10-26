@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bus, Car, ExternalLink, Plane, Train, Bike, QrCode, CloudSun, CheckCircle2, Circle, Download, ChevronRight, Ticket, Sparkles, Luggage } from 'lucide-react';
-import { Trip, TransportMode } from '../../types/trip';
+import { Trip, TransportMode, PackingItem, WeatherForecast } from '../../types/trip';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
+import { fetchLiveDestinationWeather, getDestinationWeather } from '../../services/weatherService';
+import { loadTripPacking, saveTripPacking } from '../../services/storageService';
+import { generateSmartPackingList } from '../../services/packingService';
+import { resolveTransitContext } from '../../services/transportFeasibilityEngine';
+import { getBookingForTrip } from '../../services/paymentGatewayService';
 
 interface TransportDealsViewProps {
   trip: Trip;
@@ -25,16 +30,44 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
   onOpenBooking 
 }) => {
   const [mode, setMode] = useState<TransportMode>(trip.transportMode || 'car');
-  const [checklist, setChecklist] = useState([
-    { id: 1, label: 'Travel Documents & ID', checked: true },
-    { id: 2, label: 'Camera & Charger', checked: true },
-    { id: 3, label: 'Seasonal Outfits & Shoes', checked: true },
-    { id: 4, label: 'First-Aid & Essentials', checked: false }
-  ]);
+  const [weather, setWeather] = useState<WeatherForecast>(() =>
+    getDestinationWeather(trip.destination, trip.durationDays)
+  );
+  const [packingItems, setPackingItems] = useState<PackingItem[]>(() => {
+    const saved = loadTripPacking(trip.id);
+    if (saved && saved.length > 0) return saved;
+    return generateSmartPackingList(trip);
+  });
+
+  useEffect(() => {
+    const saved = loadTripPacking(trip.id);
+    if (saved && saved.length > 0) {
+      setPackingItems(saved);
+    } else {
+      setPackingItems(generateSmartPackingList(trip));
+    }
+  }, [trip]);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchLiveDestinationWeather(
+      trip.destination,
+      trip.durationDays,
+      undefined,
+      trip.destinationDetails?.coordinates
+    ).then(liveWeather => {
+      if (isMounted) setWeather(liveWeather);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [trip.destination, trip.durationDays, trip.destinationDetails?.coordinates]);
 
   const origin = (trip.origin || 'Origin').split(',')[0].trim();
   const destination = (trip.destination || 'Destination').split(',')[0].trim();
   const query = encodeURIComponent(`${origin} to ${destination}`);
+  const transitCtx = resolveTransitContext(trip.destination);
+  const booking = getBookingForTrip(trip.id);
 
   // Derived 3-letter uppercase station / airport codes
   const originCode = origin.slice(0, 3).toUpperCase() || 'ORG';
@@ -84,18 +117,25 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
 
   const destinationImg = resolveDestinationImage(trip.destination);
   const hotelName = trip.selectedHotel?.name || 'Handpicked Boutique Stay';
-  const packedCount = checklist.filter(c => c.checked).length;
-  const progressPercent = Math.round((packedCount / checklist.length) * 100);
+  const packedCount = packingItems.filter(c => c.isPacked).length;
+  const progressPercent = Math.round((packedCount / Math.max(1, packingItems.length)) * 100);
+  const todayWeather = weather.forecastDays?.[0];
+  const currentTemp = todayWeather ? Math.round(todayWeather.tempC) : 26;
+  const weatherCondition = todayWeather?.condition || 'Clear';
+  const weatherHigh = todayWeather ? Math.round(todayWeather.maxTempC) : currentTemp + 4;
+  const weatherLow = todayWeather ? Math.round(todayWeather.minTempC) : currentTemp - 3;
 
-  const toggleChecklistItem = (id: number) => {
-    setChecklist(prev => prev.map(item => item.id === id ? { ...item, checked: !item.checked } : item));
+  const toggleChecklistItem = (id: string) => {
+    const updated = packingItems.map(item => item.id === id ? { ...item, isPacked: !item.isPacked } : item);
+    setPackingItems(updated);
+    saveTripPacking(trip.id, updated);
   };
 
   return (
     <div className="space-y-6 font-sans">
       
       {/* ============================================================== */}
-      {/* SCREEN 3: SIGNATURE LUXURY BOARDING PASS & JOURNEY TICKET CARD  */}
+      {/* SCREEN 3: SIGNATURE TRANSIT SUMMARY & ROUTE DOSSIER CARD        */}
       {/* ============================================================== */}
       <div className="rounded-3xl overflow-hidden border border-[#E2EBE1] shadow-[0_10px_30px_rgba(45,90,61,0.06)] bg-white">
         
@@ -104,22 +144,22 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
           <div className="flex items-center gap-2">
             <Ticket className="w-4 h-4 text-emerald-300" />
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-emerald-100">
-              Boarding Pass & Route Pass
+              {booking ? `Verified Transit Pass • ${booking.pnr}` : 'Transit & Route Estimate (Not a Ticket)'}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
-              <span>On Time</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
+              <span>{booking ? 'Confirmed' : `${(trip.transportMode || 'car').toUpperCase()} Plan`}</span>
             </span>
-            <Plane className="w-4 h-4 text-emerald-200" />
+            <Icon className="w-4 h-4 text-emerald-200" />
           </div>
         </div>
 
-        {/* Boarding Pass Core Body */}
+        {/* Transit Summary Core Body */}
         <div className="p-5 sm:p-6 space-y-6">
           
-          {/* Origin -> Destination Flight Path Diagram */}
+          {/* Origin -> Destination Route Diagram */}
           <div className="flex items-center justify-between gap-4">
             
             {/* Origin */}
@@ -131,26 +171,28 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
                 {originCode}
               </p>
               <span className="text-xs font-semibold text-[#152A1C] block">
-                08:40 AM
+                {trip.bestTransportDeal?.route?.departureTime || 'Flexible Dep.'}
               </span>
               <span className="text-[10px] text-slate-400 block">
                 {trip.startDate ? new Date(trip.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : 'Day 1'}
               </span>
             </div>
 
-            {/* In-Between Flight Route Arc with Plane */}
+            {/* In-Between Route Arc */}
             <div className="flex-1 flex flex-col items-center justify-center px-2">
               <span className="text-[10px] font-bold text-[#5A7362] mb-1">
-                {trip.routeDetails?.durationHours ? `${trip.routeDetails.durationHours}h` : '2h 15m'}
+                {trip.routeDetails?.durationHours
+                  ? `~${trip.routeDetails.durationHours}h`
+                  : trip.bestTransportDeal?.route?.duration || 'Estimated Duration'}
               </span>
               <div className="relative w-full flex items-center justify-center">
                 <div className="w-full border-t-2 border-dashed border-[#8EA78D]/50" />
                 <div className="absolute w-7 h-7 rounded-full bg-[#E8EFE7] border border-[#8EA78D]/40 text-[#2D5A3D] flex items-center justify-center shadow-2xs">
-                  <Plane className="w-3.5 h-3.5" />
+                  <Icon className="w-3.5 h-3.5" />
                 </div>
               </div>
               <span className="text-[10px] text-slate-400 mt-1 font-mono">
-                {trip.routeDetails?.distanceKm ? `${trip.routeDetails.distanceKm} km` : 'Scenic Route'}
+                {trip.routeDetails?.distanceKm ? `${trip.routeDetails.distanceKm} km (${trip.routeDetails.source === 'geoapify_routing' ? 'Live Route' : 'Est.'})` : 'Regional Route'}
               </span>
             </div>
 
@@ -163,7 +205,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
                 {destCode}
               </p>
               <span className="text-xs font-semibold text-[#152A1C] block">
-                11:50 AM
+                {trip.bestTransportDeal?.route?.arrivalTime || 'Est. Arrival'}
               </span>
               <span className="text-[10px] text-slate-400 block">
                 {trip.startDate ? new Date(trip.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : 'Day 1'}
@@ -179,16 +221,20 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
             <div className="absolute -right-8 w-5 h-5 rounded-full bg-[#F4F6F2] border-l border-[#E2EBE1]" />
           </div>
 
-          {/* Boarding Details & Clean QR Code */}
+          {/* Transit Hub & Summary Details */}
           <div className="flex items-center justify-between gap-4 pt-1">
             <div className="grid grid-cols-3 gap-4 flex-1">
               <div>
-                <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">Trip ID</span>
-                <p className="text-xs sm:text-sm font-black text-[#152A1C] font-display mt-0.5">{trip.id.slice(0, 10).toUpperCase()}</p>
+                <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">Nearest Rail Hub</span>
+                <p className="text-xs sm:text-sm font-black text-[#152A1C] font-display mt-0.5 truncate" title={transitCtx.primaryRailwayStation?.name || `${destination} Jn`}>
+                  {transitCtx.primaryRailwayStation?.name || `${destination} Jn`}
+                </p>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">Gate / Bay</span>
-                <p className="text-xs sm:text-sm font-black text-[#152A1C] font-display mt-0.5">A12</p>
+                <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">Nearest Airport</span>
+                <p className="text-xs sm:text-sm font-black text-[#152A1C] font-display mt-0.5 truncate" title={transitCtx.primaryAirport?.name || `${destination} Region`}>
+                  {transitCtx.primaryAirport?.name || `${destination} Region`}
+                </p>
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">Travelers</span>
@@ -221,7 +267,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D5A3D] block">
-                  Hotel Stay
+                  Recommended Hotel Stay (Unbooked)
                 </span>
                 <h4 className="text-sm font-bold text-[#152A1C] truncate">
                   {hotelName}
@@ -238,14 +284,14 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
         {/* Screen 3: Weather & Trip Progress Dual Cards */}
         <div className="border-t border-[#E2EBE1] p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white">
           
-          {/* Weather Widget */}
+          {/* Weather Widget (Connected to Open-Meteo) */}
           <div className="p-3.5 rounded-2xl bg-[#F4F6F2] border border-[#E2EBE1] flex items-center justify-between gap-3">
             <div>
               <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">
-                Weather in {destination}
+                Weather in {destination} {weather.isLive ? '• Live' : ''}
               </span>
-              <p className="text-2xl font-black font-display text-[#152A1C] mt-0.5">26°C</p>
-              <p className="text-[11px] text-[#5A7362]">Partly Cloudy • High 30° Low 23°</p>
+              <p className="text-2xl font-black font-display text-[#152A1C] mt-0.5">{currentTemp}°C</p>
+              <p className="text-[11px] text-[#5A7362]">{weatherCondition} • High {weatherHigh}° Low {weatherLow}°</p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-white border border-[#E2EBE1] flex items-center justify-center text-amber-500 shadow-2xs">
               <CloudSun className="w-6 h-6 text-amber-500" />
@@ -256,10 +302,10 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
           <div className="p-3.5 rounded-2xl bg-[#F4F6F2] border border-[#E2EBE1] flex items-center justify-between gap-3">
             <div>
               <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">
-                Trip Progress
+                Packing Readiness
               </span>
               <p className="text-2xl font-black font-display text-[#2D5A3D] mt-0.5">{progressPercent}%</p>
-              <p className="text-[11px] text-[#5A7362]">{packedCount} of {checklist.length} tasks ready</p>
+              <p className="text-[11px] text-[#5A7362]">{packedCount} of {packingItems.length} items packed</p>
             </div>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
@@ -286,14 +332,14 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
 
         </div>
 
-        {/* Screen 3: Packing Checklist with Interactive Checkboxes */}
+        {/* Screen 3: Packing Checklist with Persistent Checkboxes */}
         <div className="border-t border-[#E2EBE1] p-4 sm:p-5 bg-[#F8FAF7]/60 space-y-3">
           <div className="flex items-center justify-between text-xs font-bold text-[#152A1C]">
             <div className="flex items-center gap-1.5">
               <Luggage className="w-3.5 h-3.5 text-[#2D5A3D]" />
               <span>Packing Checklist</span>
             </div>
-            <span className="text-[#5A7362] text-[11px]">{packedCount} of {checklist.length} packed</span>
+            <span className="text-[#5A7362] text-[11px]">{packedCount} of {packingItems.length} packed</span>
           </div>
 
           <div className="w-full bg-[#E2EBE1] rounded-full h-1.5 overflow-hidden">
@@ -304,29 +350,29 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-            {checklist.map(item => (
+            {packingItems.slice(0, 4).map(item => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => toggleChecklistItem(item.id)}
                 className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs transition-all text-left cursor-pointer ${
-                  item.checked 
+                  item.isPacked 
                     ? 'bg-white border-[#8EA78D]/50 text-[#152A1C] shadow-2xs' 
                     : 'bg-white/60 border-[#E2EBE1] text-slate-500 hover:bg-white'
                 }`}
               >
-                {item.checked ? (
+                {item.isPacked ? (
                   <CheckCircle2 className="w-4 h-4 text-[#2D5A3D] shrink-0" />
                 ) : (
                   <Circle className="w-4 h-4 text-slate-300 shrink-0" />
                 )}
-                <span className={item.checked ? 'font-semibold' : ''}>{item.label}</span>
+                <span className={item.isPacked ? 'font-semibold' : ''}>{item.name}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Screen 3: Green Pill Primary Action (View E-Ticket & Dossier) */}
+        {/* Screen 3: Green Pill Primary Action (View Printable Dossier) */}
         <div className="p-4 sm:p-5 bg-white border-t border-[#E2EBE1]">
           <button
             type="button"
@@ -334,7 +380,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
             className="w-full py-3.5 px-6 rounded-full bg-[#2D5A3D] hover:bg-[#244931] text-white font-display font-bold text-sm shadow-md shadow-[#2D5A3D]/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
           >
             <Download className="w-4 h-4" />
-            <span>View & Download E-Ticket Dossier</span>
+            <span>View & Print Travel Dossier</span>
           </button>
         </div>
 

@@ -1114,13 +1114,12 @@ export async function sendPhoneOtp(
   }
 
   const isIndianNumber = clean.startsWith('+91') || clean.replace(/\D/g, '').length === 10;
-  const fast2SmsKey = getFast2SmsApiKey();
   const code = Math.floor(100000 + Math.random() * 900000).toString();
 
   let lastFast2SmsError = '';
 
-  // 1. Fast2SMS Gateway for Indian numbers (+91)
-  if (isIndianNumber && fast2SmsKey) {
+  // 1. Fast2SMS Gateway for Indian numbers (+91) via /api/sms serverless proxy
+  if (isIndianNumber) {
     try {
       const res = await sendRealSmsOtp(clean, code);
       if (res.success) {
