@@ -59,19 +59,19 @@ const TRAVELER_STYLES = [
 ];
 
 const COUNTRY_CODES = [
-  { code: '+91', country: 'India', placeholder: '98765 43210' },
-  { code: '+1', country: 'US / Canada', placeholder: '(555) 000-0000' },
-  { code: '+44', country: 'United Kingdom', placeholder: '7911 123456' },
-  { code: '+971', country: 'UAE', placeholder: '50 123 4567' },
-  { code: '+65', country: 'Singapore', placeholder: '8123 4567' },
-  { code: '+61', country: 'Australia', placeholder: '412 345 678' },
-  { code: '+49', country: 'Germany', placeholder: '151 23456789' },
-  { code: '+33', country: 'France', placeholder: '6 12 34 56 78' },
-  { code: '+966', country: 'Saudi Arabia', placeholder: '50 123 4567' },
-  { code: '+977', country: 'Nepal', placeholder: '984 1234567' },
-  { code: '+880', country: 'Bangladesh', placeholder: '1712 345678' },
-  { code: '+94', country: 'Sri Lanka', placeholder: '71 234 5678' },
-  { code: '+81', country: 'Japan', placeholder: '90 1234 5678' }
+  { code: '+91', iso: 'IN', country: 'India', placeholder: '98765 43210' },
+  { code: '+1', iso: 'US', country: 'US / Canada', placeholder: '(555) 000-0000' },
+  { code: '+44', iso: 'UK', country: 'United Kingdom', placeholder: '7911 123456' },
+  { code: '+971', iso: 'AE', country: 'UAE', placeholder: '50 123 4567' },
+  { code: '+65', iso: 'SG', country: 'Singapore', placeholder: '8123 4567' },
+  { code: '+61', iso: 'AU', country: 'Australia', placeholder: '412 345 678' },
+  { code: '+49', iso: 'DE', country: 'Germany', placeholder: '151 23456789' },
+  { code: '+33', iso: 'FR', country: 'France', placeholder: '6 12 34 56 78' },
+  { code: '+966', iso: 'SA', country: 'Saudi Arabia', placeholder: '50 123 4567' },
+  { code: '+977', iso: 'NP', country: 'Nepal', placeholder: '984 1234567' },
+  { code: '+880', iso: 'BD', country: 'Bangladesh', placeholder: '1712 345678' },
+  { code: '+94', iso: 'LK', country: 'Sri Lanka', placeholder: '71 234 5678' },
+  { code: '+81', iso: 'JP', country: 'Japan', placeholder: '90 1234 5678' }
 ];
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -802,13 +802,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
                         Mobile Phone Number
                       </label>
-                      <div className="flex gap-2">
-                        {/* Country Dial Code Selector */}
-                        <div className="relative shrink-0">
+                      <div className="flex items-stretch gap-2 w-full">
+                        {/* Country Dial Code Selector - Compact displayed pill with full native dropdown */}
+                        <div className="relative w-[104px] sm:w-[114px] shrink-0 group">
+                          <div className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 group-focus-within:border-[#2D5A3D] group-focus-within:ring-2 group-focus-within:ring-[#2D5A3D]/15 flex items-center justify-between text-xs sm:text-sm font-bold text-slate-700 pointer-events-none select-none transition-colors">
+                            <span className="truncate">
+                              {selectedCountry.iso} {selectedCountry.code}
+                            </span>
+                            <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
+                          </div>
                           <select
                             value={countryCode}
                             onChange={(e) => setCountryCode(e.target.value)}
-                            className="appearance-none pl-3 pr-7 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 focus:outline-hidden focus:border-[#2D5A3D] cursor-pointer"
+                            aria-label="Country Dial Code"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-base"
                           >
                             {COUNTRY_CODES.map((c) => (
                               <option key={c.code} value={c.code}>
@@ -816,18 +823,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                               </option>
                             ))}
                           </select>
-                          <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
 
                         {/* Phone Number Input */}
-                        <div className="relative flex-1">
-                          <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <div className="relative flex-1 min-w-0">
+                          <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <input
                             type="tel"
+                            inputMode="tel"
+                            autoComplete="tel-national"
                             value={phoneNumber}
                             onChange={(e) => setPhoneNumber(e.target.value)}
                             placeholder={selectedCountry.placeholder}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold tracking-wide text-slate-800 focus:outline-hidden focus:border-[#2D5A3D]"
+                            className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold tracking-wide text-slate-800 focus:outline-hidden focus:border-[#2D5A3D] focus:ring-2 focus:ring-[#2D5A3D]/15 transition-colors"
                             required
                             autoFocus
                           />
