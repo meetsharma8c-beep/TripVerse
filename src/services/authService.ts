@@ -981,28 +981,12 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
     if (supaErr && (supaErr.message.toLowerCase().includes('email not confirmed') || (supaErr as any).code === 'email_not_confirmed')) {
       const accounts = loadAccounts();
       const localAccount = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
-      if (localAccount && localAccount.passwordHash === pwdHash) {
+      if (localAccount) {
+        if (localAccount.passwordHash !== pwdHash) {
+          throw new Error('Invalid email or password. Please verify your credentials.');
+        }
         syncAccountToLocal(localAccount.user, pwdHash);
         return localAccount.user;
-      }
-
-      // If user registered but Supabase email confirmation was rate-limited by SMTP,
-      // create a valid authenticated cloud session so user is never locked out
-      try {
-        const anonRes = await supabase.auth.signInAnonymously({
-          options: { data: { email: emailNorm, full_name: emailNorm.split('@')[0] } }
-        });
-        if (anonRes.data?.user) {
-          const authUser = supabaseUserToAuthUser(anonRes.data.user, {
-            email: emailNorm,
-            displayName: emailNorm.split('@')[0],
-            emailVerified: true
-          });
-          syncAccountToLocal(authUser, pwdHash);
-          return authUser;
-        }
-      } catch (e) {
-        console.warn('[Supabase] Cloud session bridge notice:', e);
       }
 
       const err = new Error('Email confirmation is pending for this account. Please verify via the link sent to your inbox, or enter the 6-digit verification code below.');
