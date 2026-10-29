@@ -89,4 +89,11 @@ describe('Auth Security & Verification Tests', () => {
     expect(user.email).toBe('valid_test@domain.com');
     expect(user.displayName).toBe('Valid Test');
   });
+
+  it('rejects sign-in on fresh device when credentials do not match or account is unknown', async () => {
+    // Empty local storage simulating a new device
+    await expect(
+      signInWithEmail({ email: 'unknown_cross_device@domain.com', password: 'AnyPassword123!' })
+    ).rejects.toThrow(/invalid login credentials|invalid email or password/i);
+  });
 });

@@ -701,88 +701,39 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
         throw new Error('An account with this email address already exists. Please sign in instead.');
       }
       if ((res.error as any).code === 'over_email_send_rate_limit' || res.error.message.toLowerCase().includes('rate limit')) {
-        isRateLimited = true;
-      } else {
-        throw new Error(res.error.message);
+        throw new Error('Supabase email verification rate limit reached (3 emails/hr). Please wait a few moments before trying again, or use Quick Guest Explorer for instant access.');
       }
-    } else {
-      supaData = res.data;
+      throw new Error(res.error.message);
     }
+
+    supaData = res.data;
   } catch (err: any) {
-    if (err.message && err.message.toLowerCase().includes('already exists')) {
-      throw err;
-    }
-    if ((err as any).code === 'over_email_send_rate_limit' || (err.message && err.message.toLowerCase().includes('rate limit'))) {
-      isRateLimited = true;
-    } else {
-      throw err;
-    }
+    throw err;
   }
 
-  let authUser: AuthUser;
-  const isSessionCreated = Boolean(supaData?.session);
-
-  if (supaData?.user) {
-    authUser = supabaseUserToAuthUser(supaData.user, {
-      displayName: data.name?.trim(),
-      travelerStyle: data.travelerStyle || 'Budget explorer',
-      location: data.location || 'India',
-      occupation: data.occupation || 'Explorer'
-    });
-    authUser.emailVerified = isSessionCreated;
-  } else {
-    // Acquire a genuine Supabase authenticated cloud session via anonymous auth so RLS write permissions work
-    let cloudUid: string | null = null;
-    try {
-      const anonRes = await supabase.auth.signInAnonymously({
-        options: {
-          data: {
-            email: emailNorm,
-            full_name: data.name?.trim() || emailNorm.split('@')[0],
-            name: data.name?.trim() || emailNorm.split('@')[0],
-            traveler_style: data.travelerStyle || 'Budget explorer',
-            location: data.location || 'India',
-            occupation: data.occupation || 'Explorer'
-          }
-        }
-      });
-      if (anonRes.data?.user) {
-        cloudUid = anonRes.data.user.id;
-      }
-    } catch (e) {
-      console.warn('[Supabase] Cloud session bridge notice:', e);
-    }
-
-    const uid = cloudUid ? toDeterministicUuid(cloudUid) : toDeterministicUuid('email:' + emailNorm);
-    const now = new Date().toISOString();
-    authUser = {
-      uid,
-      email: emailNorm,
-      displayName: data.name?.trim() || emailNorm.split('@')[0],
-      photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.name || emailNorm)}&backgroundColor=2D5A3D,0B2545`,
-      travelerStyle: data.travelerStyle || 'Budget explorer',
-      travelStyleTag: 'Verified Explorer',
-      location: data.location || 'India',
-      occupation: data.occupation || 'Explorer',
-      age: 25,
-      emailVerified: true,
-      provider: 'email',
-      createdAt: now,
-      lastLoginAt: now,
-      savedPlaceIds: []
-    };
+  if (!supaData?.user) {
+    throw new Error('Could not create account with Supabase. Please verify your details and try again.');
   }
+
+  const isSessionCreated = Boolean(supaData.session);
+  const authUser: AuthUser = supabaseUserToAuthUser(supaData.user, {
+    displayName: data.name?.trim(),
+    travelerStyle: data.travelerStyle || 'Budget explorer',
+    location: data.location || 'India',
+    occupation: data.occupation || 'Explorer'
+  });
+  authUser.emailVerified = isSessionCreated;
 
   // Persist locally with hashed password so login on this device is immediate & reliable
   syncAccountToLocal(authUser, pwdHash);
 
   // Sync profile to Supabase PostgreSQL database
-  saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
+  await saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
 
   return {
     ...authUser,
-    emailConfirmationPending: false,
-    isPendingEmailConfirmation: false,
+    emailConfirmationPending: !isSessionCreated,
+    isPendingEmailConfirmation: !isSessionCreated,
     isRateLimited
   };
 }
