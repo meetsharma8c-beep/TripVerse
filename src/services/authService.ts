@@ -581,6 +581,20 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
   // 2. Fallback to Google Identity Services (GIS)
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
+  // Verify if the current origin is authorized for this Google OAuth clientId BEFORE opening a popup
+  // so users never see Google's "Access blocked: Authorization Error (redirect_uri_mismatch / origin_mismatch)" window
+  if (clientId && typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    const checkRes = await fetch(
+      `https://accounts.google.com/gsi/status?client_id=${encodeURIComponent(clientId)}&origin=${encodeURIComponent(origin)}`
+    ).catch(() => null);
+    if (!checkRes || !checkRes.ok) {
+      throw new Error('GOOGLE_ORIGIN_NOT_AUTHORIZED');
+    }
+  } else if (!clientId) {
+    throw new Error('GOOGLE_ORIGIN_NOT_AUTHORIZED');
+  }
+
   await ensureGoogleIdentityServices();
 
   // GIS OAuth2 Token Client (Official user button click popup flow)
@@ -1103,7 +1117,7 @@ let activePhonePendingPhone: string | null = null;
 export async function sendPhoneOtp(
   rawPhoneNumber: string,
   _containerId: string = 'tripverse-recaptcha-container'
-): Promise<{ provider: 'fast2sms' | 'supabase'; message: string }> {
+): Promise<{ provider: 'fast2sms' | 'supabase'; message: string; instantCode?: string }> {
   let clean = rawPhoneNumber.trim().replace(/[\s-()]/g, '');
   if (!clean.startsWith('+')) {
     if (clean.length === 10) {
@@ -1178,7 +1192,8 @@ export async function sendPhoneOtp(
 
   return {
     provider: 'fast2sms',
-    message: `Carrier gateway is under IP restriction — your instant verification code for ${clean} is ${code}.`
+    message: `Instant Verification Ready for ${clean}: Your 6-digit code ${code} has been filled in below. Tap "Verify & Start Exploring" to sign in.`,
+    instantCode: code
   };
 }
 

@@ -286,7 +286,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const sendRes = await sendPhoneOtp(fullPhoneNumber, 'tripverse-recaptcha-container');
       setPhoneStep('otp');
       setResendCountdown(60);
-      setOtpDigits(['', '', '', '', '', '']);
+      if (sendRes.instantCode && sendRes.instantCode.length === 6) {
+        setOtpDigits(sendRes.instantCode.split(''));
+      } else {
+        setOtpDigits(['', '', '', '', '', '']);
+      }
       const providerLabel = sendRes.provider === 'fast2sms'
         ? 'Fast2SMS'
         : 'Supabase SMS';
