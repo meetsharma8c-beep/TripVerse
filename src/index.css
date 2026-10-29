@@ -900,6 +900,23 @@ h6 {
   will-change: transform, opacity;
 }
 
+@keyframes tvHeroAmbientLoop {
+  0% {
+    transform: scale3d(1, 1, 1) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale3d(1.08, 1.08, 1) translate3d(-1.5%, -1%, 0);
+  }
+  100% {
+    transform: scale3d(1, 1, 1) translate3d(0, 0, 0);
+  }
+}
+
+.tv-hero-ambient-loop {
+  animation: tvHeroAmbientLoop 14s ease-in-out infinite;
+  will-change: transform;
+}
+
 .tv-splash-logo-reveal {
   animation: tvSplashLogoReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform, opacity;

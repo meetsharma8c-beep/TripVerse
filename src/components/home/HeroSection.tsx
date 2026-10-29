@@ -52,6 +52,60 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const [budget, setBudget] = useState(8000);
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
   const [heroVideoError, setHeroVideoError] = useState(false);
+  const [heroVideoPlaying, setHeroVideoPlaying] = useState(false);
+  const heroVideoRef = React.useRef<HTMLVideoElement>(null);
+
+  // Seamless automated loop playback across all OS & Low Power Mode (iOS/Android/macOS/Windows)
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (!video || heroVideoError) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.loop = true;
+    video.controls = false;
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.setAttribute('autoplay', '');
+
+    const attemptAutoPlay = () => {
+      if (!video || heroVideoError) return;
+      video.muted = true;
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setHeroVideoPlaying(true);
+          })
+          .catch(() => {
+            // If iOS Low Power Mode or strict battery saver blocks HTML5 video autoplay,
+            // keep heroVideoPlaying false so the <video> stays hidden (never showing a native play button)
+            // while the continuous Ken Burns poster animation runs underneath.
+            setHeroVideoPlaying(false);
+          });
+      }
+    };
+
+    attemptAutoPlay();
+
+    const handleVisibilityOrTouch = () => {
+      if (document.visibilityState === 'visible' && video.paused) {
+        attemptAutoPlay();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrTouch, { passive: true });
+    window.addEventListener('touchstart', handleVisibilityOrTouch, { passive: true, once: true });
+    window.addEventListener('click', handleVisibilityOrTouch, { passive: true, once: true });
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityOrTouch);
+      window.removeEventListener('touchstart', handleVisibilityOrTouch);
+      window.removeEventListener('click', handleVisibilityOrTouch);
+    };
+  }, [heroVideoError]);
 
   // Location suggestions state
   const [suggestions, setSuggestions] = useState<PreciseLocation[]>([]);
@@ -191,18 +245,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </p>
 
           {/* Serene Dynamic Landscape Visual */}
-          <div className="relative rounded-[32px] overflow-hidden border border-[#E2EBE1] dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(45,90,61,0.14)] bg-[#EAF0E9] dark:bg-slate-900 group tv-stagger-2">
-            {/* Fallback image */}
+          <div className="relative rounded-[32px] overflow-hidden border border-[#E2EBE1] dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(45,90,61,0.14)] bg-[#EAF0E9] dark:bg-slate-900 group tv-stagger-2 h-60 sm:h-72 md:h-84 lg:h-96">
+            {/* Continuous automated Ken Burns scenic animation (also guarantees zero play icon if OS battery saver blocks video) */}
             <img
               src="/videos/app-opening-poster.jpg"
               alt="Serene nature landscape with misty mountains and lake"
-              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
+              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none tv-hero-ambient-loop"
               loading="eager"
             />
 
-            {/* Ambient Cross-Device Video Scenery */}
+            {/* Ambient Cross-Device Video Scenery — only visible while actively playing so iOS Low Power Mode never overlays a Play button */}
             {!heroVideoError && (
               <video
+                ref={heroVideoRef}
                 src="/videos/app-opening.mp4"
                 autoPlay
                 loop
@@ -216,10 +271,31 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 preload="auto"
                 disablePictureInPicture
                 disableRemotePlayback
-                onError={() => setHeroVideoError(true)}
+                onPlaying={() => setHeroVideoPlaying(true)}
+                onPause={() => {
+                  // Immediately resume if paused by system or hide to prevent play button overlay
+                  const v = heroVideoRef.current;
+                  if (v) {
+                    v.muted = true;
+                    v.play().catch(() => setHeroVideoPlaying(false));
+                  }
+                }}
+                onEnded={() => {
+                  const v = heroVideoRef.current;
+                  if (v) {
+                    v.currentTime = 0;
+                    v.play().catch(() => {});
+                  }
+                }}
+                onError={() => {
+                  setHeroVideoPlaying(false);
+                  setHeroVideoError(true);
+                }}
                 width={1280}
                 height={720}
-                className="relative z-10 w-full h-60 sm:h-72 md:h-84 lg:h-96 object-cover object-center pointer-events-none select-none transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.015]"
+                className={`relative z-10 w-full h-full object-cover object-center pointer-events-none select-none transition-opacity duration-500 ${
+                  heroVideoPlaying ? 'opacity-100' : 'opacity-0'
+                }`}
               />
             )}
             <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none select-none" />
