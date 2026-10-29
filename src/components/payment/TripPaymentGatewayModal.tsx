@@ -593,6 +593,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                           <p className="text-xs text-slate-600 font-medium">
                             Scan with any UPI App: <strong className="text-slate-900">Google Pay, PhonePe, Paytm, CRED, BHIM</strong>
                           </p>
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-mono font-bold text-emerald-900">
+                            <span>Merchant UPI: 9904717666@ptaxis</span>
+                          </div>
 
                           <div className="flex items-center justify-center gap-2 pt-1">
                             <button
@@ -674,13 +677,20 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                         ))}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => initiatePayment(`UPI App (${selectedUpiApp || 'Google Pay'})`)}
+                      <a
+                        href={upiPaymentUri}
                         className="w-full mt-3 py-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <span>Open {selectedUpiApp || 'UPI App'} & Pay {formatCurrency(finalPayableINR, currency)}</span>
                         <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => initiatePayment(`UPI App (${selectedUpiApp || 'Google Pay'})`)}
+                        className="w-full py-2.5 rounded-xl border border-emerald-700 text-emerald-800 hover:bg-emerald-50 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Or Pay via Razorpay Checkout</span>
                       </button>
                     </div>
                   )}
@@ -703,7 +713,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                       {/* Fast VPA Chips */}
                       <div className="flex flex-wrap gap-1.5 pt-1">
-                        {['@okhdfcbank', '@okaxis', '@ybl', '@paytm', '@upi'].map(suffix => (
+                        {['@ptaxis', '@okhdfcbank', '@okaxis', '@ybl', '@paytm', '@upi'].map(suffix => (
                           <button
                             key={suffix}
                             type="button"

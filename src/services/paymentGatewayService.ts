@@ -197,8 +197,8 @@ export function buildUpiPaymentUri(params: {
   transactionRef: string;
   transactionNote?: string;
 }): string {
-  const vpa = params.payeeVpa || 'tripverse.travel@hdfcbank';
-  const name = params.payeeName || 'TripVerse Travel Tech';
+  const vpa = params.payeeVpa || '9904717666@ptaxis';
+  const name = params.payeeName || 'TripVerse';
   const amountStr = params.amount.toFixed(2);
   const note = params.transactionNote || `TripVerse Booking ${params.transactionRef}`;
   
