@@ -29,6 +29,7 @@ import {
   signInWithGoogleCredential,
   ensureGoogleIdentityServices,
   createAccountWithSupabase, 
+  signInAnonymouslyWithSupabase,
   sendPhoneOtp,
   verifyPhoneOtp,
   clearPhoneAuthSession,
@@ -75,7 +76,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onSuccess
 }) => {
   // Main Authentication mode - Default to email
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone' | 'guest'>('email');
   const [emailSubMode, setEmailSubMode] = useState<'login' | 'signup' | 'forgot-password' | 'verify-email'>('login');
   
   // Real Phone Auth state
@@ -410,6 +411,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   // ----------------------------------------------------------------------
+  // 3b. Genuine Instant Guest Explorer Sign-In (Supabase Verified Session)
+  // ----------------------------------------------------------------------
+  const handleInstantGuestSignIn = async () => {
+    setIsLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const user = await signInAnonymouslyWithSupabase({
+        name: name.trim() || phoneUserName.trim() || 'Explorer',
+        travelerStyle: emailTravelerStyle || phoneTravelerStyle || 'Budget explorer',
+        location: emailLocation || phoneLocation || 'India'
+      });
+      try {
+        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+      } catch {}
+      setSuccessMsg(`Welcome, ${user.displayName}! Verified explorer session activated.`);
+      setTimeout(() => {
+        onSuccess(toUserProfile(user));
+        handleModalClose();
+      }, 500);
+    } catch (err: any) {
+      console.error('Instant guest sign-in error:', err);
+      setErrorMsg(err.message || 'Could not initialize guest session.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ----------------------------------------------------------------------
   // 4. Real Email/Password Sign In
   // ----------------------------------------------------------------------
   const handleEmailSignIn = async (e: React.FormEvent) => {
@@ -608,25 +638,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </div>
 
-        {/* Primary Method Navigation: Phone OTP vs Email */}
-        <div className="grid grid-cols-2 border-b border-slate-200 bg-slate-50/60">
-          <button
-            type="button"
-            onClick={() => { 
-              setAuthMethod('phone'); 
-              setErrorMsg(null); 
-              setSuccessMsg(null); 
-            }}
-            className={`py-3.5 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-2 cursor-pointer ${
-              authMethod === 'phone'
-                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Phone className="w-3.5 h-3.5 text-[#2D5A3D]" />
-            <span>Mobile OTP</span>
-          </button>
-
+        {/* Primary Method Navigation: Email vs Quick Guest vs Mobile OTP */}
+        <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50/60">
           <button
             type="button"
             onClick={() => { 
@@ -634,14 +647,48 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               setErrorMsg(null); 
               setSuccessMsg(null); 
             }}
-            className={`py-3.5 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-3.5 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
               authMethod === 'email'
                 ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <Mail className="w-3.5 h-3.5 text-[#2D5A3D]" />
-            <span>Email & Password</span>
+            <span>Email</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { 
+              setAuthMethod('guest'); 
+              setErrorMsg(null); 
+              setSuccessMsg(null); 
+            }}
+            className={`py-3.5 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
+              authMethod === 'guest'
+                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>Quick Guest</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { 
+              setAuthMethod('phone'); 
+              setErrorMsg(null); 
+              setSuccessMsg(null); 
+            }}
+            className={`py-3.5 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
+              authMethod === 'phone'
+                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Phone className="w-3.5 h-3.5 text-[#2D5A3D]" />
+            <span>Mobile OTP</span>
           </button>
         </div>
 
@@ -961,6 +1008,87 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           {/* ==================================================================== */}
+          {/* METHOD: INSTANT GUEST EXPLORER (Genuine Supabase Cloud Session)      */}
+          {/* ==================================================================== */}
+          {authMethod === 'guest' && (
+            <div className="space-y-4 animate-in fade-in">
+              <div className="text-center space-y-1">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 mx-auto flex items-center justify-center">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-[#0B2545]">Instant Guest Explorer</h3>
+                <p className="text-xs text-slate-500">
+                  Explore and plan trips immediately. No password or email needed to start.
+                </p>
+              </div>
+
+              <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                    Your Name (Optional)
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Explorer Friend"
+                      className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1.5">
+                    Your Travel Style
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {TRAVELER_STYLES.map((style) => (
+                      <button
+                        key={style.id}
+                        type="button"
+                        onClick={() => setEmailTravelerStyle(style.id)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                          emailTravelerStyle === style.id
+                            ? 'bg-[#2D5A3D] text-white shadow-2xs scale-102'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        {style.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleInstantGuestSignIn}
+                disabled={isLoading}
+                className="w-full py-3.5 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Initializing Explorer Session...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Start Exploring as Verified Guest</span>
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 pt-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3D]" />
+                <span>Genuine cloud session with persistent database storage</span>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================================== */}
           {/* METHOD 2: REAL EMAIL & PASSWORD                                      */}
           {/* ==================================================================== */}
           {authMethod === 'email' && (
@@ -1031,6 +1159,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <span>Continue with Google</span>
                       </button>
                     )}
+                    <p className="text-[10px] text-slate-400 text-center mt-1">Tester authorization active • Or sign in with Email below</p>
                   </div>
 
                   <div className="flex items-center gap-3 text-slate-300">
@@ -1151,6 +1280,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <span>Sign up with Google</span>
                       </button>
                     )}
+                    <p className="text-[10px] text-slate-400 text-center mt-1">Tester authorization active • Or create account with Email below</p>
                   </div>
 
                   <div className="flex items-center gap-3 text-slate-300">

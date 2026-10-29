@@ -76,6 +76,16 @@ export default async function handler(req, res) {
 
     let data = await fastResponse.json().catch(() => ({}));
 
+    // If Fast2SMS IP security is enabled and blocks server IPs, provide a clean response
+    if (data && (data.status_code === 414 || (data.message && data.message.includes('blacklisted')))) {
+      return res.status(200).json({
+        return: false,
+        status_code: 414,
+        isIpRestricted: true,
+        message: 'SMS carrier gateway is temporarily restricted by carrier IP security. Please sign in or register with Email & Password for instant verification.'
+      });
+    }
+
     // Fallback to Quick SMS route ('q') if OTP route fails for non-IP reasons
     if (data && data.return === false && data.status_code !== 414) {
       const quickPayload = {
