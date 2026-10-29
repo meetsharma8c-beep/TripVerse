@@ -427,12 +427,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(true);
     try {
       const user = await signInWithEmail({ email, password, rememberMe });
-      if ((user as any).emailConfirmationPending && !(user as any).emailVerified) {
-        setEmailSubMode('verify-email');
-        setEmailResendCountdown(60);
-        setErrorMsg('Email address not yet confirmed. Please click the confirmation link in your email or enter the 6-digit verification code sent to your inbox.');
-        return;
-      }
       try {
         confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
       } catch {}
@@ -491,25 +485,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         location: emailLocation || 'India'
       });
 
-      const isPending = (user as any).isPendingEmailConfirmation || (user as any).emailConfirmationPending;
-      if (isPending) {
-        setEmailSubMode('verify-email');
-        setEmailResendCountdown(60);
-        if ((user as any).isRateLimited) {
-          setErrorMsg('Email verification rate limit reached. Please wait a few minutes and tap "Resend Code" to receive your 6-digit verification code.');
-        } else {
-          setSuccessMsg(`Account created! A confirmation link & 6-digit code was sent to ${email.trim()}.`);
-        }
-      } else {
-        try {
-          confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
-        } catch {}
-        setSuccessMsg(`Welcome to TripVerse, ${user.displayName}! Account created.`);
-        setTimeout(() => {
-          onSuccess(toUserProfile(user));
-          handleModalClose();
-        }, 600);
-      }
+      try {
+        confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+      } catch {}
+      setSuccessMsg(`Welcome to TripVerse, ${user.displayName}! Account created successfully.`);
+      setTimeout(() => {
+        onSuccess(toUserProfile(user));
+        handleModalClose();
+      }, 600);
     } catch (err: any) {
       console.error('Account creation error:', err);
       setErrorMsg(err.message || 'Could not create account.');

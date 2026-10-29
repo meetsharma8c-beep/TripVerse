@@ -752,9 +752,11 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
     };
   }
 
-  // Only create an active authenticated session once Supabase has issued a verified session
+  // Persist locally with hashed password so login on this device is immediate & reliable
+  syncAccountToLocal(authUser, pwdHash);
+
+  // Attempt Supabase PostgreSQL profile sync if active session exists
   if (isSessionCreated) {
-    syncAccountToLocal(authUser, pwdHash);
     saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
   }
 
@@ -891,6 +893,13 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
 
     // Check for Email not confirmed
     if (supaErr && (supaErr.message.toLowerCase().includes('email not confirmed') || (supaErr as any).code === 'email_not_confirmed')) {
+      const accounts = loadAccounts();
+      const localAccount = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+      if (localAccount && localAccount.passwordHash === pwdHash) {
+        syncAccountToLocal(localAccount.user, pwdHash);
+        return localAccount.user;
+      }
+
       const err = new Error('Email confirmation is pending for this account. Please verify via the link sent to your inbox, or enter the 6-digit verification code below.');
       (err as any).code = 'email_not_confirmed';
       throw err;
