@@ -95,8 +95,8 @@ export async function sendRealSmsOtp(
         })
       });
       data = await proxyRes.json().catch(() => null);
-      if (!proxyRes.ok) {
-        throw new Error(data?.message || 'SMS Gateway error');
+      if (!proxyRes.ok && !data) {
+        throw new Error('SMS Gateway error');
       }
     } catch (proxyErr: any) {
       if (proxyErr?.message && !proxyErr.message.includes('fetch')) {
@@ -120,6 +120,28 @@ export async function sendRealSmsOtp(
       } else {
         throw new Error(proxyErr?.message || 'SMS service is temporarily unavailable.');
       }
+    }
+
+    // If serverless proxy returned Fast2SMS 414 IP restriction and a client key is available, try direct from client IP
+    if (data && (data.status_code === 414 || String(data.message || '').includes('blacklisted')) && customApiKey) {
+      try {
+        response = await fetch(FAST2SMS_API_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'authorization': customApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        const directData = await response.json().catch(() => null);
+        if (directData) data = directData;
+      } catch {
+        // keep proxy data
+      }
+    }
+
+    if (!data) {
+      throw new Error('SMS service is temporarily unavailable.');
     }
 
     if (data.return === true || (response?.ok && data.status_code === 200) || data.status_code === 200) {
@@ -147,11 +169,11 @@ export async function sendRealSmsOtp(
     let friendlyMessage = rawMessage || 'Could not send SMS via Fast2SMS.';
 
     if (data.status_code === 414 || rawMessage.includes('blacklisted') || rawMessage.includes('Dev API')) {
-      friendlyMessage = 'Fast2SMS IP Security Restriction: The network IP is temporarily restricted on Fast2SMS Dev API. Please whitelist your public IP in the Fast2SMS Dashboard under Dev API > IP Authorization, or verify network connection.';
+      friendlyMessage = 'Fast2SMS IP Security Restriction: Carrier SMS dispatch is currently restricted on this network IP in Fast2SMS Dev API. Please disable IP Security in your Fast2SMS Dashboard (Dev API > IP Security), or sign in with Email & Password or Google.';
     } else if (rawMessage.includes('wallet') || rawMessage.includes('balance') || rawMessage.includes('Low')) {
-      friendlyMessage = 'Insufficient Fast2SMS Wallet Balance. Please add wallet credits in your Fast2SMS Dashboard to deliver carrier SMS.';
+      friendlyMessage = 'Insufficient Fast2SMS Wallet Balance. Please add wallet credits in your Fast2SMS Dashboard to deliver carrier SMS, or sign in with Email & Password.';
     } else if (rawMessage.includes('Authorization') || data.status_code === 401) {
-      friendlyMessage = 'Invalid Fast2SMS API Key. Please verify your API key in Fast2SMS Dashboard.';
+      friendlyMessage = 'Invalid Fast2SMS API Key. Please verify your API key in Fast2SMS Dashboard, or sign in with Email & Password.';
     }
 
     return {

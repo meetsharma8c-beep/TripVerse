@@ -409,7 +409,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       } else if (err.code === 'auth/unauthorized-domain' || msg.includes('Authorized domains')) {
         setErrorMsg("Firebase Domain Notice: Please add this domain to 'Authorized domains' in Firebase Console (Authentication -> Settings -> Authorized domains).");
       } else if (msg.toLowerCase().includes('origin') || msg.toLowerCase().includes('not allowed')) {
-        setErrorMsg("Google OAuth Origin Notice: Please ensure 'https://tripverse-pied.vercel.app' is listed under Authorized JavaScript Origins in Google Cloud Console.");
+        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://tripverse.concode.com';
+        setErrorMsg(`Google OAuth Origin Notice: Please ensure '${currentOrigin}' is listed under Authorized JavaScript Origins in Google Cloud Console.`);
       } else {
         setErrorMsg(msg || 'Google Sign-In encountered an issue. Please try again.');
       }

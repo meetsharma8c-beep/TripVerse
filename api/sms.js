@@ -58,13 +58,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    const cleanCode = String(variables_values).slice(0, 8);
     const payload = {
       route: 'otp',
-      variables_values: String(variables_values).slice(0, 8),
+      variables_values: cleanCode,
       numbers: cleanNumber
     };
 
-    const fastResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+    let fastResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
       method: 'POST',
       headers: {
         'authorization': apiKey,
@@ -73,7 +74,35 @@ export default async function handler(req, res) {
       body: JSON.stringify(payload)
     });
 
-    const data = await fastResponse.json().catch(() => ({}));
+    let data = await fastResponse.json().catch(() => ({}));
+
+    // Fallback to Quick SMS route ('q') if OTP route fails for non-IP reasons
+    if (data && data.return === false && data.status_code !== 414) {
+      const quickPayload = {
+        route: 'q',
+        message: `Your TripVerse verification code is ${cleanCode}. Valid for 10 minutes.`,
+        language: 'english',
+        flash: 0,
+        numbers: cleanNumber
+      };
+      const quickRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        method: 'POST',
+        headers: {
+          'authorization': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(quickPayload)
+      }).catch(() => null);
+
+      if (quickRes) {
+        const quickData = await quickRes.json().catch(() => null);
+        if (quickData && quickData.return === true) {
+          data = quickData;
+          fastResponse = quickRes;
+        }
+      }
+    }
+
     return res.status(fastResponse.status || 200).json(data);
   } catch (err) {
     console.error('Fast2SMS proxy error:', err);
