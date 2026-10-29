@@ -905,6 +905,14 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
       throw err;
     }
 
+    // If Supabase rejected (e.g. rate limit during signup), verify local credentials before throwing
+    const accounts = loadAccounts();
+    const localAccount = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+    if (localAccount && localAccount.passwordHash === pwdHash) {
+      syncAccountToLocal(localAccount.user, pwdHash);
+      return localAccount.user;
+    }
+
     if (supaErr && !supaErr.message.toLowerCase().includes('fetch')) {
       throw new Error(supaErr.message || 'Invalid email or password.');
     }
