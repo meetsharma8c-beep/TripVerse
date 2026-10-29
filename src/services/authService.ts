@@ -1321,6 +1321,10 @@ export function getPhoneAuthErrorMessage(err: any): string {
   if (!err) return 'Phone authentication failed.';
   const message = err.message || '';
 
+  if (message.includes('blacklisted') || message.includes('IP Security') || message.includes('carrier') || message.includes('Fast2SMS')) {
+    return 'Carrier SMS dispatch is currently restricted on this network IP. Please switch to Email & Password to sign in or register instantly.';
+  }
+
   if (message.includes('invalid-phone-number') || message.includes('format')) {
     return 'The phone number format is invalid. Please enter a valid mobile number with country code (e.g. +91 9876543210).';
   }

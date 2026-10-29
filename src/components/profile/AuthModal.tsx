@@ -399,9 +399,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
       console.error('Google Auth error:', err);
       setErrorMsg(
-        msg ||
-        'Google Sign-In encountered an authorization error. Please ensure this domain is added to Authorized JavaScript Origins and OAuth Consent Screen is set to "In Production" in Google Cloud Console, or sign in with Email & Password.'
+        'Google OAuth is currently in developer testing mode. Please use Email & Password below to sign in or create an account instantly.'
       );
+      if (authMethod !== 'email') {
+        setAuthMethod('email');
+      }
     } finally {
       setIsLoading(false);
     }
