@@ -24,7 +24,7 @@ import {
   saveProfileToSupabase, 
   loadProfileFromSupabase 
 } from './supabaseSyncService';
-import { sendRealSmsOtp, verifyRealSmsOtp, getPendingSmsSession, clearPendingSmsSession, savePendingSmsSession, getFast2SmsApiKey } from './smsService';
+import { sendRealSmsOtp, verifyRealSmsOtp, getPendingSmsSession, clearPendingSmsSession, getFast2SmsApiKey } from './smsService';
 
 const USERS_STORAGE_KEY = 'tripverse_auth_users_v3';
 const SESSION_STORAGE_KEY = 'tripverse_auth_session_v3';
@@ -581,18 +581,8 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
   // 2. Fallback to Google Identity Services (GIS)
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
-  // Verify if the current origin is authorized for this Google OAuth clientId BEFORE opening a popup
-  // so users never see Google's "Access blocked: Authorization Error (redirect_uri_mismatch / origin_mismatch)" window
-  if (clientId && typeof window !== 'undefined') {
-    const origin = window.location.origin;
-    const checkRes = await fetch(
-      `https://accounts.google.com/gsi/status?client_id=${encodeURIComponent(clientId)}&origin=${encodeURIComponent(origin)}`
-    ).catch(() => null);
-    if (!checkRes || !checkRes.ok) {
-      throw new Error('GOOGLE_ORIGIN_NOT_AUTHORIZED');
-    }
-  } else if (!clientId) {
-    throw new Error('GOOGLE_ORIGIN_NOT_AUTHORIZED');
+  if (!clientId) {
+    throw new Error('Google Sign-In is not configured (missing VITE_GOOGLE_CLIENT_ID). Please sign in with Email & Password.');
   }
 
   await ensureGoogleIdentityServices();
@@ -607,7 +597,7 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
           callback: async (tokenResponse: any) => {
             if (tokenResponse.error) {
               if (tokenResponse.error === 'access_denied') {
-                reject(new Error('Google sign-in was cancelled. Please select your account to proceed.'));
+                reject(new Error('Google sign-in was cancelled or denied. If your friend sees "Access blocked", please click "Publish App" on your Google Cloud OAuth Consent Screen (Audience) to switch from Testing to In Production.'));
               } else {
                 reject(new Error(tokenResponse.error_description || tokenResponse.error || 'Google Sign-In failed.'));
               }
@@ -762,11 +752,9 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
     };
   }
 
-  // Persist locally with hashed password so login on this device is immediate & reliable
-  syncAccountToLocal(authUser, pwdHash);
-
-  // Attempt Supabase PostgreSQL profile sync if active session exists
+  // Only create an active authenticated session once Supabase has issued a verified session
   if (isSessionCreated) {
+    syncAccountToLocal(authUser, pwdHash);
     saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
   }
 
@@ -903,14 +891,6 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
 
     // Check for Email not confirmed
     if (supaErr && (supaErr.message.toLowerCase().includes('email not confirmed') || (supaErr as any).code === 'email_not_confirmed')) {
-      const accounts = loadAccounts();
-      const localAccount = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
-      if (localAccount && localAccount.passwordHash === pwdHash) {
-        const user = { ...localAccount.user, emailVerified: false };
-        syncAccountToLocal(user, pwdHash);
-        return { ...user, emailConfirmationPending: true };
-      }
-
       const err = new Error('Email confirmation is pending for this account. Please verify via the link sent to your inbox, or enter the 6-digit verification code below.');
       (err as any).code = 'email_not_confirmed';
       throw err;
@@ -1117,7 +1097,7 @@ let activePhonePendingPhone: string | null = null;
 export async function sendPhoneOtp(
   rawPhoneNumber: string,
   _containerId: string = 'tripverse-recaptcha-container'
-): Promise<{ provider: 'fast2sms' | 'supabase'; message: string; instantCode?: string }> {
+): Promise<{ provider: 'fast2sms' | 'supabase'; message: string }> {
   let clean = rawPhoneNumber.trim().replace(/[\s-()]/g, '');
   if (!clean.startsWith('+')) {
     if (clean.length === 10) {
@@ -1177,24 +1157,16 @@ export async function sendPhoneOtp(
     }
   }
 
-  // 3. In-App Instant OTP Relay when external carrier gateway is IP-restricted or offline
-  const tenDigit = clean.replace(/\D/g, '').slice(-10);
-  savePendingSmsSession({
-    phoneNumber: clean,
-    cleanNumber: tenDigit,
-    code,
-    expiresAt: Date.now() + 10 * 60 * 1000,
-    attempts: 0,
-    dispatchedAt: Date.now()
-  });
-  lastSmsDispatchedPhone = clean;
-  activePhonePendingPhone = clean;
-
-  return {
-    provider: 'fast2sms',
-    message: `Instant Verification Ready for ${clean}: Your 6-digit code ${code} has been filled in below. Tap "Verify & Start Exploring" to sign in.`,
-    instantCode: code
-  };
+  // Strict Zero-Mock Enforcement: Never auto-fill or fake an OTP if carrier dispatch failed
+  if (lastFast2SmsError) {
+    throw new Error(lastFast2SmsError);
+  }
+  if (lastSupabaseError) {
+    throw new Error(
+      `SMS carrier delivery is not enabled for ${clean} (${lastSupabaseError}). Please sign in with Email & Password or Google.`
+    );
+  }
+  throw new Error('Could not dispatch carrier SMS verification code. Please check your network or sign in with Email & Password.');
 }
 
 /**

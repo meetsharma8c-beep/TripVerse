@@ -108,7 +108,11 @@ assert(!authServiceContent.includes('saveVerificationCodes'), 'authService has N
 assert(!authServiceContent.includes('sendEmailVerificationCode'), 'authService has NO sendEmailVerificationCode mock');
 assert(!authServiceContent.includes('verifyEmailAndCreateAccount'), 'authService has NO verifyEmailAndCreateAccount mock');
 assert(!authServiceContent.includes('sandboxDemoCode'), 'authService has NO sandboxDemoCode');
+assert(!authServiceContent.includes('instantCode'), 'authService has NO instantCode auto-fill');
 assert(!authModalContent.includes('sandboxDemoCode'), 'AuthModal has NO sandboxDemoCode state or UI pill');
+assert(!authModalContent.includes('instantCode'), 'AuthModal has NO instantCode auto-fill');
+assert(!authModalContent.includes('showGoogleEmailPrompt'), 'AuthModal has NO unverified Google email prompt');
+assert(!authModalContent.includes('handleContinuePendingUser'), 'AuthModal has NO unverified email skip button');
 assert(!authModalContent.includes('Auto-Fill'), 'AuthModal has NO fake Auto-Fill test button');
 assert(!smsServiceContent.includes('demoCode'), 'smsService has NO demoCode generation');
 

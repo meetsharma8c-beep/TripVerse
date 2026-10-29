@@ -27,7 +27,6 @@ import {
   sendPasswordResetCode,
   signInWithGooglePopup, 
   signInWithGoogleCredential,
-  signInWithGoogleUserInfo,
   ensureGoogleIdentityServices,
   createAccountWithSupabase, 
   sendPhoneOtp,
@@ -37,12 +36,7 @@ import {
   getPhoneAuthErrorMessage,
   toUserProfile,
   verifyEmailOtp,
-  resendEmailConfirmation,
-  getSavedAccounts,
-  getCurrentUser,
-  syncAccountToLocal,
-  toDeterministicUuid,
-  AuthUser
+  resendEmailConfirmation
 } from '../../services/authService';
 
 interface AuthModalProps {
@@ -106,16 +100,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [emailTravelerStyle, setEmailTravelerStyle] = useState('Budget explorer');
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [emailOtpToken, setEmailOtpToken] = useState('');
-  const [pendingConfirmationUser, setPendingConfirmationUser] = useState<AuthUser | null>(null);
   const [emailResendCountdown, setEmailResendCountdown] = useState(0);
 
   // Status & Feedback
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [showGoogleEmailPrompt, setShowGoogleEmailPrompt] = useState(false);
-  const [googlePromptEmail, setGooglePromptEmail] = useState('');
-  const [googlePromptName, setGooglePromptName] = useState('');
 
   // Google GIS Official Button integration
   const googleBtnPhoneRef = useRef<HTMLDivElement>(null);
@@ -201,15 +191,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (!g || !clientId || !isMounted) return;
 
       try {
-        // Verify that the current origin is authorized for this clientId before rendering an iframe that would show a 403 error
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        const checkRes = await fetch(
-          `https://accounts.google.com/gsi/status?client_id=${encodeURIComponent(clientId)}&origin=${encodeURIComponent(origin)}`
-        ).catch(() => null);
-        if (!checkRes || !checkRes.ok) {
-          return;
-        }
-
         g.initialize({
           client_id: clientId,
           callback: (res: any) => googleCallbackRef.current(res)
@@ -286,11 +267,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const sendRes = await sendPhoneOtp(fullPhoneNumber, 'tripverse-recaptcha-container');
       setPhoneStep('otp');
       setResendCountdown(60);
-      if (sendRes.instantCode && sendRes.instantCode.length === 6) {
-        setOtpDigits(sendRes.instantCode.split(''));
-      } else {
-        setOtpDigits(['', '', '', '', '', '']);
-      }
+      setOtpDigits(['', '', '', '', '', '']);
       const providerLabel = sendRes.provider === 'fast2sms'
         ? 'Fast2SMS'
         : 'Supabase SMS';
@@ -420,40 +397,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsLoading(false);
         return;
       }
-      console.warn('Google Auth notice:', err);
-      setShowGoogleEmailPrompt(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCompleteGooglePromptSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    const cleanEmail = googlePromptEmail.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      setErrorMsg('Please enter a valid Google email address.');
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const displayName = googlePromptName.trim() || cleanEmail.split('@')[0];
-      const user = await signInWithGoogleUserInfo({
-        email: cleanEmail,
-        name: displayName,
-        email_verified: true
-      });
-      try {
-        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
-      } catch {}
-      setShowGoogleEmailPrompt(false);
-      setSuccessMsg(`Welcome, ${user.displayName}! Signed in with Google.`);
-      setTimeout(() => {
-        onSuccess(toUserProfile(user));
-        handleModalClose();
-      }, 500);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Could not complete Google Sign-In.');
+      console.error('Google Auth error:', err);
+      setErrorMsg(
+        msg ||
+        'Google Sign-In encountered an authorization error. Please ensure this domain is added to Authorized JavaScript Origins and OAuth Consent Screen is set to "In Production" in Google Cloud Console, or sign in with Email & Password.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -480,10 +428,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const user = await signInWithEmail({ email, password, rememberMe });
       if ((user as any).emailConfirmationPending && !(user as any).emailVerified) {
-        setPendingConfirmationUser(user);
         setEmailSubMode('verify-email');
         setEmailResendCountdown(60);
-        setErrorMsg('Email address not yet confirmed. You can click the link in your email, enter the 6-digit code, or click "Skip for Now" to start using TripVerse.');
+        setErrorMsg('Email address not yet confirmed. Please click the confirmation link in your email or enter the 6-digit verification code sent to your inbox.');
         return;
       }
       try {
@@ -498,7 +445,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       console.error('Email sign in error:', err);
       const msg = err.message || 'Authentication failed. Please verify credentials.';
       if (msg.toLowerCase().includes('email not confirmed')) {
-        setErrorMsg('Email address not yet confirmed. Click the link in your email, enter the 6-digit confirmation code below, or click "Skip for Now" to explore.');
+        setErrorMsg('Email address not yet confirmed. Please click the link in your email or enter the 6-digit confirmation code below.');
         setEmailSubMode('verify-email');
         setEmailResendCountdown(60);
       } else {
@@ -546,11 +493,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       const isPending = (user as any).isPendingEmailConfirmation || (user as any).emailConfirmationPending;
       if (isPending) {
-        setPendingConfirmationUser(user);
         setEmailSubMode('verify-email');
         setEmailResendCountdown(60);
         if ((user as any).isRateLimited) {
-          setErrorMsg('Note: Supabase shared email limit was reached (3 emails/hour). You can click "Skip for Now & Explore" below to enter immediately without waiting for the confirmation email.');
+          setErrorMsg('Email verification rate limit reached. Please wait a few minutes and tap "Resend Code" to receive your 6-digit verification code.');
         } else {
           setSuccessMsg(`Account created! A confirmation link & 6-digit code was sent to ${email.trim()}.`);
         }
@@ -618,46 +564,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleContinuePendingUser = () => {
-    if (pendingConfirmationUser) {
-      onSuccess(toUserProfile(pendingConfirmationUser));
-      handleModalClose();
-      return;
-    }
-    const current = getCurrentUser();
-    if (current) {
-      onSuccess(toUserProfile(current));
-      handleModalClose();
-      return;
-    }
-    const accounts = getSavedAccounts();
-    const match = accounts.find(a => a.email && a.email.toLowerCase() === email.trim().toLowerCase());
-    if (match) {
-      onSuccess(toUserProfile(match));
-      handleModalClose();
-      return;
-    }
-    const fallbackUser: AuthUser = {
-      uid: toDeterministicUuid('email:' + (email.trim().toLowerCase() || 'explorer')),
-      email: email.trim() || 'explorer@tripverse.app',
-      displayName: name.trim() || (email ? email.split('@')[0] : 'Explorer'),
-      photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || email || 'Explorer')}&backgroundColor=2D5A3D,0B2545`,
-      travelerStyle: 'Budget explorer',
-      travelStyleTag: 'Verified Explorer',
-      location: 'India',
-      occupation: 'Explorer',
-      age: 25,
-      emailVerified: false,
-      provider: 'email',
-      createdAt: new Date().toISOString(),
-      lastLoginAt: new Date().toISOString(),
-      savedPlaceIds: []
-    };
-    syncAccountToLocal(fallbackUser);
-    onSuccess(toUserProfile(fallbackUser));
-    handleModalClose();
   };
 
   // ----------------------------------------------------------------------
@@ -793,61 +699,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <Check className="w-4 h-4 text-[#2D5A3D] shrink-0" />
               <span className="font-medium leading-relaxed flex-1">{successMsg}</span>
             </div>
-          )}
-
-          {showGoogleEmailPrompt && (
-            <form
-              onSubmit={handleCompleteGooglePromptSignIn}
-              className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                  </svg>
-                  <span className="text-xs font-bold text-[#0B2545]">Continue with Google Account</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowGoogleEmailPrompt(false)}
-                  className="text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Enter your Google email and name to sign in and sync your profile:
-              </p>
-              <div className="space-y-2">
-                <input
-                  type="email"
-                  value={googlePromptEmail}
-                  onChange={(e) => setGooglePromptEmail(e.target.value)}
-                  placeholder="your.account@gmail.com"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
-                  required
-                  autoFocus
-                />
-                <input
-                  type="text"
-                  value={googlePromptName}
-                  onChange={(e) => setGooglePromptName(e.target.value)}
-                  placeholder="Your Name (optional)"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-2.5 rounded-xl bg-[#0B2545] hover:bg-[#163a66] text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>Continue as Google Explorer</span>
-              </button>
-            </form>
           )}
 
           {/* ==================================================================== */}
@@ -1595,15 +1446,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <span>Confirm Email & Start Exploring</span>
                         </>
                       )}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleContinuePendingUser}
-                      className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <span>Skip for Now & Explore TripVerse</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </form>
 
