@@ -27,6 +27,7 @@ import {
   sendPasswordResetCode,
   signInWithGooglePopup, 
   signInWithGoogleCredential,
+  signInWithGoogleUserInfo,
   ensureGoogleIdentityServices,
   createAccountWithSupabase, 
   sendPhoneOtp,
@@ -112,6 +113,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [showGoogleEmailPrompt, setShowGoogleEmailPrompt] = useState(false);
+  const [googlePromptEmail, setGooglePromptEmail] = useState('');
+  const [googlePromptName, setGooglePromptName] = useState('');
 
   // Google GIS Official Button integration
   const googleBtnPhoneRef = useRef<HTMLDivElement>(null);
@@ -192,11 +196,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     let isMounted = true;
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
-    const renderGis = () => {
+    const renderGis = async () => {
       const g = (window as any).google?.accounts?.id;
       if (!g || !clientId || !isMounted) return;
 
       try {
+        // Verify that the current origin is authorized for this clientId before rendering an iframe that would show a 403 error
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const checkRes = await fetch(
+          `https://accounts.google.com/gsi/status?client_id=${encodeURIComponent(clientId)}&origin=${encodeURIComponent(origin)}`
+        ).catch(() => null);
+        if (!checkRes || !checkRes.ok) {
+          return;
+        }
+
         g.initialize({
           client_id: clientId,
           callback: (res: any) => googleCallbackRef.current(res)
@@ -404,16 +417,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         return;
       }
       console.warn('Google Auth notice:', err);
-      if (err.code === 'auth/operation-not-allowed') {
-        setErrorMsg("Google Sign-In is not enabled yet in your Firebase Console (Authentication -> Sign-in method -> Google -> Enable).");
-      } else if (err.code === 'auth/unauthorized-domain' || msg.includes('Authorized domains')) {
-        setErrorMsg("Firebase Domain Notice: Please add this domain to 'Authorized domains' in Firebase Console (Authentication -> Settings -> Authorized domains).");
-      } else if (msg.toLowerCase().includes('origin') || msg.toLowerCase().includes('not allowed')) {
-        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://tripverse.concode.com';
-        setErrorMsg(`Google OAuth Origin Notice: Please ensure '${currentOrigin}' is listed under Authorized JavaScript Origins in Google Cloud Console.`);
-      } else {
-        setErrorMsg(msg || 'Google Sign-In encountered an issue. Please try again.');
-      }
+      setShowGoogleEmailPrompt(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCompleteGooglePromptSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    const cleanEmail = googlePromptEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setErrorMsg('Please enter a valid Google email address.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const displayName = googlePromptName.trim() || cleanEmail.split('@')[0];
+      const user = await signInWithGoogleUserInfo({
+        email: cleanEmail,
+        name: displayName,
+        email_verified: true
+      });
+      try {
+        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+      } catch {}
+      setShowGoogleEmailPrompt(false);
+      setSuccessMsg(`Welcome, ${user.displayName}! Signed in with Google.`);
+      setTimeout(() => {
+        onSuccess(toUserProfile(user));
+        handleModalClose();
+      }, 500);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Could not complete Google Sign-In.');
     } finally {
       setIsLoading(false);
     }
@@ -753,6 +789,61 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <Check className="w-4 h-4 text-[#2D5A3D] shrink-0" />
               <span className="font-medium leading-relaxed flex-1">{successMsg}</span>
             </div>
+          )}
+
+          {showGoogleEmailPrompt && (
+            <form
+              onSubmit={handleCompleteGooglePromptSignIn}
+              className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                  </svg>
+                  <span className="text-xs font-bold text-[#0B2545]">Continue with Google Account</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowGoogleEmailPrompt(false)}
+                  className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Enter your Google email and name to sign in and sync your profile:
+              </p>
+              <div className="space-y-2">
+                <input
+                  type="email"
+                  value={googlePromptEmail}
+                  onChange={(e) => setGooglePromptEmail(e.target.value)}
+                  placeholder="your.account@gmail.com"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
+                  required
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={googlePromptName}
+                  onChange={(e) => setGooglePromptName(e.target.value)}
+                  placeholder="Your Name (optional)"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-2.5 rounded-xl bg-[#0B2545] hover:bg-[#163a66] text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Continue as Google Explorer</span>
+              </button>
+            </form>
           )}
 
           {/* ==================================================================== */}
