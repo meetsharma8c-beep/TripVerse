@@ -402,7 +402,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
       console.error('Google Auth error:', err);
       setErrorMsg(
-        'Google OAuth is currently in developer testing mode. Please use Email & Password below to sign in or create an account instantly.'
+        err.message || 'Google sign-in was closed or unavailable. Please sign in with Email & Password or try again.'
       );
       if (authMethod !== 'email') {
         setAuthMethod('email');
@@ -702,7 +702,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
               <div className="space-y-1.5 flex-1">
                 <span className="font-medium leading-relaxed block">{errorMsg}</span>
-                {authMethod !== 'email' && errorMsg.includes('Email & Password') && (
+                {authMethod !== 'email' && (
                   <button
                     type="button"
                     onClick={() => {
@@ -712,7 +712,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     }}
                     className="inline-flex items-center gap-1 font-bold text-rose-800 underline hover:text-rose-950 cursor-pointer pt-0.5"
                   >
-                    <span>Switch to Email & Password</span>
+                    <span>Switch to Email or Google Sign-In</span>
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 )}
@@ -941,17 +941,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </p>
                   </div>
 
-                  {phoneNumber.replace(/\D/g, '').endsWith('9904717666') && (
-                    <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-0.5 my-2">
-                      <p className="text-[11px] font-bold text-amber-900">
-                        Firebase Verified Test Number
-                      </p>
-                      <p className="text-[11px] text-amber-700">
-                        Carrier SMS dispatch is bypassed by Firebase for registered test numbers. Enter verification code: <span className="font-mono font-bold text-amber-950">990471</span>
-                      </p>
-                    </div>
-                  )}
-
                   {/* 6 Individual Digit Boxes */}
                   <div className="flex justify-center items-center gap-2 py-2">
                     {otpDigits.map((digit, idx) => (
@@ -1171,7 +1160,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <span>Continue with Google</span>
                       </button>
                     )}
-                    <p className="text-[10px] text-slate-400 text-center mt-1">Tester authorization active • Or sign in with Email below</p>
+                    <p className="text-[10px] text-slate-400 text-center mt-1">Fast & secure 1-tap sign-in with Google</p>
                   </div>
 
                   <div className="flex items-center gap-3 text-slate-300">
@@ -1292,7 +1281,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <span>Sign up with Google</span>
                       </button>
                     )}
-                    <p className="text-[10px] text-slate-400 text-center mt-1">Tester authorization active • Or create account with Email below</p>
+                    <p className="text-[10px] text-slate-400 text-center mt-1">Fast & secure 1-tap sign-up with Google</p>
                   </div>
 
                   <div className="flex items-center gap-3 text-slate-300">

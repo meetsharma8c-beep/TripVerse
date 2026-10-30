@@ -1333,7 +1333,7 @@ export async function sendPhoneOtp(
       return {
         provider: 'firebase',
         message: isTestNumber
-          ? 'Firebase Test Number recognized. Enter verification code: 990471 (configured in Firebase Auth).'
+          ? 'Verification code generated for +91 99047 17666. Enter code: 990471'
           : `Real carrier SMS verification code dispatched to ${clean}.`
       };
     } catch (fbErr: any) {
