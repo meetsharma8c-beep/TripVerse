@@ -573,7 +573,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMsg(null);
     setIsLoading(true);
     try {
-      await resendEmailConfirmation(email.trim());
+      await resendEmailConfirmation(email.trim(), name.trim());
       setEmailResendCountdown(60);
       setSuccessMsg(`Confirmation code re-dispatched to ${email.trim()}.`);
     } catch (err: any) {

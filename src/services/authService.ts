@@ -773,6 +773,10 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
   // Sync profile to Supabase PostgreSQL database
   await saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
 
+  if (!isSessionCreated) {
+    resendEmailConfirmation(emailNorm, data.name).catch(() => {});
+  }
+
   return {
     ...authUser,
     emailConfirmationPending: !isSessionCreated,
@@ -879,16 +883,62 @@ export async function verifyEmailOtp(email: string, token: string): Promise<Auth
       token: cleanToken,
       type: 'email'
     });
-    if (fallbackRes.error) {
-      throw new Error(fallbackRes.error.message || 'Incorrect or expired confirmation code.');
-    }
-    if (fallbackRes.data.user) {
+    if (!fallbackRes.error && fallbackRes.data.user) {
       const authUser = supabaseUserToAuthUser(fallbackRes.data.user);
       authUser.emailVerified = true;
       syncAccountToLocal(authUser);
       saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
       return authUser;
     }
+
+    // Attempt verification via Resend Email OTP
+    try {
+      const storedToken = typeof window !== 'undefined'
+        ? localStorage.getItem(`tripverse_email_otp_token_${emailNorm}`) || ''
+        : '';
+      const resendRes = await fetch('/api/email-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verify',
+          email: emailNorm,
+          code: cleanToken,
+          token: storedToken
+        })
+      });
+      const resendData = await resendRes.json();
+      if (resendRes.ok && resendData.success) {
+        const uid = toDeterministicUuid('email:' + emailNorm);
+        const now = new Date().toISOString();
+        const accounts = loadAccounts();
+        const existing = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+        const displayName = existing?.user.displayName || emailNorm.split('@')[0];
+        const authUser: AuthUser = {
+          uid,
+          email: emailNorm,
+          displayName,
+          photoURL: existing?.user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=2D5A3D,0B2545`,
+          travelerStyle: existing?.user.travelerStyle || 'Budget explorer',
+          travelStyleTag: 'Verified Explorer',
+          location: existing?.user.location || 'India',
+          occupation: existing?.user.occupation || 'Explorer',
+          age: 25,
+          emailVerified: true,
+          provider: 'email',
+          createdAt: existing?.user.createdAt || now,
+          lastLoginAt: now,
+          savedPlaceIds: existing?.user.savedPlaceIds || []
+        };
+        syncAccountToLocal(authUser);
+        saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(`tripverse_email_otp_token_${emailNorm}`);
+        }
+        return authUser;
+      }
+    } catch {}
+
+    throw new Error(fallbackRes.error?.message || 'Incorrect or expired confirmation code.');
   }
 
   if (!data?.user) {
@@ -905,30 +955,49 @@ export async function verifyEmailOtp(email: string, token: string): Promise<Auth
 /**
  * Resend email confirmation link/code via Supabase
  */
-export async function resendEmailConfirmation(email: string): Promise<void> {
+export async function resendEmailConfirmation(email: string, name?: string): Promise<void> {
   const emailNorm = email.trim().toLowerCase();
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    throw new Error('Supabase cloud authentication is not configured.');
+
+  // 1. Dispatch authentic 6-digit confirmation code via Resend
+  let resendDispatched = false;
+  try {
+    const res = await fetch('/api/email-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'send', email: emailNorm, name })
+    });
+    const data = await res.json();
+    if (res.ok && data.success && data.token) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`tripverse_email_otp_token_${emailNorm}`, data.token);
+      }
+      resendDispatched = true;
+    }
+  } catch (err) {
+    console.warn('[Resend] Email dispatch notice:', err);
   }
 
-  const redirectUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/?tab=profile`
-    : 'https://tripverse-pied.vercel.app/?tab=profile';
+  // 2. Also trigger Supabase email confirmation
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    const redirectUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/?tab=profile`
+      : 'https://tripverse-pied.vercel.app/?tab=profile';
 
-  const { error } = await supabase.auth.resend({
-    type: 'signup',
-    email: emailNorm,
-    options: {
-      emailRedirectTo: redirectUrl
-    }
-  });
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: emailNorm,
+      options: {
+        emailRedirectTo: redirectUrl
+      }
+    });
 
-  if (error) {
-    if ((error as any).code === 'over_email_send_rate_limit' || error.message.toLowerCase().includes('rate limit')) {
-      throw new Error('Email dispatch rate limit reached. Please wait a few moments before requesting another code.');
+    if (error && !resendDispatched) {
+      if ((error as any).code === 'over_email_send_rate_limit' || error.message.toLowerCase().includes('rate limit')) {
+        throw new Error('Email dispatch rate limit reached. Please wait a few moments before requesting another code.');
+      }
+      throw new Error(error.message || 'Failed to dispatch confirmation email.');
     }
-    throw new Error(error.message || 'Failed to dispatch confirmation email.');
   }
 }
 
