@@ -269,7 +269,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPhoneStep('otp');
       setResendCountdown(60);
       setOtpDigits(['', '', '', '', '', '']);
-      const providerLabel = sendRes.provider === 'fast2sms'
+      const providerLabel = sendRes.provider === 'firebase'
+        ? 'Google Carrier SMS'
+        : sendRes.provider === 'fast2sms'
         ? 'Fast2SMS'
         : 'Supabase SMS';
       setSuccessMsg(sendRes.message || `SMS verification code dispatched to ${fullPhoneNumber} via ${providerLabel}.`);

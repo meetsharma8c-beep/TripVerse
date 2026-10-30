@@ -19,7 +19,7 @@ beforeAll(() => {
   };
 });
 
-import { hashPassword, saveAccounts, signInWithEmail } from '../src/services/authService';
+import { hashPassword, saveAccounts, signInWithEmail, sendPhoneOtp, verifyPhoneOtp, getPhoneAuthErrorMessage } from '../src/services/authService';
 import { AuthUser } from '../src/types/auth';
 
 describe('Auth Security & Verification Tests', () => {
@@ -95,5 +95,48 @@ describe('Auth Security & Verification Tests', () => {
     await expect(
       signInWithEmail({ email: 'unknown_cross_device@domain.com', password: 'AnyPassword123!' })
     ).rejects.toThrow(/invalid login credentials|invalid email or password/i);
+  });
+
+  it('correctly maps phone auth error messages without falsely claiming IP restriction for carrier errors', () => {
+    const carrierErr = new Error('Could not dispatch SMS verification code via Firebase.');
+    const friendly1 = getPhoneAuthErrorMessage(carrierErr);
+    expect(friendly1).not.toContain('Carrier SMS dispatch is currently restricted');
+    expect(friendly1).toContain('Could not dispatch SMS verification code via Firebase');
+
+    const expiredErr = new Error('Verification code has expired. SESSION_EXPIRED');
+    const friendly2 = getPhoneAuthErrorMessage(expiredErr);
+    expect(friendly2).toContain('Verification code has expired');
+
+    const invalidErr = new Error('INVALID_CODE');
+    const friendly3 = getPhoneAuthErrorMessage(invalidErr);
+    expect(friendly3).toContain('Incorrect verification code');
+  });
+
+  it('dispatches and verifies phone OTP for verified phone number', async () => {
+    const sendRes = await sendPhoneOtp('+919904717666');
+    expect(sendRes.provider).toBe('firebase');
+
+    const verifiedUser = await verifyPhoneOtp(
+      '990471',
+      'Meet Sharma',
+      'Budget explorer',
+      'India',
+      '+919904717666'
+    );
+    expect(verifiedUser.phoneNumber).toBe('+919904717666');
+    expect(verifiedUser.displayName).toBe('Meet Sharma');
+    expect(verifiedUser.provider).toBe('phone');
+    expect(verifiedUser.uid).toBeTruthy();
+  });
+
+  it('authenticates meet.sharma8c@gmail.com via cloud email authentication', async () => {
+    const user = await signInWithEmail({
+      email: 'meet.sharma8c@gmail.com',
+      password: 'TripVerse@2026'
+    });
+    expect(user.email).toBe('meet.sharma8c@gmail.com');
+    expect(user.displayName).toBe('Meet Sharma');
+    expect(user.provider).toBe('email');
+    expect(user.uid).toBeTruthy();
   });
 });
