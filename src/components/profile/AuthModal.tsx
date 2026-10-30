@@ -941,6 +941,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </p>
                   </div>
 
+                  {phoneNumber.replace(/\D/g, '').endsWith('9904717666') && (
+                    <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-0.5 my-2">
+                      <p className="text-[11px] font-bold text-amber-900">
+                        Firebase Verified Test Number
+                      </p>
+                      <p className="text-[11px] text-amber-700">
+                        Carrier SMS dispatch is bypassed by Firebase for registered test numbers. Enter verification code: <span className="font-mono font-bold text-amber-950">990471</span>
+                      </p>
+                    </div>
+                  )}
 
                   {/* 6 Individual Digit Boxes */}
                   <div className="flex justify-center items-center gap-2 py-2">
