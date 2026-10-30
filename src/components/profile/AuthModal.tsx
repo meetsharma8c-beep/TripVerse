@@ -18,7 +18,8 @@ import {
   Phone,
   RotateCcw,
   ShieldCheck,
-  ChevronDown
+  ChevronDown,
+  FlaskConical
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { UserProfile } from '../../types/trip';
@@ -39,6 +40,16 @@ import {
   verifyEmailOtp,
   resendEmailConfirmation
 } from '../../services/authService';
+import {
+  isSandboxMode,
+  setSandboxMode,
+  SANDBOX_PERSONAS,
+  authenticateSandboxPersona,
+  isSandboxVerificationCode,
+  createSandboxAuthUser,
+  SANDBOX_TEST_CODE,
+  SandboxPersona
+} from '../../services/sandboxService';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -107,6 +118,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Sandbox Mode state (evaluates stored setting or ?sandbox=true query parameter)
+  const [isSandbox, setIsSandbox] = useState<boolean>(() => isSandboxMode());
+
+  const handleToggleSandbox = () => {
+    const next = !isSandbox;
+    setIsSandbox(next);
+    setSandboxMode(next);
+    setErrorMsg(null);
+    if (next) {
+      setSuccessMsg(`🧪 Sandbox Mode enabled. Use 1-tap demo personas or test code ${SANDBOX_TEST_CODE}.`);
+    } else {
+      setSuccessMsg(null);
+    }
+  };
+
+  const handleSelectSandboxPersona = async (persona: SandboxPersona) => {
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
+      const user = await authenticateSandboxPersona(persona);
+      try {
+        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+      } catch {}
+      setSuccessMsg(`Welcome, ${user.displayName}! Signed in as ${persona.travelerStyle}.`);
+      setTimeout(() => {
+        onSuccess(toUserProfile(user));
+        handleModalClose();
+      }, 500);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to authenticate sandbox persona.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Google GIS Official Button integration
   const googleBtnPhoneRef = useRef<HTMLDivElement>(null);
@@ -263,6 +309,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     const fullPhoneNumber = formatE164PhoneNumber(phoneNumber, countryCode);
 
+    if (isSandbox) {
+      setPhoneStep('otp');
+      setResendCountdown(60);
+      setOtpDigits(['', '', '', '', '', '']);
+      setSuccessMsg(`🧪 Sandbox verification active for ${fullPhoneNumber}. Enter test code: ${SANDBOX_TEST_CODE}`);
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 150);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const sendRes = await sendPhoneOtp(fullPhoneNumber, 'tripverse-recaptcha-container');
@@ -297,6 +354,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const code = (codeToVerify || otpDigits.join('')).trim();
     if (code.length !== 6) {
       setErrorMsg('Please enter the complete 6-digit code received via SMS.');
+      return;
+    }
+
+    if (isSandbox && isSandboxVerificationCode(code)) {
+      setIsLoading(true);
+      try {
+        const fullPhoneNumber = formatE164PhoneNumber(phoneNumber, countryCode);
+        const user = createSandboxAuthUser({
+          identifier: fullPhoneNumber,
+          type: 'phone',
+          name: phoneUserName.trim() || undefined,
+          travelerStyle: phoneTravelerStyle,
+          location: phoneLocation.trim() || 'India'
+        });
+        try {
+          confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+        } catch {}
+        setSuccessMsg(`Welcome, ${user.displayName}! Sandbox phone verified.`);
+        setTimeout(() => {
+          onSuccess(toUserProfile(user));
+          handleModalClose();
+        }, 500);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -458,6 +540,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    if (isSandbox && password === SANDBOX_TEST_CODE) {
+      setIsLoading(true);
+      try {
+        const user = createSandboxAuthUser({
+          identifier: email.trim(),
+          type: 'email',
+          name: email.split('@')[0],
+          travelerStyle: emailTravelerStyle,
+          location: emailLocation.trim() || 'India'
+        });
+        try {
+          confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
+        } catch {}
+        setSuccessMsg(`Welcome back, ${user.displayName}! (Sandbox Mode)`);
+        setTimeout(() => {
+          onSuccess(toUserProfile(user));
+          handleModalClose();
+        }, 500);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     setIsLoading(true);
     try {
       const user = await signInWithEmail({ email, password, rememberMe });
@@ -546,6 +652,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const token = emailOtpToken.trim();
     if (!token || token.length < 6) {
       setErrorMsg('Please enter the 6-digit confirmation code from your email.');
+      return;
+    }
+
+    if (isSandbox && isSandboxVerificationCode(token)) {
+      setIsLoading(true);
+      try {
+        const user = createSandboxAuthUser({
+          identifier: email.trim(),
+          type: 'email',
+          name: name.trim() || undefined,
+          travelerStyle: emailTravelerStyle,
+          location: emailLocation.trim() || 'India'
+        });
+        try {
+          confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+        } catch {}
+        setSuccessMsg(`Email confirmed! Welcome to TripVerse, ${user.displayName}. (Sandbox Mode)`);
+        setTimeout(() => {
+          onSuccess(toUserProfile(user));
+          handleModalClose();
+        }, 600);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -695,6 +825,72 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         <div className="p-6 sm:p-7 space-y-4 max-h-[82vh] overflow-y-auto">
+
+          {/* Sandbox Environment Mode Switcher */}
+          <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="flex items-center gap-2">
+              <FlaskConical className={`w-3.5 h-3.5 ${isSandbox ? 'text-amber-500 animate-pulse' : 'text-slate-400'}`} />
+              <div>
+                <span className="text-[11px] font-bold text-slate-700 block">
+                  {isSandbox ? '🧪 Sandbox Mode (Active)' : 'Production Live Environment'}
+                </span>
+                <span className="text-[10px] text-slate-400 block">
+                  {isSandbox ? 'Simulated SMS & 1-tap demo personas' : 'Real Google, Email OTP & Carrier SMS'}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleSandbox}
+              className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                isSandbox
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-2xs'
+                  : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              {isSandbox ? 'Switch to Live' : 'Test in Sandbox'}
+            </button>
+          </div>
+
+          {/* Sandbox 1-Tap Demo Personas (Visible when Sandbox Mode is active) */}
+          {isSandbox && (
+            <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2.5 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>1-Tap Demo Traveler Personas</span>
+                </span>
+                <span className="text-[10px] font-mono text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                  OTP: {SANDBOX_TEST_CODE}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {SANDBOX_PERSONAS.map((persona) => (
+                  <button
+                    key={persona.id}
+                    type="button"
+                    onClick={() => handleSelectSandboxPersona(persona)}
+                    disabled={isLoading}
+                    className="p-2.5 rounded-xl bg-white border border-amber-200/90 hover:border-amber-400 hover:shadow-xs transition-all text-left flex items-center sm:flex-col sm:items-start gap-2.5 cursor-pointer group disabled:opacity-50"
+                  >
+                    <img
+                      src={persona.avatar}
+                      alt={persona.name}
+                      className="w-9 h-9 rounded-full object-cover border border-amber-300 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-800 truncate group-hover:text-amber-800">
+                        {persona.name}
+                      </p>
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {persona.travelerStyle}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           
           {/* Feedback Alerts */}
           {errorMsg && (
