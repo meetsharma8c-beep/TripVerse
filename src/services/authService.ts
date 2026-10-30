@@ -1363,12 +1363,9 @@ export async function sendPhoneOtp(
       lastSmsDispatchedPhone = clean;
       activePhonePendingPhone = clean;
       console.log(`[Firebase Phone] Verification session initiated for ${clean}`);
-      const isTestNumber = clean === '+919904717666';
       return {
         provider: 'firebase',
-        message: isTestNumber
-          ? 'Verification code generated for +91 99047 17666. Enter code: 990471'
-          : `Real carrier SMS verification code dispatched to ${clean}.`
+        message: `Real carrier SMS verification code dispatched to ${clean}.`
       };
     } catch (fbErr: any) {
       console.warn('[Firebase Phone] Dispatch notice, checking secondary SMS gateway:', fbErr);
@@ -1629,7 +1626,7 @@ export function getPhoneAuthErrorMessage(err: any): string {
   const message = err.message || '';
 
   if (message.includes('blacklisted') || message.includes('IP Security') || message.includes('Fast2SMS') || message.includes('status_code: 414')) {
-    return 'Fast2SMS IP security is active on this hosting IP. For instant genuine verification, use verified mobile number (+91 99047 17666 with code 990471), or sign in with Email & Password or Google.';
+    return 'Fast2SMS gateway returned "IP is blacklisted". In fast2sms.com under Dev API settings, toggle IP Security to Disabled, or enable Google Cloud Billing on Firebase.';
   }
 
   if (message.includes('BILLING_NOT_ENABLED')) {
