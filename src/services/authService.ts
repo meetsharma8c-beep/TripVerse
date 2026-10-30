@@ -1320,36 +1320,38 @@ export async function sendPhoneOtp(
     }
   }
 
+  let lastFast2SmsError = '';
+
   // 1. Primary: Genuine Firebase Phone SMS (Google Carrier Telecom Network)
   if (isFirebaseConfigured() && typeof window !== 'undefined') {
     try {
       await sendFirebasePhoneOtp(clean, _containerId);
       lastSmsDispatchedPhone = clean;
       activePhonePendingPhone = clean;
-      console.log(`[Firebase Phone] Genuine carrier SMS dispatched to ${clean}`);
+      console.log(`[Firebase Phone] Verification session initiated for ${clean}`);
+      const isTestNumber = clean === '+919904717666';
       return {
         provider: 'firebase',
-        message: `Real carrier SMS verification code dispatched to ${clean}.`
+        message: isTestNumber
+          ? 'Firebase Test Number recognized. Enter verification code: 990471 (configured in Firebase Auth).'
+          : `Real carrier SMS verification code dispatched to ${clean}.`
       };
     } catch (fbErr: any) {
-      console.warn('[Firebase Phone] Dispatch notice:', fbErr);
+      console.warn('[Firebase Phone] Dispatch notice, checking secondary SMS gateway:', fbErr);
       if (fbErr.code === 'auth/invalid-phone-number') {
         throw new Error('Please enter a valid mobile number with country code (e.g. +91 98765 43210).');
       }
       if (fbErr.code === 'auth/too-many-requests') {
         throw new Error('Too many verification attempts from this device. Please wait a few moments before trying again.');
       }
-      if (fbErr.code === 'auth/billing-not-enabled' || fbErr.message?.includes('BILLING_NOT_ENABLED')) {
-        throw new Error('Google Cloud Billing is required for live carrier SMS. For instant testing, use verified number +91 99047 17666 with code 990471, or sign in with Google or Email.');
-      }
-      throw new Error(fbErr.message || 'Could not dispatch SMS verification code via Firebase.');
+      lastFast2SmsError = fbErr.message?.includes('BILLING_NOT_ENABLED')
+        ? 'Google Cloud Billing is required for live carrier SMS on Firebase. Attempting secondary SMS gateway...'
+        : (fbErr.message || 'Firebase SMS dispatch unavailable.');
     }
   }
 
   const isIndianNumber = clean.startsWith('+91') || clean.replace(/\D/g, '').length === 10;
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-  let lastFast2SmsError = '';
 
   // 2. Fast2SMS Gateway for Indian numbers (+91) via /api/sms serverless proxy
   if (isIndianNumber) {
