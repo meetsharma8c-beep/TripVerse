@@ -25,6 +25,7 @@ export interface AuthUser {
   occupation: string;
   age: number;
   emailVerified: boolean;
+  isAnonymous?: boolean;
   provider: AuthProvider;
   createdAt: string;
   lastLoginAt: string;

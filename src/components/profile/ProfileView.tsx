@@ -6,6 +6,7 @@ import { DigitalPassport } from './DigitalPassport';
 import { loadUserVisitedStates, resetGuestStorage } from '../../services/storageService';
 import { 
   getCurrentUser, 
+  isGuestUser,
   signOut as authSignOut, 
   getSavedAccounts, 
   switchAccount, 
@@ -215,7 +216,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       ? (currentUser.displayName || userProfile.name || 'Traveler Explorer') 
                       : 'Guest Explorer'}
                   </h1>
-                  {currentUser?.provider === 'google' ? (
+                  {isGuestUser(currentUser) ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-amber-600" />
+                      <span>Guest Mode</span>
+                    </span>
+                  ) : currentUser?.provider === 'google' ? (
                     <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
                       <svg className="w-3 h-3" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
@@ -234,11 +240,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
                       <Mail className="w-3 h-3 text-emerald-600" />
                       <span>Email Verified</span>
-                    </span>
-                  ) : currentUser ? (
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      <span>Explorer Verified</span>
                     </span>
                   ) : (
                     <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-extrabold uppercase tracking-wider">
@@ -485,17 +486,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       </div>
 
-      {/* Guest Mode Cloud Sync Prompt */}
-      {!currentUser && (
+      {/* Guest Mode Cloud Sync & AI Unlock Prompt */}
+      {(!currentUser || isGuestUser(currentUser)) && (
         <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200/90 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
           <div className="flex items-center gap-3.5 text-center sm:text-left">
             <div className="w-11 h-11 rounded-2xl bg-white border border-[#8EA78D] text-[#2D5A3D] flex items-center justify-center shrink-0 shadow-2xs">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="font-bold text-sm text-emerald-950">Save Your Journeys to Cloud</h4>
+              <h4 className="font-bold text-sm text-emerald-950">Unlock AI Trip Planner & Cloud Sync</h4>
               <p className="text-xs text-emerald-800">
-                You're in Guest Mode. Sign in with Google or Email to link itineraries and access them across all your devices.
+                You're in Guest Mode. Sign in with Google, Email, or Phone to unlock full AI planning and link itineraries across all your devices.
               </p>
             </div>
           </div>
@@ -503,7 +504,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             onClick={onOpenAuthModal}
             className="px-5 py-2.5 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
           >
-            Sign In / Register
+            Sign In / Register (Free)
           </button>
         </div>
       )}

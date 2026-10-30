@@ -55,6 +55,9 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (profile: UserProfile) => void;
+  initialMethod?: 'google' | 'email' | 'phone' | 'guest';
+  initialSubMode?: 'login' | 'signup';
+  restrictionMessage?: string | null;
 }
 
 const TRAVELER_STYLES = [
@@ -67,28 +70,61 @@ const TRAVELER_STYLES = [
 
 const COUNTRY_CODES = [
   { code: '+91', iso: 'IN', country: 'India', placeholder: '98765 43210' },
-  { code: '+1', iso: 'US', country: 'US / Canada', placeholder: '(555) 000-0000' },
+  { code: '+1', iso: 'US', country: 'United States & Canada', placeholder: '(555) 000-0000' },
   { code: '+44', iso: 'UK', country: 'United Kingdom', placeholder: '7911 123456' },
-  { code: '+971', iso: 'AE', country: 'UAE', placeholder: '50 123 4567' },
+  { code: '+971', iso: 'AE', country: 'United Arab Emirates', placeholder: '50 123 4567' },
   { code: '+65', iso: 'SG', country: 'Singapore', placeholder: '8123 4567' },
   { code: '+61', iso: 'AU', country: 'Australia', placeholder: '412 345 678' },
+  { code: '+64', iso: 'NZ', country: 'New Zealand', placeholder: '21 123 4567' },
   { code: '+49', iso: 'DE', country: 'Germany', placeholder: '151 23456789' },
   { code: '+33', iso: 'FR', country: 'France', placeholder: '6 12 34 56 78' },
+  { code: '+39', iso: 'IT', country: 'Italy', placeholder: '312 345 6789' },
+  { code: '+34', iso: 'ES', country: 'Spain', placeholder: '612 345 678' },
+  { code: '+41', iso: 'CH', country: 'Switzerland', placeholder: '78 123 45 67' },
+  { code: '+31', iso: 'NL', country: 'Netherlands', placeholder: '6 12345678' },
+  { code: '+46', iso: 'SE', country: 'Sweden', placeholder: '70 123 45 67' },
+  { code: '+47', iso: 'NO', country: 'Norway', placeholder: '412 34 567' },
   { code: '+966', iso: 'SA', country: 'Saudi Arabia', placeholder: '50 123 4567' },
+  { code: '+974', iso: 'QA', country: 'Qatar', placeholder: '3312 3456' },
+  { code: '+968', iso: 'OM', country: 'Oman', placeholder: '9123 4567' },
+  { code: '+965', iso: 'KW', country: 'Kuwait', placeholder: '5123 4567' },
+  { code: '+973', iso: 'BH', country: 'Bahrain', placeholder: '3612 3456' },
+  { code: '+60', iso: 'MY', country: 'Malaysia', placeholder: '12 345 6789' },
+  { code: '+66', iso: 'TH', country: 'Thailand', placeholder: '81 234 5678' },
+  { code: '+62', iso: 'ID', country: 'Indonesia', placeholder: '812 3456 7890' },
+  { code: '+84', iso: 'VN', country: 'Vietnam', placeholder: '91 234 5678' },
+  { code: '+63', iso: 'PH', country: 'Philippines', placeholder: '917 123 4567' },
+  { code: '+81', iso: 'JP', country: 'Japan', placeholder: '90 1234 5678' },
+  { code: '+82', iso: 'KR', country: 'South Korea', placeholder: '10 1234 5678' },
+  { code: '+852', iso: 'HK', country: 'Hong Kong', placeholder: '9123 4567' },
   { code: '+977', iso: 'NP', country: 'Nepal', placeholder: '984 1234567' },
   { code: '+880', iso: 'BD', country: 'Bangladesh', placeholder: '1712 345678' },
   { code: '+94', iso: 'LK', country: 'Sri Lanka', placeholder: '71 234 5678' },
-  { code: '+81', iso: 'JP', country: 'Japan', placeholder: '90 1234 5678' }
+  { code: '+27', iso: 'ZA', country: 'South Africa', placeholder: '71 234 5678' },
+  { code: '+20', iso: 'EG', country: 'Egypt', placeholder: '10 1234 5678' },
+  { code: '+55', iso: 'BR', country: 'Brazil', placeholder: '11 91234 5678' },
+  { code: '+52', iso: 'MX', country: 'Mexico', placeholder: '55 1234 5678' },
+  { code: '+90', iso: 'TR', country: 'Turkey', placeholder: '532 123 4567' }
 ];
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  initialMethod,
+  initialSubMode,
+  restrictionMessage
 }) => {
-  // Main Authentication mode - Default to email
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone' | 'guest'>('email');
-  const [emailSubMode, setEmailSubMode] = useState<'login' | 'signup' | 'forgot-password' | 'verify-email'>('login');
+  // Main Authentication mode
+  const [authMethod, setAuthMethod] = useState<'google' | 'email' | 'phone' | 'guest'>(initialMethod || 'email');
+  const [emailSubMode, setEmailSubMode] = useState<'login' | 'signup' | 'forgot-password' | 'verify-email'>(initialSubMode || 'login');
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialMethod) setAuthMethod(initialMethod);
+      if (initialSubMode) setEmailSubMode(initialSubMode);
+    }
+  }, [isOpen, initialMethod, initialSubMode]);
   
   // Real Phone Auth state
   const [countryCode, setCountryCode] = useState('+91');
@@ -155,10 +191,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   // Google GIS Official Button integration
-  const googleBtnPhoneRef = useRef<HTMLDivElement>(null);
+  const googleBtnDedicatedRef = useRef<HTMLDivElement>(null);
   const googleBtnLoginRef = useRef<HTMLDivElement>(null);
   const googleBtnSignupRef = useRef<HTMLDivElement>(null);
-  const [gisRendered, setGisRendered] = useState<{ phone?: boolean; login?: boolean; signup?: boolean }>({});
+  const [gisRendered, setGisRendered] = useState<{ google?: boolean; login?: boolean; signup?: boolean }>({});
 
   // Resend Countdown Timer effects
   useEffect(() => {
@@ -244,12 +280,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         });
 
         const activeKey =
-          authMethod === 'phone' ? 'phone' :
+          authMethod === 'google' ? 'google' :
           emailSubMode === 'signup' ? 'signup' :
           emailSubMode === 'login' ? 'login' : null;
 
         const targetEl =
-          activeKey === 'phone' ? googleBtnPhoneRef.current :
+          activeKey === 'google' ? googleBtnDedicatedRef.current :
           activeKey === 'signup' ? googleBtnSignupRef.current :
           activeKey === 'login' ? googleBtnLoginRef.current : null;
 
@@ -322,7 +358,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setIsLoading(true);
     try {
-      const sendRes = await sendPhoneOtp(fullPhoneNumber, 'tripverse-recaptcha-container');
+      const sendRes = await sendPhoneOtp(fullPhoneNumber);
       setPhoneStep('otp');
       setResendCountdown(60);
       setOtpDigits(['', '', '', '', '', '']);
@@ -770,8 +806,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </div>
 
-        {/* Primary Method Navigation: Email vs Quick Guest vs Mobile OTP */}
-        <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50/60">
+        {/* Primary Method Navigation: Google vs Email vs Mobile OTP vs Quick Guest */}
+        <div className="grid grid-cols-4 border-b border-slate-200 bg-slate-50/70">
+          <button
+            type="button"
+            onClick={() => { 
+              setAuthMethod('google'); 
+              setErrorMsg(null); 
+              setSuccessMsg(null); 
+            }}
+            className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
+              authMethod === 'google'
+                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+            </svg>
+            <span>Google</span>
+          </button>
+
           <button
             type="button"
             onClick={() => { 
@@ -779,7 +837,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               setErrorMsg(null); 
               setSuccessMsg(null); 
             }}
-            className={`py-3.5 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
               authMethod === 'email'
                 ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -792,28 +850,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             type="button"
             onClick={() => { 
-              setAuthMethod('guest'); 
-              setErrorMsg(null); 
-              setSuccessMsg(null); 
-            }}
-            className={`py-3.5 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
-              authMethod === 'guest'
-                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Quick Guest</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { 
               setAuthMethod('phone'); 
               setErrorMsg(null); 
               setSuccessMsg(null); 
             }}
-            className={`py-3.5 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
               authMethod === 'phone'
                 ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -822,9 +863,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <Phone className="w-3.5 h-3.5 text-[#2D5A3D]" />
             <span>Mobile OTP</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => { 
+              setAuthMethod('guest'); 
+              setErrorMsg(null); 
+              setSuccessMsg(null); 
+            }}
+            className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
+              authMethod === 'guest'
+                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>Quick Guest</span>
+          </button>
         </div>
 
         <div className="p-6 sm:p-7 space-y-4 max-h-[82vh] overflow-y-auto">
+
+          {/* AI Planner Restriction Banner (when prompted from restricted guest action) */}
+          {restrictionMessage && (
+            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/90 flex items-start gap-2.5 text-xs text-amber-900 animate-in fade-in">
+              <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-0.5 flex-1">
+                <span className="font-bold block text-amber-950">AI Trip Planner Account Required</span>
+                <span className="leading-relaxed block text-amber-800">{restrictionMessage}</span>
+              </div>
+            </div>
+          )}
 
           {/* Sandbox Environment Mode Switcher */}
           <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200">
@@ -932,7 +1001,76 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           {/* ==================================================================== */}
-          {/* METHOD 1: REAL PHONE AUTH (SMS OTP via Fast2SMS / Supabase)           */}
+          {/* METHOD: DEDICATED GOOGLE AUTH PAGE                                   */}
+          {/* ==================================================================== */}
+          {authMethod === 'google' && (
+            <div className="space-y-4 animate-in fade-in">
+              <div className="text-center space-y-1">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 mx-auto flex items-center justify-center shadow-2xs">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-[#0B2545]">Sign In with Google</h3>
+                <p className="text-xs text-slate-500">
+                  Fast, verified 1-tap sign-in. Syncs your itineraries and unlocks the AI Trip Planner.
+                </p>
+              </div>
+
+              {/* Real Google OAuth Button (GIS Official Widget + Fallback Popup) */}
+              <div className="flex flex-col items-center justify-center w-full min-h-[48px] py-1">
+                <div ref={googleBtnDedicatedRef} className="w-full flex justify-center items-center" />
+                {!gisRendered.google && (
+                  <button
+                    type="button"
+                    onClick={handleTriggerGoogleAuth}
+                    disabled={isLoading}
+                    className="w-full py-3.5 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                      <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                    </svg>
+                    <span>Continue with Google</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Benefits of Google Account */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs text-slate-600">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#2D5A3D] shrink-0" />
+                  <span>Google Cloud Verified OAuth 2.0 Security</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>Full access to AI Day-by-Day Itinerary Planner</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Compass className="w-4 h-4 text-blue-500 shrink-0" />
+                  <span>Instant cross-device itinerary sync</span>
+                </div>
+              </div>
+
+              <div className="text-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => setAuthMethod('email')}
+                  className="text-xs text-slate-500 hover:text-[#2D5A3D] font-semibold cursor-pointer underline"
+                >
+                  Prefer email & password? Switch to Email tab
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ==================================================================== */}
+          {/* METHOD 1: REAL PHONE AUTH (SMS OTP via Fast2SMS / Google Telecom)    */}
           {/* ==================================================================== */}
           {authMethod === 'phone' && (
             <div className="space-y-4">
@@ -945,33 +1083,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <p className="text-xs text-slate-500">
                       Enter your phone number to receive a real 6-digit SMS verification code.
                     </p>
-                  </div>
-
-                  {/* 1-Click Google OAuth Shortcut */}
-                  <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
-                    <div ref={googleBtnPhoneRef} className="w-full flex justify-center items-center" />
-                    {!gisRendered.phone && (
-                      <button
-                        type="button"
-                        onClick={handleTriggerGoogleAuth}
-                        disabled={isLoading}
-                        className="w-full py-3 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
-                      >
-                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                        </svg>
-                        <span>Continue with Google</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3 text-slate-300">
-                    <span className="flex-1 h-px bg-slate-200" />
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">or verify with SMS</span>
-                    <span className="flex-1 h-px bg-slate-200" />
                   </div>
 
                   <form onSubmit={handleSendPhoneOtp} className="space-y-3.5">
@@ -1078,8 +1189,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Invisible reCAPTCHA container element */}
-                    <div id="tripverse-recaptcha-container" className="flex justify-center my-1" />
 
                     <button
                       type="submit"
@@ -1215,8 +1324,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <h3 className="text-xl font-bold text-[#0B2545]">Instant Guest Explorer</h3>
                 <p className="text-xs text-slate-500">
-                  Explore and plan trips immediately. No password or email needed to start.
+                  Explore destinations, road trips, and travel deals freely without an account.
                 </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-left text-xs text-amber-900 flex items-start gap-2.5">
+                <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-bold block text-amber-950">Explore-Only Mode</span>
+                  <span className="text-[11px] text-amber-800 leading-relaxed block">
+                    Guest Explorer lets you browse destinations, highway amenities, and transport deals. To generate custom day-by-day itineraries with the AI Planner, sign in with Google, Email, or Mobile.
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200">

@@ -1273,3 +1273,12 @@ svg {
     content: "" !important;
   }
 }
+
+/* Suppress all Google reCAPTCHA badges, iframes, and floating overlays */
+.grecaptcha-badge,
+iframe[src*="recaptcha"],
+div[style*="z-index: 2000000000"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

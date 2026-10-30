@@ -19,7 +19,16 @@ beforeAll(() => {
   };
 });
 
-import { hashPassword, saveAccounts, signInWithEmail, sendPhoneOtp, verifyPhoneOtp, getPhoneAuthErrorMessage } from '../src/services/authService';
+import { 
+  hashPassword, 
+  saveAccounts, 
+  signInWithEmail, 
+  sendPhoneOtp, 
+  verifyPhoneOtp, 
+  getPhoneAuthErrorMessage,
+  isGuestUser,
+  getUserSubscriptionQuota
+} from '../src/services/authService';
 import { AuthUser } from '../src/types/auth';
 
 describe('Auth Security & Verification Tests', () => {
@@ -138,5 +147,57 @@ describe('Auth Security & Verification Tests', () => {
     expect(user.displayName).toBe('Meet Sharma');
     expect(user.provider).toBe('email');
     expect(user.uid).toBeTruthy();
+  });
+
+  it('correctly identifies Guest accounts and strictly restricts AI Planner quota', () => {
+    const guestUser: AuthUser = {
+      uid: '00000000-0000-4000-8000-000000000099',
+      email: '',
+      displayName: 'Guest Explorer',
+      photoURL: '',
+      travelerStyle: 'Explorer',
+      travelStyleTag: 'Guest',
+      location: 'India',
+      occupation: 'Explorer',
+      age: 25,
+      emailVerified: false,
+      provider: 'guest',
+      isAnonymous: true,
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+      savedPlaceIds: []
+    };
+
+    expect(isGuestUser(guestUser)).toBe(true);
+
+    const normalUser: AuthUser = {
+      ...guestUser,
+      provider: 'email',
+      isAnonymous: false,
+      email: 'user@example.com'
+    };
+    expect(isGuestUser(normalUser)).toBe(false);
+
+    // Guest quota check: canCreateTrip MUST be false with 0 trips remaining
+    const guestQuota = getUserSubscriptionQuota(guestUser);
+    expect(guestQuota.canCreateTrip).toBe(false);
+    expect(guestQuota.freeTripsRemaining).toBe(0);
+    expect(guestQuota.tier).toBe('free');
+
+    // Normal user quota check: can create trip
+    const normalQuota = getUserSubscriptionQuota(normalUser);
+    expect(normalQuota.canCreateTrip).toBe(true);
+    expect(normalQuota.freeTripsRemaining).toBe(3);
+  });
+
+  it('handles zero-reCAPTCHA phone errors cleanly for worldwide carrier delivery', () => {
+    const billingErr = new Error('BILLING_NOT_ENABLED: Firebase Pay-as-you-go (Blaze) is required');
+    const billingMsg = getPhoneAuthErrorMessage(billingErr);
+    expect(billingMsg).toContain('Firebase Blaze (Pay-as-you-go) plan');
+    expect(billingMsg).toContain('10,000 free SMS/month');
+
+    const regionErr = new Error('SMS unable to be sent until this region enabled by the app developer.');
+    const regionMsg = getPhoneAuthErrorMessage(regionErr);
+    expect(regionMsg).toContain('SMS Region Policy');
   });
 });

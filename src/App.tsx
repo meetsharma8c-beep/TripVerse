@@ -74,6 +74,7 @@ const ProfileView = lazy(() => import('./components/profile/ProfileView').then(m
 const AuthModal = lazy(() => import('./components/profile/AuthModal').then(m => ({ default: m.AuthModal })));
 import { 
   getCurrentUser, 
+  isGuestUser,
   onAuthStateChanged, 
   toUserProfile, 
   getUserSubscriptionQuota, 
@@ -102,6 +103,7 @@ import { DisruptionAlert } from './types/replanning';
 const SmartRouteMap = lazy(() => import('./components/itinerary/SmartRouteMap').then(m => ({ default: m.SmartRouteMap })));
 const TripBookingCheckoutModal = lazy(() => import('./components/booking/TripBookingCheckoutModal').then(m => ({ default: m.TripBookingCheckoutModal })));
 const PlannerWizard = lazy(() => import('./components/planner/PlannerWizard').then(m => ({ default: m.PlannerWizard })));
+const GuestPlannerRestrictedModal = lazy(() => import('./components/planner/GuestPlannerRestrictedModal').then(m => ({ default: m.GuestPlannerRestrictedModal })));
 const TripReplanningModal = lazy(() => import('./components/replanning/TripReplanningModal').then(m => ({ default: m.TripReplanningModal })));
 const PrintTravelGuideModal = lazy(() => import('./components/itinerary/PrintTravelGuideModal').then(m => ({ default: m.PrintTravelGuideModal })));
 const LiveNavigationHUD = lazy(() => import('./components/navigation/LiveNavigationHUD').then(m => ({ default: m.LiveNavigationHUD })));
@@ -264,12 +266,15 @@ export function App() {
   const [tripsViewMode, setTripsViewMode] = useState<'passes' | 'portfolio'>('passes');
 
   // Modals & Drawers
-  const [isPlannerOpen, setIsPlannerOpen] = useState(() => initialRoute.openPlanner || false);
+  const [isPlannerOpen, setIsPlannerOpen] = useState(() => Boolean(initialRoute.openPlanner && !isGuestUser(getCurrentUser())));
+  const [isGuestPlannerRestrictedOpen, setIsGuestPlannerRestrictedOpen] = useState(() => Boolean(initialRoute.openPlanner && isGuestUser(getCurrentUser())));
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isCollabModalOpen, setIsCollabModalOpen] = useState(() => (initialRoute as any).openCollab || false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalInitialMethod, setAuthModalInitialMethod] = useState<'google' | 'email' | 'phone' | 'guest'>('email');
+  const [authModalInitialSubMode, setAuthModalInitialSubMode] = useState<'login' | 'signup'>('login');
   const [isLiveNavOpen, setIsLiveNavOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(() => (initialRoute as any).openPro || false);
   const [isBestDealModalOpen, setIsBestDealModalOpen] = useState(false);
@@ -510,6 +515,7 @@ export function App() {
       }
       if (isPlannerOpen) {
         setIsPlannerOpen(false);
+        setIsGuestPlannerRestrictedOpen(false);
         return;
       }
       if (isAIChatOpen) {
@@ -580,7 +586,11 @@ export function App() {
         setIsBookingModalOpen(true);
       }
       if (route.openPlanner) {
-        setIsPlannerOpen(true);
+        if (isGuestUser(currentUser)) {
+          setIsGuestPlannerRestrictedOpen(true);
+        } else {
+          setIsPlannerOpen(true);
+        }
       }
       setCurrentTab(route.tab);
     };
@@ -588,6 +598,7 @@ export function App() {
     // Android native back button listener dispatched from Capacitor
     const handleHardwareBack = (e: Event) => {
       if (
+        isGuestPlannerRestrictedOpen ||
         isBookingModalOpen ||
         isGlobalSearchOpen ||
         isPlannerOpen ||
@@ -610,6 +621,7 @@ export function App() {
         setIsBookingModalOpen(false);
         setIsGlobalSearchOpen(false);
         setIsPlannerOpen(false);
+        setIsGuestPlannerRestrictedOpen(false);
         setIsAIChatOpen(false);
         setIsLiveNavOpen(false);
         setSelectedDestinationForDetails(null);
@@ -892,7 +904,7 @@ export function App() {
 
   const handleNavigateFromNotification = (target: string, targetTripId?: string) => {
     if (target === 'plan') {
-      setIsPlannerOpen(true);
+      handleOpenPlannerWithPrefill();
       return;
     }
     if (target === 'home') {
@@ -937,6 +949,10 @@ export function App() {
         budget: params.budget ?? prev.budget,
       }));
     }
+    if (isGuestUser(currentUser)) {
+      setIsGuestPlannerRestrictedOpen(true);
+      return;
+    }
     setIsPlannerOpen(true);
   };
 
@@ -947,6 +963,17 @@ export function App() {
     travelers?: number;
     budget?: number;
   }) => {
+    if (isGuestUser(currentUser)) {
+      setPlannerPrefill({
+        destination: params.destination?.trim() || 'Udaipur',
+        duration: params.duration || 3,
+        travelers: params.travelers || 2,
+        budget: params.budget || 8000
+      });
+      setIsGuestPlannerRestrictedOpen(true);
+      return;
+    }
+
     const quota = getUserSubscriptionQuota(currentUser);
     if (!quota.canCreateTrip) {
       setIsProModalOpen(true);
@@ -1034,7 +1061,11 @@ export function App() {
     const quota = getUserSubscriptionQuota(currentUser);
     if (!quota.canCreateTrip) {
       setIsPlannerOpen(false);
-      setIsProModalOpen(true);
+      if (isGuestUser(currentUser)) {
+        setIsGuestPlannerRestrictedOpen(true);
+      } else {
+        setIsProModalOpen(true);
+      }
       return;
     }
 
@@ -1142,11 +1173,19 @@ export function App() {
             if (action.payload?.prefill) {
               setPlannerPrefill(prev => ({ ...prev, ...action.payload.prefill }));
             }
-            setIsPlannerOpen(true);
+            if (isGuestUser(currentUser)) {
+              setIsGuestPlannerRestrictedOpen(true);
+            } else {
+              setIsPlannerOpen(true);
+            }
             break;
         }
         break;
       case 'GENERATE_NEW_TRIP':
+        if (isGuestUser(currentUser)) {
+          setIsGuestPlannerRestrictedOpen(true);
+          break;
+        }
         if (action.payload?.trip) {
           handleTripGenerated(action.payload.trip);
         }
@@ -2176,6 +2215,26 @@ export function App() {
 
       {/* Modals and Drawers with Code-Splitting Suspense Fallback */}
       <Suspense fallback={<ModalSkeleton />}>
+        {isGuestPlannerRestrictedOpen && (
+          <GuestPlannerRestrictedModal
+            isOpen={isGuestPlannerRestrictedOpen}
+            onClose={() => setIsGuestPlannerRestrictedOpen(false)}
+            onOpenSignUp={() => {
+              setIsGuestPlannerRestrictedOpen(false);
+              setAuthModalInitialMethod('email');
+              setAuthModalInitialSubMode('signup');
+              setIsAuthModalOpen(true);
+            }}
+            onOpenSignIn={() => {
+              setIsGuestPlannerRestrictedOpen(false);
+              setAuthModalInitialMethod('email');
+              setAuthModalInitialSubMode('login');
+              setIsAuthModalOpen(true);
+            }}
+            prefilledDestination={plannerPrefill.destination}
+          />
+        )}
+
         {isPlannerOpen && (
           <PlannerWizard
             initialDestination={plannerPrefill.destination}
@@ -2187,6 +2246,12 @@ export function App() {
             onOpenProModal={() => {
               setIsPlannerOpen(false);
               setIsProModalOpen(true);
+            }}
+            onOpenAuthModal={() => {
+              setIsPlannerOpen(false);
+              setAuthModalInitialMethod('email');
+              setAuthModalInitialSubMode('signup');
+              setIsAuthModalOpen(true);
             }}
           />
         )}
@@ -2345,6 +2410,8 @@ export function App() {
 
       {isAuthModalOpen && (<Suspense fallback={<ModalSkeleton />}><AuthModal
         isOpen={isAuthModalOpen}
+        initialMethod={authModalInitialMethod}
+        initialSubMode={authModalInitialSubMode}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={(updated) => {
           const activeUser = getCurrentUser();

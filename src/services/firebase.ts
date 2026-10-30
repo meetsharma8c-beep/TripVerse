@@ -8,8 +8,6 @@ import {
   signOut as fbSignOut, 
   Auth, 
   UserCredential,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
   ConfirmationResult,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword
@@ -207,42 +205,16 @@ export async function signOutFirebase(): Promise<void> {
 }
 
 let activeConfirmationResult: ConfirmationResult | null = null;
-let activeRecaptchaVerifier: RecaptchaVerifier | null = null;
 let activeRestSessionInfo: string | null = null;
 let activeTargetPhone: string | null = null;
 
-export function getRecaptchaVerifier(containerId: string = 'tripverse-recaptcha-container'): RecaptchaVerifier | null {
-  if (typeof window === 'undefined') return null;
-  const auth = getFirebaseAuth();
-  if (!auth) return null;
-
-  try {
-    const el = document.getElementById(containerId);
-    if (!el) return null;
-
-    if (activeRecaptchaVerifier) {
-      try {
-        activeRecaptchaVerifier.clear();
-      } catch {}
-      activeRecaptchaVerifier = null;
-    }
-
-    activeRecaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-      size: 'invisible'
-    });
-    return activeRecaptchaVerifier;
-  } catch (err) {
-    console.warn('[Firebase] RecaptchaVerifier setup notice:', err);
-    return null;
-  }
-}
-
 /**
- * Dispatch Firebase SMS verification code via REST API (bypassing reCAPTCHA stalls) or Client SDK
+ * Dispatch Firebase SMS verification code via direct Google Cloud Identity Toolkit REST API
+ * ZERO-reCAPTCHA: Pure direct carrier gateway dispatch with NO reCAPTCHA challenges, iframes, or badges.
  */
 export async function sendFirebasePhoneOtp(
   phoneNumber: string, 
-  containerId: string = 'tripverse-recaptcha-container'
+  _containerId?: string
 ): Promise<ConfirmationResult> {
   const config = getStoredFirebaseConfig();
   if (!config?.apiKey) {
@@ -251,94 +223,42 @@ export async function sendFirebasePhoneOtp(
 
   activeTargetPhone = phoneNumber;
 
-  // 1. For test phone numbers or when reCAPTCHA challenges may stall, use Google Identity Toolkit REST API
-  const cleanDigits = phoneNumber.replace(/\D/g, '');
-  const isConfiguredTestNumber = cleanDigits.endsWith('9904717666');
-
-  if (isConfiguredTestNumber) {
-    try {
-      const restRes = await fetch(
-        `https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key=${config.apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber })
-        }
-      );
-      const restData = await restRes.json();
-      if (restRes.ok && restData.sessionInfo) {
-        activeRestSessionInfo = restData.sessionInfo;
-        const confirmationMock: ConfirmationResult = {
-          verificationId: restData.sessionInfo,
-          confirm: async (code: string) => await confirmFirebasePhoneOtp(code)
-        };
-        activeConfirmationResult = confirmationMock;
-        return confirmationMock;
-      }
-    } catch (restErr) {
-      console.warn('[Firebase Phone] REST dispatch fallback notice:', restErr);
+  const restRes = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key=${config.apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber })
     }
+  );
+
+  const restData = await restRes.json().catch(() => ({}));
+
+  if (restRes.ok && restData.sessionInfo) {
+    activeRestSessionInfo = restData.sessionInfo;
+    const confirmationMock: ConfirmationResult = {
+      verificationId: restData.sessionInfo,
+      confirm: async (code: string) => await confirmFirebasePhoneOtp(code)
+    };
+    activeConfirmationResult = confirmationMock;
+    return confirmationMock;
   }
 
-  // 2. Client SDK with invisible RecaptchaVerifier
-  const auth = getFirebaseAuth();
-  if (!auth) {
-    throw new Error('Firebase Authentication is not configured.');
+  const errMsg = restData?.error?.message || '';
+  if (errMsg.includes('BILLING_NOT_ENABLED')) {
+    throw new Error('BILLING_NOT_ENABLED: Firebase Pay-as-you-go (Blaze) is required for worldwide live carrier SMS. Please upgrade your project in Firebase Console (includes 10,000 free SMS/mo).');
+  }
+  if (errMsg.includes('OPERATION_NOT_ALLOWED')) {
+    throw new Error('SMS delivery to this country is restricted. Please enable this region in Firebase Console -> Authentication -> Settings -> SMS Region Policy.');
+  }
+  if (errMsg.includes('TOO_MANY_ATTEMPTS')) {
+    throw new Error('Too many verification attempts for this phone number. Please wait a few minutes before trying again.');
+  }
+  if (errMsg.includes('INVALID_PHONE_NUMBER')) {
+    throw new Error('Please enter a valid mobile number in international format (e.g. +91 98765 43210).');
   }
 
-  const verifier = getRecaptchaVerifier(containerId);
-  if (!verifier) {
-    // If DOM container is missing, try REST API directly
-    const directRes = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key=${config.apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber })
-      }
-    );
-    const directData = await directRes.json();
-    if (directRes.ok && directData.sessionInfo) {
-      activeRestSessionInfo = directData.sessionInfo;
-      const confirmationMock: ConfirmationResult = {
-        verificationId: directData.sessionInfo,
-        confirm: async (code: string) => await confirmFirebasePhoneOtp(code)
-      };
-      activeConfirmationResult = confirmationMock;
-      return confirmationMock;
-    }
-    throw new Error('Could not initialize verification for mobile number.');
-  }
-
-  try {
-    const confirmation = await signInWithPhoneNumber(auth, phoneNumber, verifier);
-    activeConfirmationResult = confirmation;
-    return confirmation;
-  } catch (err: any) {
-    // If Client SDK fails (e.g. reCAPTCHA challenge timeout or domain mismatch), attempt REST endpoint
-    try {
-      const fallbackRes = await fetch(
-        `https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key=${config.apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber })
-        }
-      );
-      const fallbackData = await fallbackRes.json();
-      if (fallbackRes.ok && fallbackData.sessionInfo) {
-        activeRestSessionInfo = fallbackData.sessionInfo;
-        const confirmationMock: ConfirmationResult = {
-          verificationId: fallbackData.sessionInfo,
-          confirm: async (code: string) => await confirmFirebasePhoneOtp(code)
-        };
-        activeConfirmationResult = confirmationMock;
-        return confirmationMock;
-      }
-    } catch {}
-
-    throw err;
-  }
+  throw new Error(errMsg || 'Could not dispatch carrier SMS verification code.');
 }
 
 /**
@@ -397,12 +317,6 @@ export function clearFirebasePhoneSession(): void {
   activeConfirmationResult = null;
   activeRestSessionInfo = null;
   activeTargetPhone = null;
-  if (activeRecaptchaVerifier) {
-    try {
-      activeRecaptchaVerifier.clear();
-    } catch {}
-    activeRecaptchaVerifier = null;
-  }
 }
 
 export async function createAccountWithFirebaseEmail(email: string, password: string): Promise<UserCredential> {

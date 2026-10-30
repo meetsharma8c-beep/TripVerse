@@ -1,6 +1,6 @@
-import { AuthUser, AuthSession, SignUpData, LoginData, GoogleCredentialPayload, SubscriptionTier, UserSubscriptionQuota } from '../types/auth';
+import { AuthUser, AuthSession, AuthProvider, SignUpData, LoginData, GoogleCredentialPayload, SubscriptionTier, UserSubscriptionQuota } from '../types/auth';
 
-export type { AuthUser, AuthSession, SubscriptionTier, UserSubscriptionQuota };
+export type { AuthUser, AuthSession, AuthProvider, SubscriptionTier, UserSubscriptionQuota };
 import { UserProfile } from '../types/trip';
 import { User as SupabaseAuthUser } from '@supabase/supabase-js';
 import { 
@@ -144,8 +144,22 @@ export function supabaseUserToAuthUser(sbUser: SupabaseAuthUser, overrides?: Par
     metadata.picture || 
     `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=2D5A3D,0B2545`;
 
-  const rawProvider = (sbUser.app_metadata?.provider as any) || (sbUser.phone ? 'phone' : 'email');
-  const provider = rawProvider === 'google' ? 'google' : rawProvider === 'phone' ? 'phone' : 'email';
+  const isAnonymous = Boolean(
+    (sbUser as any).is_anonymous || 
+    sbUser.app_metadata?.provider === 'anonymous' ||
+    overrides?.provider === 'guest' ||
+    overrides?.isAnonymous ||
+    (!sbUser.email && !sbUser.phone && !overrides?.email && !overrides?.phoneNumber)
+  );
+
+  const rawProvider = (sbUser.app_metadata?.provider as any) || (sbUser.phone ? 'phone' : (isAnonymous ? 'guest' : 'email'));
+  const provider: AuthProvider = isAnonymous
+    ? 'guest'
+    : rawProvider === 'google'
+    ? 'google'
+    : rawProvider === 'phone'
+    ? 'phone'
+    : 'email';
 
   return {
     uid: toDeterministicUuid(sbUser.id),
@@ -154,25 +168,40 @@ export function supabaseUserToAuthUser(sbUser: SupabaseAuthUser, overrides?: Par
     displayName,
     photoURL,
     travelerStyle: overrides?.travelerStyle || metadata.traveler_style || 'Budget explorer',
-    travelStyleTag: overrides?.travelStyleTag || metadata.travel_style_tag || 'Verified Explorer',
+    travelStyleTag: overrides?.travelStyleTag || metadata.travel_style_tag || (isAnonymous ? 'Guest Explorer' : 'Verified Explorer'),
     location: overrides?.location || metadata.location || 'India',
-    occupation: overrides?.occupation || metadata.occupation || 'Explorer',
+    occupation: overrides?.occupation || metadata.occupation || (isAnonymous ? 'Guest' : 'Explorer'),
     age: overrides?.age || metadata.age || 25,
-    emailVerified: Boolean(sbUser.email_confirmed_at),
+    emailVerified: isAnonymous ? true : Boolean(sbUser.email_confirmed_at),
     provider,
+    isAnonymous,
     createdAt: sbUser.created_at || new Date().toISOString(),
     lastLoginAt: sbUser.last_sign_in_at || new Date().toISOString(),
     savedPlaceIds: overrides?.savedPlaceIds || [],
     subscriptionTier: overrides?.subscriptionTier || (metadata.subscription_tier as SubscriptionTier) || 'free',
     freeTripsRemaining: typeof overrides?.freeTripsRemaining === 'number' 
       ? overrides.freeTripsRemaining 
-      : (typeof metadata.free_trips_remaining === 'number' ? metadata.free_trips_remaining : 3),
+      : (typeof metadata.free_trips_remaining === 'number' ? metadata.free_trips_remaining : (isAnonymous ? 0 : 3)),
     weeklyAssistantMinutesRemaining: typeof overrides?.weeklyAssistantMinutesRemaining === 'number'
       ? overrides.weeklyAssistantMinutesRemaining
       : (typeof metadata.weekly_assistant_minutes_remaining === 'number' ? metadata.weekly_assistant_minutes_remaining : 1800),
     subscriptionExpiresAt: overrides?.subscriptionExpiresAt || metadata.subscription_expires_at,
     weeklyQuotaResetAt: overrides?.weeklyQuotaResetAt || metadata.weekly_quota_reset_at
   };
+}
+
+/**
+ * Helper to determine if a user session is operating in guest/anonymous mode.
+ * Guest users can freely explore all destinations, deals, and highway facilities,
+ * but cannot use or explore the AI Trip Planner feature.
+ */
+export function isGuestUser(user?: AuthUser | null): boolean {
+  if (!user) return true;
+  if (user.isAnonymous === true) return true;
+  if (user.provider === 'guest') return true;
+  if (user.travelStyleTag === 'Guest Explorer') return true;
+  if (!user.email && !user.phoneNumber) return true;
+  return false;
 }
 
 // Backward-compatibility alias
@@ -820,9 +849,14 @@ export async function signInAnonymouslyWithSupabase(data?: {
         const authUser = supabaseUserToAuthUser(authData.user, {
           displayName,
           travelerStyle,
-          location
+          location,
+          provider: 'guest',
+          isAnonymous: true,
+          travelStyleTag: 'Guest Explorer'
         });
         authUser.emailVerified = true;
+        authUser.isAnonymous = true;
+        authUser.provider = 'guest';
         await saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
         syncAccountToLocal(authUser);
         return authUser;
@@ -845,7 +879,8 @@ export async function signInAnonymouslyWithSupabase(data?: {
     occupation: 'Explorer',
     age: 25,
     emailVerified: true,
-    provider: 'email',
+    provider: 'guest',
+    isAnonymous: true,
     createdAt: now,
     lastLoginAt: now,
     savedPlaceIds: []
@@ -1296,7 +1331,7 @@ export function onAuthStateChanged(callback: (user: AuthUser | null) => void): (
 /**
  * Compatibility helper for RecaptchaVerifier (no longer needed with Supabase)
  */
-export function setupRecaptchaVerifier(_containerId: string = 'tripverse-recaptcha-container'): any {
+export function setupRecaptchaVerifier(): any {
   return null;
 }
 
@@ -1305,11 +1340,10 @@ let activePhonePendingPhone: string | null = null;
 
 /**
  * Send real SMS verification code via Firebase Phone Auth (Google Telecom Gateway) with Fast2SMS fallback.
- * NO MOCK VERIFICATION: Dispatches genuine carrier SMS to the user's mobile device.
+ * ZERO-reCAPTCHA & NO MOCK: Dispatches genuine carrier SMS without any reCAPTCHA puzzles, iframes, or badges.
  */
 export async function sendPhoneOtp(
-  rawPhoneNumber: string,
-  _containerId: string = 'tripverse-recaptcha-container'
+  rawPhoneNumber: string
 ): Promise<{ provider: 'firebase' | 'fast2sms' | 'supabase'; message: string }> {
   let clean = rawPhoneNumber.trim().replace(/[\s-()]/g, '');
   if (!clean.startsWith('+')) {
@@ -1322,10 +1356,10 @@ export async function sendPhoneOtp(
 
   let lastFast2SmsError = '';
 
-  // 1. Primary: Genuine Firebase Phone SMS (Google Carrier Telecom Network)
+  // 1. Primary: Genuine Firebase Phone SMS (Google Carrier Telecom Network - Zero reCAPTCHA)
   if (isFirebaseConfigured() && typeof window !== 'undefined') {
     try {
-      await sendFirebasePhoneOtp(clean, _containerId);
+      await sendFirebasePhoneOtp(clean);
       lastSmsDispatchedPhone = clean;
       activePhonePendingPhone = clean;
       console.log(`[Firebase Phone] Verification session initiated for ${clean}`);
@@ -1345,7 +1379,9 @@ export async function sendPhoneOtp(
         throw new Error('Too many verification attempts from this device. Please wait a few moments before trying again.');
       }
       lastFast2SmsError = fbErr.message?.includes('BILLING_NOT_ENABLED')
-        ? 'Google Cloud Billing is required for live carrier SMS on Firebase. Attempting secondary SMS gateway...'
+        ? 'BILLING_NOT_ENABLED: Firebase Pay-as-you-go (Blaze) is required for worldwide live carrier SMS. Google includes 10,000 free SMS/mo.'
+        : fbErr.message?.includes('OPERATION_NOT_ALLOWED')
+        ? 'SMS delivery to this country/region must be enabled in Firebase Console (Authentication > Settings > SMS Region Policy).'
         : (fbErr.message || 'Firebase SMS dispatch unavailable.');
     }
   }
@@ -1596,6 +1632,18 @@ export function getPhoneAuthErrorMessage(err: any): string {
     return 'Fast2SMS IP security is active on this hosting IP. For instant genuine verification, use verified mobile number (+91 99047 17666 with code 990471), or sign in with Email & Password or Google.';
   }
 
+  if (message.includes('BILLING_NOT_ENABLED')) {
+    return 'Carrier SMS to worldwide phone numbers requires enabling the Firebase Blaze (Pay-as-you-go) plan in Firebase Console. Google includes 10,000 free SMS/month. Once Blaze is enabled, carrier SMS works worldwide.';
+  }
+
+  if (message.includes('OPERATION_NOT_ALLOWED') || message.includes('region enabled')) {
+    return 'SMS delivery to this country/region must be enabled in your Firebase Console (Authentication > Settings > SMS Region Policy).';
+  }
+
+  if (message.includes('quota-exceeded') || message.includes('TOO_MANY_ATTEMPTS')) {
+    return 'SMS dispatch quota temporarily exceeded. Please try again shortly or sign in with Google or Email.';
+  }
+
   if (message.includes('invalid-phone-number') || message.includes('format') || message.includes('INVALID_PHONE_NUMBER')) {
     return 'The phone number format is invalid. Please enter a valid mobile number with country code (e.g. +91 9876543210).';
   }
@@ -1645,34 +1693,17 @@ const GUEST_QUOTA_STORAGE_KEY = 'tripverse_guest_quota_v1';
 export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubscriptionQuota {
   const user = userParam !== undefined ? userParam : getCurrentUser();
 
-  if (!user) {
-    // Guest user quota stored locally
-    let guestTrips = 3;
-    let guestMinutes = 30;
-    try {
-      if (typeof localStorage !== 'undefined') {
-        const raw = localStorage.getItem(GUEST_QUOTA_STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (typeof parsed.freeTripsRemaining === 'number') guestTrips = parsed.freeTripsRemaining;
-          if (typeof parsed.weeklyAssistantMinutesRemaining === 'number') guestMinutes = parsed.weeklyAssistantMinutesRemaining;
-        }
-      }
-    } catch {}
-
-    const hours = Math.floor(guestMinutes / 60);
-    const mins = guestMinutes % 60;
-    const weeklyQuotaHoursFormatted = `${hours}h ${mins.toString().padStart(2, '0')}m`;
-
+  if (!user || isGuestUser(user)) {
+    // Guest users can explore destinations and deals, but cannot use or explore the AI Trip Planner
     return {
       tier: 'free',
       isPro: false,
-      freeTripsRemaining: Math.max(0, guestTrips),
-      freeTripsTotal: 3,
-      canCreateTrip: guestTrips > 0,
-      weeklyAssistantMinutesRemaining: Math.max(0, guestMinutes),
-      weeklyAssistantMinutesTotal: 30,
-      weeklyQuotaHoursFormatted
+      freeTripsRemaining: 0,
+      freeTripsTotal: 0,
+      canCreateTrip: false,
+      weeklyAssistantMinutesRemaining: 0,
+      weeklyAssistantMinutesTotal: 0,
+      weeklyQuotaHoursFormatted: '0h 00m'
     };
   }
 

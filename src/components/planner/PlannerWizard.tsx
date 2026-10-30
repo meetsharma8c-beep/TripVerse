@@ -43,6 +43,7 @@ import {
   Loader2,
   ShieldCheck,
   Calendar,
+  Lock,
   LucideIcon
 } from 'lucide-react';
 import { TravelPreference, TravelerType, TransportMode, AccommodationType, FoodPreference, Priority, Coordinates } from '../../types/trip';
@@ -50,7 +51,7 @@ import { PlannerInput } from '../../services/plannerEngine';
 import { GenerationLoader } from './GenerationLoader';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { searchLocations, resolvePreciseLocationSync, PreciseLocation } from '../../services/locationService';
-import { getUserSubscriptionQuota } from '../../services/authService';
+import { getUserSubscriptionQuota, getCurrentUser, isGuestUser } from '../../services/authService';
 
 interface PlannerWizardProps {
   initialDestination?: string;
@@ -60,6 +61,7 @@ interface PlannerWizardProps {
   onClose: () => void;
   onTripGenerated: (tripInput: PlannerInput) => void;
   onOpenProModal?: () => void;
+  onOpenAuthModal?: () => void;
 }
 
 export const PlannerWizard: React.FC<PlannerWizardProps> = ({
@@ -69,9 +71,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   initialBudget = 8000,
   onClose,
   onTripGenerated,
-  onOpenProModal
+  onOpenProModal,
+  onOpenAuthModal
 }) => {
   const quota = getUserSubscriptionQuota();
+  const isGuest = isGuestUser(getCurrentUser());
   useModalBehavior(true);
   const [currentStep, setCurrentStep] = useState<number>(1);
   const totalSteps = 9;
@@ -249,6 +253,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
+      if (isGuest) {
+        onClose();
+        if (onOpenAuthModal) onOpenAuthModal();
+        return;
+      }
       // Trigger AI Generation
       setIsGenerating(true);
     }
@@ -303,15 +312,84 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
 
-      {isGenerating && (
-        <GenerationLoader
-          destinationName={destination}
-          transportMode={transportMode}
-          onComplete={handleFinalSubmit}
-        />
-      )}
+      {isGuest ? (
+        <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-200 overflow-hidden flex flex-col p-6 sm:p-8 text-center space-y-5 animate-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-600 mx-auto flex items-center justify-center">
+            <Lock className="w-8 h-8" />
+          </div>
 
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200">
+          <div className="space-y-1.5">
+            <h2 className="text-xl sm:text-2xl font-black text-[#0B2545]">
+              Sign Up to Use the AI Trip Planner
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              You are currently exploring TripVerse in <strong>Guest Mode</strong>.
+              Generating custom day-by-day itineraries requires a free registered account.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2 text-left">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>Full Day-by-Day AI Generation</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-[#2D5A3D] shrink-0" />
+              <span>Highway Breakstops & Route Logistics</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0" />
+              <span>Permanent Cloud Trip Sync</span>
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                if (onOpenAuthModal) onOpenAuthModal();
+              }}
+              className="w-full py-3.5 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-[#A8C5AC]" />
+              <span>Sign Up to Unlock AI Planner (Free)</span>
+            </button>
+            <div className="text-center pt-0.5">
+              <p className="text-xs text-slate-500">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onOpenAuthModal) onOpenAuthModal();
+                  }}
+                  className="text-[#2D5A3D] font-bold hover:underline cursor-pointer ml-1"
+                >
+                  Sign In
+                </button>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-2.5 rounded-xl text-slate-500 hover:text-slate-800 text-xs font-semibold cursor-pointer"
+            >
+              Continue Exploring App
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {isGenerating && (
+            <GenerationLoader
+              destinationName={destination}
+              transportMode={transportMode}
+              onComplete={handleFinalSubmit}
+            />
+          )}
+
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200">
 
         {/* Top Header */}
         <div className="px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
@@ -1179,6 +1257,8 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         </div>
 
       </div>
+        </>
+      )}
     </div>
   );
 };
