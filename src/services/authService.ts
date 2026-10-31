@@ -604,7 +604,8 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
         throw new Error('Google sign-in was cancelled. Please select your account to proceed.');
       }
       if (fbErr?.code === 'auth/unauthorized-domain') {
-        throw new Error("Firebase Auth Domain Error: This domain is not listed under 'Authorized domains' in your Firebase Console (Authentication -> Settings -> Authorized domains).");
+        const originDomain = typeof window !== 'undefined' ? window.location.hostname : 'tripverse.concode.com';
+        throw new Error(`Firebase Auth Domain Error: "${originDomain}" must be added to 'Authorized domains' in Firebase Console (Authentication -> Settings -> Authorized domains).`);
       }
       console.warn('[Firebase Auth] Notice during Google popup, falling back to GIS if available:', fbErr);
     }
@@ -629,7 +630,10 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
           callback: async (tokenResponse: any) => {
             if (tokenResponse.error) {
               if (tokenResponse.error === 'access_denied') {
-                reject(new Error('Google sign-in was cancelled or denied. If your friend sees "Access blocked", please click "Publish App" on your Google Cloud OAuth Consent Screen (Audience) to switch from Testing to In Production.'));
+                reject(new Error('Google sign-in was blocked (access_denied). In Google Cloud Console (OAuth consent screen), set Publishing status to "In production" (click "Publish App") and add this domain to Authorized JavaScript Origins.'));
+              } else if (tokenResponse.error === 'redirect_uri_mismatch' || String(tokenResponse.error_description || '').includes('mismatch')) {
+                const originUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tripverse.concode.com';
+                reject(new Error(`Google OAuth Error (redirect_uri_mismatch): Please add "${originUrl}" to Authorized JavaScript Origins and Authorized Redirect URIs in Google Cloud Console (project 288425355548).`));
               } else {
                 reject(new Error(tokenResponse.error_description || tokenResponse.error || 'Google Sign-In failed.'));
               }
@@ -732,9 +736,8 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
       if (res.error.message.toLowerCase().includes('already registered')) {
         throw new Error('An account with this email address already exists. Please sign in instead.');
       }
-      if ((res.error as any).code === 'over_email_send_rate_limit' || res.error.message.toLowerCase().includes('rate limit')) {
-        // Fallback to Firebase Email registration so user is never blocked by Supabase's 3 emails/hr SMTP limit
-        if (isFirebaseConfigured()) {
+      // Fallback to Firebase Email registration so user is never blocked by Supabase errors or SMTP limits
+      if (isFirebaseConfigured()) {
           const config = getStoredFirebaseConfig();
           if (config?.apiKey) {
             const fbRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${config.apiKey}`, {
@@ -773,10 +776,8 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
             }
           }
         }
-        throw new Error('Supabase email verification rate limit reached (3 emails/hr). Please wait a few moments before trying again, or use Quick Guest Explorer for instant access.');
+        throw new Error(res.error.message);
       }
-      throw new Error(res.error.message);
-    }
 
     supaData = res.data;
   } catch (err: any) {
@@ -801,6 +802,23 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
 
   // Sync profile to Supabase PostgreSQL database
   await saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
+
+  // Register in Firebase Cloud Identity in background so account is universal across both clouds
+  if (isFirebaseConfigured()) {
+    const config = getStoredFirebaseConfig();
+    if (config?.apiKey) {
+      fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${config.apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailNorm,
+          password: data.password,
+          displayName: data.name?.trim() || emailNorm.split('@')[0],
+          returnSecureToken: true
+        })
+      }).catch(() => {});
+    }
+  }
 
   if (!isSessionCreated) {
     resendEmailConfirmation(emailNorm, data.name).catch(() => {});
@@ -1048,60 +1066,49 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
     throw new Error('Please enter your password.');
   }
 
-  const supabase = getSupabaseClient();
   const pwdHash = await hashPassword(data.password);
+  let supaPendingConfirmation = false;
+  let supaErrorMessage = '';
 
+  // 1. Supabase Cloud Authentication (Primary)
+  const supabase = getSupabaseClient();
   if (supabase) {
-    const { data: supaData, error: supaErr } = await supabase.auth.signInWithPassword({
-      email: emailNorm,
-      password: data.password
-    });
+    try {
+      const { data: supaData, error: supaErr } = await supabase.auth.signInWithPassword({
+        email: emailNorm,
+        password: data.password
+      });
 
-    if (!supaErr && supaData?.user) {
-      const authUser = supabaseUserToAuthUser(supaData.user);
-      try {
-        const profile = await loadProfileFromSupabase(authUser.uid);
-        if (profile) {
-          authUser.displayName = profile.name || authUser.displayName;
-          authUser.photoURL = profile.avatar || authUser.photoURL;
-          authUser.travelerStyle = profile.travelerStyle || authUser.travelerStyle;
-          authUser.location = profile.location || authUser.location;
+      if (!supaErr && supaData?.user) {
+        const authUser = supabaseUserToAuthUser(supaData.user);
+        try {
+          const profile = await loadProfileFromSupabase(authUser.uid);
+          if (profile) {
+            authUser.displayName = profile.name || authUser.displayName;
+            authUser.photoURL = profile.avatar || authUser.photoURL;
+            authUser.travelerStyle = profile.travelerStyle || authUser.travelerStyle;
+            authUser.location = profile.location || authUser.location;
+          }
+        } catch (err) {
+          console.warn('[Supabase] Profile fetch notice:', err);
         }
-      } catch (err) {
-        console.warn('[Supabase] Profile fetch notice:', err);
+
+        syncAccountToLocal(authUser, pwdHash);
+        return authUser;
       }
 
-      syncAccountToLocal(authUser, pwdHash);
-      return authUser;
-    }
-
-    // Check for Email not confirmed
-    if (supaErr && (supaErr.message.toLowerCase().includes('email not confirmed') || (supaErr as any).code === 'email_not_confirmed')) {
-      const accounts = loadAccounts();
-      const localAccount = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
-      if (localAccount) {
-        if (localAccount.passwordHash !== pwdHash) {
-          throw new Error('Invalid email or password. Please verify your credentials.');
+      if (supaErr) {
+        supaErrorMessage = supaErr.message || '';
+        if (supaErr.message.toLowerCase().includes('email not confirmed') || (supaErr as any).code === 'email_not_confirmed') {
+          supaPendingConfirmation = true;
         }
-        syncAccountToLocal(localAccount.user, pwdHash);
-        return localAccount.user;
       }
-
-      const err = new Error('Email confirmation is pending for this account. Please verify via the link sent to your inbox, or enter the 6-digit verification code below.');
-      (err as any).code = 'email_not_confirmed';
-      throw err;
-    }
-
-    // If Supabase rejected (e.g. rate limit during signup), verify local credentials before throwing
-    const accounts = loadAccounts();
-    const localAccount = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
-    if (localAccount && localAccount.passwordHash === pwdHash) {
-      syncAccountToLocal(localAccount.user, pwdHash);
-      return localAccount.user;
+    } catch (e: any) {
+      supaErrorMessage = e?.message || '';
     }
   }
 
-  // 2. Firebase Cloud Email & Password Auth (Google Cloud Identity Toolkit)
+  // 2. Firebase Cloud Email & Password Auth (Instant Fallback - Bypasses unconfirmed email blocks)
   if (isFirebaseConfigured()) {
     try {
       const config = getStoredFirebaseConfig();
@@ -1157,7 +1164,13 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
     return localAccount.user;
   }
 
-  throw new Error('Invalid email or password. Please verify your credentials.');
+  if (supaPendingConfirmation) {
+    const err = new Error('Email confirmation is pending for this account. Please click the verification link in your inbox, or create a fresh account.');
+    (err as any).code = 'email_not_confirmed';
+    throw err;
+  }
+
+  throw new Error(supaErrorMessage || 'Invalid email or password. Please verify your credentials or create a new account.');
 }
 
 /**
