@@ -803,20 +803,26 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
   // Sync profile to Supabase PostgreSQL database
   await saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
 
-  // Register in Firebase Cloud Identity in background so account is universal across both clouds
+  // Register in Firebase Cloud Identity so account credentials work seamlessly across both clouds
   if (isFirebaseConfigured()) {
-    const config = getStoredFirebaseConfig();
-    if (config?.apiKey) {
-      fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${config.apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailNorm,
-          password: data.password,
-          displayName: data.name?.trim() || emailNorm.split('@')[0],
-          returnSecureToken: true
-        })
-      }).catch(() => {});
+    try {
+      const config = getStoredFirebaseConfig();
+      if (config?.apiKey) {
+        await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${config.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: emailNorm,
+            password: data.password,
+            displayName: data.name?.trim() || emailNorm.split('@')[0],
+            returnSecureToken: true
+          })
+        }).catch((err) => {
+          console.warn('[Firebase Cloud Identity Sync Notice]:', err);
+        });
+      }
+    } catch (fbSyncErr) {
+      console.warn('[Firebase Cloud Identity] Registration sync notice:', fbSyncErr);
     }
   }
 
