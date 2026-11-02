@@ -1,4 +1,5 @@
 // Vercel Serverless Function: Real-Time Auth Activity Automation & Persistent Cloud Monitor
+import { createClient } from '@supabase/supabase-js';
 import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js';
 
 const MAX_ACTIVITIES = 100;
@@ -6,6 +7,8 @@ const activityLog = [];
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'meet.sharma8c@gmail.com';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
 // Debounce identical user alerts within a 2-minute window per container
 const recentlyAlerted = new Map();
@@ -166,8 +169,46 @@ export default async function handler(req, res) {
     const shouldDispatchEmail = (Date.now() - lastAlertTime > 2 * 60 * 1000) && Boolean(RESEND_API_KEY);
 
     let emailDispatchId = null;
+    let supabaseProfileId = null;
+
     if (shouldDispatchEmail) {
       recentlyAlerted.set(alertKey, Date.now());
+
+      // 1. Server-side guarantee: ensure user sign-in is also recorded in Supabase public.profiles & auth.users
+      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+        try {
+          const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false }
+          });
+          const { data: anonData } = await sb.auth.signInAnonymously({
+            options: {
+              data: {
+                full_name: activityRecord.displayName,
+                user_email: activityRecord.email || null,
+                auth_provider: activityRecord.provider,
+                external_uid: activityRecord.uid,
+                location: locationStr,
+                ip: clientIp,
+                last_sign_in_at: activityRecord.timestamp
+              }
+            }
+          });
+          if (anonData?.user?.id) {
+            supabaseProfileId = anonData.user.id;
+            await sb.from('profiles').upsert({
+              id: anonData.user.id,
+              email: activityRecord.email || null,
+              display_name: activityRecord.displayName,
+              traveler_style: user.travelerStyle || 'Smart Roadtripper',
+              travel_style_tag: `${activityRecord.travelStyleTag} • ${String(activityRecord.provider).toUpperCase()}`,
+              location: locationStr,
+              updated_at: activityRecord.timestamp
+            });
+          }
+        } catch (sbErr) {
+          console.warn('[Auth Activity Supabase Sync Notice]', sbErr);
+        }
+      }
 
       const providerLabel = String(activityRecord.provider).toUpperCase();
       const userIdent = activityRecord.displayName || activityRecord.email || `Guest (${activityRecord.uid.slice(0, 8)})`;
@@ -243,6 +284,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       recorded: activityRecord,
+      supabaseProfileId,
       emailDispatchId
     });
   }
