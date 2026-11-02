@@ -1339,6 +1339,19 @@ let isSupabaseListenerAttached = false;
  * Subscribe to authentication state changes with Supabase listener
  */
 export function onAuthStateChanged(callback: (user: AuthUser | null) => void): () => void {
+  // Report active restored session once per browser tab load so existing logged-in users appear in real-time monitor
+  try {
+    const activeUser = getCurrentUser();
+    if (activeUser?.uid && typeof sessionStorage !== 'undefined') {
+      const reportKey = `tripverse_reported_auth_${activeUser.uid}`;
+      if (!sessionStorage.getItem(reportKey)) {
+        sessionStorage.setItem(reportKey, '1');
+        saveProfileToSupabase(activeUser.uid, toUserProfile(activeUser)).catch(() => {});
+        notifyAuthActivity(activeUser, 'signin').catch(() => {});
+      }
+    }
+  } catch {}
+
   // Attach Supabase auth listener if configured
   if (!isSupabaseListenerAttached) {
     const supabase = getSupabaseClient();
