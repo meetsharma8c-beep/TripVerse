@@ -41,14 +41,33 @@ export default async function handler(req, res) {
     });
   }
 
+  const orderIdStr = String(razorpay_order_id).trim();
+  const paymentIdStr = String(razorpay_payment_id).trim();
+  const signatureStr = String(razorpay_signature).trim();
+
+  if (
+    !/^order_[A-Za-z0-9]{10,32}$/.test(orderIdStr) ||
+    !/^pay_[A-Za-z0-9]{10,32}$/.test(paymentIdStr) ||
+    !/^[a-fA-F0-9]{64}$/.test(signatureStr)
+  ) {
+    return res.status(400).json({
+      ok: false,
+      verified: false,
+      error: 'INVALID_PAYMENT_FORMAT',
+      message: 'Invalid Razorpay payment identifier or signature format'
+    });
+  }
+
   try {
-    const text = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const text = `${orderIdStr}|${paymentIdStr}`;
     const expectedSignature = crypto
       .createHmac('sha256', keySecret)
       .update(text)
       .digest('hex');
 
-    const isValid = expectedSignature === razorpay_signature;
+    const expBuf = Buffer.from(expectedSignature, 'utf8');
+    const sigBuf = Buffer.from(signatureStr.toLowerCase(), 'utf8');
+    const isValid = expBuf.length === sigBuf.length && crypto.timingSafeEqual(expBuf, sigBuf);
 
     if (!isValid) {
       return res.status(400).json({
@@ -63,8 +82,8 @@ export default async function handler(req, res) {
       ok: true,
       verified: true,
       mode: 'live',
-      orderId: razorpay_order_id,
-      paymentId: razorpay_payment_id
+      orderId: orderIdStr,
+      paymentId: paymentIdStr
     });
   } catch (error) {
     console.error('Error in verify-razorpay-payment:', error);

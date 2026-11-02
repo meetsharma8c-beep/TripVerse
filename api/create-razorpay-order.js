@@ -37,8 +37,14 @@ export default async function handler(req, res) {
 
   const { amount, currency = 'INR', receipt, notes = {} } = req.body || {};
 
+  const ALLOWED_CURRENCIES = new Set(['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD', 'JPY', 'AUD', 'CAD']);
+  const cleanCurrency = String(currency || 'INR').trim().toUpperCase();
+  if (!ALLOWED_CURRENCIES.has(cleanCurrency)) {
+    return res.status(400).json({ ok: false, error: 'UNSUPPORTED_CURRENCY' });
+  }
+
   const numAmount = Number(amount);
-  if (!numAmount || numAmount <= 0) {
+  if (!Number.isFinite(numAmount) || numAmount <= 0 || numAmount > 1000000) {
     return res.status(400).json({ ok: false, error: 'INVALID_AMOUNT' });
   }
 
@@ -52,6 +58,18 @@ export default async function handler(req, res) {
     });
   }
 
+  // Sanitize notes (max 10 keys, max 200 chars each)
+  const safeNotes = { platform: 'TripVerse' };
+  if (notes && typeof notes === 'object' && !Array.isArray(notes)) {
+    for (const [k, v] of Object.entries(notes).slice(0, 10)) {
+      const cleanKey = String(k).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+      if (cleanKey) {
+        safeNotes[cleanKey] = String(v ?? '').slice(0, 200);
+      }
+    }
+  }
+  const safeReceipt = String(receipt || `rcpt_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || `rcpt_${Date.now()}`;
+
   try {
     const authHeader = 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64');
     const rzpResponse = await fetch('https://api.razorpay.com/v1/orders', {
@@ -62,12 +80,9 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         amount: amountInSubunits,
-        currency: currency.toUpperCase(),
-        receipt: receipt || `rcpt_${Date.now()}`,
-        notes: {
-          platform: 'TripVerse',
-          ...notes
-        }
+        currency: cleanCurrency,
+        receipt: safeReceipt,
+        notes: safeNotes
       })
     });
 

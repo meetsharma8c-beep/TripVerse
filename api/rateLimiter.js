@@ -79,6 +79,8 @@ export function getClientIp(req) {
 export function applyCorsHeaders(req, res, allowedMethods = 'GET, POST, OPTIONS') {
   const allowedOrigins = [
     'https://tripverse-pied.vercel.app',
+    'https://tripverse.concode.com',
+    'https://www.tripverse.concode.com',
     'http://localhost:5173',
     'http://localhost:4173',
     'http://127.0.0.1:5173',
@@ -91,9 +93,23 @@ export function applyCorsHeaders(req, res, allowedMethods = 'GET, POST, OPTIONS'
 
   res.setHeader('Access-Control-Allow-Origin', corsOrigin);
   res.setHeader('Access-Control-Allow-Methods', allowedMethods);
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, X-Admin-Key');
   res.setHeader('Access-Control-Max-Age', '86400');
   res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
 
   return corsOrigin;
+}
+
+/**
+ * Sanitize untrusted strings before interpolation into HTML email templates
+ * to prevent HTML/XSS injection attacks.
+ */
+export function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

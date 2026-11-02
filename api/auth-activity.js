@@ -1,6 +1,7 @@
 // Vercel Serverless Function: Real-Time Auth Activity Automation & Persistent Cloud Monitor
+import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js';
+import { applyCorsHeaders, checkRateLimit, escapeHtml, getClientIp } from './rateLimiter.js';
 
 const MAX_ACTIVITIES = 100;
 const activityLog = [];
@@ -87,9 +88,32 @@ export default async function handler(req, res) {
   const locationStr = [rawCity, country].filter(Boolean).join(', ') || 'India';
 
   // ─────────────────────────────────────────────────────────────
-  // GET: Return merged real-time sign-in activity (Zero DOM CLI)
+  // GET: Return merged real-time sign-in activity (Protected Admin CLI)
   // ─────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
+    const providedKey = String(
+      req.headers['x-admin-key'] ||
+      (req.headers.authorization || '').replace(/^Bearer\s+/i, '') ||
+      req.query?.key ||
+      ''
+    ).trim();
+
+    const expectedKey = RESEND_API_KEY
+      ? crypto.createHmac('sha256', RESEND_API_KEY).update('tripverse-admin-read').digest('hex')
+      : '';
+
+    const keyBuf = Buffer.from(providedKey, 'utf8');
+    const expBuf = Buffer.from(expectedKey, 'utf8');
+    const isAuthorized = expectedKey.length > 0 && keyBuf.length === expBuf.length && crypto.timingSafeEqual(keyBuf, expBuf);
+
+    if (!isAuthorized) {
+      return res.status(401).json({
+        success: false,
+        error: 'UNAUTHORIZED',
+        message: 'Valid cryptographic X-Admin-Key is required to view user activity logs.'
+      });
+    }
+
     const format = req.query?.format || 'json';
     const cloudEvents = await loadPersistentCloudActivities();
 
@@ -216,6 +240,13 @@ export default async function handler(req, res) {
       // Structured subject so GET /api/auth-activity can parse persistent cloud logs across serverless containers
       const subject = `🔔 [TripVerse] Real-Time ${providerLabel} Sign-In: ${userIdent} | ${emailPart} | ${locationStr} | ${activityRecord.uid}`;
 
+      const safeProvider = escapeHtml(providerLabel);
+      const safeName = escapeHtml(activityRecord.displayName || '—');
+      const safeEmail = escapeHtml(activityRecord.email || '—');
+      const safeUid = escapeHtml(activityRecord.uid);
+      const safeLoc = escapeHtml(`${locationStr} (${clientIp})`);
+      const safeTime = escapeHtml(activityRecord.timestamp);
+
       const html = `
         <!DOCTYPE html>
         <html>
@@ -230,28 +261,28 @@ export default async function handler(req, res) {
                 <tr>
                   <td style="padding: 8px 0; color: #64748b; font-weight: 600; width: 120px;">Auth Method:</td>
                   <td style="padding: 8px 0; color: #0f172a; font-weight: 700;">
-                    <span style="background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 6px; font-size: 12px;">${providerLabel}</span>
+                    <span style="background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 6px; font-size: 12px;">${safeProvider}</span>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Display Name:</td>
-                  <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${activityRecord.displayName || '—'}</td>
+                  <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${safeName}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Email:</td>
-                  <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${activityRecord.email || '—'}</td>
+                  <td style="padding: 8px 0; color: #0f172a; font-weight: 600;">${safeEmail}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; color: #64748b; font-weight: 600;">User ID (UID):</td>
-                  <td style="padding: 8px 0; color: #64748b; font-family: monospace; font-size: 12px;">${activityRecord.uid}</td>
+                  <td style="padding: 8px 0; color: #64748b; font-family: monospace; font-size: 12px;">${safeUid}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Location / IP:</td>
-                  <td style="padding: 8px 0; color: #0f172a;">${locationStr} (${clientIp})</td>
+                  <td style="padding: 8px 0; color: #0f172a;">${safeLoc}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Timestamp:</td>
-                  <td style="padding: 8px 0; color: #0f172a;">${activityRecord.timestamp}</td>
+                  <td style="padding: 8px 0; color: #0f172a;">${safeTime}</td>
                 </tr>
               </table>
             </div>

@@ -1,6 +1,6 @@
 // Vercel Serverless Function: Genuine Email OTP Dispatch & Verification via Resend
 import crypto from 'crypto';
-import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js';
+import { applyCorsHeaders, checkRateLimit, escapeHtml, getClientIp } from './rateLimiter.js';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const EPHEMERAL_SECRET = crypto.randomBytes(32).toString('hex');
@@ -50,7 +50,8 @@ export default async function handler(req, res) {
     const signature = signOtp(emailNorm, otpCode, expiresAt);
     const verificationToken = `${expiresAt}.${signature}`;
 
-    const recipientName = name ? String(name).trim() : emailNorm.split('@')[0];
+    const rawName = name ? String(name).trim().slice(0, 60) : emailNorm.split('@')[0];
+    const recipientName = escapeHtml(rawName);
 
     const htmlContent = `
       <!DOCTYPE html>
