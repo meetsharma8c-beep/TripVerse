@@ -270,6 +270,32 @@ export function syncAccountToLocal(user: AuthUser, passwordHash?: string): void 
 }
 
 /**
+ * Dispatch real-time automated auth activity event to serverless monitor
+ */
+export async function notifyAuthActivity(user: AuthUser, event: 'signin' | 'signup' = 'signin'): Promise<void> {
+  try {
+    const payload = {
+      event,
+      provider: user.provider || 'unknown',
+      user: {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        travelStyleTag: user.travelStyleTag,
+        location: user.location,
+        travelerStyle: user.travelerStyle
+      }
+    };
+    const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
+    await fetch(`${apiBase}/api/auth-activity`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+  } catch {}
+}
+
+/**
  * Session Storage Helpers
  */
 export function saveSession(session: AuthSession | null): void {
@@ -278,6 +304,7 @@ export function saveSession(session: AuthSession | null): void {
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
       if (session.user?.uid) {
         saveProfileToSupabase(session.user.uid, toUserProfile(session.user)).catch(() => {});
+        notifyAuthActivity(session.user).catch(() => {});
       }
     } else {
       localStorage.removeItem(SESSION_STORAGE_KEY);
