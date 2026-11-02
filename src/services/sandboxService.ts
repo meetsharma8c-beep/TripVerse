@@ -119,12 +119,12 @@ export function setSandboxMode(enabled: boolean): void {
 }
 
 /**
- * Check if a code matches the sandbox verification code (123456 or 990471)
+ * Check if a code matches the sandbox verification code (123456)
  */
 export function isSandboxVerificationCode(code: string): boolean {
   if (!isSandboxAllowedInEnvironment()) return false;
   const clean = code.trim();
-  return clean === SANDBOX_TEST_CODE || clean === '990471';
+  return clean === SANDBOX_TEST_CODE;
 }
 
 /**

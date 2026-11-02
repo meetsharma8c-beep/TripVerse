@@ -3,7 +3,8 @@ import crypto from 'crypto';
 import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const HMAC_SECRET = process.env.AUTH_SECRET || process.env.SUPABASE_JWT_SECRET || 'tripverse-auth-secret-verification-key-2026';
+const EPHEMERAL_SECRET = crypto.randomBytes(32).toString('hex');
+const HMAC_SECRET = process.env.AUTH_SECRET || process.env.SUPABASE_JWT_SECRET || EPHEMERAL_SECRET;
 
 function signOtp(email, code, expiresAt) {
   const normalized = String(email).trim().toLowerCase();

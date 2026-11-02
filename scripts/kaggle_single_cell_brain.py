@@ -74,7 +74,7 @@ subprocess.check_call([
 
 # ── 3. Configure API Key & Launch Server ──────────────────────────────────────
 print("\n🧠 Step 4/5: Booting ConCode FastAPI with CodeLlama-7B GGUF...")
-API_KEY = os.environ.get("CONCODE_API_KEY", "concode_gpu_brain_tripverse_secret_key_2026_xyz")
+API_KEY = os.environ.get("CONCODE_API_KEY", "")
 try:
     from kaggle_secrets import UserSecretsClient
     sec = UserSecretsClient().get_secret('CONCODE_API_KEY')

@@ -47,7 +47,6 @@ describe('Sandbox Service Tests', () => {
 
   it('validates sandbox test codes correctly', () => {
     expect(isSandboxVerificationCode(SANDBOX_TEST_CODE)).toBe(true);
-    expect(isSandboxVerificationCode('990471')).toBe(true);
     expect(isSandboxVerificationCode('000000')).toBe(false);
     expect(isSandboxVerificationCode('random')).toBe(false);
   });

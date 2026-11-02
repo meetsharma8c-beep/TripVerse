@@ -197,7 +197,8 @@ export function buildUpiPaymentUri(params: {
   transactionRef: string;
   transactionNote?: string;
 }): string {
-  const vpa = params.payeeVpa || '9904717666@ptaxis';
+  const envVpa = typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_MERCHANT_UPI_VPA : undefined;
+  const vpa = params.payeeVpa || envVpa || 'tripverse@razorpay';
   const name = params.payeeName || 'TripVerse';
   const amountStr = params.amount.toFixed(2);
   const note = params.transactionNote || `TripVerse Booking ${params.transactionRef}`;

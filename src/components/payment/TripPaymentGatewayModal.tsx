@@ -594,7 +594,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                             Scan with any UPI App: <strong className="text-slate-900">Google Pay, PhonePe, Paytm, CRED, BHIM</strong>
                           </p>
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-mono font-bold text-emerald-900">
-                            <span>Merchant UPI: 9904717666@ptaxis</span>
+                            <span>Merchant UPI: {(import.meta as any).env?.VITE_MERCHANT_UPI_VPA || 'tripverse@razorpay'}</span>
                           </div>
 
                           <div className="flex items-center justify-center gap-2 pt-1">
