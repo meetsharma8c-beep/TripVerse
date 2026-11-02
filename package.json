@@ -14,7 +14,9 @@
     "cap:ios": "cap open ios",
     "cap:build:android": "npm run build && cap sync android",
     "cap:build:ios": "npm run build && cap sync ios",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "node scripts/e2e_launch_verify.mjs",
+    "verify:launch": "npm run build && npm run test && npm run test:e2e"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

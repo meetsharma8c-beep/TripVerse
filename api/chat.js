@@ -264,6 +264,7 @@ function buildServerlessFallbackResponse(query, ctx, mode) {
   if (mode === 'itinerary') {
     return {
       ok: true,
+      source: 'fallback',
       reply: JSON.stringify({ itinerary }),
       mode: 'itinerary',
       isEstimate: true,
@@ -278,9 +279,31 @@ function buildServerlessFallbackResponse(query, ctx, mode) {
     ? `\n• **Transit Hub Guidance:** ${ctx.transit_hubs.guidance}`
     : '';
 
+  const qLower = String(query || '').toLowerCase();
+  const domainSections = [];
+  if (qLower.includes('best time') || qLower.includes('weather') || qLower.includes('season') || qLower.includes('climate')) {
+    domainSections.push(
+      `• **Best Time to Visit ${dest}:** Peak season is **October to March** (pleasant 20°C–28°C days and crisp 12°C–15°C evenings, ideal for sightseeing and rooftop dining). Monsoon (**July–September**) brings lush greenery and full lakes.`
+    );
+  }
+  if (qLower.includes('dish') || qLower.includes('food') || qLower.includes('eat') || qLower.includes('cuisine') || qLower.includes('restaurant')) {
+    const dishNote = dest.toLowerCase().includes('udaipur') || dest.toLowerCase().includes('jaipur')
+      ? '**Dal Baati Churma** (baked wheat baatis with panchkuta lentils & jaggery churma), **Gatte ki Sabzi**, and **Pyaz Kachori**'
+      : `authentic regional ${dest} thalis, street snacks, and signature local specialties`;
+    domainSections.push(`• **Must-Try Local Cuisine (${foodPref.toUpperCase()}):** ${dishNote}.`);
+  }
+  if (qLower.includes('pack') || qLower.includes('wear') || qLower.includes('cloth')) {
+    domainSections.push(
+      `• **Packing Essentials:** Breathable cotton daywear, a light evening jacket/shawl, cushioned walking shoes for heritage cobbles, sunglasses, and a power bank.`
+    );
+  }
+
+  const domainBlock = domainSections.length > 0 ? `${domainSections.join('\n')}\n` : '';
+
   const replyText =
     `**ConCode Travel Intelligence — ${days}-Day ${dest} Plan (${travelers} Traveler${travelers > 1 ? 's' : ''} • ₹${budget.toLocaleString('en-IN')} Target)**\n\n` +
     `Here is your tailored travel guidance for **${origin} → ${dest}** regarding *"${query.slice(0, 140)}"*:\n\n` +
+    domainBlock +
     `• **Key Sights & Pacing:** ${itinerary.map((d) => `Day ${d.dayNumber}: ${d.title.replace(/^Day\s+\d+\s*[—-]\s*/i, '')}`).join(' | ')}\n` +
     `• **Dietary Profile:** ${foodPref.toUpperCase()} dining preferences applied across all meal stops.\n` +
     `• **Estimated Budget Allocation:** Transit ~₹${budgetBreakdown.transport.toLocaleString('en-IN')} • Stays ~₹${budgetBreakdown.stays.toLocaleString('en-IN')} • Food ~₹${budgetBreakdown.food.toLocaleString('en-IN')} • Sights & Buffer ~₹${(budgetBreakdown.activities + budgetBreakdown.buffer).toLocaleString('en-IN')}` +
@@ -289,6 +312,7 @@ function buildServerlessFallbackResponse(query, ctx, mode) {
 
   return {
     ok: true,
+    source: 'fallback',
     reply: replyText,
     mode,
     isEstimate: true,
@@ -331,9 +355,9 @@ export default async function handler(req, res) {
     const start = Date.now();
     if (!concodeUrl) {
       return res.status(200).json({
-        ok: true,
-        status: 'online',
-        gpu: 'ConCode Serverless Engine',
+        ok: false,
+        status: 'offline',
+        reason: 'AI_BACKEND_NOT_CONFIGURED',
         latencyMs: Date.now() - start
       });
     }
@@ -360,17 +384,17 @@ export default async function handler(req, res) {
         });
       }
       return res.status(200).json({
-        ok: true,
-        status: 'online',
-        gpu: 'ConCode Serverless Engine',
+        ok: false,
+        status: 'offline',
+        reason: `AI_BACKEND_HTTP_${pingRes.status}`,
         latencyMs: Date.now() - start
       });
     } catch {
       clearTimeout(timeout);
       return res.status(200).json({
-        ok: true,
-        status: 'online',
-        gpu: 'ConCode Serverless Engine',
+        ok: false,
+        status: 'offline',
+        reason: 'AI_BACKEND_UNREACHABLE',
         latencyMs: Date.now() - start
       });
     }
@@ -473,6 +497,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
+      source: 'concode',
       reply: replyText,
       sessionId: data.session_id || data.sessionId,
       mode: data.mode || mode,

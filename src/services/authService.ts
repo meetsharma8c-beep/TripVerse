@@ -1319,6 +1319,11 @@ export function onAuthStateChanged(callback: (user: AuthUser | null) => void): (
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           const authUser = supabaseUserToAuthUser(session.user);
+          const existingUser = getCurrentUser();
+          // Never let a stale anonymous guest session overwrite an authenticated Email/Google account
+          if (isGuestUser(authUser) && existingUser && !isGuestUser(existingUser)) {
+            return;
+          }
           syncAccountToLocal(authUser);
         }
       }).catch(err => {
@@ -1329,6 +1334,10 @@ export function onAuthStateChanged(callback: (user: AuthUser | null) => void): (
       supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
           const authUser = supabaseUserToAuthUser(session.user);
+          const existingUser = getCurrentUser();
+          if (isGuestUser(authUser) && existingUser && !isGuestUser(existingUser)) {
+            return;
+          }
           syncAccountToLocal(authUser);
         } else if (event === 'SIGNED_OUT') {
           saveSession(null);

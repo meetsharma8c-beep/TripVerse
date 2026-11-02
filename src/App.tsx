@@ -994,21 +994,28 @@ export function App() {
       consumeTripCredit(currentUser);
       let originCoords: Coordinates | undefined;
       if (typeof navigator !== 'undefined' && navigator.geolocation) {
-        originCoords = await new Promise<Coordinates | undefined>(resolve => {
-          navigator.geolocation.getCurrentPosition(
-            position => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
-            error => {
-              console.warn('Current location unavailable for quick planning', error.message);
-              resolve(undefined);
-            },
-            { enableHighAccuracy: false, maximumAge: 60_000, timeout: 8_000 }
-          );
-        });
+        originCoords = await Promise.race([
+          new Promise<Coordinates | undefined>(resolve => {
+            navigator.geolocation.getCurrentPosition(
+              position => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
+              error => {
+                console.warn('Current location unavailable for quick planning', error.message);
+                resolve(undefined);
+              },
+              { enableHighAccuracy: false, maximumAge: 60_000, timeout: 1_500 }
+            );
+          }),
+          new Promise<Coordinates | undefined>(resolve => setTimeout(() => resolve(undefined), 1_500))
+        ]);
       }
+      const fallbackOrigin =
+        userProfile?.location && userProfile.location.trim().toLowerCase() !== 'india'
+          ? userProfile.location.trim()
+          : 'Ahmedabad, Gujarat';
       const input: PlannerInput = {
         destination: finalParams.destination,
         destinationName: finalParams.destination.charAt(0).toUpperCase() + finalParams.destination.slice(1),
-        origin: 'Current Location',
+        origin: originCoords ? 'Current Location' : fallbackOrigin,
         durationDays: finalParams.duration,
         travelersCount: finalParams.travelers,
         travelerType: 'friends',
@@ -1023,10 +1030,6 @@ export function App() {
       };
 
       const newTrip = await generatePersonalizedTrip(input);
-      if (!originCoords) {
-        newTrip.travelDataStatus = 'estimate';
-        newTrip.travelDataError = 'ORIGIN_NOT_SET';
-      }
       if (currentUser?.uid) {
         newTrip.userId = currentUser.uid;
         newTrip.isUserCreated = true;
