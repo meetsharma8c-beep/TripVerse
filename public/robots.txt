@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://tripverse.concode.com/sitemap.xml
+Sitemap: https://tripverse-pied.vercel.app/sitemap.xml
