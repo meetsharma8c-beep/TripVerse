@@ -68,10 +68,29 @@ export const SANDBOX_PERSONAS: SandboxPersona[] = [
 ];
 
 /**
+ * Check if Sandbox Mode is allowed in the current runtime environment.
+ * Strictly disabled in production builds unless running automated tests (Vitest) or local dev.
+ */
+export function isSandboxAllowedInEnvironment(): boolean {
+  try {
+    const procEnv = (globalThis as any).process?.env;
+    if (procEnv && (procEnv.VITEST || procEnv.NODE_ENV === 'test')) {
+      return true;
+    }
+    const env = (import.meta as any).env || {};
+    if (env.MODE === 'test' || env.DEV === true || env.VITE_ENABLE_SANDBOX === 'true') {
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+/**
  * Check if Sandbox Mode is currently active
- * Evaluates localStorage preference or ?sandbox=true / ?demo=1 query parameter
+ * Evaluates localStorage preference or ?sandbox=true / ?demo=1 query parameter (only when allowed in environment)
  */
 export function isSandboxMode(): boolean {
+  if (!isSandboxAllowedInEnvironment()) return false;
   if (typeof window === 'undefined') return false;
   try {
     const params = new URLSearchParams(window.location.search);
@@ -88,6 +107,7 @@ export function isSandboxMode(): boolean {
  * Toggle Sandbox Mode on or off
  */
 export function setSandboxMode(enabled: boolean): void {
+  if (!isSandboxAllowedInEnvironment()) return;
   if (typeof window === 'undefined') return;
   try {
     if (enabled) {
@@ -102,6 +122,7 @@ export function setSandboxMode(enabled: boolean): void {
  * Check if a code matches the sandbox verification code (123456 or 990471)
  */
 export function isSandboxVerificationCode(code: string): boolean {
+  if (!isSandboxAllowedInEnvironment()) return false;
   const clean = code.trim();
   return clean === SANDBOX_TEST_CODE || clean === '990471';
 }
@@ -110,6 +131,9 @@ export function isSandboxVerificationCode(code: string): boolean {
  * Authenticate directly as a pre-loaded Sandbox Persona
  */
 export async function authenticateSandboxPersona(persona: SandboxPersona): Promise<AuthUser> {
+  if (!isSandboxAllowedInEnvironment()) {
+    throw new Error('Sandbox mode is disabled in production.');
+  }
   const uid = toDeterministicUuid(`sandbox:${persona.id}`);
   const now = new Date().toISOString();
 

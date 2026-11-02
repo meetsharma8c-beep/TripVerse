@@ -27,7 +27,6 @@ import {
   saveProfileToSupabase, 
   loadProfileFromSupabase 
 } from './supabaseSyncService';
-import { sendRealSmsOtp, verifyRealSmsOtp, getPendingSmsSession, clearPendingSmsSession, getFast2SmsApiKey } from './smsService';
 
 const USERS_STORAGE_KEY = 'tripverse_auth_users_v3';
 const SESSION_STORAGE_KEY = 'tripverse_auth_session_v3';
@@ -1402,31 +1401,7 @@ export async function sendPhoneOtp(
     }
   }
 
-  const isIndianNumber = clean.startsWith('+91') || clean.replace(/\D/g, '').length === 10;
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-  // 2. Fast2SMS Gateway for Indian numbers (+91) via /api/sms serverless proxy
-  if (isIndianNumber) {
-    try {
-      const res = await sendRealSmsOtp(clean, code);
-      if (res.success) {
-        lastSmsDispatchedPhone = clean;
-        activePhonePendingPhone = clean;
-        console.log(`[Fast2SMS] Real SMS dispatched to ${clean}. Request ID: ${res.requestId}`);
-        return {
-          provider: 'fast2sms',
-          message: res.message || `Real SMS verification code dispatched to ${clean}.`
-        };
-      }
-      lastFast2SmsError = res.message;
-      console.warn('[Fast2SMS] Gateway error:', res.message);
-    } catch (e: any) {
-      lastFast2SmsError = e.message;
-      console.warn('[Fast2SMS] Dispatch error:', e.message);
-    }
-  }
-
-  // 3. Supabase Phone Auth (International or Supabase SMS provider)
+  // 2. Supabase Phone Auth (International or Supabase SMS provider)
   let lastSupabaseError = '';
   const supabase = getSupabaseClient();
   if (supabase) {
@@ -1526,50 +1501,7 @@ export async function verifyPhoneOtp(
       if (fbErr.code === 'auth/code-expired') {
         throw new Error('SMS verification code has expired. Please request a new code.');
       }
-      // If no active Firebase confirmation or session, proceed to check secondary providers
     }
-  }
-
-  // 2. Verify genuine Fast2SMS carrier pending session if active
-  const pendingSession = getPendingSmsSession();
-  if (pendingSession) {
-    const verification = verifyRealSmsOtp(targetPhone || pendingSession.phoneNumber, cleanCode);
-    if (!verification.success) {
-      throw new Error(verification.error || 'Incorrect verification code. Please check your SMS.');
-    }
-
-    const cleanPhone = pendingSession.phoneNumber || targetPhone;
-    const finalName = (displayName || '').trim() || `Explorer (${cleanPhone.slice(-4)})`;
-    const uid = toDeterministicUuid('phone:' + cleanPhone.replace(/\D/g, ''));
-
-    const newUser: AuthUser = {
-      uid,
-      email: '',
-      phoneNumber: cleanPhone,
-      displayName: finalName,
-      photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(finalName)}&backgroundColor=2D5A3D,0B2545`,
-      travelerStyle: travelerStyle || 'Budget explorer',
-      travelStyleTag: 'Phone Verified Explorer',
-      location: location || 'India',
-      occupation: 'Explorer',
-      age: 25,
-      emailVerified: false,
-      provider: 'phone',
-      createdAt: now,
-      lastLoginAt: now,
-      savedPlaceIds: []
-    };
-
-    // Save profile to Supabase PostgreSQL database
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      saveProfileToSupabase(uid, toUserProfile(newUser)).catch(() => {});
-    }
-
-    syncAccountToLocal(newUser);
-    lastSmsDispatchedPhone = null;
-    activePhonePendingPhone = null;
-    return newUser;
   }
 
   // 2. Verify Supabase Phone Auth OTP
@@ -1609,7 +1541,7 @@ export async function verifyPhoneOtp(
  * Check if there is an active pending phone confirmation result
  */
 export function hasActivePhoneConfirmation(): boolean {
-  return activePhonePendingPhone !== null || getPendingSmsSession() !== null;
+  return activePhonePendingPhone !== null;
 }
 
 /**
@@ -1618,7 +1550,6 @@ export function hasActivePhoneConfirmation(): boolean {
 export function clearPhoneAuthSession(): void {
   lastSmsDispatchedPhone = null;
   activePhonePendingPhone = null;
-  clearPendingSmsSession();
   clearFirebasePhoneSession();
 }
 
@@ -1758,37 +1689,8 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
 export function consumeTripCredit(userParam?: AuthUser | null): { allowed: boolean; remaining: number } {
   const user = userParam !== undefined ? userParam : getCurrentUser();
 
-  if (!user) {
-    // Guest credit consumption
-    let guestTrips = 3;
-    let guestMinutes = 30;
-    try {
-      if (typeof localStorage !== 'undefined') {
-        const raw = localStorage.getItem(GUEST_QUOTA_STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (typeof parsed.freeTripsRemaining === 'number') guestTrips = parsed.freeTripsRemaining;
-          if (typeof parsed.weeklyAssistantMinutesRemaining === 'number') guestMinutes = parsed.weeklyAssistantMinutesRemaining;
-        }
-      }
-    } catch {}
-
-    if (guestTrips <= 0) {
-      return { allowed: false, remaining: 0 };
-    }
-
-    const nextTrips = Math.max(0, guestTrips - 1);
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(GUEST_QUOTA_STORAGE_KEY, JSON.stringify({
-          freeTripsRemaining: nextTrips,
-          weeklyAssistantMinutesRemaining: guestMinutes
-        }));
-      }
-    } catch {}
-
-    window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { remaining: nextTrips } }));
-    return { allowed: true, remaining: nextTrips };
+  if (!user || isGuestUser(user)) {
+    return { allowed: false, remaining: 0 };
   }
 
   // If user is Pro, unlimited trips!

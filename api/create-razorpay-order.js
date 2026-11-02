@@ -75,9 +75,10 @@ export default async function handler(req, res) {
       });
     }
 
+    const isTestKey = keyId.startsWith('rzp_test_');
     return res.status(200).json({
       ok: true,
-      mode: 'live',
+      mode: isTestKey ? 'test' : 'live',
       keyId,
       orderId: orderData.id,
       amount: orderData.amount,

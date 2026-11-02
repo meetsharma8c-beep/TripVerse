@@ -23,6 +23,7 @@ import {
   hashPassword, 
   saveAccounts, 
   signInWithEmail, 
+  createAccountWithSupabase,
   getPhoneAuthErrorMessage,
   isGuestUser,
   getUserSubscriptionQuota
@@ -119,16 +120,33 @@ describe('Auth Security & Verification Tests', () => {
     expect(friendly3).toContain('Incorrect verification code');
   });
 
-  it('authenticates meet.sharma8c@gmail.com via cloud email authentication', async () => {
-    const user = await signInWithEmail({
-      email: 'meet.sharma8c@gmail.com',
-      password: 'TripVerse@2026'
+  it('registers and authenticates an ephemeral cloud email account across devices without hardcoded secrets', async () => {
+    const randomId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    const dynamicEmail = `ci_auth_${randomId}@tripverse.app`;
+    const dynamicPassword = `Tv#${randomId}!9A`;
+
+    const created = await createAccountWithSupabase({
+      name: 'CI Cloud Verifier',
+      email: dynamicEmail,
+      password: dynamicPassword,
+      travelerStyle: 'Budget explorer',
+      location: 'India'
     });
-    expect(user.email).toBe('meet.sharma8c@gmail.com');
-    expect(user.displayName).toBe('Meet Sharma');
-    expect(user.provider).toBe('email');
-    expect(user.uid).toBeTruthy();
-  });
+    expect(created.email).toBe(dynamicEmail);
+    expect(created.uid).toBeTruthy();
+
+    // Clear localStorage to simulate signing in on a brand-new device via cloud backend
+    (global as any).localStorage.clear();
+
+    const signedIn = await signInWithEmail({
+      email: dynamicEmail,
+      password: dynamicPassword
+    });
+    expect(signedIn.email).toBe(dynamicEmail);
+    expect(signedIn.displayName).toBe('CI Cloud Verifier');
+    expect(signedIn.provider).toBe('email');
+    expect(signedIn.uid).toBeTruthy();
+  }, 15000);
 
   it('correctly identifies Guest accounts and strictly restricts AI Planner quota', () => {
     const guestUser: AuthUser = {
