@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tripverse-cache-v47';
+const CACHE_NAME = 'tripverse-cache-v48';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -33,6 +33,10 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  // Never intercept cross-origin requests (Supabase, Firebase, Geoapify, Nominatim) or serverless API routes
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
 
   // For HTML navigation requests, ALWAYS use Network-First to guarantee instant updates
   if (event.request.mode === 'navigate') {

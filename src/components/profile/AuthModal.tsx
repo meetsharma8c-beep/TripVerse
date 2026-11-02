@@ -553,31 +553,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* Sandbox Environment Mode Switcher */}
-          <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200">
-            <div className="flex items-center gap-2">
-              <FlaskConical className={`w-3.5 h-3.5 ${isSandbox ? 'text-amber-500 animate-pulse' : 'text-slate-400'}`} />
-              <div>
-                <span className="text-[11px] font-bold text-slate-700 block">
-                  {isSandbox ? '🧪 Sandbox Mode (Active)' : 'Production Live Environment'}
-                </span>
-                <span className="text-[10px] text-slate-400 block">
-                  {isSandbox ? '1-tap demo personas & test verification' : 'Real Google & Email Authentication'}
-                </span>
+          {/* Sandbox Environment Mode Switcher (Only visible when ?sandbox=true or sandbox is active) */}
+          {(isSandbox || (typeof window !== 'undefined' && window.location.search.includes('sandbox'))) && (
+            <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center gap-2">
+                <FlaskConical className={`w-3.5 h-3.5 ${isSandbox ? 'text-amber-500 animate-pulse' : 'text-slate-400'}`} />
+                <div>
+                  <span className="text-[11px] font-bold text-slate-700 block">
+                    {isSandbox ? '🧪 Sandbox Mode (Active)' : 'Production Live Environment'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">
+                    {isSandbox ? '1-tap demo personas & test verification' : 'Real Google & Email Authentication'}
+                  </span>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={handleToggleSandbox}
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  isSandbox
+                    ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-2xs'
+                    : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                {isSandbox ? 'Switch to Live' : 'Test in Sandbox'}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleToggleSandbox}
-              className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                isSandbox
-                  ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-2xs'
-                  : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-            >
-              {isSandbox ? 'Switch to Live' : 'Test in Sandbox'}
-            </button>
-          </div>
+          )}
 
           {/* Sandbox 1-Tap Demo Personas (Visible when Sandbox Mode is active) */}
           {isSandbox && (

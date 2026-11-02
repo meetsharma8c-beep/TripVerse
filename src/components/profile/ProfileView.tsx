@@ -496,7 +496,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div>
               <h4 className="font-bold text-sm text-emerald-950">Unlock AI Trip Planner & Cloud Sync</h4>
               <p className="text-xs text-emerald-800">
-                You're in Guest Mode. Sign in with Google, Email, or Phone to unlock full AI planning and link itineraries across all your devices.
+                You're in Guest Mode. Sign in with Google or Email to unlock full AI planning and link itineraries across all your devices.
               </p>
             </div>
           </div>
