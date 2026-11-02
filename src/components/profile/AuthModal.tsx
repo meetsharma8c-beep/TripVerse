@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   X, 
   Check, 
@@ -15,10 +15,8 @@ import {
   KeyRound, 
   Sparkles,
   Compass,
-  Phone,
   RotateCcw,
   ShieldCheck,
-  ChevronDown,
   FlaskConical
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -27,15 +25,9 @@ import {
   signInWithEmail, 
   sendPasswordResetCode,
   signInWithGooglePopup, 
-  signInWithGoogleCredential,
-  ensureGoogleIdentityServices,
   createAccountWithSupabase, 
   signInAnonymouslyWithSupabase,
-  sendPhoneOtp,
-  verifyPhoneOtp,
   clearPhoneAuthSession,
-  formatE164PhoneNumber,
-  getPhoneAuthErrorMessage,
   toUserProfile,
   verifyEmailOtp,
   resendEmailConfirmation
@@ -68,45 +60,6 @@ const TRAVELER_STYLES = [
   { id: 'Luxury & Leisure', label: 'Luxury & Leisure' }
 ];
 
-const COUNTRY_CODES = [
-  { code: '+91', iso: 'IN', country: 'India', placeholder: '98765 43210' },
-  { code: '+1', iso: 'US', country: 'United States & Canada', placeholder: '(555) 000-0000' },
-  { code: '+44', iso: 'UK', country: 'United Kingdom', placeholder: '7911 123456' },
-  { code: '+971', iso: 'AE', country: 'United Arab Emirates', placeholder: '50 123 4567' },
-  { code: '+65', iso: 'SG', country: 'Singapore', placeholder: '8123 4567' },
-  { code: '+61', iso: 'AU', country: 'Australia', placeholder: '412 345 678' },
-  { code: '+64', iso: 'NZ', country: 'New Zealand', placeholder: '21 123 4567' },
-  { code: '+49', iso: 'DE', country: 'Germany', placeholder: '151 23456789' },
-  { code: '+33', iso: 'FR', country: 'France', placeholder: '6 12 34 56 78' },
-  { code: '+39', iso: 'IT', country: 'Italy', placeholder: '312 345 6789' },
-  { code: '+34', iso: 'ES', country: 'Spain', placeholder: '612 345 678' },
-  { code: '+41', iso: 'CH', country: 'Switzerland', placeholder: '78 123 45 67' },
-  { code: '+31', iso: 'NL', country: 'Netherlands', placeholder: '6 12345678' },
-  { code: '+46', iso: 'SE', country: 'Sweden', placeholder: '70 123 45 67' },
-  { code: '+47', iso: 'NO', country: 'Norway', placeholder: '412 34 567' },
-  { code: '+966', iso: 'SA', country: 'Saudi Arabia', placeholder: '50 123 4567' },
-  { code: '+974', iso: 'QA', country: 'Qatar', placeholder: '3312 3456' },
-  { code: '+968', iso: 'OM', country: 'Oman', placeholder: '9123 4567' },
-  { code: '+965', iso: 'KW', country: 'Kuwait', placeholder: '5123 4567' },
-  { code: '+973', iso: 'BH', country: 'Bahrain', placeholder: '3612 3456' },
-  { code: '+60', iso: 'MY', country: 'Malaysia', placeholder: '12 345 6789' },
-  { code: '+66', iso: 'TH', country: 'Thailand', placeholder: '81 234 5678' },
-  { code: '+62', iso: 'ID', country: 'Indonesia', placeholder: '812 3456 7890' },
-  { code: '+84', iso: 'VN', country: 'Vietnam', placeholder: '91 234 5678' },
-  { code: '+63', iso: 'PH', country: 'Philippines', placeholder: '917 123 4567' },
-  { code: '+81', iso: 'JP', country: 'Japan', placeholder: '90 1234 5678' },
-  { code: '+82', iso: 'KR', country: 'South Korea', placeholder: '10 1234 5678' },
-  { code: '+852', iso: 'HK', country: 'Hong Kong', placeholder: '9123 4567' },
-  { code: '+977', iso: 'NP', country: 'Nepal', placeholder: '984 1234567' },
-  { code: '+880', iso: 'BD', country: 'Bangladesh', placeholder: '1712 345678' },
-  { code: '+94', iso: 'LK', country: 'Sri Lanka', placeholder: '71 234 5678' },
-  { code: '+27', iso: 'ZA', country: 'South Africa', placeholder: '71 234 5678' },
-  { code: '+20', iso: 'EG', country: 'Egypt', placeholder: '10 1234 5678' },
-  { code: '+55', iso: 'BR', country: 'Brazil', placeholder: '11 91234 5678' },
-  { code: '+52', iso: 'MX', country: 'Mexico', placeholder: '55 1234 5678' },
-  { code: '+90', iso: 'TR', country: 'Turkey', placeholder: '532 123 4567' }
-];
-
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
@@ -116,26 +69,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   restrictionMessage
 }) => {
   // Main Authentication mode
-  const [authMethod, setAuthMethod] = useState<'google' | 'email' | 'phone' | 'guest'>(initialMethod || 'email');
+  const [authMethod, setAuthMethod] = useState<'google' | 'email' | 'guest'>(
+    initialMethod === 'phone' ? 'email' : (initialMethod || 'email')
+  );
   const [emailSubMode, setEmailSubMode] = useState<'login' | 'signup' | 'forgot-password' | 'verify-email'>(initialSubMode || 'login');
 
   useEffect(() => {
     if (isOpen) {
-      if (initialMethod) setAuthMethod(initialMethod);
+      if (initialMethod) setAuthMethod(initialMethod === 'phone' ? 'email' : initialMethod);
       if (initialSubMode) setEmailSubMode(initialSubMode);
     }
   }, [isOpen, initialMethod, initialSubMode]);
-  
-  // Real Phone Auth state
-  const [countryCode, setCountryCode] = useState('+91');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [phoneStep, setPhoneStep] = useState<'number' | 'otp'>('number');
-  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
-  const [resendCountdown, setResendCountdown] = useState(0);
-  const [phoneUserName, setPhoneUserName] = useState('');
-  const [phoneTravelerStyle, setPhoneTravelerStyle] = useState('Budget explorer');
-  const [phoneLocation, setPhoneLocation] = useState('India');
-  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Email / Password state
   const [name, setName] = useState('');
@@ -190,17 +134,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-
-
-  // Resend Countdown Timer effects
-  useEffect(() => {
-    if (resendCountdown <= 0) return;
-    const timer = setInterval(() => {
-      setResendCountdown(prev => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [resendCountdown]);
-
   useEffect(() => {
     if (emailResendCountdown <= 0) return;
     const timer = setInterval(() => {
@@ -209,7 +142,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     return () => clearInterval(timer);
   }, [emailResendCountdown]);
 
-  // Clean up phone verifier when modal closes
+  // Clean up auth session when modal closes
   const handleModalClose = useCallback(() => {
     clearPhoneAuthSession();
     setErrorMsg(null);
@@ -229,205 +162,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleModalClose]);
 
-  // Google Identity Services (GIS) Official Credential Callback
-  const handleGoogleCredentialResponse = async (response: any) => {
-    if (!response?.credential) return;
-    setIsLoading(true);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    try {
-      const user = await signInWithGoogleCredential(response.credential);
-      try {
-        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
-      } catch {}
-      setSuccessMsg(`Welcome, ${user.displayName}! Signed in with Google.`);
-      setTimeout(() => {
-        onSuccess(toUserProfile(user));
-        handleModalClose();
-      }, 500);
-    } catch (err: any) {
-      console.error('Google credential login error:', err);
-      setErrorMsg(err.message || 'Google authentication failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const googleCallbackRef = useRef(handleGoogleCredentialResponse);
-  useEffect(() => {
-    googleCallbackRef.current = handleGoogleCredentialResponse;
-  });
-
-
-
   if (!isOpen) return null;
 
-  // Selected country details helper
-  const selectedCountry = COUNTRY_CODES.find(c => c.code === countryCode) || COUNTRY_CODES[0];
-
   // ----------------------------------------------------------------------
-  // 1. Real Phone Auth: Send SMS OTP
+  // 1. Google Sign-In & Sign-Up via Firebase OAuth2 Popup
   // ----------------------------------------------------------------------
-  const handleSendPhoneOtp = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    const cleanDigits = phoneNumber.trim().replace(/\D/g, '');
-    if (cleanDigits.length < 7) {
-      setErrorMsg('Please enter a valid mobile number (at least 7 to 10 digits).');
-      return;
-    }
-
-    const fullPhoneNumber = formatE164PhoneNumber(phoneNumber, countryCode);
-
-    if (isSandbox) {
-      setPhoneStep('otp');
-      setResendCountdown(60);
-      setOtpDigits(['', '', '', '', '', '']);
-      setSuccessMsg(`🧪 Sandbox verification active for ${fullPhoneNumber}. Enter test code: ${SANDBOX_TEST_CODE}`);
-      setTimeout(() => {
-        otpInputRefs.current[0]?.focus();
-      }, 150);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const sendRes = await sendPhoneOtp(fullPhoneNumber);
-      setPhoneStep('otp');
-      setResendCountdown(60);
-      setOtpDigits(['', '', '', '', '', '']);
-      const providerLabel = sendRes.provider === 'firebase'
-        ? 'Google Carrier SMS'
-        : sendRes.provider === 'fast2sms'
-        ? 'Fast2SMS'
-        : 'Supabase SMS';
-      setSuccessMsg(sendRes.message || `SMS verification code dispatched to ${fullPhoneNumber} via ${providerLabel}.`);
-      setTimeout(() => {
-        otpInputRefs.current[0]?.focus();
-      }, 150);
-    } catch (err: any) {
-      console.error('Phone SMS dispatch error:', err);
-      const friendly = getPhoneAuthErrorMessage(err);
-      setErrorMsg(friendly);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ----------------------------------------------------------------------
-  // 2. Real Phone Auth: Verify 6-digit SMS OTP
-  // ----------------------------------------------------------------------
-  const handleVerifyOtp = async (codeToVerify?: string) => {
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    const code = (codeToVerify || otpDigits.join('')).trim();
-    if (code.length !== 6) {
-      setErrorMsg('Please enter the complete 6-digit code received via SMS.');
-      return;
-    }
-
-    if (isSandbox && isSandboxVerificationCode(code)) {
-      setIsLoading(true);
-      try {
-        const fullPhoneNumber = formatE164PhoneNumber(phoneNumber, countryCode);
-        const user = createSandboxAuthUser({
-          identifier: fullPhoneNumber,
-          type: 'phone',
-          name: phoneUserName.trim() || undefined,
-          travelerStyle: phoneTravelerStyle,
-          location: phoneLocation.trim() || 'India'
-        });
-        try {
-          confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
-        } catch {}
-        setSuccessMsg(`Welcome, ${user.displayName}! Sandbox phone verified.`);
-        setTimeout(() => {
-          onSuccess(toUserProfile(user));
-          handleModalClose();
-        }, 500);
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const fullPhoneNumber = formatE164PhoneNumber(phoneNumber, countryCode);
-      const user = await verifyPhoneOtp(
-        code, 
-        phoneUserName.trim() || undefined,
-        phoneTravelerStyle,
-        phoneLocation.trim() || 'India',
-        fullPhoneNumber
-      );
-      try {
-        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
-      } catch {}
-      setSuccessMsg(`Welcome, ${user.displayName}! Phone verified.`);
-      setTimeout(() => {
-        onSuccess(toUserProfile(user));
-        handleModalClose();
-      }, 500);
-    } catch (err: any) {
-      console.error('OTP confirmation error:', err);
-      const friendly = getPhoneAuthErrorMessage(err);
-      setErrorMsg(friendly);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle OTP digit box input
-  const handleOtpBoxChange = (index: number, val: string) => {
-    // Handle paste event of multi-character string
-    if (val.length > 1) {
-      const pasted = val.replace(/\D/g, '').slice(0, 6);
-      if (pasted.length > 0) {
-        const next = [...otpDigits];
-        for (let i = 0; i < 6; i++) {
-          next[i] = pasted[i] || '';
-        }
-        setOtpDigits(next);
-        const focusIdx = Math.min(pasted.length, 5);
-        otpInputRefs.current[focusIdx]?.focus();
-        if (pasted.length === 6) {
-          handleVerifyOtp(pasted);
-        }
-        return;
-      }
-    }
-
-    const singleDigit = val.replace(/\D/g, '').slice(-1);
-    const nextDigits = [...otpDigits];
-    nextDigits[index] = singleDigit;
-    setOtpDigits(nextDigits);
-
-    // Auto-advance to next box if digit was typed
-    if (singleDigit && index < 5) {
-      otpInputRefs.current[index + 1]?.focus();
-    }
-
-    // Auto-verify if all 6 digits completed
-    const fullCode = nextDigits.join('');
-    if (fullCode.length === 6) {
-      handleVerifyOtp(fullCode);
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
-      otpInputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  // ----------------------------------------------------------------------
-  // 3. Google Sign-In & Sign-Up with GIS Official Button / OAuth2 Popup
-  // ----------------------------------------------------------------------
-
   const handleTriggerGoogleAuth = async () => {
     setIsLoading(true);
     setErrorMsg(null);
@@ -467,7 +206,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   // ----------------------------------------------------------------------
-  // 3b. Genuine Instant Guest Explorer Sign-In (Supabase Verified Session)
+  // 2. Genuine Instant Guest Explorer Sign-In (Supabase Verified Session)
   // ----------------------------------------------------------------------
   const handleInstantGuestSignIn = async () => {
     setIsLoading(true);
@@ -475,9 +214,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSuccessMsg(null);
     try {
       const user = await signInAnonymouslyWithSupabase({
-        name: name.trim() || phoneUserName.trim() || 'Explorer',
-        travelerStyle: emailTravelerStyle || phoneTravelerStyle || 'Budget explorer',
-        location: emailLocation || phoneLocation || 'India'
+        name: name.trim() || 'Explorer',
+        travelerStyle: emailTravelerStyle || 'Budget explorer',
+        location: emailLocation || 'India'
       });
       try {
         confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
@@ -742,8 +481,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </div>
 
-        {/* Primary Method Navigation: Google vs Email vs Mobile OTP vs Quick Guest */}
-        <div className="grid grid-cols-4 border-b border-slate-200 bg-slate-50/70">
+        {/* Primary Method Navigation: Google vs Email vs Quick Guest */}
+        <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50/70">
           <button
             type="button"
             onClick={() => { 
@@ -786,23 +525,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             type="button"
             onClick={() => { 
-              setAuthMethod('phone'); 
-              setErrorMsg(null); 
-              setSuccessMsg(null); 
-            }}
-            className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-              authMethod === 'phone'
-                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Phone className="w-3.5 h-3.5 text-[#2D5A3D]" />
-            <span>Mobile OTP</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { 
               setAuthMethod('guest'); 
               setErrorMsg(null); 
               setSuccessMsg(null); 
@@ -840,7 +562,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {isSandbox ? '🧪 Sandbox Mode (Active)' : 'Production Live Environment'}
                 </span>
                 <span className="text-[10px] text-slate-400 block">
-                  {isSandbox ? 'Simulated SMS & 1-tap demo personas' : 'Real Google, Email OTP & Carrier SMS'}
+                  {isSandbox ? '1-tap demo personas & test verification' : 'Real Google & Email Authentication'}
                 </span>
               </div>
             </div>
@@ -1012,250 +734,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           {/* ==================================================================== */}
-          {/* METHOD 1: REAL PHONE AUTH (SMS OTP via Fast2SMS / Google Telecom)    */}
-          {/* ==================================================================== */}
-          {authMethod === 'phone' && (
-            <div className="space-y-4">
-              
-              {/* STEP 1: Phone Number Input */}
-              {phoneStep === 'number' && (
-                <div className="space-y-4">
-                  <div className="text-center space-y-1">
-                    <h3 className="text-xl font-bold text-[#0B2545]">Sign In with Mobile</h3>
-                    <p className="text-xs text-slate-500">
-                      Enter your phone number to receive a real 6-digit SMS verification code.
-                    </p>
-                  </div>
-
-                  <form onSubmit={handleSendPhoneOtp} className="space-y-3.5">
-                    <div>
-                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
-                        Mobile Phone Number
-                      </label>
-                      <div className="flex items-stretch gap-2 w-full">
-                        {/* Country Dial Code Selector - Compact displayed pill with full native dropdown */}
-                        <div className="relative w-[104px] sm:w-[114px] shrink-0 group">
-                          <div className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 group-focus-within:border-[#2D5A3D] group-focus-within:ring-2 group-focus-within:ring-[#2D5A3D]/15 flex items-center justify-between text-xs sm:text-sm font-bold text-slate-700 pointer-events-none select-none transition-colors">
-                            <span className="truncate">
-                              {selectedCountry.iso} {selectedCountry.code}
-                            </span>
-                            <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
-                          </div>
-                          <select
-                            value={countryCode}
-                            onChange={(e) => setCountryCode(e.target.value)}
-                            aria-label="Country Dial Code"
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-base"
-                          >
-                            {COUNTRY_CODES.map((c) => (
-                              <option key={c.code} value={c.code}>
-                                {c.code} ({c.country})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Phone Number Input */}
-                        <div className="relative flex-1 min-w-0">
-                          <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <input
-                            type="tel"
-                            inputMode="tel"
-                            autoComplete="tel-national"
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
-                            placeholder={selectedCountry.placeholder}
-                            className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold tracking-wide text-slate-800 focus:outline-hidden focus:border-[#2D5A3D] focus:ring-2 focus:ring-[#2D5A3D]/15 transition-colors"
-                            required
-                            autoFocus
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Optional Traveler Details */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
-                          Full Name (Optional)
-                        </label>
-                        <div className="relative">
-                          <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            value={phoneUserName}
-                            onChange={(e) => setPhoneUserName(e.target.value)}
-                            placeholder="Enter your name"
-                            className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
-                          Home City (Optional)
-                        </label>
-                        <div className="relative">
-                          <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            value={phoneLocation}
-                            onChange={(e) => setPhoneLocation(e.target.value)}
-                            placeholder="e.g. Mumbai, India"
-                            className="w-full pl-10 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Travel Style Selector */}
-                    <div>
-                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1.5">
-                        Travel Style
-                      </label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {TRAVELER_STYLES.map((style) => (
-                          <button
-                            key={style.id}
-                            type="button"
-                            onClick={() => setPhoneTravelerStyle(style.id)}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                              phoneTravelerStyle === style.id
-                                ? 'bg-[#2D5A3D] text-white shadow-2xs scale-102'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}
-                          >
-                            {style.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full py-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Dispatching SMS OTP...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Phone className="w-4 h-4" />
-                          <span>Send SMS Verification Code</span>
-                        </>
-                      )}
-                    </button>
-                  </form>
-
-                  <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 pt-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3D]" />
-                    <span>Secure Phone Authentication with carrier SMS</span>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 2: 6-Digit SMS OTP Verification */}
-              {phoneStep === 'otp' && (
-                <div className="space-y-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      clearPhoneAuthSession();
-                      setPhoneStep('number');
-                      setErrorMsg(null);
-                      setSuccessMsg(null);
-                    }}
-                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Change phone number</span>
-                  </button>
-
-                  <div className="text-center space-y-1">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#2D5A3D] mx-auto flex items-center justify-center">
-                      <Phone className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-xl font-bold text-[#0B2545]">Enter SMS Code</h3>
-                    <p className="text-xs text-slate-500">
-                      We sent a 6-digit verification code to
-                    </p>
-                    <p className="text-xs font-mono font-bold text-[#0B2545]">
-                      {formatE164PhoneNumber(phoneNumber, countryCode)}
-                    </p>
-                  </div>
-
-                  {/* 6 Individual Digit Boxes */}
-                  <div className="flex justify-center items-center gap-2 py-2">
-                    {otpDigits.map((digit, idx) => (
-                      <input
-                        key={idx}
-                        ref={(el) => {
-                          otpInputRefs.current[idx] = el;
-                        }}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={6}
-                        value={digit}
-                        onChange={(e) => handleOtpBoxChange(idx, e.target.value)}
-                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                        className={`w-11 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold font-mono rounded-xl border transition-all focus:outline-hidden ${
-                          digit
-                            ? 'border-[#2D5A3D] bg-emerald-50/40 text-[#0B2545] shadow-2xs'
-                            : 'border-slate-300 bg-white text-slate-800 focus:border-[#2D5A3D] focus:ring-2 focus:ring-[#2D5A3D]/20'
-                        }`}
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleVerifyOtp()}
-                    disabled={isLoading || otpDigits.join('').length !== 6}
-                    className="w-full py-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Verifying SMS Code...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check className="w-4 h-4" />
-                        <span>Verify & Start Exploring</span>
-                      </>
-                    )}
-                  </button>
-
-                  {/* Resend SMS Counter */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                    <span className="text-slate-400">Didn't receive the SMS?</span>
-                    {resendCountdown > 0 ? (
-                      <span className="font-semibold text-slate-500 flex items-center gap-1">
-                        <RotateCcw className="w-3 h-3 text-slate-400 animate-spin" />
-                        Resend in {resendCountdown}s
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleSendPhoneOtp()}
-                        disabled={isLoading}
-                        className="font-bold text-[#2D5A3D] hover:underline cursor-pointer"
-                      >
-                        Resend SMS Code
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-            </div>
-          )}
-
-          {/* ==================================================================== */}
           {/* METHOD: INSTANT GUEST EXPLORER (Genuine Supabase Cloud Session)      */}
           {/* ==================================================================== */}
           {authMethod === 'guest' && (
@@ -1275,7 +753,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="space-y-0.5">
                   <span className="font-bold block text-amber-950">Explore-Only Mode</span>
                   <span className="text-[11px] text-amber-800 leading-relaxed block">
-                    Guest Explorer lets you browse destinations, highway amenities, and transport deals. To generate custom day-by-day itineraries with the AI Planner, sign in with Google, Email, or Mobile.
+                    Guest Explorer lets you browse destinations, highway amenities, and transport deals. To generate custom day-by-day itineraries with the AI Planner, sign in with Google or Email.
                   </span>
                 </div>
               </div>

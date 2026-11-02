@@ -23,8 +23,6 @@ import {
   hashPassword, 
   saveAccounts, 
   signInWithEmail, 
-  sendPhoneOtp, 
-  verifyPhoneOtp, 
   getPhoneAuthErrorMessage,
   isGuestUser,
   getUserSubscriptionQuota
@@ -119,23 +117,6 @@ describe('Auth Security & Verification Tests', () => {
     const invalidErr = new Error('INVALID_CODE');
     const friendly3 = getPhoneAuthErrorMessage(invalidErr);
     expect(friendly3).toContain('Incorrect verification code');
-  });
-
-  it('dispatches and verifies phone OTP for verified phone number', async () => {
-    const sendRes = await sendPhoneOtp('+919904717666');
-    expect(sendRes.provider).toBe('firebase');
-
-    const verifiedUser = await verifyPhoneOtp(
-      '990471',
-      'Meet Sharma',
-      'Budget explorer',
-      'India',
-      '+919904717666'
-    );
-    expect(verifiedUser.phoneNumber).toBe('+919904717666');
-    expect(verifiedUser.displayName).toBe('Meet Sharma');
-    expect(verifiedUser.provider).toBe('phone');
-    expect(verifiedUser.uid).toBeTruthy();
   });
 
   it('authenticates meet.sharma8c@gmail.com via cloud email authentication', async () => {

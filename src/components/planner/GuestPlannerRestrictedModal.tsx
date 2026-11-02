@@ -191,7 +191,7 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
           {/* Trust footer */}
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 text-center">
             <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3D]" />
-            <span>100% Free • Sign up with Google, Email, or Mobile OTP • Instant Access</span>
+            <span>100% Free • Sign up with Google or Email • Instant Access</span>
           </div>
         </div>
       </div>
