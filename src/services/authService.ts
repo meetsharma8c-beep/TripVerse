@@ -276,6 +276,9 @@ export function saveSession(session: AuthSession | null): void {
   try {
     if (session) {
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+      if (session.user?.uid) {
+        saveProfileToSupabase(session.user.uid, toUserProfile(session.user)).catch(() => {});
+      }
     } else {
       localStorage.removeItem(SESSION_STORAGE_KEY);
     }
@@ -1619,6 +1622,19 @@ export function getPhoneAuthErrorMessage(err: any): string {
  * Convert AuthUser to UserProfile
  */
 export function toUserProfile(user: AuthUser): UserProfile {
+  const providerLabel =
+    user.provider === 'google'
+      ? 'Google Auth'
+      : user.provider === 'email'
+        ? 'Email Auth'
+        : user.provider === 'guest'
+          ? 'Guest Auth'
+          : 'Verified Auth';
+  const baseTag = user.travelStyleTag || 'Verified Explorer';
+  const enrichedTag = baseTag.toLowerCase().includes('auth') || baseTag.toLowerCase().includes(user.provider)
+    ? baseTag
+    : `${baseTag} • ${providerLabel}`;
+
   return {
     name: user.displayName,
     age: user.age,
@@ -1628,7 +1644,7 @@ export function toUserProfile(user: AuthUser): UserProfile {
     phoneNumber: user.phoneNumber,
     avatar: user.photoURL,
     travelerStyle: user.travelerStyle,
-    travelStyleTag: user.travelStyleTag,
+    travelStyleTag: enrichedTag,
     budgetPreference: 'Balanced & Value-Focused',
     foodPreference: 'Authentic Local & Hygienic Stops',
     accommodationPreference: 'Boutique Stays & Clean Hotels',
