@@ -44,6 +44,13 @@ export default async function handler(req, res) {
 
   // Razorpay amounts are in the smallest currency unit (e.g. paise for INR, cents for USD)
   const amountInSubunits = Math.round(numAmount * 100);
+  if (amountInSubunits < 100) {
+    return res.status(400).json({
+      ok: false,
+      error: 'AMOUNT_TOO_SMALL',
+      message: 'Minimum order amount is 100 paise (₹1.00).'
+    });
+  }
 
   try {
     const authHeader = 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64');
@@ -68,9 +75,10 @@ export default async function handler(req, res) {
 
     if (!rzpResponse.ok) {
       console.error('Razorpay order creation failed:', orderData);
-      return res.status(rzpResponse.status || 500).json({
+      const statusCode = rzpResponse.status === 401 ? 401 : 500;
+      return res.status(statusCode).json({
         ok: false,
-        error: 'RAZORPAY_ORDER_FAILED',
+        error: rzpResponse.status === 401 ? 'RAZORPAY_AUTH_FAILED' : 'RAZORPAY_ORDER_FAILED',
         details: orderData
       });
     }
@@ -81,6 +89,7 @@ export default async function handler(req, res) {
       mode: isTestKey ? 'test' : 'live',
       keyId,
       orderId: orderData.id,
+      order_id: orderData.id,
       amount: orderData.amount,
       currency: orderData.currency
     });

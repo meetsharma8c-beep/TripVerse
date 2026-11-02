@@ -254,14 +254,14 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         }
       });
 
-      if (orderRes?.ok && orderRes.mode === 'live' && orderRes.orderId && orderRes.keyId) {
+      if (orderRes?.ok && (orderRes.mode === 'live' || orderRes.mode === 'test') && orderRes.orderId && orderRes.keyId) {
         const loaded = await loadRazorpayScript();
         if (loaded && (window as any).Razorpay) {
           const rzp = new (window as any).Razorpay({
             key: orderRes.keyId,
             amount: finalPayableINR * 100,
             currency: 'INR',
-            name: 'TripVerse Travel Tech',
+            name: 'Trip-Verse',
             description: customTitle || trip?.name || 'TripVerse Experience Booking',
             order_id: orderRes.orderId,
             handler: async (response: any) => {
@@ -273,8 +273,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
               if (verifyRes?.verified) {
                 finalizeSuccessfulBooking(methodName, response.razorpay_payment_id);
               } else {
-                setGatewayStage('checkout');
-                alert('Cryptographic payment signature verification could not be completed.');
+                setGatewayErrorMessage('Cryptographic payment signature verification failed. Your account was not charged.');
+                setGatewayStage('unavailable');
               }
             },
             modal: {
@@ -284,6 +284,15 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
             },
             theme: { color: '#2D5A3D' }
           });
+
+          if (typeof rzp.on === 'function') {
+            rzp.on('payment.failed', (failure: any) => {
+              const reason = failure?.error?.description || 'Payment authorization was declined by your bank or UPI app.';
+              setGatewayErrorMessage(reason);
+              setGatewayStage('unavailable');
+            });
+          }
+
           rzp.open();
           return;
         }
