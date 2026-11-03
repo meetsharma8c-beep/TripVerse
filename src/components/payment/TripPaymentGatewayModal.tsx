@@ -1,5 +1,6 @@
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   ShieldCheck, 
@@ -385,7 +386,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
     }, 1500);
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div 
       className="fixed inset-0 z-[250] flex items-start sm:items-center justify-center bg-slate-950/85 p-2 sm:p-4 backdrop-blur-md overflow-y-auto overscroll-contain"
       onClick={onClose}
@@ -1378,6 +1381,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         {/* Declarative hidden anchor for invoice file download */}
         <a ref={downloadAnchorRef} className="hidden" aria-hidden="true" tabIndex={-1} />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

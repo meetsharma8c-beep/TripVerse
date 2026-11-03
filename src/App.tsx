@@ -1424,6 +1424,7 @@ export function App() {
   };
 
   const isAnyModalOpen = Boolean(
+    isProModalOpen ||
     isBookingModalOpen ||
     isGeneratingTrip ||
     isPlannerOpen ||
@@ -2197,6 +2198,7 @@ export function App() {
                 unreadNotificationCount={unreadNotificationCount}
                 onSignOut={handleUserSignOut}
                 onOpenLegal={(tab) => setLegalModalState({ isOpen: true, tab })}
+                onOpenProModal={() => setIsProModalOpen(true)}
               />
             </div>
           )}
@@ -2520,7 +2522,11 @@ export function App() {
         currentUser={currentUser}
         onClose={() => setIsProModalOpen(false)}
         onSubscribed={() => {
-          setCurrentUser(getCurrentUser());
+          const updated = getCurrentUser();
+          setCurrentUser(updated);
+          if (updated) {
+            setUserProfile(toUserProfile(updated));
+          }
         }}
       />
 

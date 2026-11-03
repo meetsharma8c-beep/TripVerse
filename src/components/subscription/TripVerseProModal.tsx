@@ -1,5 +1,6 @@
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Crown, Check, X, ShieldCheck, Compass, ChevronRight, CheckCircle2, Lock, Zap, CloudRain, FileText } from 'lucide-react';
 import { AuthUser, UserSubscriptionQuota } from '../../types/auth';
 import { 
@@ -48,7 +49,6 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
   }, []);
 
   useModalBehavior(isOpen, onClose);
-  if (!isOpen) return null;
 
   const quota: UserSubscriptionQuota = getUserSubscriptionQuota(currentUser);
   const isPro = quota.isPro;
@@ -134,9 +134,15 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
     }
   ];
 
-  return (
+  if (!isOpen) return null;
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <>
-      <div className="fixed inset-0 z-[120] bg-black/65 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+      <div 
+        onClick={onClose}
+        className="fixed inset-0 z-[120] bg-black/65 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
+      >
       
       {/* 
         Outer modal card:
@@ -146,6 +152,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
       <div 
         role="dialog"
         aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-[480px] rounded-[30px] sm:rounded-[36px] overflow-hidden bg-white dark:bg-[#0E1726] shadow-[0_30px_100px_rgba(21,42,28,0.32),0_0_0_1px_rgba(226,235,225,0.7)] dark:shadow-[0_30px_100px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] flex flex-col font-sans transition-all my-auto"
       >
 
@@ -403,7 +410,8 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
         onBookingSuccess={handleGatewaySuccess}
       />
     )}
-  </>
+  </>,
+  document.body
 );
 };
 

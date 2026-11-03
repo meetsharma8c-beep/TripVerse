@@ -28,6 +28,7 @@ interface ProfileViewProps {
   onOpenNotifications?: () => void;
   unreadNotificationCount?: number;
   onOpenLegal?: (tab: 'privacy' | 'terms' | 'advisory' | 'feedback') => void;
+  onOpenProModal?: () => void;
 }
 
 const AVATAR_PRESETS = [
@@ -48,7 +49,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onSignOut,
   onOpenNotifications,
   unreadNotificationCount = 0,
-  onOpenLegal
+  onOpenLegal,
+  onOpenProModal
 }) => {
   const [currency, setCurrency] = useState<Currency>(getStoredCurrency());
   const [isEditing, setIsEditing] = useState(false);
@@ -81,6 +83,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const currentUser = authUser;
   const quota = getUserSubscriptionQuota(currentUser);
   const savedAccounts = getSavedAccounts();
+
+  const handleOpenProModal = () => {
+    if (onOpenProModal) {
+      onOpenProModal();
+    } else {
+      setIsProModalOpen(true);
+    }
+  };
 
   // Dynamic calculations for user stats (only user-planned trips count towards personal profile stats)
   const userCreatedTrips = (trips || []).filter(t => t.isUserCreated);
@@ -413,7 +423,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
               <button
                 type="button"
-                onClick={() => setIsProModalOpen(true)}
+                onClick={handleOpenProModal}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs backdrop-blur-xs transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5 shrink-0"
               >
                 <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
@@ -473,7 +483,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
               <button
                 type="button"
-                onClick={() => setIsProModalOpen(true)}
+                onClick={handleOpenProModal}
                 className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-[#2D5A3D] to-[#1E3E2A] hover:opacity-95 text-white font-extrabold text-xs shadow-md shadow-emerald-900/15 hover:shadow-lg transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 shrink-0"
               >
                 <Crown className="w-4 h-4 fill-amber-300 text-amber-300" />
