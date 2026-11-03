@@ -312,6 +312,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       });
       if (activeRequestIdRef.current !== reqId) return;
 
+      // If email confirmation is required, ask user for the 6-digit OTP code sent to their email
+      if (user.emailConfirmationPending || user.isPendingEmailConfirmation) {
+        setEmailSubMode('verify-email');
+        setEmailResendCountdown(60);
+        setSuccessMsg(`We sent a 6-digit confirmation code to ${email.trim()}. Enter it below to activate your account.`);
+        return;
+      }
+
       try {
         confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
       } catch {}
@@ -845,6 +853,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       )}
                     </button>
                   </form>
+
+                  <div className="text-center pt-1 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmailSubMode('verify-email');
+                        setErrorMsg(null);
+                        setSuccessMsg(null);
+                      }}
+                      className="text-[11px] text-[#2D5A3D] hover:underline font-semibold cursor-pointer"
+                    >
+                      Already have a 6-digit confirmation code? Enter it here
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1091,12 +1113,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </div>
                     <h3 className="text-xl font-bold text-[#0B2545]">Verify Your Email</h3>
                     <p className="text-xs text-slate-500">
-                      Check your inbox to click the confirmation link or enter the 6-digit code below:
+                      Check your inbox for the 6-digit verification code from TripVerse:
                     </p>
-                    <p className="text-xs font-mono font-bold text-[#0B2545]">{email}</p>
+                    {email ? (
+                      <p className="text-xs font-mono font-bold text-[#0B2545]">{email}</p>
+                    ) : null}
                   </div>
 
                   <form onSubmit={handleVerifyEmailToken} className="space-y-3.5">
+                    {!email && (
+                      <div className="text-left">
+                        <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                          Email Address
+                        </label>
+                        <div className="relative">
+                          <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="e.g. traveler@domain.com"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
+                            required
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">
                         6-Digit Confirmation Code
