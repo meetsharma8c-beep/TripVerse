@@ -10,7 +10,8 @@ import {
   UserCredential,
   ConfirmationResult,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  onAuthStateChanged as onFbAuthStateChanged
 } from 'firebase/auth';
 
 export interface FirebaseConfig {
@@ -183,11 +184,24 @@ export async function checkFirebaseRedirectResult(): Promise<UserCredential | nu
   const auth = getFirebaseAuth();
   if (!auth) return null;
   try {
-    return await getRedirectResult(auth);
-  } catch (err) {
-    console.warn('[Firebase] Redirect result check error:', err);
+    const cred = await getRedirectResult(auth);
+    if (cred && cred.user) {
+      console.log('[Firebase] Successfully restored redirect auth credential for:', cred.user.email);
+    }
+    return cred;
+  } catch (err: any) {
+    console.warn('[Firebase] Redirect result check notice:', err?.code, err?.message);
     return null;
   }
+}
+
+/**
+ * Listen to Firebase Auth state transitions (IndexedDB restored session)
+ */
+export function onFirebaseAuthStateChangedListener(callback: (user: any) => void): () => void {
+  const auth = getFirebaseAuth();
+  if (!auth) return () => {};
+  return onFbAuthStateChanged(auth, callback);
 }
 
 /**

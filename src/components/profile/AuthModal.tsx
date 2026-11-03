@@ -24,6 +24,8 @@ import {
   signInWithEmail, 
   sendPasswordResetCode,
   signInWithGooglePopup, 
+  signInWithGoogleRedirect,
+  isMobileDevice,
   ensureGoogleIdentityServices,
   createAccountWithSupabase, 
   signInAnonymouslyWithSupabase,
@@ -144,15 +146,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   if (!isOpen) return null;
 
   // ----------------------------------------------------------------------
-  // 1. Google Sign-In & Sign-Up via Firebase OAuth2 Popup
+  // 1. Google Sign-In & Sign-Up via Firebase OAuth2 Popup / Redirect
   // ----------------------------------------------------------------------
-  const handleTriggerGoogleAuth = async () => {
+  const handleTriggerGoogleAuth = async (forceRedirect: boolean = false) => {
     const reqId = ++activeRequestIdRef.current;
     setIsLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
     try {
+      if (forceRedirect) {
+        await signInWithGoogleRedirect();
+        return; // Page will redirect to Google
+      }
       const user = await signInWithGooglePopup();
       if (activeRequestIdRef.current !== reqId) return;
       try {
@@ -177,11 +183,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
       console.error('Google Auth error:', err);
       setErrorMsg(
-        err.message || 'Google sign-in was closed or unavailable. Please sign in with Email & Password or try again.'
+        err.message || 'Google sign-in could not complete. You can try the Direct Redirect button below.'
       );
-      if (authMethod !== 'email') {
-        setAuthMethod('email');
-      }
+      // NOTE: Never switch tab away from google! Keep user on Google tab.
     } finally {
       if (activeRequestIdRef.current === reqId) {
         setIsLoading(false);
@@ -548,10 +552,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               {/* Official Google OAuth Sign-In via Firebase Auth Proxy */}
-              <div className="flex flex-col items-center justify-center w-full min-h-[48px] py-1 gap-2">
+              <div className="flex flex-col items-center justify-center w-full min-h-[48px] py-1 gap-2.5">
                 <button
                   type="button"
-                  onClick={handleTriggerGoogleAuth}
+                  onClick={() => handleTriggerGoogleAuth(false)}
                   disabled={isLoading}
                   className="w-full py-3.5 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
                 >
@@ -568,17 +572,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
                         <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                       </svg>
-                      <span>Continue with Google</span>
+                      <span>{isMobileDevice() ? 'Continue with Google (Mobile Safe)' : 'Continue with Google'}</span>
                     </>
                   )}
                 </button>
+
+                {/* Direct Redirect Mode (100% immune to Safari pop-up blockers) */}
+                <button
+                  type="button"
+                  onClick={() => handleTriggerGoogleAuth(true)}
+                  disabled={isLoading}
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:bg-slate-100 text-slate-600 font-medium text-[11px] flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                  title="Direct Redirect navigates to Google directly without opening a popup window, ensuring 100% compatibility on iPhone Safari and privacy browsers"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Direct Redirect Sign-In (Recommended for Safari & Mobile)</span>
+                </button>
+
                 {isLoading && (
                   <button
                     type="button"
                     onClick={() => switchAuthTab('google')}
-                    className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 underline cursor-pointer"
+                    className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 underline cursor-pointer mt-1"
                   >
-                    Popup didn't open? Tap to reset or switch to Email
+                    Taking long? Tap to reset
                   </button>
                 )}
               </div>

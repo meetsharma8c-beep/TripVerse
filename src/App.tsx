@@ -80,7 +80,8 @@ import {
   toUserProfile, 
   getUserSubscriptionQuota, 
   consumeTripCredit,
-  signOut as authSignOut
+  signOut as authSignOut,
+  checkAndProcessFirebaseRedirectResult
 } from './services/authService';
 import { TripVerseProModal } from './components/subscription/TripVerseProModal';
 import { AuthUser } from './types/auth';
@@ -153,6 +154,18 @@ export function App() {
   const [savedItemIds, setSavedItemIds] = useState<string[]>(() => loadSavedItemIds());
 
   useEffect(() => {
+    // Process pending redirect authentication (e.g. returning from Google Sign-In redirect on mobile/Safari)
+    checkAndProcessFirebaseRedirectResult()
+      .then(user => {
+        if (user) {
+          setCurrentUser(user);
+          setUserProfile(toUserProfile(user));
+        }
+      })
+      .catch(err => {
+        console.warn('[Firebase Auth] Redirect result processing notice:', err);
+      });
+
     const unsub = onAuthStateChanged(async (user) => {
       setCurrentUser(user);
       if (user) {

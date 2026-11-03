@@ -26,7 +26,9 @@ import {
   createAccountWithSupabase,
   getPhoneAuthErrorMessage,
   isGuestUser,
-  getUserSubscriptionQuota
+  getUserSubscriptionQuota,
+  handleFirebaseUserCredential,
+  isMobileDevice
 } from '../src/services/authService';
 import { AuthUser } from '../src/types/auth';
 
@@ -198,5 +200,30 @@ describe('Auth Security & Verification Tests', () => {
     const regionErr = new Error('SMS unable to be sent until this region enabled by the app developer.');
     const regionMsg = getPhoneAuthErrorMessage(regionErr);
     expect(regionMsg).toContain('SMS Region Policy');
+  });
+
+  it('correctly processes Google OAuth user credentials for mobile & redirect flows', async () => {
+    const mockGoogleCred = {
+      user: {
+        uid: 'google-oauth2-test-uid-12345',
+        email: 'meet.sharma8c@gmail.com',
+        displayName: 'Meet Sharma',
+        photoURL: 'https://lh3.googleusercontent.com/a/test-avatar',
+        getIdToken: async () => 'mock-google-id-token'
+      }
+    };
+
+    const user = await handleFirebaseUserCredential(mockGoogleCred);
+    expect(user.email).toBe('meet.sharma8c@gmail.com');
+    expect(user.displayName).toBe('Meet Sharma');
+    expect(user.provider).toBe('google');
+    expect(user.emailVerified).toBe(true);
+    expect(isGuestUser(user)).toBe(false);
+
+    // Verify session was saved
+    const rawSession = (global as any).localStorage.getItem('tripverse_auth_session_v3');
+    expect(rawSession).toBeDefined();
+    const parsedSession = JSON.parse(rawSession);
+    expect(parsedSession.user.email).toBe('meet.sharma8c@gmail.com');
   });
 });

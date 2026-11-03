@@ -17,6 +17,9 @@ import {
   saveFirebaseConfig,
   removeFirebaseConfig,
   signInWithFirebaseGoogle,
+  signInWithFirebaseGoogleRedirect,
+  checkFirebaseRedirectResult,
+  onFirebaseAuthStateChangedListener,
   signOutFirebase,
   sendFirebasePhoneOtp,
   confirmFirebasePhoneOtp,
@@ -548,13 +551,18 @@ export async function signInWithGoogleUserInfo(info: {
   return account.user;
 }
 
+export function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || (navigator.maxTouchPoints > 0 && /Macintosh/.test(navigator.userAgent));
+}
+
 /**
- * Sign in using Firebase Authentication Google Provider popup
+ * Common handler for Firebase UserCredential (used by both popup and redirect results)
  */
-export async function signInWithFirebaseGoogleAuth(): Promise<AuthUser> {
-  const cred = await signInWithFirebaseGoogle();
-  const fbUser = cred.user;
-  if (!fbUser.email) {
+export async function handleFirebaseUserCredential(cred: any): Promise<AuthUser> {
+  const fbUser = cred?.user;
+  if (!fbUser || !fbUser.email) {
     throw new Error('Google account does not contain a verified email address.');
   }
 
@@ -614,9 +622,46 @@ export async function signInWithFirebaseGoogleAuth(): Promise<AuthUser> {
 }
 
 /**
+ * Checks for any pending redirect result after page reload (crucial for mobile Safari)
+ */
+export async function checkAndProcessFirebaseRedirectResult(): Promise<AuthUser | null> {
+  if (!isFirebaseConfigured()) return null;
+  const cred = await checkFirebaseRedirectResult();
+  if (cred && cred.user) {
+    return await handleFirebaseUserCredential(cred);
+  }
+  return null;
+}
+
+/**
+ * Sign in using Firebase Google Auth with direct full-page Redirect (100% reliable on mobile Safari)
+ */
+export async function signInWithGoogleRedirect(): Promise<void> {
+  if (isFirebaseConfigured()) {
+    return await signInWithFirebaseGoogleRedirect();
+  }
+  throw new Error('Google Sign-In redirect requires Firebase Authentication.');
+}
+
+/**
+ * Sign in using Firebase Authentication Google Provider popup
+ */
+export async function signInWithFirebaseGoogleAuth(): Promise<AuthUser> {
+  const cred = await signInWithFirebaseGoogle();
+  return await handleFirebaseUserCredential(cred);
+}
+
+/**
  * Primary Google Sign-In: Prefers Firebase Auth when configured, with GIS fallback
  */
 export async function signInWithGooglePopup(): Promise<AuthUser> {
+  // If on a mobile device (iPhone/iPad/Android), popup blockers and cross-origin ITP block popups
+  // Direct Redirect is 100% reliable and doesn't get blocked
+  if (isMobileDevice() && isFirebaseConfigured()) {
+    await signInWithGoogleRedirect();
+    return new Promise(() => {}); // Execution will transition with page redirect
+  }
+
   // 1. If Firebase Auth is configured, use Firebase Auth popup
   if (isFirebaseConfigured()) {
     try {
@@ -635,6 +680,17 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
         const originDomain = typeof window !== 'undefined' ? window.location.hostname : 'tripverse.concode.com';
         throw new Error(`Firebase Auth Domain Error: "${originDomain}" must be added to 'Authorized domains' in Firebase Console (Authentication -> Settings -> Authorized domains).`);
       }
+      if (
+        fbErr?.code === 'auth/popup-blocked' ||
+        fbErr?.code === 'auth/internal-error' ||
+        msg.toLowerCase().includes('popup-blocked') ||
+        msg.toLowerCase().includes('cross-origin') ||
+        isMobileDevice()
+      ) {
+        console.warn('[Firebase Auth] Switching to direct redirect flow due to browser restrictions:', fbErr);
+        await signInWithGoogleRedirect();
+        return new Promise(() => {});
+      }
       console.warn('[Firebase Auth] Notice during Google popup, falling back to GIS if available:', fbErr);
     }
   }
@@ -643,7 +699,7 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   if (!clientId) {
-    throw new Error('Google Sign-In is not configured (missing VITE_GOOGLE_CLIENT_ID). Please sign in with Email & Password.');
+    throw new Error('Google Sign-In is not configured (missing VITE_GOOGLE_CLIENT_ID). Please try the Direct Redirect button.');
   }
 
   await ensureGoogleIdentityServices();
@@ -672,9 +728,9 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
             if (errType === 'popup_closed') {
               finishReject(new Error('Google sign-in was cancelled.'));
             } else if (errType === 'popup_failed_to_open') {
-              finishReject(new Error('Google popup was blocked by your browser. Please allow popups for this site or sign in with Email & Password.'));
+              finishReject(new Error('Google popup was blocked by your browser. Please use the Direct Redirect button or allow popups.'));
             } else {
-              finishReject(new Error(errObj?.message || 'Google Sign-In could not complete. Please sign in with Email & Password.'));
+              finishReject(new Error(errObj?.message || 'Google Sign-In could not complete.'));
             }
           },
           callback: async (tokenResponse: any) => {
@@ -1397,9 +1453,10 @@ export async function signOut(): Promise<void> {
 }
 
 let isSupabaseListenerAttached = false;
+let isFirebaseListenerAttached = false;
 
 /**
- * Subscribe to authentication state changes with Supabase listener
+ * Subscribe to authentication state changes with Supabase and Firebase listeners
  */
 export function onAuthStateChanged(callback: (user: AuthUser | null) => void): () => void {
   // Report active restored session once per browser tab load so existing logged-in users appear in real-time monitor
@@ -1414,6 +1471,34 @@ export function onAuthStateChanged(callback: (user: AuthUser | null) => void): (
       }
     }
   } catch {}
+
+  // Attach Firebase Auth state listener if configured
+  if (!isFirebaseListenerAttached && isFirebaseConfigured()) {
+    isFirebaseListenerAttached = true;
+    onFirebaseAuthStateChangedListener(async (fbUser) => {
+      if (fbUser && fbUser.email) {
+        const existingUser = getCurrentUser();
+        if (!existingUser || isGuestUser(existingUser) || existingUser.email.toLowerCase() === fbUser.email.toLowerCase()) {
+          const emailNorm = fbUser.email.trim().toLowerCase();
+          const uid = toDeterministicUuid('google:' + (fbUser.uid || emailNorm));
+          const accounts = loadAccounts();
+          let account = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+          if (account) {
+            account.user.emailVerified = true;
+            if (fbUser.photoURL) account.user.photoURL = fbUser.photoURL;
+            if (fbUser.displayName) account.user.displayName = fbUser.displayName;
+            saveAccounts(accounts);
+            const idToken = await fbUser.getIdToken().catch(() => `session-google-${account.user.uid}`);
+            saveSession({
+              token: idToken,
+              user: account.user,
+              expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
+            });
+          }
+        }
+      }
+    });
+  }
 
   // Attach Supabase auth listener if configured
   if (!isSupabaseListenerAttached) {
