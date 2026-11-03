@@ -170,6 +170,7 @@ export function App() {
     const unsub = onAuthStateChanged(async (user) => {
       setCurrentUser(user);
       if (user) {
+        setIsAuthModalOpen(false);
         const localProfile = toUserProfile(user);
         setUserProfile(localProfile);
 

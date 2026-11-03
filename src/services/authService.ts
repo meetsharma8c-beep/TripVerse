@@ -418,6 +418,9 @@ export async function signInWithGoogleCredential(credential: string): Promise<Au
       age: 26,
       emailVerified: payload.email_verified ?? true,
       provider: 'google',
+      subscriptionTier: 'free',
+      freeTripsRemaining: 3,
+      weeklyAssistantMinutesRemaining: 1800,
       createdAt: now,
       lastLoginAt: now,
       savedPlaceIds: []
@@ -518,6 +521,9 @@ export async function signInWithGoogleUserInfo(info: {
       age: 26,
       emailVerified: info.email_verified ?? true,
       provider: 'google',
+      subscriptionTier: 'free',
+      freeTripsRemaining: 3,
+      weeklyAssistantMinutesRemaining: 1800,
       createdAt: now,
       lastLoginAt: now,
       savedPlaceIds: []
@@ -661,14 +667,7 @@ export async function signInWithFirebaseGoogleAuth(): Promise<AuthUser> {
  * Primary Google Sign-In: Prefers Firebase Auth when configured, with GIS fallback
  */
 export async function signInWithGooglePopup(): Promise<AuthUser> {
-  // If on a mobile device (iPhone/iPad/Android), popup blockers and cross-origin ITP block popups
-  // Direct Redirect is 100% reliable and doesn't get blocked
-  if (isMobileDevice() && isFirebaseConfigured()) {
-    await signInWithGoogleRedirect();
-    return new Promise(() => {}); // Execution will transition with page redirect
-  }
-
-  // 1. If Firebase Auth is configured, use Firebase Auth popup
+  // 1. If Firebase Auth is configured, attempt Firebase Auth popup
   if (isFirebaseConfigured()) {
     try {
       return await signInWithFirebaseGoogleAuth();
@@ -686,17 +685,6 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
         const originDomain = typeof window !== 'undefined' ? window.location.hostname : 'tripverse.concode.com';
         throw new Error(`Firebase Auth Domain Error: "${originDomain}" must be added to 'Authorized domains' in Firebase Console (Authentication -> Settings -> Authorized domains).`);
       }
-      if (
-        fbErr?.code === 'auth/popup-blocked' ||
-        fbErr?.code === 'auth/internal-error' ||
-        msg.toLowerCase().includes('popup-blocked') ||
-        msg.toLowerCase().includes('cross-origin') ||
-        isMobileDevice()
-      ) {
-        console.warn('[Firebase Auth] Switching to direct redirect flow due to browser restrictions:', fbErr);
-        await signInWithGoogleRedirect();
-        return new Promise(() => {});
-      }
       console.warn('[Firebase Auth] Notice during Google popup, falling back to GIS if available:', fbErr);
     }
   }
@@ -705,6 +693,10 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   if (!clientId) {
+    if (isFirebaseConfigured()) {
+      await signInWithGoogleRedirect();
+      return new Promise(() => {});
+    }
     throw new Error('Google Sign-In is not configured (missing VITE_GOOGLE_CLIENT_ID). Please try the Direct Redirect button.');
   }
 
@@ -1498,21 +1490,10 @@ export function onAuthStateChanged(callback: (user: AuthUser | null) => void): (
       if (fbUser && fbUser.email) {
         const existingUser = getCurrentUser();
         if (!existingUser || isGuestUser(existingUser) || existingUser.email.toLowerCase() === fbUser.email.toLowerCase()) {
-          const emailNorm = fbUser.email.trim().toLowerCase();
-          const uid = toDeterministicUuid('google:' + (fbUser.uid || emailNorm));
-          const accounts = loadAccounts();
-          let account = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
-          if (account) {
-            account.user.emailVerified = true;
-            if (fbUser.photoURL) account.user.photoURL = fbUser.photoURL;
-            if (fbUser.displayName) account.user.displayName = fbUser.displayName;
-            saveAccounts(accounts);
-            const idToken = await fbUser.getIdToken().catch(() => `session-google-${account.user.uid}`);
-            saveSession({
-              token: idToken,
-              user: account.user,
-              expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
-            });
+          try {
+            await handleFirebaseUserCredential({ user: fbUser });
+          } catch (err) {
+            console.warn('[Firebase Auth] State listener credential sync warning:', err);
           }
         }
       }

@@ -25,6 +25,7 @@ import {
   sendPasswordResetCode,
   signInWithGooglePopup, 
   signInWithGoogleRedirect,
+  signInWithGoogleCredential,
   isMobileDevice,
   ensureGoogleIdentityServices,
   createAccountWithSupabase, 
@@ -113,14 +114,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (emailResendCountdown <= 0) return;
-    const timer = setInterval(() => {
-      setEmailResendCountdown(prev => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [emailResendCountdown]);
-
   // Clean up auth session when modal closes
   const handleModalClose = useCallback(() => {
     activeRequestIdRef.current += 1;
@@ -130,6 +123,74 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSuccessMsg(null);
     onClose();
   }, [onClose]);
+
+  // Initialize and mount Google Identity Services official 1-Tap / Button when Google tab is active
+  useEffect(() => {
+    if (!isOpen || authMethod !== 'google') return;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    let isMounted = true;
+    ensureGoogleIdentityServices().then((available) => {
+      if (!isMounted || !available) return;
+      try {
+        const googleObj = (window as any).google?.accounts?.id;
+        if (googleObj) {
+          googleObj.initialize({
+            client_id: clientId,
+            callback: async (response: any) => {
+              if (response?.credential) {
+                setIsLoading(true);
+                setErrorMsg(null);
+                try {
+                  const user = await signInWithGoogleCredential(response.credential);
+                  try {
+                    confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+                  } catch {}
+                  setSuccessMsg(`Welcome, ${user.displayName}! Signed in with Google.`);
+                  setTimeout(() => {
+                    onSuccess(toUserProfile(user));
+                    handleModalClose();
+                  }, 400);
+                } catch (err: any) {
+                  setErrorMsg(err?.message || 'Google authentication failed.');
+                } finally {
+                  setIsLoading(false);
+                }
+              }
+            }
+          });
+          const btnContainer = document.getElementById('tripverse-google-official-btn');
+          if (btnContainer) {
+            btnContainer.innerHTML = '';
+            googleObj.renderButton(btnContainer, {
+              theme: 'outline',
+              size: 'large',
+              type: 'standard',
+              shape: 'rectangular',
+              text: 'continue_with',
+              logo_alignment: 'left',
+              width: 320
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[Google GIS] Button initialization notice:', e);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, authMethod, onSuccess, handleModalClose]);
+
+  useEffect(() => {
+    if (emailResendCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setEmailResendCountdown(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [emailResendCountdown]);
 
   // Close modal with Escape key
   useEffect(() => {
@@ -533,7 +594,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 )}
-                {authMethod !== 'email' && (
+                {authMethod === 'google' ? (
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerGoogleAuth(true)}
+                    className="inline-flex items-center gap-1 font-bold text-rose-800 underline hover:text-rose-950 cursor-pointer pt-0.5"
+                  >
+                    <span>Try Direct Redirect Sign-In</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                ) : (
                   <button
                     type="button"
                     onClick={() => switchAuthTab('email', 'login')}
@@ -582,8 +652,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </p>
               </div>
 
-              {/* Official Google OAuth Sign-In via Firebase Auth Proxy */}
+              {/* Official Google OAuth Sign-In via Firebase & Google Identity Services */}
               <div className="flex flex-col items-center justify-center w-full min-h-[48px] py-1 gap-2.5">
+                {/* Official Google Identity Services 1-Tap / Native Button */}
+                <div id="tripverse-google-official-btn" className="w-full flex justify-center py-0.5 min-h-[40px]"></div>
+
+                <div className="flex items-center gap-2 w-full my-1">
+                  <div className="h-px flex-1 bg-slate-200"></div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">or 1-click</span>
+                  <div className="h-px flex-1 bg-slate-200"></div>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => handleTriggerGoogleAuth(false)}
@@ -603,7 +682,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
                         <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                       </svg>
-                      <span>{isMobileDevice() ? 'Continue with Google (Mobile Safe)' : 'Continue with Google'}</span>
+                      <span>Continue with Google</span>
                     </>
                   )}
                 </button>
