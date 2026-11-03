@@ -609,7 +609,12 @@ export function App() {
         if (isGuestUser(currentUser)) {
           setIsGuestPlannerRestrictedOpen(true);
         } else {
-          setIsPlannerOpen(true);
+          const quota = getUserSubscriptionQuota(currentUser);
+          if (!quota.canCreateTrip) {
+            setIsProModalOpen(true);
+          } else {
+            setIsPlannerOpen(true);
+          }
         }
       }
       setCurrentTab(route.tab);
@@ -973,6 +978,11 @@ export function App() {
       setIsGuestPlannerRestrictedOpen(true);
       return;
     }
+    const quota = getUserSubscriptionQuota(currentUser);
+    if (!quota.canCreateTrip) {
+      setIsProModalOpen(true);
+      return;
+    }
     setIsPlannerOpen(true);
   };
 
@@ -1202,7 +1212,12 @@ export function App() {
             if (isGuestUser(currentUser)) {
               setIsGuestPlannerRestrictedOpen(true);
             } else {
-              setIsPlannerOpen(true);
+              const quota = getUserSubscriptionQuota(currentUser);
+              if (!quota.canCreateTrip) {
+                setIsProModalOpen(true);
+              } else {
+                setIsPlannerOpen(true);
+              }
             }
             break;
         }
@@ -1211,6 +1226,13 @@ export function App() {
         if (isGuestUser(currentUser)) {
           setIsGuestPlannerRestrictedOpen(true);
           break;
+        }
+        {
+          const quota = getUserSubscriptionQuota(currentUser);
+          if (!quota.canCreateTrip) {
+            setIsProModalOpen(true);
+            break;
+          }
         }
         if (action.payload?.trip) {
           handleTripGenerated(action.payload.trip);

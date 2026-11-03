@@ -27,6 +27,8 @@ import {
   getPhoneAuthErrorMessage,
   isGuestUser,
   getUserSubscriptionQuota,
+  consumeTripCredit,
+  upgradeUserToPro,
   handleFirebaseUserCredential,
   isMobileDevice
 } from '../src/services/authService';
@@ -268,5 +270,76 @@ describe('Auth Security & Verification Tests', () => {
     expect(user.uid).toBe(existingUid);
     expect(user.emailVerified).toBe(true);
     expect(user.provider).toBe('google');
+  });
+
+  it('strictly limits account holders to exactly 3 free trip plans and requires Pro upgrade thereafter', async () => {
+    const testUid = '00000000-0000-4000-8000-000000000333';
+    const email = 'freemium_traveler@gmail.com';
+    const testUser: AuthUser = {
+      uid: testUid,
+      email,
+      displayName: 'Freemium Traveler',
+      photoURL: '',
+      travelerStyle: 'Budget explorer',
+      travelStyleTag: 'Verified Explorer',
+      location: 'India',
+      occupation: 'Explorer',
+      age: 26,
+      emailVerified: true,
+      provider: 'email',
+      subscriptionTier: 'free',
+      freeTripsRemaining: 3,
+      isAnonymous: false,
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+      savedPlaceIds: []
+    };
+
+    saveAccounts([{ user: testUser, passwordHash: 'test_hash' }]);
+    (global as any).localStorage.setItem('tripverse_auth_session_v3', JSON.stringify({
+      token: 'test-session-token',
+      user: testUser,
+      expiresAt: Date.now() + 86400000
+    }));
+
+    // Step 0: Initial state - 3 free trips left
+    let quota = getUserSubscriptionQuota(testUser);
+    expect(quota.canCreateTrip).toBe(true);
+    expect(quota.freeTripsRemaining).toBe(3);
+    expect(quota.isPro).toBe(false);
+
+    // Step 1: User plans trip 1 -> 2 remaining
+    let res = consumeTripCredit(testUser);
+    expect(res.allowed).toBe(true);
+    expect(res.remaining).toBe(2);
+
+    // Step 2: User plans trip 2 -> 1 remaining
+    res = consumeTripCredit(testUser);
+    expect(res.allowed).toBe(true);
+    expect(res.remaining).toBe(1);
+
+    // Step 3: User plans trip 3 -> 0 remaining (final free trip used!)
+    res = consumeTripCredit(testUser);
+    expect(res.allowed).toBe(true);
+    expect(res.remaining).toBe(0);
+
+    // Step 4: Quota is now strictly exhausted
+    const exhaustedUser = { ...testUser, freeTripsRemaining: 0 };
+    quota = getUserSubscriptionQuota(exhaustedUser);
+    expect(quota.canCreateTrip).toBe(false);
+    expect(quota.freeTripsRemaining).toBe(0);
+
+    // Step 5: Attempting to plan 4th trip without Pro is strictly rejected
+    res = consumeTripCredit(exhaustedUser);
+    expect(res.allowed).toBe(false);
+    expect(res.remaining).toBe(0);
+
+    // Step 6: When user upgrades to Pro, unlimited trip creation is unlocked
+    await upgradeUserToPro(exhaustedUser, 365);
+    const proUser = { ...exhaustedUser, subscriptionTier: 'pro' as const, freeTripsRemaining: 9999 };
+    const proQuota = getUserSubscriptionQuota(proUser);
+    expect(proQuota.canCreateTrip).toBe(true);
+    expect(proQuota.isPro).toBe(true);
+    expect(proQuota.freeTripsRemaining).toBe(9999);
   });
 });

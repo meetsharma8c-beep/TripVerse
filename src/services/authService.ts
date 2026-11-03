@@ -587,6 +587,9 @@ export async function handleFirebaseUserCredential(cred: any): Promise<AuthUser>
       age: 26,
       emailVerified: fbUser.emailVerified ?? true,
       provider: 'google',
+      subscriptionTier: 'free',
+      freeTripsRemaining: 3,
+      weeklyAssistantMinutesRemaining: 1800,
       createdAt: now,
       lastLoginAt: now,
       savedPlaceIds: []
@@ -836,7 +839,9 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
           name: data.name?.trim() || emailNorm.split('@')[0],
           traveler_style: data.travelerStyle || 'Budget explorer',
           location: data.location || 'India',
-          occupation: data.occupation || 'Explorer'
+          occupation: data.occupation || 'Explorer',
+          free_trips_remaining: 3,
+          subscription_tier: 'free'
         }
       }
     });
@@ -1427,7 +1432,11 @@ export async function updateAuthProfile(updates: Partial<UserProfile & AuthUser>
           name: updatedUser.displayName,
           avatar_url: updatedUser.photoURL,
           traveler_style: updatedUser.travelerStyle,
-          location: updatedUser.location
+          location: updatedUser.location,
+          free_trips_remaining: updatedUser.freeTripsRemaining,
+          subscription_tier: updatedUser.subscriptionTier,
+          subscription_expires_at: updatedUser.subscriptionExpiresAt,
+          weekly_assistant_minutes_remaining: updatedUser.weeklyAssistantMinutesRemaining
         }
       });
     } catch (e) {
@@ -1887,7 +1896,31 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
     }
   }
 
-  const freeTripsRemaining = typeof user.freeTripsRemaining === 'number' ? user.freeTripsRemaining : 3;
+  // Cross-reference actual user-created trips count to enforce strict 3-trip allowance
+  let userCreatedTripsCount = 0;
+  if (user.uid && typeof localStorage !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(`tripverse_trips_u_${user.uid}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          userCreatedTripsCount = parsed.filter((t: any) => t && t.isUserCreated).length;
+        }
+      }
+    } catch {}
+  }
+
+  // Registered accounts get strictly 3 free trips on creation
+  const rawRemaining = typeof user.freeTripsRemaining === 'number' ? user.freeTripsRemaining : 3;
+  let freeTripsRemaining: number;
+  if (isPro) {
+    freeTripsRemaining = 9999;
+  } else {
+    // Cannot exceed 3 minus created trips, and cannot exceed raw remaining
+    const tripsLeftFromCount = Math.max(0, 3 - userCreatedTripsCount);
+    freeTripsRemaining = Math.max(0, Math.min(rawRemaining, tripsLeftFromCount));
+  }
+
   const assistantMinutes = typeof user.weeklyAssistantMinutesRemaining === 'number'
     ? user.weeklyAssistantMinutesRemaining
     : (isPro ? 1800 : 30);
@@ -1899,7 +1932,7 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
   return {
     tier: isPro ? 'pro' : 'free',
     isPro,
-    freeTripsRemaining: isPro ? 9999 : Math.max(0, freeTripsRemaining),
+    freeTripsRemaining,
     freeTripsTotal: 3,
     canCreateTrip: isPro || freeTripsRemaining > 0,
     weeklyAssistantMinutesRemaining: assistantMinutes,
@@ -1910,26 +1943,40 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
 }
 
 export function consumeTripCredit(userParam?: AuthUser | null): { allowed: boolean; remaining: number } {
-  const user = userParam !== undefined ? userParam : getCurrentUser();
+  const currentUser = getCurrentUser();
+  const targetUser = (userParam && currentUser && userParam.uid === currentUser.uid)
+    ? currentUser
+    : (userParam !== undefined ? userParam : currentUser);
 
-  if (!user || isGuestUser(user)) {
+  if (!targetUser || isGuestUser(targetUser)) {
     return { allowed: false, remaining: 0 };
   }
 
   // If user is Pro, unlimited trips!
-  if (user.subscriptionTier === 'pro') {
+  if (targetUser.subscriptionTier === 'pro') {
     return { allowed: true, remaining: 9999 };
   }
 
   // Free tier registered user
-  const currentRemaining = typeof user.freeTripsRemaining === 'number' ? user.freeTripsRemaining : 3;
-  if (currentRemaining <= 0) {
+  const quota = getUserSubscriptionQuota(targetUser);
+  if (!quota.canCreateTrip || quota.freeTripsRemaining <= 0) {
     return { allowed: false, remaining: 0 };
   }
 
-  const newRemaining = Math.max(0, currentRemaining - 1);
+  const newRemaining = Math.max(0, quota.freeTripsRemaining - 1);
+  if (userParam) {
+    userParam.freeTripsRemaining = newRemaining;
+  }
+  if (targetUser && targetUser !== userParam) {
+    targetUser.freeTripsRemaining = newRemaining;
+  }
+
   updateAuthProfile({ freeTripsRemaining: newRemaining }).catch(() => {});
-  window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { remaining: newRemaining } }));
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    try {
+      window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { remaining: newRemaining } }));
+    } catch (_) {}
+  }
   return { allowed: true, remaining: newRemaining };
 }
 

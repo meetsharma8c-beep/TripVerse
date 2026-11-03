@@ -444,8 +444,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <h4 className="font-display font-black text-base text-[#0B2545] dark:text-white">
                       Free Explorer Pass
                     </h4>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/80 text-[10px] font-black uppercase tracking-wider">
-                      {quota.freeTripsRemaining}/3 FREE TRIPS LEFT
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                      quota.freeTripsRemaining === 0
+                        ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-700/80'
+                        : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/80'
+                    }`}>
+                      {quota.freeTripsRemaining === 0 ? '0/3 TRIPS LEFT • PRO REQUIRED' : `${quota.freeTripsRemaining}/3 FREE TRIPS LEFT`}
                     </span>
                   </div>
 
@@ -487,7 +491,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-[#2D5A3D] to-[#1E3E2A] hover:opacity-95 text-white font-extrabold text-xs shadow-md shadow-emerald-900/15 hover:shadow-lg transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 shrink-0"
               >
                 <Crown className="w-4 h-4 fill-amber-300 text-amber-300" />
-                <span>Upgrade to Pro (30h/Wk)</span>
+                <span>{quota.freeTripsRemaining === 0 ? 'Upgrade to Pro to Plan Trips' : 'Upgrade to Pro (30h/Wk)'}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>

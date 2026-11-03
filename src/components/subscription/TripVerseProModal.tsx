@@ -208,17 +208,23 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
           {/* Explorer Trial Status - Crisp Integrated Banner */}
           <div className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-[#E2EBE1] dark:border-slate-800 flex items-center justify-between text-xs shadow-2xs">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className={`w-2 h-2 rounded-full shrink-0 ${quota.freeTripsRemaining === 0 && !isPro ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
               <span className="font-medium text-[#152A1C] dark:text-slate-200 truncate text-[11px]">
-                {isPro ? 'Unlimited Trips & 30h AI Co-Pilot Active' : `${quota.freeTripsRemaining} of 3 Free Explorer Trips Available`}
+                {isPro 
+                  ? 'Unlimited Trips & 30h AI Co-Pilot Active' 
+                  : quota.freeTripsRemaining === 0
+                    ? '3 of 3 Free Explorer Trips Used • Pro Required to Plan More'
+                    : `${quota.freeTripsRemaining} of 3 Free Explorer Trips Available`}
               </span>
             </div>
             <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-wider uppercase shrink-0 ${
               isPro 
                 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300' 
-                : 'bg-[#E8EFE7] text-[#2D5A3D] dark:bg-emerald-950 dark:text-emerald-300'
+                : quota.freeTripsRemaining === 0
+                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                  : 'bg-[#E8EFE7] text-[#2D5A3D] dark:bg-emerald-950 dark:text-emerald-300'
             }`}>
-              {isPro ? 'ACTIVE' : 'TRIAL'}
+              {isPro ? 'ACTIVE' : quota.freeTripsRemaining === 0 ? 'LIMIT REACHED' : 'TRIAL'}
             </span>
           </div>
 
