@@ -124,66 +124,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     onClose();
   }, [onClose]);
 
-  // Initialize and mount Google Identity Services official 1-Tap / Button when Google tab is active
-  useEffect(() => {
-    if (!isOpen || authMethod !== 'google') return;
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (!clientId) return;
-
-    let isMounted = true;
-    ensureGoogleIdentityServices().then((available) => {
-      if (!isMounted || !available) return;
-      try {
-        const googleObj = (window as any).google?.accounts?.id;
-        if (googleObj) {
-          googleObj.initialize({
-            client_id: clientId,
-            callback: async (response: any) => {
-              if (response?.credential) {
-                setIsLoading(true);
-                setErrorMsg(null);
-                try {
-                  const user = await signInWithGoogleCredential(response.credential);
-                  try {
-                    confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
-                  } catch {}
-                  setSuccessMsg(`Welcome, ${user.displayName}! Signed in with Google.`);
-                  setTimeout(() => {
-                    onSuccess(toUserProfile(user));
-                    handleModalClose();
-                  }, 400);
-                } catch (err: any) {
-                  setErrorMsg(err?.message || 'Google authentication failed.');
-                } finally {
-                  setIsLoading(false);
-                }
-              }
-            }
-          });
-          const btnContainer = document.getElementById('tripverse-google-official-btn');
-          if (btnContainer) {
-            btnContainer.innerHTML = '';
-            googleObj.renderButton(btnContainer, {
-              theme: 'outline',
-              size: 'large',
-              type: 'standard',
-              shape: 'rectangular',
-              text: 'continue_with',
-              logo_alignment: 'left',
-              width: 320
-            });
-          }
-        }
-      } catch (e) {
-        console.warn('[Google GIS] Button initialization notice:', e);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isOpen, authMethod, onSuccess, handleModalClose]);
-
   useEffect(() => {
     if (emailResendCountdown <= 0) return;
     const timer = setInterval(() => {
@@ -652,17 +592,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </p>
               </div>
 
-              {/* Official Google OAuth Sign-In via Firebase & Google Identity Services */}
+              {/* Official Google OAuth Sign-In via Firebase Auth Proxy */}
               <div className="flex flex-col items-center justify-center w-full min-h-[48px] py-1 gap-2.5">
-                {/* Official Google Identity Services 1-Tap / Native Button */}
-                <div id="tripverse-google-official-btn" className="w-full flex justify-center py-0.5 min-h-[40px]"></div>
-
-                <div className="flex items-center gap-2 w-full my-1">
-                  <div className="h-px flex-1 bg-slate-200"></div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">or 1-click</span>
-                  <div className="h-px flex-1 bg-slate-200"></div>
-                </div>
-
                 <button
                   type="button"
                   onClick={() => handleTriggerGoogleAuth(false)}
