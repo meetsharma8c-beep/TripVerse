@@ -15,63 +15,11 @@ import { toDeterministicUuid } from '../utils/uuid';
  * unified PostgreSQL database (`public.profiles` & `auth.users`).
  */
 
-let inflightSessionBridge: Promise<string | null> | null = null;
-
 export async function resolveCloudUserId(
   fallbackUserId: string,
-  profileMeta?: Partial<UserProfile>
+  _profileMeta?: Partial<UserProfile>
 ): Promise<string> {
-  const supabase = getSupabaseClient();
-  const deterministicFallback = toDeterministicUuid(fallbackUserId);
-  if (!supabase) return deterministicFallback;
-
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user?.id) {
-      if (profileMeta && (profileMeta.email || profileMeta.name)) {
-        supabase.auth.updateUser({
-          data: {
-            full_name: profileMeta.name,
-            user_email: profileMeta.email,
-            avatar_url: profileMeta.avatar,
-            travel_style_tag: profileMeta.travelStyleTag,
-            external_uid: fallbackUserId,
-            last_sign_in_at: new Date().toISOString()
-          }
-        }).catch(() => {});
-      }
-      return session.user.id;
-    }
-
-    // No active Supabase session (e.g. Google OAuth or Firebase Email login):
-    // Establish an authenticated Supabase session bridge so RLS policies (`auth.uid() = id`)
-    // and foreign keys (`REFERENCES auth.users(id)`) succeed in real time.
-    if (!inflightSessionBridge) {
-      inflightSessionBridge = supabase.auth
-        .signInAnonymously({
-          options: {
-            data: {
-              full_name: profileMeta?.name || 'Traveler Explorer',
-              user_email: profileMeta?.email || null,
-              avatar_url: profileMeta?.avatar || null,
-              travel_style_tag: profileMeta?.travelStyleTag || 'Verified Explorer',
-              external_uid: fallbackUserId,
-              last_sign_in_at: new Date().toISOString()
-            }
-          }
-        })
-        .then(({ data }) => data?.user?.id || null)
-        .catch(() => null)
-        .finally(() => {
-          inflightSessionBridge = null;
-        });
-    }
-
-    const bridgedId = await inflightSessionBridge;
-    return bridgedId || deterministicFallback;
-  } catch {
-    return deterministicFallback;
-  }
+  return toDeterministicUuid(fallbackUserId);
 }
 
 // 1. TRIPS

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   X, 
   Check, 
@@ -24,6 +24,7 @@ import {
   signInWithEmail, 
   sendPasswordResetCode,
   signInWithGooglePopup, 
+  ensureGoogleIdentityServices,
   createAccountWithSupabase, 
   signInAnonymouslyWithSupabase,
   clearPhoneAuthSession,
@@ -87,6 +88,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const activeRequestIdRef = useRef(0);
+
+  const switchAuthTab = useCallback((nextMethod: 'google' | 'email' | 'guest', nextEmailSubMode?: 'login' | 'signup') => {
+    activeRequestIdRef.current += 1;
+    setIsLoading(false);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setAuthMethod(nextMethod);
+    if (nextEmailSubMode) {
+      setEmailSubMode(nextEmailSubMode);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      activeRequestIdRef.current += 1;
+      setIsLoading(false);
+      setErrorMsg(null);
+      setSuccessMsg(null);
+      ensureGoogleIdentityServices().catch(() => {});
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (emailResendCountdown <= 0) return;
@@ -98,6 +121,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Clean up auth session when modal closes
   const handleModalClose = useCallback(() => {
+    activeRequestIdRef.current += 1;
+    setIsLoading(false);
     clearPhoneAuthSession();
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -122,12 +147,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // 1. Google Sign-In & Sign-Up via Firebase OAuth2 Popup
   // ----------------------------------------------------------------------
   const handleTriggerGoogleAuth = async () => {
+    const reqId = ++activeRequestIdRef.current;
     setIsLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
     try {
       const user = await signInWithGooglePopup();
+      if (activeRequestIdRef.current !== reqId) return;
       try {
         confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
       } catch {}
@@ -137,6 +164,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         handleModalClose();
       }, 500);
     } catch (err: any) {
+      if (activeRequestIdRef.current !== reqId) return;
       const msg = err?.message || '';
       if (
         err.code === 'auth/popup-closed-by-user' ||
@@ -155,7 +183,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setAuthMethod('email');
       }
     } finally {
-      setIsLoading(false);
+      if (activeRequestIdRef.current === reqId) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -163,6 +193,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // 2. Genuine Instant Guest Explorer Sign-In (Supabase Verified Session)
   // ----------------------------------------------------------------------
   const handleInstantGuestSignIn = async () => {
+    const reqId = ++activeRequestIdRef.current;
     setIsLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -172,6 +203,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         travelerStyle: emailTravelerStyle || 'Budget explorer',
         location: emailLocation || 'India'
       });
+      if (activeRequestIdRef.current !== reqId) return;
       try {
         confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
       } catch {}
@@ -181,10 +213,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         handleModalClose();
       }, 500);
     } catch (err: any) {
+      if (activeRequestIdRef.current !== reqId) return;
       console.error('Instant guest sign-in error:', err);
       setErrorMsg(err.message || 'Could not initialize guest session.');
     } finally {
-      setIsLoading(false);
+      if (activeRequestIdRef.current === reqId) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -205,9 +240,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    const reqId = ++activeRequestIdRef.current;
     setIsLoading(true);
     try {
       const user = await signInWithEmail({ email, password, rememberMe });
+      if (activeRequestIdRef.current !== reqId) return;
       try {
         confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
       } catch {}
@@ -217,6 +254,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         handleModalClose();
       }, 500);
     } catch (err: any) {
+      if (activeRequestIdRef.current !== reqId) return;
       console.error('Email sign in error:', err);
       const msg = err.message || 'Authentication failed. Please verify credentials.';
       if (msg.toLowerCase().includes('email not confirmed')) {
@@ -227,7 +265,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setErrorMsg(msg);
       }
     } finally {
-      setIsLoading(false);
+      if (activeRequestIdRef.current === reqId) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -256,6 +296,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    const reqId = ++activeRequestIdRef.current;
     setIsLoading(true);
     try {
       const user = await createAccountWithSupabase({
@@ -265,6 +306,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         travelerStyle: emailTravelerStyle,
         location: emailLocation || 'India'
       });
+      if (activeRequestIdRef.current !== reqId) return;
 
       try {
         confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
@@ -275,10 +317,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         handleModalClose();
       }, 600);
     } catch (err: any) {
+      if (activeRequestIdRef.current !== reqId) return;
       console.error('Account creation error:', err);
       setErrorMsg(err.message || 'Could not create account.');
     } finally {
-      setIsLoading(false);
+      if (activeRequestIdRef.current === reqId) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -391,11 +436,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50/70">
           <button
             type="button"
-            onClick={() => { 
-              setAuthMethod('google'); 
-              setErrorMsg(null); 
-              setSuccessMsg(null); 
-            }}
+            onClick={() => switchAuthTab('google')}
             className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
               authMethod === 'google'
                 ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
@@ -413,11 +454,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           <button
             type="button"
-            onClick={() => { 
-              setAuthMethod('email'); 
-              setErrorMsg(null); 
-              setSuccessMsg(null); 
-            }}
+            onClick={() => switchAuthTab('email')}
             className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
               authMethod === 'email'
                 ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
@@ -430,11 +467,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           <button
             type="button"
-            onClick={() => { 
-              setAuthMethod('guest'); 
-              setErrorMsg(null); 
-              setSuccessMsg(null); 
-            }}
+            onClick={() => switchAuthTab('guest')}
             className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
               authMethod === 'guest'
                 ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
@@ -468,11 +501,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {authMethod !== 'email' && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setAuthMethod('email');
-                      setEmailSubMode('login');
-                      setErrorMsg(null);
-                    }}
+                    onClick={() => switchAuthTab('email', 'login')}
                     className="inline-flex items-center gap-1 font-bold text-rose-800 underline hover:text-rose-950 cursor-pointer pt-0.5"
                   >
                     <span>Switch to Email or Google Sign-In</span>
@@ -519,7 +548,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               {/* Official Google OAuth Sign-In via Firebase Auth Proxy */}
-              <div className="flex flex-col items-center justify-center w-full min-h-[48px] py-1">
+              <div className="flex flex-col items-center justify-center w-full min-h-[48px] py-1 gap-2">
                 <button
                   type="button"
                   onClick={handleTriggerGoogleAuth}
@@ -543,6 +572,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </>
                   )}
                 </button>
+                {isLoading && (
+                  <button
+                    type="button"
+                    onClick={() => switchAuthTab('google')}
+                    className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 underline cursor-pointer"
+                  >
+                    Popup didn't open? Tap to reset or switch to Email
+                  </button>
+                )}
               </div>
 
               {/* Benefits of Google Account */}
@@ -564,7 +602,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="text-center pt-1">
                 <button
                   type="button"
-                  onClick={() => setAuthMethod('email')}
+                  onClick={() => switchAuthTab('email')}
                   className="text-xs text-slate-500 hover:text-[#2D5A3D] font-semibold cursor-pointer underline"
                 >
                   Prefer email & password? Switch to Email tab
@@ -675,11 +713,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="flex rounded-xl bg-slate-100 p-1">
                   <button
                     type="button"
-                    onClick={() => { 
-                      setEmailSubMode('login'); 
-                      setErrorMsg(null); 
-                      setSuccessMsg(null); 
-                    }}
+                    onClick={() => switchAuthTab('email', 'login')}
                     className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                       emailSubMode === 'login'
                         ? 'bg-white text-[#0B2545] shadow-xs'
@@ -690,11 +724,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => { 
-                      setEmailSubMode('signup'); 
-                      setErrorMsg(null); 
-                      setSuccessMsg(null); 
-                    }}
+                    onClick={() => switchAuthTab('email', 'signup')}
                     className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                       emailSubMode === 'signup'
                         ? 'bg-white text-[#0B2545] shadow-xs'

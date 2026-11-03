@@ -303,7 +303,6 @@ export function saveSession(session: AuthSession | null): void {
     if (session) {
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
       if (session.user?.uid) {
-        saveProfileToSupabase(session.user.uid, toUserProfile(session.user)).catch(() => {});
         notifyAuthActivity(session.user).catch(() => {});
       }
     } else {
@@ -652,19 +651,41 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
   // GIS OAuth2 Token Client (Official user button click popup flow)
   if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2 && clientId) {
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const finishResolve = (u: AuthUser) => {
+        if (settled) return;
+        settled = true;
+        resolve(u);
+      };
+      const finishReject = (err: Error) => {
+        if (settled) return;
+        settled = true;
+        reject(err);
+      };
+
       try {
         const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: 'openid email profile',
+          error_callback: (errObj: any) => {
+            const errType = errObj?.type || '';
+            if (errType === 'popup_closed') {
+              finishReject(new Error('Google sign-in was cancelled.'));
+            } else if (errType === 'popup_failed_to_open') {
+              finishReject(new Error('Google popup was blocked by your browser. Please allow popups for this site or sign in with Email & Password.'));
+            } else {
+              finishReject(new Error(errObj?.message || 'Google Sign-In could not complete. Please sign in with Email & Password.'));
+            }
+          },
           callback: async (tokenResponse: any) => {
             if (tokenResponse.error) {
               if (tokenResponse.error === 'access_denied') {
-                reject(new Error('Google sign-in was blocked (access_denied). In Google Cloud Console (OAuth consent screen), set Publishing status to "In production" (click "Publish App") and add this domain to Authorized JavaScript Origins.'));
+                finishReject(new Error('Google sign-in was blocked (access_denied). Please sign in with Email & Password.'));
               } else if (tokenResponse.error === 'redirect_uri_mismatch' || String(tokenResponse.error_description || '').includes('mismatch')) {
-                const originUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tripverse.concode.com';
-                reject(new Error(`Google OAuth Error (redirect_uri_mismatch): Please add "${originUrl}" to Authorized JavaScript Origins and Authorized Redirect URIs in Google Cloud Console (project 288425355548).`));
+                const originUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tripverse-pied.vercel.app';
+                finishReject(new Error(`Google OAuth Error (redirect_uri_mismatch): Please add "${originUrl}" to Authorized JavaScript Origins in Google Cloud Console.`));
               } else {
-                reject(new Error(tokenResponse.error_description || tokenResponse.error || 'Google Sign-In failed.'));
+                finishReject(new Error(tokenResponse.error_description || tokenResponse.error || 'Google Sign-In failed.'));
               }
               return;
             }
@@ -674,19 +695,19 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
               });
               const info = await res.json();
               if (!info.email) {
-                reject(new Error('Google account does not contain a verified email address.'));
+                finishReject(new Error('Google account does not contain a verified email address.'));
                 return;
               }
               const user = await signInWithGoogleUserInfo(info);
-              resolve(user);
+              finishResolve(user);
             } catch (err: any) {
-              reject(new Error(err?.message || 'Failed to fetch Google profile.'));
+              finishReject(new Error(err?.message || 'Failed to fetch Google profile.'));
             }
           }
         });
         tokenClient.requestAccessToken({ prompt: 'select_account' });
       } catch (err: any) {
-        reject(new Error(err?.message || 'Google Sign-In could not open popup.'));
+        finishReject(new Error(err?.message || 'Google Sign-In could not open popup.'));
       }
     });
   }
@@ -746,7 +767,7 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
       ? `${window.location.origin}/?tab=profile`
       : 'https://tripverse-pied.vercel.app/?tab=profile';
 
-    const res = await supabase.auth.signUp({
+    const signUpPromise = supabase.auth.signUp({
       email: emailNorm,
       password: data.password,
       options: {
@@ -760,6 +781,10 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
         }
       }
     });
+    const signUpTimeout = new Promise<{ data: { user: null; session: null }; error: Error }>((resolve) =>
+      setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error('Supabase signup timeout') }), 4500)
+    );
+    const res = await Promise.race([signUpPromise, signUpTimeout]);
 
     if (res.error) {
       if (res.error.message.toLowerCase().includes('already registered')) {
@@ -829,29 +854,23 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
   // Persist locally with hashed password so login on this device is immediate & reliable
   syncAccountToLocal(authUser, pwdHash);
 
-  // Sync profile to Supabase PostgreSQL database
-  await saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
+  // Sync profile to Supabase PostgreSQL database in background (non-blocking)
+  saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
 
-  // Register in Firebase Cloud Identity so account credentials work seamlessly across both clouds
+  // Register in Firebase Cloud Identity in background so account credentials work seamlessly across both clouds
   if (isFirebaseConfigured()) {
-    try {
-      const config = getStoredFirebaseConfig();
-      if (config?.apiKey) {
-        await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${config.apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: emailNorm,
-            password: data.password,
-            displayName: data.name?.trim() || emailNorm.split('@')[0],
-            returnSecureToken: true
-          })
-        }).catch((err) => {
-          console.warn('[Firebase Cloud Identity Sync Notice]:', err);
-        });
-      }
-    } catch (fbSyncErr) {
-      console.warn('[Firebase Cloud Identity] Registration sync notice:', fbSyncErr);
+    const config = getStoredFirebaseConfig();
+    if (config?.apiKey) {
+      fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${config.apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailNorm,
+          password: data.password,
+          displayName: data.name?.trim() || emailNorm.split('@')[0],
+          returnSecureToken: true
+        })
+      }).catch(() => {});
     }
   }
 
@@ -887,7 +906,7 @@ export async function signInAnonymouslyWithSupabase(data?: {
 
   if (supabase) {
     try {
-      const { data: authData, error } = await supabase.auth.signInAnonymously({
+      const anonPromise = supabase.auth.signInAnonymously({
         options: {
           data: {
             full_name: displayName,
@@ -897,6 +916,10 @@ export async function signInAnonymouslyWithSupabase(data?: {
           }
         }
       });
+      const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
+        setTimeout(() => resolve({ data: null, error: new Error('Guest auth timeout') }), 3500)
+      );
+      const { data: authData, error } = await Promise.race([anonPromise, timeoutPromise]);
 
       if (!error && authData?.user) {
         const authUser = supabaseUserToAuthUser(authData.user, {
@@ -910,7 +933,7 @@ export async function signInAnonymouslyWithSupabase(data?: {
         authUser.emailVerified = true;
         authUser.isAnonymous = true;
         authUser.provider = 'guest';
-        await saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
+        saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
         syncAccountToLocal(authUser);
         return authUser;
       }
@@ -1109,15 +1132,22 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
-      const { data: supaData, error: supaErr } = await supabase.auth.signInWithPassword({
+      const signInPromise = supabase.auth.signInWithPassword({
         email: emailNorm,
         password: data.password
       });
+      const signInTimeout = new Promise<{ data: { user: null; session: null }; error: Error }>((resolve) =>
+        setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error('Supabase login timeout') }), 4000)
+      );
+      const { data: supaData, error: supaErr } = await Promise.race([signInPromise, signInTimeout]);
 
       if (!supaErr && supaData?.user) {
         const authUser = supabaseUserToAuthUser(supaData.user);
         try {
-          const profile = await loadProfileFromSupabase(authUser.uid);
+          const profile = await Promise.race([
+            loadProfileFromSupabase(authUser.uid),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
+          ]);
           if (profile) {
             authUser.displayName = profile.name || authUser.displayName;
             authUser.photoURL = profile.avatar || authUser.photoURL;
