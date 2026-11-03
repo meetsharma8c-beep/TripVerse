@@ -1,5 +1,16 @@
 import { StructuredItinerary } from '../types/trip';
 
+export interface TravelerMemoryProfile {
+  dietaryPreference?: 'all' | 'veg' | 'jain' | 'vegan' | 'halal';
+  travelPace?: 'relaxed' | 'moderate' | 'packed';
+  budgetTier?: 'budget' | 'moderate' | 'luxury';
+  favoriteDestinations?: string[];
+  pastTripCount?: number;
+  accessibilityNeeds?: string[];
+  interests?: string[];
+  lastVisited?: string;
+}
+
 export interface ConcodeSessionState {
   sessionId?: string;
   destination?: string;
@@ -8,6 +19,7 @@ export interface ConcodeSessionState {
   budget?: number;
   travelersCount?: number;
   preferences?: string[];
+  travelerMemory?: TravelerMemoryProfile;
   stage: 'idle' | 'clarifying' | 'planned' | 'modifying';
   draftItinerary?: StructuredItinerary;
   lastUpdated?: number;
@@ -264,4 +276,58 @@ export function extractPreferencesFromQuery(text: string): string[] {
   }
 
   return found;
+}
+
+const MEMORY_RING_STORAGE_KEY = 'tripverse_concode_memory_ring_v1';
+
+let inMemoryMemoryRing: TravelerMemoryProfile = {
+  dietaryPreference: 'all',
+  travelPace: 'moderate',
+  budgetTier: 'moderate',
+  favoriteDestinations: [],
+  interests: ['culture', 'nature', 'food']
+};
+
+export function getTravelerMemoryRing(): TravelerMemoryProfile {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(MEMORY_RING_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+  }
+  return inMemoryMemoryRing;
+}
+
+export function updateTravelerMemoryRing(partial: Partial<TravelerMemoryProfile>): TravelerMemoryProfile {
+  const current = getTravelerMemoryRing();
+  const updated: TravelerMemoryProfile = {
+    ...current,
+    ...partial,
+    favoriteDestinations: Array.from(new Set([...(current.favoriteDestinations || []), ...(partial.favoriteDestinations || [])])),
+    interests: Array.from(new Set([...(current.interests || []), ...(partial.interests || [])]))
+  };
+  inMemoryMemoryRing = updated;
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(MEMORY_RING_STORAGE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('tripverse_memory_ring_updated', { detail: updated }));
+    } catch {}
+  }
+  return updated;
+}
+
+export function clearTravelerMemoryRing(): void {
+  inMemoryMemoryRing = {
+    dietaryPreference: 'all',
+    travelPace: 'moderate',
+    budgetTier: 'moderate',
+    favoriteDestinations: [],
+    interests: ['culture', 'nature', 'food']
+  };
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.removeItem(MEMORY_RING_STORAGE_KEY);
+      window.dispatchEvent(new CustomEvent('tripverse_memory_ring_updated', { detail: {} }));
+    } catch {}
+  }
 }

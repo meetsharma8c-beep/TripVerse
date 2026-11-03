@@ -7,7 +7,8 @@ import {
   GUILD_LABELS, 
   resetBrainSession 
 } from '../../services/concodeBrainService';
-import { resetConcodeSession } from '../../services/concodeSession';
+import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/concodeSession';
+import { Landmark3DViewer } from '../common/Landmark3DViewer';
 import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Settings, Crown } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { ConcodeBrainConfigModal } from './ConcodeBrainConfigModal';
@@ -285,6 +286,8 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   const [brainStatus, setBrainStatus] = useState<BrainStatus>({ online: false });
   const [isCheckingBrain, setIsCheckingBrain] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
+  const [viewer3DLandmark, setViewer3DLandmark] = useState('Heritage Landmark');
 
   // Active day tab state for structured itinerary cards
   const [activeItineraryDay, setActiveItineraryDay] = useState<Record<string, number>>({});
@@ -518,8 +521,22 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       switchToTripSection('deals');
     } else if (action === 'VIEW_PACKING') {
       switchToTripSection('packing');
-    } else if (action === 'SAFETY_CHECK') {
+    } else if (action === 'SAFETY_CHECK' || action === 'VIEW_SAFETY') {
       switchToTripSection('safety');
+    } else if (action === 'OPEN_3D_VIEWER') {
+      const dest = cleanTripDest || 'Manali';
+      const landmark = dest.toLowerCase().includes('manali')
+        ? 'Hadimba Temple & Solang'
+        : dest.toLowerCase().includes('dubai')
+          ? 'Burj Khalifa Spire'
+          : dest.toLowerCase().includes('jaipur')
+            ? 'Amer Fort Citadel'
+            : `${dest} Landmark`;
+      setViewer3DLandmark(landmark);
+      setIs3DViewerOpen(true);
+    } else if (action === 'RESET_BRAIN') {
+      clearTravelerMemoryRing();
+      handleClearChat();
     } else if (action === 'OPEN_REPLANNING') {
       onClose();
       if (onOpenReplanning) onOpenReplanning(4);
@@ -555,11 +572,15 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   handleSendMessageRef.current = handleSendMessage;
 
   const scenarioChips = [
+    { label: '✨ 3D Landmark Tour', prompt: 'Show me an interactive 3D WebGL tour of the landmark' },
+    { label: '🛡️ Safety Radar', prompt: 'What are the tourist scams and safety tips for my destination?' },
+    { label: '⏱️ Flight Delayed', prompt: 'My flight was delayed 3 hours, please replan Day 1' },
+    { label: '🐝 Group Consensus', prompt: 'Plan a group trip with mixed preferences (adventure and food)' },
+    { label: '🧠 Memory Ring', prompt: 'What do you remember in my travel profile memory ring?' },
     { label: '5-Day Dubai', prompt: 'Plan a 5-day trip to Dubai' },
     { label: 'Budget ₹1 Lakh', prompt: 'I have ₹1,00,000' },
     { label: 'Food & Arch', prompt: 'I like food and architecture' },
     { label: 'Day 3 Cheaper', prompt: 'Make Day 3 cheaper' },
-    { label: 'Remove Museum', prompt: 'Remove the museum' },
     { label: 'Rainy Day Alt', prompt: 'Give me a rainy-day alternative' },
     { label: 'Cost Breakdown', prompt: 'What will this trip approximately cost?' },
     { label: 'Save Itinerary', prompt: 'Save this itinerary' },
@@ -974,6 +995,14 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           isOpen={isConfigModalOpen}
           onClose={() => setIsConfigModalOpen(false)}
           onSaved={refreshBrainHealth}
+        />
+
+        {/* Interactive 3D WebGL Landmark Viewer */}
+        <Landmark3DViewer
+          landmarkName={viewer3DLandmark}
+          destination={cleanTripDest}
+          isOpen={is3DViewerOpen}
+          onClose={() => setIs3DViewerOpen(false)}
         />
 
       </div>

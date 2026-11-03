@@ -1850,6 +1850,7 @@ export function App() {
               {tripSubTab === 'itinerary' && (
                 <DayTimeline
                   itinerary={activeTrip.itinerary}
+                  destination={activeTrip.destination}
                   bestDeal={activeTrip.bestTransportDeal}
                   onOpenDeals={() => setIsBestDealModalOpen(true)}
                   onAddActivity={(dayNumber) => {
@@ -2035,7 +2036,7 @@ export function App() {
 
               {/* Sub-Tab 5: Safety & Emergency */}
               {tripSubTab === 'safety' && (
-                <SafetyEmergency />
+                <SafetyEmergency destination={activeTrip?.destination} />
               )}
 
             </div>

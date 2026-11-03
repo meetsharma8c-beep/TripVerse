@@ -4,9 +4,11 @@ import { getActiveCurrency, formatCurrency } from '../../services/currencyServic
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
 import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
+import { Landmark3DViewer } from '../common/Landmark3DViewer';
 
 interface DayTimelineProps {
   itinerary: DayPlan[];
+  destination?: string;
   bestDeal?: TransportDeal;
   onOpenDeals?: () => void;
   onAddActivity?: (dayNumber: number) => void;
@@ -19,6 +21,7 @@ interface DayTimelineProps {
 
 export const DayTimeline: React.FC<DayTimelineProps> = ({
   itinerary,
+  destination,
   bestDeal,
   onOpenDeals,
   onAddActivity,
@@ -32,6 +35,8 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({ 1: true });
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [is3DOpen, setIs3DOpen] = useState(false);
+  const [selected3DLandmark, setSelected3DLandmark] = useState('');
 
   useEffect(() => {
     const handleCurrencyEvent = (e: Event) => {
@@ -382,6 +387,20 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                                   <ExternalLink className="w-2.5 h-2.5 text-[#8EA78D]" />
                                 </a>
 
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    triggerHaptic('light');
+                                    setSelected3DLandmark(act.title);
+                                    setIs3DOpen(true);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                                  title="Explore in interactive 3D WebGL"
+                                >
+                                  <Sparkles className="w-3 h-3 text-emerald-600" />
+                                  <span>3D View</span>
+                                </button>
+
                                 {(act.type === 'food' || act.tag?.toLowerCase().includes('food')) && (
                                   <a
                                     href={`https://www.zomato.com/search?q=${encodeURIComponent(act.title + ' ' + act.location)}`}
@@ -555,6 +574,14 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
 
         </div>
       </div>
+
+      {/* Interactive 3D WebGL Landmark Viewer */}
+      <Landmark3DViewer
+        landmarkName={selected3DLandmark || 'Heritage Landmark'}
+        destination={destination || 'Your Destination'}
+        isOpen={is3DOpen}
+        onClose={() => setIs3DOpen(false)}
+      />
 
     </div>
   );

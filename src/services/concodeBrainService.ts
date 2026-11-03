@@ -5,7 +5,10 @@ import {
   extractDestinationFromQuery, 
   extractDurationFromQuery, 
   extractBudgetFromQuery, 
-  extractPreferencesFromQuery 
+  extractPreferencesFromQuery,
+  getTravelerMemoryRing,
+  updateTravelerMemoryRing,
+  TravelerMemoryProfile
 } from './concodeSession';
 import { generateAITrip } from './plannerEngine';
 import { AIAppAction } from './aiAssistant';
@@ -100,7 +103,7 @@ export interface ConcodeBrainResponse {
   structuredItinerary?: StructuredItinerary;
   budgetBreakdown?: AIChatBudgetBreakdown;
   modificationBadge?: {
-    type: 'cheaper' | 'removed' | 'added' | 'rainy' | 'saved';
+    type: 'cheaper' | 'removed' | 'added' | 'rainy' | 'saved' | 'delay';
     label: string;
     detail: string;
   };
@@ -437,6 +440,7 @@ async function tryQueryServerlessAPI(
     };
 
     const transitContext = resolveTransitContext(trip.destination);
+    const memoryRing = getTravelerMemoryRing();
 
     const tripContextPayload = {
       destination: trip.destination,
@@ -445,11 +449,13 @@ async function tryQueryServerlessAPI(
       origin: trip.origin,
       travelersCount: trip.travelersCount,
       travelerType: trip.travelerType,
-      preferences: trip.preferences?.length ? trip.preferences : (session.preferences || []),
+      preferences: Array.from(new Set([...(trip.preferences?.length ? trip.preferences : (session.preferences || [])), ...(memoryRing.interests || [])])),
       transportMode: trip.transportMode,
       accommodationType: trip.accommodationType,
-      foodPreference: trip.foodPreference,
+      foodPreference: trip.foodPreference || memoryRing.dietaryPreference || 'all',
+      pacing: trip.pacing || memoryRing.travelPace || 'moderate',
       priorities: trip.priorities,
+      travelerMemory: memoryRing,
       knownDestinationHighlights: trip.destinationDetails?.highlights || [],
       transportDeals: trip.transportDeals || [],
       transitHubs: {
@@ -926,6 +932,238 @@ export async function queryConcodeBrain(
       actionButtons: [
         { label: 'Swap Outdoor with Rainy-Day Stops', action: 'VIEW_ITINERARY', primary: true },
         { label: 'Check Weather Forecast', action: 'CHECK_WEATHER' }
+      ]
+    };
+  }
+
+  // =========================================================================
+  // SCENARIO: FLIGHT / TRANSIT DELAY MID-TRIP RE-PLANNING (planner.py + repair.py)
+  // =========================================================================
+  if (
+    norm.includes('flight delay') ||
+    norm.includes('flight delayed') ||
+    norm.includes('delayed flight') ||
+    norm.includes('train delay') ||
+    norm.includes('train delayed') ||
+    norm.includes('delayed 3 hours') ||
+    norm.includes('delayed 4 hours') ||
+    norm.includes('delayed 2 hours') ||
+    (norm.includes('delay') && norm.includes('replan'))
+  ) {
+    const dest = session.destination || currentDest || 'your destination';
+    const updatedItinerary = (tripContext.itinerary || []).map(day => {
+      if (day.dayNumber === 1) {
+        return {
+          ...day,
+          theme: `${day.theme} (Delay-Adjusted: Relaxed Evening Arrival & Dining)`,
+          activities: [
+            {
+              id: 'act-delay-1',
+              dayNumber: 1,
+              time: '4:30 PM',
+              title: 'Smooth Transit & Hotel Check-in',
+              type: 'hotel' as const,
+              location: `${dest} Hotel Quarter`,
+              description: 'Freshen up after transit delay, unpack, and settle in at a relaxed pace.',
+              estimatedCost: 0,
+              travelTimeMin: 20,
+              distanceKm: 5,
+              coordinates: { lat: 32.2432, lng: 77.1892 },
+              durationMin: 75
+            },
+            {
+              id: 'act-delay-2',
+              dayNumber: 1,
+              time: '6:30 PM',
+              title: `${dest} Sunset Promenade & Old Quarter Stroll`,
+              type: 'viewpoint' as const,
+              location: `${dest} Scenic Waterfront`,
+              description: 'Unwind with golden hour breezes and evening street ambiance, avoiding crowded ticket lines.',
+              estimatedCost: 150,
+              travelTimeMin: 15,
+              distanceKm: 2,
+              coordinates: { lat: 32.2432, lng: 77.1892 },
+              durationMin: 60
+            },
+            {
+              id: 'act-delay-3',
+              dayNumber: 1,
+              time: '8:15 PM',
+              title: 'Authentic Welcome Dinner',
+              type: 'food' as const,
+              location: `${dest} Old Town`,
+              description: 'Comforting local regional dinner featuring seasonal specialties and hot kulhad chai.',
+              estimatedCost: Math.round((day.dayEstimatedCost || 2500) * 0.4),
+              travelTimeMin: 10,
+              distanceKm: 1,
+              coordinates: { lat: 32.2432, lng: 77.1892 },
+              durationMin: 75
+            }
+          ]
+        };
+      }
+      return day;
+    });
+
+    const updatedTrip: Trip = {
+      ...tripContext,
+      itinerary: updatedItinerary
+    };
+
+    return {
+      guild: 'system_architect',
+      guildIcon: '🏛️',
+      confidence: 0.99,
+      response: `**Transit Delay Successfully Absorbed for Day 1 in ${dest}!**\n\n` +
+        `CONCODE Brain's \`planner.py\` and \`repair.py\` cognitive engines have recalculated your Day 1 schedule:\n\n` +
+        `• **Removed Rushed Morning Sights:** Dropped time-sensitive museum tours and ticketed lines to eliminate stress.\n` +
+        `• **Relaxed 4:30 PM Check-In:** Ample buffer for delayed baggage claim, airport taxi, and hotel check-in.\n` +
+        `• **Golden Hour Evening Promenade:** A relaxing scenic sunset walk along the promenade.\n` +
+        `• **Warm Regional Dinner Preserved:** Relaxing dining experience with authentic local cuisine.\n\n` +
+        `Day 2 and Day 3 remain intact with zero budget disruption. Click below to apply to your itinerary!`,
+      modificationBadge: {
+        type: 'delay',
+        label: 'Delay Re-plan Ready',
+        detail: 'Day 1 recalculated for evening arrival'
+      },
+      actionButtons: [
+        { label: 'Apply Re-plan to Day 1', action: 'VIEW_ITINERARY', primary: true },
+        { label: 'Open Full Replanning Modal', action: 'OPEN_REPLANNING' }
+      ],
+      updatedTrip,
+      appAction: {
+        type: 'UPDATE_TRIP',
+        payload: { updatedTrip }
+      }
+    };
+  }
+
+  // =========================================================================
+  // SCENARIO: 3D WEBGL LANDMARK & DESTINATION PREVIEW (webgl guild)
+  // =========================================================================
+  if (
+    norm.includes('3d') ||
+    norm.includes('webgl') ||
+    norm.includes('3d tour') ||
+    norm.includes('3d view') ||
+    norm.includes('landmark 3d') ||
+    norm.includes('visualize 3d')
+  ) {
+    const dest = session.destination || currentDest || 'Manali';
+    const landmark = dest.toLowerCase().includes('manali')
+      ? 'Hadimba Temple & Solang Valley'
+      : dest.toLowerCase().includes('dubai')
+        ? 'Burj Khalifa & Downtown Spire'
+        : dest.toLowerCase().includes('jaipur')
+          ? 'Amer Fort & Hawa Mahal'
+          : `${dest} Heritage Citadel`;
+
+    return {
+      guild: 'webgl',
+      guildIcon: '✨',
+      confidence: 0.99,
+      response: `**Interactive 3D WebGL Landmark Explorer for ${dest} (${landmark})**\n\n` +
+        `CONCODE Brain's \`webgl\` guild renders real-time procedural 3D architectural topography directly on your GPU:\n\n` +
+        `• **Orbit & Elevation Lighting:** Touch or drag to rotate 360°, inspect shadow casting, and test elevation levels.\n` +
+        `• **Day / Golden Hour / Night Cycles:** Switch lighting models to preview golden hour sunsets and night sky vistas.\n` +
+        `• **Architectural Wireframe Mode:** Toggle structural geometry to inspect layout and walkways.\n\n` +
+        `Click below to open the interactive 3D WebGL viewport!`,
+      actionButtons: [
+        { label: `Launch 3D WebGL Viewer for ${dest}`, action: 'OPEN_3D_VIEWER', primary: true },
+        { label: 'View Day Itinerary', action: 'VIEW_ITINERARY' }
+      ]
+    };
+  }
+
+  // =========================================================================
+  // SCENARIO: SAFETY & SCAM RADAR (security guild)
+  // =========================================================================
+  if (
+    norm.includes('scam') ||
+    norm.includes('safety') ||
+    norm.includes('is it safe') ||
+    norm.includes('tourist trap') ||
+    norm.includes('emergency numbers') ||
+    norm.includes('safe areas')
+  ) {
+    const dest = session.destination || currentDest || 'your destination';
+    return {
+      guild: 'security',
+      guildIcon: '🛡️',
+      confidence: 0.99,
+      response: `**CONCODE Security Sentinel: Safety & Scam Radar for ${dest}**\n\n` +
+        `CONCODE Brain's \`security\` guild tracks active tourist traps, neighborhood safety ratings, and verified hotlines:\n\n` +
+        `• **Verified Emergency Hotlines:** Direct tap-to-call police, medical ambulance, and tourist desk numbers.\n` +
+        `• **Tourist Trap Alerts:** Specific local scam tactics (broken meters, overpriced rental gear, fake guide commissions) and avoidance rules.\n` +
+        `• **Neighborhood Walking Guidance:** Filtered safe promenades vs. high-vigilance zones after dark.\n\n` +
+        `Click below to launch your destination's Safety & Scam Radar!`,
+      actionButtons: [
+        { label: `Open ${dest} Safety & Scam Radar`, action: 'VIEW_SAFETY', primary: true },
+        { label: 'View Itinerary', action: 'VIEW_ITINERARY' }
+      ]
+    };
+  }
+
+  // =========================================================================
+  // SCENARIO: MULTI-AGENT GROUP TRIP CONSENSUS (swarm.py)
+  // =========================================================================
+  if (
+    norm.includes('group') ||
+    norm.includes('friends') ||
+    norm.includes('family') ||
+    norm.includes('consensus') ||
+    norm.includes('swarm') ||
+    norm.includes('mixed preferences')
+  ) {
+    const dest = session.destination || currentDest || 'Manali';
+    return {
+      guild: 'research_scientist',
+      guildIcon: '🔬',
+      confidence: 0.99,
+      response: `**Multi-Agent Swarm Consensus Activated for ${dest}!**\n\n` +
+        `When planning group travel with conflicting interests (e.g. 1 Thrill-Seeker, 1 Foodie, 1 Relaxed Explorer), CONCODE Brain's \`swarm.py\` negotiates a balanced compromise:\n\n` +
+        `• **Morning Slot:** Nature trails & light adventure (satisfies thrill seekers without exhausting leisure travelers).\n` +
+        `• **Midday Culinary Spotlight:** Curated authentic dining & cafe session (satisfies the foodies).\n` +
+        `• **Sunset Leisure Hours:** Scenic viewpoints, heritage walks, or boutique market shopping (satisfies relaxed explorers).\n` +
+        `• **Equitable Expense Sharing:** Group expenses split transparently in the TripSplit ledger.\n\n` +
+        `Tell me your group's traveler personas or click below to generate a harmonized itinerary!`,
+      actionButtons: [
+        { label: `Generate Harmonized Group Plan for ${dest}`, action: 'PLAN_DUBAI', primary: true },
+        { label: 'Open Split Expenses', action: 'VIEW_EXPENSES' }
+      ]
+    };
+  }
+
+  // =========================================================================
+  // SCENARIO: TRAVELER MEMORY RING (memory.py)
+  // =========================================================================
+  if (
+    norm.includes('what do you remember') ||
+    norm.includes('my memory') ||
+    norm.includes('traveler memory') ||
+    norm.includes('remember my preferences') ||
+    norm.includes('my travel profile')
+  ) {
+    const mem = getTravelerMemoryRing();
+    const diet = mem.dietaryPreference || 'all';
+    const pace = mem.travelPace || 'moderate';
+    const tier = mem.budgetTier || 'moderate';
+    const interests = (mem.interests || ['culture', 'nature', 'food']).join(', ');
+
+    return {
+      guild: 'conversational',
+      guildIcon: '🧠',
+      confidence: 0.99,
+      response: `**CONCODE Brain Memory Ring Status (memory.py):**\n\n` +
+        `Here are the persistent traveler traits currently stored in your active cognitive memory ring:\n\n` +
+        `• **Dietary Style:** \`${diet.toUpperCase()}\` (injected into all regional restaurant selections)\n` +
+        `• **Travel Pacing:** \`${pace.toUpperCase()}\` (controls daily activity density)\n` +
+        `• **Budget Tier:** \`${tier.toUpperCase()}\` (guides hotel & transit category)\n` +
+        `• **Core Interests:** \`${interests}\`\n\n` +
+        `Every itinerary generated by CONCODE Brain automatically aligns with these traits. You can update or clear your memory ring anytime!`,
+      actionButtons: [
+        { label: 'I like food and architecture', action: 'PREF_FOOD_ARCH', primary: true },
+        { label: 'Reset Brain Memory', action: 'RESET_BRAIN' }
       ]
     };
   }

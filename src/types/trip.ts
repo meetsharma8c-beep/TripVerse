@@ -314,7 +314,7 @@ export interface ChatMessage {
   structuredItinerary?: StructuredItinerary;
   budgetBreakdown?: AIChatBudgetBreakdown;
   modificationBadge?: {
-    type: 'cheaper' | 'removed' | 'added' | 'rainy' | 'saved';
+    type: 'cheaper' | 'removed' | 'added' | 'rainy' | 'saved' | 'delay';
     label: string;
     detail: string;
   };
