@@ -255,10 +255,29 @@ function buildServerlessFallbackResponse(query, ctx, mode) {
     stays: Math.round(budget * 0.35),
     food: Math.round(budget * 0.20),
     activities: Math.round(budget * 0.10),
-    buffer: Math.round(budget * 0.07),
+    buffer: budget - (Math.round(budget * 0.28) + Math.round(budget * 0.35) + Math.round(budget * 0.20) + Math.round(budget * 0.10)),
     total: budget,
     isEstimate: true,
+    currency: 'INR',
     currencySymbol: '₹'
+  };
+
+  const structuredItineraryObj = {
+    destination: dest,
+    durationDays: days,
+    targetBudget: budget,
+    totalCost: budget,
+    currencySymbol: '₹',
+    days: itinerary.map((d) => ({
+      dayNumber: d.dayNumber,
+      title: d.title,
+      theme: d.theme,
+      morning: d.activities[0]?.description || `Explore ${dest} morning highlights.`,
+      afternoon: d.activities[1]?.description || `Regional lunch and afternoon sightseeing.`,
+      evening: d.activities[2]?.description || `Sunset viewpoint and relaxed evening walk.`,
+      food: d.activities.find((a) => a.type === 'food')?.title || `Regional ${foodPref} specialties`,
+      cost: d.activities.reduce((s, a) => s + (Number(a.estimatedCost) || 0), 0)
+    }))
   };
 
   if (mode === 'itinerary') {
@@ -270,8 +289,10 @@ function buildServerlessFallbackResponse(query, ctx, mode) {
       isEstimate: true,
       guild: 'ai_ml',
       itinerary,
-      structuredItinerary: { days: itinerary },
-      budgetBreakdown
+      structuredItinerary: structuredItineraryObj,
+      budgetBreakdown,
+      criticScore: 1.0,
+      criticFixes: []
     };
   }
 
@@ -318,24 +339,10 @@ function buildServerlessFallbackResponse(query, ctx, mode) {
     isEstimate: true,
     guild: mode === 'budget' ? 'database' : mode === 'safety' ? 'security' : 'ai_ml',
     itinerary,
-    structuredItinerary: {
-      destination: dest,
-      durationDays: days,
-      targetBudget: budget,
-      totalCost: budget,
-      currencySymbol: '₹',
-      days: itinerary.map((d) => ({
-        dayNumber: d.dayNumber,
-        title: d.title,
-        theme: d.theme,
-        morning: d.activities[0]?.description || `Explore ${dest} morning highlights.`,
-        afternoon: d.activities[1]?.description || `Regional lunch and afternoon sightseeing.`,
-        evening: d.activities[2]?.description || `Sunset viewpoint and relaxed evening walk.`,
-        food: d.activities.find((a) => a.type === 'food')?.title || `Regional ${foodPref} specialties`,
-        cost: d.activities.reduce((s, a) => s + (Number(a.estimatedCost) || 0), 0)
-      }))
-    },
-    budgetBreakdown
+    structuredItinerary: structuredItineraryObj,
+    budgetBreakdown,
+    criticScore: 1.0,
+    criticFixes: []
   };
 }
 
@@ -431,7 +438,7 @@ export default async function handler(req, res) {
 
   const sessionId = text(req.body?.sessionState?.sessionId, 128) || undefined;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8_000);
+  const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
 
   try {
     const upstream = await fetch(`${concodeUrl}/api/v1/travel`, {
@@ -506,6 +513,10 @@ export default async function handler(req, res) {
       itinerary,
       structuredItinerary: structuredItinerary || (Array.isArray(itinerary) ? { days: itinerary } : undefined),
       budgetBreakdown: data.budget_breakdown || data.budgetBreakdown,
+      criticScore: data.critic_score ?? data.criticScore,
+      criticFixes: data.critic_fixes || data.criticFixes || [],
+      memoryRecalled: Boolean(data.memory_recalled || data.memoryRecalled),
+      formatRepaired: Boolean(data.format_repaired || data.formatRepaired),
       actionButtons: data.action_buttons || data.actionButtons,
       modificationBadge: data.modification_badge || data.modificationBadge
     });

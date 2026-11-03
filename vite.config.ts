@@ -130,6 +130,10 @@ function concodeApiDevPlugin(targetUrl?: string, apiKey?: string): Plugin {
               itinerary,
               structuredItinerary: structuredItinerary || (Array.isArray(itinerary) ? { days: itinerary } : undefined),
               budgetBreakdown: data.budget_breakdown || data.budgetBreakdown,
+              criticScore: data.critic_score ?? data.criticScore,
+              criticFixes: data.critic_fixes || data.criticFixes || [],
+              memoryRecalled: Boolean(data.memory_recalled || data.memoryRecalled),
+              formatRepaired: Boolean(data.format_repaired || data.formatRepaired),
               actionButtons: data.action_buttons || data.actionButtons,
               modificationBadge: data.modification_badge || data.modificationBadge
             }));
@@ -231,7 +235,7 @@ function dropConsolePlugin(): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const concodeUrl = (env.CONCODE_API_URL || env.VITE_CONCODE_API_URL || '').trim().replace(/\/$/, '');
-  const concodeKey = (env.CONCODE_API_KEY || '').trim();
+  const concodeKey = (env.CONCODE_API_KEY || env.VITE_CONCODE_API_KEY || '').trim();
 
   return {
     plugins: [

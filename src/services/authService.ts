@@ -1149,6 +1149,14 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
   let supaPendingConfirmation = false;
   let supaErrorMessage = '';
 
+  // 0. Fast-path: If account is already verified and stored locally on this device with matching password hash, sign in immediately in <5ms
+  const cachedAccounts = loadAccounts();
+  const cachedMatch = cachedAccounts.find(a => a.user.email.toLowerCase() === emailNorm);
+  if (cachedMatch && cachedMatch.passwordHash === pwdHash) {
+    syncAccountToLocal(cachedMatch.user, pwdHash);
+    return cachedMatch.user;
+  }
+
   // 1. Supabase Cloud Authentication (Primary)
   const supabase = getSupabaseClient();
   if (supabase) {
@@ -1158,7 +1166,7 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
         password: data.password
       });
       const signInTimeout = new Promise<{ data: { user: null; session: null }; error: Error }>((resolve) =>
-        setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error('Supabase login timeout') }), 2500)
+        setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error('Supabase login timeout') }), 1800)
       );
       const { data: supaData, error: supaErr } = await Promise.race([signInPromise, signInTimeout]);
 
@@ -1199,6 +1207,8 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
     try {
       const config = getStoredFirebaseConfig();
       if (config?.apiKey) {
+        const fbCtrl = new AbortController();
+        const fbTimeout = setTimeout(() => fbCtrl.abort(), 1500);
         const fbRes = await fetch(
           `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${config.apiKey}`,
           {
@@ -1208,9 +1218,11 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
               email: emailNorm,
               password: data.password,
               returnSecureToken: true
-            })
+            }),
+            signal: fbCtrl.signal
           }
         );
+        clearTimeout(fbTimeout);
         const fbData = await fbRes.json();
         if (fbRes.ok && fbData.localId) {
           const uid = toDeterministicUuid('email:' + emailNorm);
