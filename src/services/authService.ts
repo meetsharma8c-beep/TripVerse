@@ -599,7 +599,10 @@ export async function handleFirebaseUserCredential(cred: any): Promise<AuthUser>
     if (fbUser.photoURL) account.user.photoURL = fbUser.photoURL;
     account.user.provider = 'google';
     account.user.emailVerified = true;
-    account.user.uid = uid;
+    // Preserve existing UID so user's existing trips, itinerary, and saved places are never severed
+    if (!account.user.uid) {
+      account.user.uid = uid;
+    }
   }
 
   saveAccounts(accounts);

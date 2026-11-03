@@ -261,8 +261,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (activeRequestIdRef.current !== reqId) return;
       console.error('Email sign in error:', err);
       const msg = err.message || 'Authentication failed. Please verify credentials.';
-      if (msg.toLowerCase().includes('email not confirmed')) {
-        setErrorMsg('Email address not yet confirmed. Please click the link in your email or enter the 6-digit confirmation code below.');
+      if (
+        msg.toLowerCase().includes('not confirmed') ||
+        msg.toLowerCase().includes('confirmation is pending') ||
+        (err as any)?.code === 'email_not_confirmed'
+      ) {
+        setErrorMsg('Email confirmation is required. Enter the 6-digit confirmation code sent to your email below:');
         setEmailSubMode('verify-email');
         setEmailResendCountdown(60);
       } else {
@@ -348,6 +352,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSuccessMsg(null);
 
     const token = emailOtpToken.trim();
+    if (!email.trim() || !email.includes('@')) {
+      setErrorMsg('Please enter your email address.');
+      return;
+    }
     if (!token || token.length < 6) {
       setErrorMsg('Please enter the 6-digit confirmation code from your email.');
       return;
@@ -510,6 +518,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
               <div className="space-y-1.5 flex-1">
                 <span className="font-medium leading-relaxed block">{errorMsg}</span>
+                {authMethod === 'email' && emailSubMode === 'signup' && errorMsg.toLowerCase().includes('already exists') && (
+                  <button
+                    type="button"
+                    onClick={() => switchAuthTab('email', 'login')}
+                    className="inline-flex items-center gap-1 font-bold text-rose-800 underline hover:text-rose-950 cursor-pointer pt-0.5"
+                  >
+                    <span>Switch to Sign In</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
                 {authMethod !== 'email' && (
                   <button
                     type="button"

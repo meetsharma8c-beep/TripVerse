@@ -226,4 +226,47 @@ describe('Auth Security & Verification Tests', () => {
     const parsedSession = JSON.parse(rawSession);
     expect(parsedSession.user.email).toBe('meet.sharma8c@gmail.com');
   });
+
+  it('preserves existing account UID when user signs in with Google (preventing severed itineraries)', async () => {
+    const existingUid = '00000000-0000-4000-8000-000000000099';
+    const email = 'existing_traveler@gmail.com';
+    saveAccounts([
+      {
+        user: {
+          uid: existingUid,
+          email,
+          displayName: 'Existing Traveler',
+          photoURL: '',
+          travelerStyle: 'Budget explorer',
+          travelStyleTag: 'Verified Explorer',
+          location: 'India',
+          occupation: 'Explorer',
+          age: 26,
+          emailVerified: false,
+          provider: 'email',
+          isAnonymous: false,
+          createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+          savedPlaceIds: ['place-1', 'place-2']
+        },
+        passwordHash: 'dummy_hash'
+      }
+    ]);
+
+    const googleCred = {
+      user: {
+        uid: 'google-new-provider-id-999',
+        email,
+        displayName: 'Existing Traveler Google',
+        photoURL: 'https://avatar.google.com',
+        getIdToken: async () => 'mock-token'
+      }
+    };
+
+    const user = await handleFirebaseUserCredential(googleCred);
+    // Crucial check: UID MUST remain the existing UID so trips and favorites are not severed
+    expect(user.uid).toBe(existingUid);
+    expect(user.emailVerified).toBe(true);
+    expect(user.provider).toBe('google');
+  });
 });

@@ -3,14 +3,20 @@ import crypto from 'crypto';
 import { applyCorsHeaders, checkRateLimit, escapeHtml, getClientIp } from './rateLimiter.js';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const EPHEMERAL_SECRET = crypto.randomBytes(32).toString('hex');
-const HMAC_SECRET = process.env.AUTH_SECRET || process.env.SUPABASE_JWT_SECRET || EPHEMERAL_SECRET;
+const HMAC_SECRET = process.env.AUTH_SECRET || process.env.SUPABASE_JWT_SECRET || process.env.RESEND_API_KEY || 'REDACTED_DEV_HMAC_SALT';
 
 function signOtp(email, code, expiresAt) {
   const normalized = String(email).trim().toLowerCase();
   return crypto.createHmac('sha256', HMAC_SECRET)
     .update(`${normalized}:${code}:${expiresAt}`)
     .digest('hex');
+}
+
+function getCookie(req, name) {
+  const cookieHeader = req.headers?.cookie || '';
+  if (!cookieHeader) return null;
+  const match = cookieHeader.match(new RegExp('(^|;\\s*)' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[2]) : null;
 }
 
 export default async function handler(req, res) {
@@ -110,6 +116,7 @@ export default async function handler(req, res) {
       }
 
       console.log(`[Resend] Genuine OTP email dispatched to ${emailNorm}, id: ${resendData.id}`);
+      res.setHeader('Set-Cookie', `tripverse_email_otp=${encodeURIComponent(verificationToken)}; Path=/; Max-Age=600; SameSite=Lax; Secure; HttpOnly`);
       return res.status(200).json({
         success: true,
         message: `Real verification code dispatched to ${emailNorm}.`,
@@ -135,11 +142,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Please enter the complete 6-digit code.' });
     }
 
-    if (!token || !token.includes('.')) {
-      return res.status(400).json({ success: false, message: 'Invalid or missing verification session.' });
+    const activeToken = token || getCookie(req, 'tripverse_email_otp');
+    if (!activeToken || !activeToken.includes('.')) {
+      return res.status(400).json({ success: false, message: 'Invalid or missing verification session. Please request a new code.' });
     }
 
-    const [expiresAtStr, signature] = token.split('.');
+    const [expiresAtStr, signature] = activeToken.split('.');
     const expiresAt = parseInt(expiresAtStr, 10);
 
     if (Date.now() > expiresAt) {
