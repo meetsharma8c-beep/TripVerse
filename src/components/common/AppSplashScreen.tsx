@@ -28,9 +28,9 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
   const [initialMountTime] = useState(() => Date.now());
   const mountTimeRef = useRef(initialMountTime);
 
-  // Crisp 1.5s–2.0s total opening window: feels intentional and fluid without delaying the user
-  const MIN_DISPLAY_MS = 1050;
-  const MAX_TIMEOUT_MS = 2100;
+  // Crisp 0.55s–1.1s total opening window: feels intentional and fluid without delaying the user
+  const MIN_DISPLAY_MS = 550;
+  const MAX_TIMEOUT_MS = 1200;
 
   useEffect(() => {
     onFinishRef.current = onFinish;
@@ -42,13 +42,13 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
     setIsExiting(true);
     triggerHaptic('light');
 
-    hideNativeSplashScreen(300);
+    hideNativeSplashScreen(200);
 
     setTimeout(() => {
       if (onFinishRef.current) {
         onFinishRef.current();
       }
-    }, 520);
+    }, 300);
   };
 
   // Cross-device video autoplay initialization

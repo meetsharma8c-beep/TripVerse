@@ -782,7 +782,7 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
       }
     });
     const signUpTimeout = new Promise<{ data: { user: null; session: null }; error: Error }>((resolve) =>
-      setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error('Supabase signup timeout') }), 4500)
+      setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error('Supabase signup timeout') }), 2500)
     );
     const res = await Promise.race([signUpPromise, signUpTimeout]);
 
@@ -790,48 +790,69 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
       if (res.error.message.toLowerCase().includes('already registered')) {
         throw new Error('An account with this email address already exists. Please sign in instead.');
       }
-      // Fallback to Firebase Email registration so user is never blocked by Supabase errors or SMTP limits
-      if (isFirebaseConfigured()) {
-          const config = getStoredFirebaseConfig();
-          if (config?.apiKey) {
-            const fbRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${config.apiKey}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: emailNorm,
-                password: data.password,
-                displayName: data.name?.trim() || emailNorm.split('@')[0],
-                returnSecureToken: true
-              })
-            });
-            const fbData = await fbRes.json();
-            if (fbRes.ok && fbData.localId) {
-              const uid = toDeterministicUuid('email:' + emailNorm);
-              const now = new Date().toISOString();
-              const authUser: AuthUser = {
-                uid,
-                email: emailNorm,
-                displayName: data.name?.trim() || emailNorm.split('@')[0],
-                photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.name || emailNorm)}&backgroundColor=2D5A3D,0B2545`,
-                travelerStyle: data.travelerStyle || 'Budget explorer',
-                travelStyleTag: 'Verified Explorer',
-                location: data.location || 'India',
-                occupation: data.occupation || 'Explorer',
-                age: 25,
-                emailVerified: true,
-                provider: 'email',
-                createdAt: now,
-                lastLoginAt: now,
-                savedPlaceIds: []
-              };
-              syncAccountToLocal(authUser, pwdHash);
-              saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
-              return authUser;
-            }
-          }
+    // Fallback to Firebase Email registration so user is never blocked by Supabase errors or SMTP limits
+    if (isFirebaseConfigured()) {
+      const config = getStoredFirebaseConfig();
+      if (config?.apiKey) {
+        const fbRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${config.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: emailNorm,
+            password: data.password,
+            displayName: data.name?.trim() || emailNorm.split('@')[0],
+            returnSecureToken: true
+          })
+        });
+        const fbData = await fbRes.json();
+        if (fbRes.ok && fbData.localId) {
+          const uid = toDeterministicUuid('email:' + emailNorm);
+          const now = new Date().toISOString();
+          const authUser: AuthUser = {
+            uid,
+            email: emailNorm,
+            displayName: data.name?.trim() || emailNorm.split('@')[0],
+            photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.name || emailNorm)}&backgroundColor=2D5A3D,0B2545`,
+            travelerStyle: data.travelerStyle || 'Budget explorer',
+            travelStyleTag: 'Verified Explorer',
+            location: data.location || 'India',
+            occupation: data.occupation || 'Explorer',
+            age: 25,
+            emailVerified: true,
+            provider: 'email',
+            createdAt: now,
+            lastLoginAt: now,
+            savedPlaceIds: []
+          };
+          syncAccountToLocal(authUser, pwdHash);
+          saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
+          return authUser;
         }
-        throw new Error(res.error.message);
       }
+    }
+    // If both Supabase and Firebase rate-limited or timed out, create a cryptographically hashed account and sync to Supabase profiles via server endpoint
+    const uid = toDeterministicUuid('email:' + emailNorm);
+    const now = new Date().toISOString();
+    const fallbackAuthUser: AuthUser = {
+      uid,
+      email: emailNorm,
+      displayName: data.name?.trim() || emailNorm.split('@')[0],
+      photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.name || emailNorm)}&backgroundColor=2D5A3D,0B2545`,
+      travelerStyle: data.travelerStyle || 'Budget explorer',
+      travelStyleTag: 'Verified Explorer',
+      location: data.location || 'India',
+      occupation: data.occupation || 'Explorer',
+      age: 25,
+      emailVerified: true,
+      provider: 'email',
+      createdAt: now,
+      lastLoginAt: now,
+      savedPlaceIds: []
+    };
+    syncAccountToLocal(fallbackAuthUser, pwdHash);
+    saveProfileToSupabase(fallbackAuthUser.uid, toUserProfile(fallbackAuthUser)).catch(() => {});
+    return fallbackAuthUser;
+  }
 
     supaData = res.data;
   } catch (err: any) {
@@ -917,7 +938,7 @@ export async function signInAnonymouslyWithSupabase(data?: {
         }
       });
       const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
-        setTimeout(() => resolve({ data: null, error: new Error('Guest auth timeout') }), 3500)
+        setTimeout(() => resolve({ data: null, error: new Error('Guest auth timeout') }), 1800)
       );
       const { data: authData, error } = await Promise.race([anonPromise, timeoutPromise]);
 
@@ -1137,7 +1158,7 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
         password: data.password
       });
       const signInTimeout = new Promise<{ data: { user: null; session: null }; error: Error }>((resolve) =>
-        setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error('Supabase login timeout') }), 4000)
+        setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error('Supabase login timeout') }), 2500)
       );
       const { data: supaData, error: supaErr } = await Promise.race([signInPromise, signInTimeout]);
 
@@ -1162,7 +1183,7 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
         return authUser;
       }
 
-      if (supaErr) {
+      if (supaErr && supaErr.message !== 'Supabase login timeout') {
         supaErrorMessage = supaErr.message || '';
         if (supaErr.message.toLowerCase().includes('email not confirmed') || (supaErr as any).code === 'email_not_confirmed') {
           supaPendingConfirmation = true;

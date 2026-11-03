@@ -66,12 +66,13 @@ import { ActivityModal } from './components/itinerary/ActivityModal';
 const TransportDealsView = lazy(() => import('./components/deals/TransportDealsView').then(m => ({ default: m.TransportDealsView })));
 
 // Trips & Explore Views
-const MyTripsView = lazy(() => import('./components/trips/MyTripsView').then(m => ({ default: m.MyTripsView })));
-const ExploreView = lazy(() => import('./components/explore/ExploreView').then(m => ({ default: m.ExploreView })));
+import { MyTripsView } from './components/trips/MyTripsView';
+import { ExploreView } from './components/explore/ExploreView';
 import { DestinationDetailModal } from './components/explore/DestinationDetailModal';
-const SavedItemsView = lazy(() => import('./components/saved/SavedItemsView').then(m => ({ default: m.SavedItemsView })));
-const ProfileView = lazy(() => import('./components/profile/ProfileView').then(m => ({ default: m.ProfileView })));
-const AuthModal = lazy(() => import('./components/profile/AuthModal').then(m => ({ default: m.AuthModal })));
+import { SavedItemsView } from './components/saved/SavedItemsView';
+import { ProfileView } from './components/profile/ProfileView';
+import { AuthModal } from './components/profile/AuthModal';
+import { GuestPlannerRestrictedModal } from './components/planner/GuestPlannerRestrictedModal';
 import { 
   getCurrentUser, 
   isGuestUser,
@@ -103,7 +104,6 @@ import { DisruptionAlert } from './types/replanning';
 const SmartRouteMap = lazy(() => import('./components/itinerary/SmartRouteMap').then(m => ({ default: m.SmartRouteMap })));
 const TripBookingCheckoutModal = lazy(() => import('./components/booking/TripBookingCheckoutModal').then(m => ({ default: m.TripBookingCheckoutModal })));
 const PlannerWizard = lazy(() => import('./components/planner/PlannerWizard').then(m => ({ default: m.PlannerWizard })));
-const GuestPlannerRestrictedModal = lazy(() => import('./components/planner/GuestPlannerRestrictedModal').then(m => ({ default: m.GuestPlannerRestrictedModal })));
 const TripReplanningModal = lazy(() => import('./components/replanning/TripReplanningModal').then(m => ({ default: m.TripReplanningModal })));
 const PrintTravelGuideModal = lazy(() => import('./components/itinerary/PrintTravelGuideModal').then(m => ({ default: m.PrintTravelGuideModal })));
 const LiveNavigationHUD = lazy(() => import('./components/navigation/LiveNavigationHUD').then(m => ({ default: m.LiveNavigationHUD })));
@@ -365,6 +365,9 @@ export function App() {
 
   const handleFinishSplash = React.useCallback(() => {
     setShowSplash(false);
+    try {
+      window.sessionStorage?.setItem('tripverse_skip_splash', 'true');
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -375,28 +378,31 @@ export function App() {
         // Stage 1: Core local preferences and itinerary hydration
         if (!isMounted) return;
         setInitStage({
-          progress: 50,
+          progress: 60,
           message: 'Loading itineraries & profile...'
         });
 
         // Small yield so browser processes layout
-        await new Promise((r) => setTimeout(r, 120));
+        await new Promise((r) => setTimeout(r, 40));
 
         // Stage 2: Auth check & session sync
         if (!isMounted) return;
         const user = getCurrentUser();
         setInitStage({
-          progress: 80,
+          progress: 90,
           message: user ? 'Syncing traveler passport...' : 'Connecting offline intelligence...'
         });
 
-        // Stage 3: Font & critical asset readiness
+        // Stage 3: Font & critical asset readiness (bounded to 120ms max so slow font CDN never delays app)
         if (document.fonts && document.fonts.ready) {
-          await document.fonts.ready.catch(() => {});
+          await Promise.race([
+            document.fonts.ready.catch(() => {}),
+            new Promise((r) => setTimeout(r, 120))
+          ]);
         }
 
         // Small pacing yield to ensure visual smoothness
-        await new Promise((r) => setTimeout(r, 160));
+        await new Promise((r) => setTimeout(r, 60));
 
         if (!isMounted) return;
         setInitStage({
@@ -991,73 +997,76 @@ export function App() {
     setIsGeneratingTrip(true);
 
     setTimeout(async () => {
-      consumeTripCredit(currentUser);
-      let originCoords: Coordinates | undefined;
-      if (typeof navigator !== 'undefined' && navigator.geolocation) {
-        originCoords = await Promise.race([
-          new Promise<Coordinates | undefined>(resolve => {
-            navigator.geolocation.getCurrentPosition(
-              position => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
-              error => {
-                console.warn('Current location unavailable for quick planning', error.message);
-                resolve(undefined);
-              },
-              { enableHighAccuracy: false, maximumAge: 60_000, timeout: 1_500 }
-            );
-          }),
-          new Promise<Coordinates | undefined>(resolve => setTimeout(() => resolve(undefined), 1_500))
-        ]);
-      }
-      const fallbackOrigin =
-        userProfile?.location && userProfile.location.trim().toLowerCase() !== 'india'
-          ? userProfile.location.trim()
-          : 'Ahmedabad, Gujarat';
-      const input: PlannerInput = {
-        destination: finalParams.destination,
-        destinationName: finalParams.destination.charAt(0).toUpperCase() + finalParams.destination.slice(1),
-        origin: originCoords ? 'Current Location' : fallbackOrigin,
-        durationDays: finalParams.duration,
-        travelersCount: finalParams.travelers,
-        travelerType: 'friends',
-        budgetMode: 'total',
-        budgetAmount: finalParams.budget,
-        preferences: ['nature', 'photography', 'food'],
-        transportMode: 'car',
-        accommodationType: 'hotel',
-        foodPreference: 'all',
-        priorities: ['balanced', 'scenic', 'food'],
-        originCoords
-      };
-
-      const newTrip = await generatePersonalizedTrip(input);
-      if (currentUser?.uid) {
-        newTrip.userId = currentUser.uid;
-        newTrip.isUserCreated = true;
-      }
-      saveOrUpdateTrip(newTrip, currentUser?.uid);
-      setTrips(prev => [newTrip, ...prev]);
-      setActiveTripIdState(newTrip.id);
-      setActiveTripId(newTrip.id, currentUser?.uid);
-
       try {
-        localStorage.setItem(`tripverse_plan_generated_${currentUser?.uid || 'guest'}`, 'true');
-      } catch { }
+        consumeTripCredit(currentUser);
+        let originCoords: Coordinates | undefined;
+        if (typeof navigator !== 'undefined' && navigator.geolocation) {
+          originCoords = await Promise.race([
+            new Promise<Coordinates | undefined>(resolve => {
+              navigator.geolocation.getCurrentPosition(
+                position => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
+                error => {
+                  console.warn('Current location unavailable for quick planning', error.message);
+                  resolve(undefined);
+                },
+                { enableHighAccuracy: false, maximumAge: 60_000, timeout: 800 }
+              );
+            }),
+            new Promise<Coordinates | undefined>(resolve => setTimeout(() => resolve(undefined), 800))
+          ]);
+        }
+        const fallbackOrigin =
+          userProfile?.location && userProfile.location.trim().toLowerCase() !== 'india'
+            ? userProfile.location.trim()
+            : 'Ahmedabad, Gujarat';
+        const input: PlannerInput = {
+          destination: finalParams.destination,
+          destinationName: finalParams.destination.charAt(0).toUpperCase() + finalParams.destination.slice(1),
+          origin: originCoords ? 'Current Location' : fallbackOrigin,
+          durationDays: finalParams.duration,
+          travelersCount: finalParams.travelers,
+          travelerType: 'friends',
+          budgetMode: 'total',
+          budgetAmount: finalParams.budget,
+          preferences: ['nature', 'photography', 'food'],
+          transportMode: 'car',
+          accommodationType: 'hotel',
+          foodPreference: 'all',
+          priorities: ['balanced', 'scenic', 'food'],
+          originCoords
+        };
 
-      setIsGeneratingTrip(false);
-      setCurrentTab('trip-detail');
-      setTripSubTab('itinerary');
-      setIsBestDealModalOpen(true);
-      triggerHaptic('success');
+        const newTrip = await generatePersonalizedTrip(input);
+        if (currentUser?.uid) {
+          newTrip.userId = currentUser.uid;
+          newTrip.isUserCreated = true;
+        }
+        saveOrUpdateTrip(newTrip, currentUser?.uid);
+        setTrips(prev => [newTrip, ...prev]);
+        setActiveTripIdState(newTrip.id);
+        setActiveTripId(newTrip.id, currentUser?.uid);
 
-      try {
-        confetti({
-          particleCount: 65,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#2D5A3D', '#386B49', '#38BDF8', '#F59E0B']
-        });
-      } catch { }
-    }, 1800);
+        try {
+          localStorage.setItem(`tripverse_plan_generated_${currentUser?.uid || 'guest'}`, 'true');
+        } catch { }
+
+        setCurrentTab('trip-detail');
+        setTripSubTab('itinerary');
+        setIsBestDealModalOpen(true);
+        triggerHaptic('success');
+
+        try {
+          confetti({
+            particleCount: 65,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#2D5A3D', '#386B49', '#38BDF8', '#F59E0B']
+          });
+        } catch { }
+      } finally {
+        setIsGeneratingTrip(false);
+      }
+    }, 650);
   };
 
   const handleTripGenerated = async (input: PlannerInput) => {
@@ -2411,18 +2420,20 @@ export function App() {
         )}
       </Suspense>
 
-      {isAuthModalOpen && (<Suspense fallback={<ModalSkeleton />}><AuthModal
-        isOpen={isAuthModalOpen}
-        initialMethod={authModalInitialMethod}
-        initialSubMode={authModalInitialSubMode}
-        onClose={() => setIsAuthModalOpen(false)}
-        onSuccess={(updated) => {
-          const activeUser = getCurrentUser();
-          setCurrentUser(activeUser);
-          setUserProfile(updated);
-          saveUserProfile(updated, activeUser?.uid);
-        }}
-      /></Suspense>)}
+      {isAuthModalOpen && (
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          initialMethod={authModalInitialMethod}
+          initialSubMode={authModalInitialSubMode}
+          onClose={() => setIsAuthModalOpen(false)}
+          onSuccess={(updated) => {
+            const activeUser = getCurrentUser();
+            setCurrentUser(activeUser);
+            setUserProfile(updated);
+            saveUserProfile(updated, activeUser?.uid);
+          }}
+        />
+      )}
 
       {/* Add/Edit Activity Modal */}
       {activeTrip && (
