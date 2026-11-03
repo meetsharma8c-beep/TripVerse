@@ -54,15 +54,19 @@ export function getStoredConcodeConfig(): ConcodeConfig | null {
     } catch {}
   }
 
+  // On deployed domains (non-localhost), always route through /api/chat serverless proxy
+  // so CONCODE_API_KEY stays strictly server-side and expired Cloudflare tunnels smoothly fall back
+  if (!isBrowserLocalhost) {
+    return null;
+  }
+
   const envUrl = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_CONCODE_API_URL : undefined;
   const envKey = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_CONCODE_API_KEY : undefined;
   if (envUrl && envUrl.startsWith('http') && !envUrl.includes('api.concode.ai')) {
-    if (!isLocalhostUrl(envUrl) || isBrowserLocalhost) {
-      return {
-        url: envUrl.trim().replace(/\/$/, ''),
-        apiKey: envKey ? envKey.trim() : undefined
-      };
-    }
+    return {
+      url: envUrl.trim().replace(/\/$/, ''),
+      apiKey: envKey ? envKey.trim() : undefined
+    };
   }
 
   return null;
