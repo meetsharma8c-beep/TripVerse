@@ -8,6 +8,7 @@ import {
   formatCardExpiry,
   buildUpiPaymentUri
 } from '../src/services/paymentGatewayService';
+import { formatCurrency, convertFromINR } from '../src/services/currencyService';
 
 describe('PaymentGatewayService Unit Tests', () => {
   describe('evaluateCoupon', () => {
@@ -91,6 +92,15 @@ describe('PaymentGatewayService Unit Tests', () => {
       expect(uri).toContain('upi://pay?');
       expect(uri).toContain('am=2500.00');
       expect(uri).toContain('tr=TXN123456');
+    });
+
+    it('formats currencies safely without throwing or rendering NaN', () => {
+      expect(formatCurrency(undefined as any)).toBe('₹0');
+      expect(formatCurrency(null as any)).toBe('₹0');
+      expect(formatCurrency(NaN)).toBe('₹0');
+      expect(formatCurrency(5000, 'INR')).toBe('₹5,000');
+      expect(convertFromINR(NaN)).toBe(0);
+      expect(convertFromINR(undefined as any)).toBe(0);
     });
   });
 });

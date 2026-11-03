@@ -286,7 +286,7 @@ export function App() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isCollabModalOpen, setIsCollabModalOpen] = useState(() => (initialRoute as any).openCollab || false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalInitialMethod, setAuthModalInitialMethod] = useState<'google' | 'email' | 'phone' | 'guest'>('email');
+  const [authModalInitialMethod, setAuthModalInitialMethod] = useState<'google' | 'email' | 'phone' | 'guest'>('google');
   const [authModalInitialSubMode, setAuthModalInitialSubMode] = useState<'login' | 'signup'>('login');
   const [isLiveNavOpen, setIsLiveNavOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(() => (initialRoute as any).openPro || false);
@@ -2247,13 +2247,13 @@ export function App() {
             onClose={() => setIsGuestPlannerRestrictedOpen(false)}
             onOpenSignUp={() => {
               setIsGuestPlannerRestrictedOpen(false);
-              setAuthModalInitialMethod('email');
+              setAuthModalInitialMethod('google');
               setAuthModalInitialSubMode('signup');
               setIsAuthModalOpen(true);
             }}
             onOpenSignIn={() => {
               setIsGuestPlannerRestrictedOpen(false);
-              setAuthModalInitialMethod('email');
+              setAuthModalInitialMethod('google');
               setAuthModalInitialSubMode('login');
               setIsAuthModalOpen(true);
             }}
@@ -2275,7 +2275,7 @@ export function App() {
             }}
             onOpenAuthModal={() => {
               setIsPlannerOpen(false);
-              setAuthModalInitialMethod('email');
+              setAuthModalInitialMethod('google');
               setAuthModalInitialSubMode('signup');
               setIsAuthModalOpen(true);
             }}

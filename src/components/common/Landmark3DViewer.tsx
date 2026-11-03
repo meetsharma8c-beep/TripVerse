@@ -22,6 +22,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
   const [timeOfDay, setTimeOfDay] = useState<'day' | 'golden' | 'night'>('golden');
   const [isWireframe, setIsWireframe] = useState<boolean>(false);
   const [isAutoRotate, setIsAutoRotate] = useState<boolean>(true);
+  const [webglSupported, setWebglSupported] = useState<boolean>(true);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -37,6 +38,17 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
     const width = mountRef.current.clientWidth || 400;
     const height = mountRef.current.clientHeight || 340;
 
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    } catch (e) {
+      console.warn('[TripVerse] WebGL hardware acceleration unavailable on this device:', e);
+      setWebglSupported(false);
+      return;
+    }
+
+    setWebglSupported(true);
+
     // 1. Scene & Camera
     const scene = new THREE.Scene();
     sceneRef.current = scene;
@@ -46,7 +58,6 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
     cameraRef.current = camera;
 
     // 2. Renderer with pixelRatio clamping for mobile performance
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
@@ -420,7 +431,21 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
 
         {/* 3D WebGL Canvas Viewport */}
         <div className="relative w-full h-[320px] bg-gradient-to-b from-slate-950 to-slate-900 overflow-hidden">
-          <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+          {webglSupported ? (
+            <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+                <Compass className="w-6 h-6 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-white">{landmarkName}</h4>
+                <p className="text-xs text-slate-400 max-w-xs">
+                  Hardware 3D acceleration is restricted on this browser. Full interactive details and maps are active below.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Overlay Controls */}
           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-auto">

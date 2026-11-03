@@ -83,55 +83,74 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
     if (!map || !layers) return;
     layers.clearLayers();
 
-    const routeMatchesTrip = trip.routeDetails?.source === 'geoapify_routing' &&
-      trip.routeDetails.origin === trip.origin &&
-      trip.routeDetails.destination === trip.destination;
-    const realRoute = routeMatchesTrip && trip.routeDetails?.encodedPolyline
-      ? decodePolyline(trip.routeDetails.encodedPolyline)
-      : [];
-    if (realRoute.length < 2) {
-      routeBoundsRef.current = null;
-      map.setView([20, 0], 2);
-      return;
+    try {
+      const routeMatchesTrip = trip.routeDetails?.source === 'geoapify_routing' &&
+        trip.routeDetails.origin === trip.origin &&
+        trip.routeDetails.destination === trip.destination;
+      const realRoute = routeMatchesTrip && trip.routeDetails?.encodedPolyline
+        ? decodePolyline(trip.routeDetails.encodedPolyline)
+        : [];
+      if (realRoute.length < 2) {
+        routeBoundsRef.current = null;
+        map.setView([20, 0], 2);
+        return;
+      }
+      const start = realRoute[0];
+      const end = realRoute[realRoute.length - 1];
+      const routePoints = realRoute;
+
+      L.polyline(routePoints, { color: '#2D5A3D', weight: 5, opacity: 0.85 }).addTo(layers);
+
+      if (Number.isFinite(start[0]) && Number.isFinite(start[1])) {
+        L.circleMarker(start, { radius: 8, color: '#fff', weight: 3, fillColor: '#0B2545', fillOpacity: 1 })
+          .bindPopup(makePopup(trip.origin || 'Origin', 'Trip starting point'))
+          .addTo(layers);
+      }
+      if (Number.isFinite(end[0]) && Number.isFinite(end[1])) {
+        L.circleMarker(end, { radius: 8, color: '#fff', weight: 3, fillColor: '#2D5A3D', fillOpacity: 1 })
+          .bindPopup(makePopup(trip.destination || 'Destination', 'Trip destination'))
+          .addTo(layers);
+      }
+
+      const stops = trip.breakStops || [];
+      const validStopPoints: L.LatLngTuple[] = [];
+
+      stops.forEach(stop => {
+        if (!stop?.coordinates) return;
+        const lat = Number(stop.coordinates.lat);
+        const lng = Number(stop.coordinates.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        const point: L.LatLngTuple = [lat, lng];
+        validStopPoints.push(point);
+
+        L.circleMarker(point, { radius: 7, color: '#fff', weight: 2, fillColor: '#F59E0B', fillOpacity: 1 })
+          .bindPopup(makePopup(
+            stop.name || 'Break Stop',
+            stop.source === 'geoapify_places'
+              ? `${stop.description || 'Highway amenity'} · Geoapify / OpenStreetMap listing; facilities not confirmed`
+              : 'Saved stop; source and details are unverified'
+          ))
+          .addTo(layers);
+      });
+
+      map.invalidateSize();
+      const allPoints: L.LatLngTuple[] = [
+        ...routePoints.filter(p => Number.isFinite(p[0]) && Number.isFinite(p[1])),
+        ...validStopPoints
+      ];
+
+      if (allPoints.length > 0) {
+        const bounds = L.latLngBounds(allPoints);
+        routeBoundsRef.current = bounds;
+        map.fitBounds(bounds, {
+          padding: [32, 32],
+          maxZoom: 12
+        });
+      }
+    } catch (mapErr) {
+      console.warn('[SmartRouteMap] Could not render polyline or bounds:', mapErr);
     }
-    const start = realRoute[0];
-    const end = realRoute[realRoute.length - 1];
-    const routePoints = realRoute;
-
-    L.polyline(routePoints, { color: '#2D5A3D', weight: 5, opacity: 0.85 }).addTo(layers);
-
-    L.circleMarker(start, { radius: 8, color: '#fff', weight: 3, fillColor: '#0B2545', fillOpacity: 1 })
-      .bindPopup(makePopup(trip.origin, 'Trip starting point'))
-      .addTo(layers);
-    L.circleMarker(end, { radius: 8, color: '#fff', weight: 3, fillColor: '#2D5A3D', fillOpacity: 1 })
-      .bindPopup(makePopup(trip.destination, 'Trip destination'))
-      .addTo(layers);
-
-    const stops = trip.breakStops || [];
-    stops.forEach(stop => {
-      if (!stop?.coordinates) return;
-      const point: L.LatLngTuple = [stop.coordinates.lat, stop.coordinates.lng];
-      L.circleMarker(point, { radius: 7, color: '#fff', weight: 2, fillColor: '#F59E0B', fillOpacity: 1 })
-        .bindPopup(makePopup(
-          stop.name,
-          stop.source === 'geoapify_places'
-            ? `${stop.description} · Geoapify / OpenStreetMap listing; facilities not confirmed`
-            : 'Saved stop; source and details are unverified'
-        ))
-        .addTo(layers);
-    });
-
-    map.invalidateSize();
-    const allPoints: L.LatLngTuple[] = [
-      ...routePoints,
-      ...stops.filter(s => s?.coordinates).map(stop => [stop.coordinates.lat, stop.coordinates.lng] as L.LatLngTuple)
-    ];
-    const bounds = L.latLngBounds(allPoints);
-    routeBoundsRef.current = bounds;
-    map.fitBounds(bounds, {
-      padding: [32, 32],
-      maxZoom: 12
-    });
   }, [trip]);
 
   const hasLiveRoute = trip.routeDetails?.source === 'geoapify_routing' &&

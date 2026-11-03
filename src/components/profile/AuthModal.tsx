@@ -770,6 +770,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="email"
+                          autoComplete="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="e.g. traveler@domain.com"
@@ -799,6 +800,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type={showPassword ? 'text' : 'password'}
+                          autoComplete="current-password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="Enter your password"
@@ -878,6 +880,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="email"
+                          autoComplete="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="your.email@domain.com"
@@ -908,6 +911,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                           <input
                             type={showPassword ? 'text' : 'password'}
+                            autoComplete="new-password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Min 6 chars"
@@ -923,6 +927,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                           <input
                             type={showPassword ? 'text' : 'password'}
+                            autoComplete="new-password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="Repeat password"

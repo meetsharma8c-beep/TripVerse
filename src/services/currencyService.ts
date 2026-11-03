@@ -82,25 +82,29 @@ export function setActiveCurrency(currency: CurrencyCode): void {
 }
 
 /**
- * Converts an amount in INR to the selected currency
+ * Converts an amount in INR to the selected currency with NaN & undefined resilience
  */
-export function convertFromINR(amountInINR: number, targetCurrency: CurrencyCode = getActiveCurrency()): number {
+export function convertFromINR(amountInINR: number | undefined | null, targetCurrency: CurrencyCode = getActiveCurrency()): number {
+  const safeAmount = Number.isFinite(Number(amountInINR)) ? Number(amountInINR) : 0;
   const config = CURRENCIES[targetCurrency] || CURRENCIES.INR;
-  return Math.round(amountInINR * config.rateFromINR);
+  const rate = Number.isFinite(config.rateFromINR) ? config.rateFromINR : 1;
+  return Math.round(safeAmount * rate);
 }
 
 /**
- * Formats an amount with the currency symbol and locale separators
+ * Formats an amount with the currency symbol and locale separators, guaranteed never to show NaN
  */
 export function formatCurrency(
-  amountInINR: number, 
+  amountInINR: number | undefined | null, 
   currency: CurrencyCode = getActiveCurrency(),
   showCode: boolean = false
 ): string {
+  const safeAmount = Number.isFinite(Number(amountInINR)) ? Number(amountInINR) : 0;
   const config = CURRENCIES[currency] || CURRENCIES.INR;
-  const converted = amountInINR * config.rateFromINR;
+  const rate = Number.isFinite(config.rateFromINR) ? config.rateFromINR : 1;
+  const converted = safeAmount * rate;
   
-  const formattedNumber = Math.round(converted).toLocaleString(config.formatPattern);
+  const formattedNumber = Math.round(converted).toLocaleString(config.formatPattern || 'en-IN');
   
   if (showCode) {
     return `${config.symbol}${formattedNumber} ${config.code}`;
