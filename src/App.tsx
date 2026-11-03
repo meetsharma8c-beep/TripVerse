@@ -160,6 +160,7 @@ export function App() {
         if (user) {
           setCurrentUser(user);
           setUserProfile(toUserProfile(user));
+          setIsAuthModalOpen(false);
         }
       })
       .catch(err => {

@@ -955,7 +955,14 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
   }
 
   if (!isSessionCreated) {
-    resendEmailConfirmation(emailNorm, data.name).catch(() => {});
+    try {
+      await Promise.race([
+        resendEmailConfirmation(emailNorm, data.name),
+        new Promise(resolve => setTimeout(resolve, 3500))
+      ]);
+    } catch (sendErr) {
+      console.warn('[Signup] resendEmailConfirmation dispatch notice:', sendErr);
+    }
   }
 
   return {

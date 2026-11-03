@@ -383,6 +383,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleResendEmailToken = async () => {
     if (emailResendCountdown > 0) return;
     setErrorMsg(null);
+    setSuccessMsg(null);
+    if (!email.trim() || !email.includes('@')) {
+      setErrorMsg('Please enter your email address to receive a confirmation code.');
+      return;
+    }
     setIsLoading(true);
     try {
       await resendEmailConfirmation(email.trim(), name.trim());
