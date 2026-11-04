@@ -3,6 +3,7 @@ import { Search, X, MapPin, Compass, Sparkles, Navigation, ArrowRight, Star } fr
 import { Trip, Destination } from '../../types/trip';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { triggerHaptic } from '../../services/deviceService';
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -29,6 +30,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 }) => {
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useModalBehavior(isOpen, onClose);
 
   useEffect(() => {
     if (isOpen) {
@@ -133,6 +136,9 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
   return (
     <div 
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search destinations and trips"
       className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-start justify-center pt-16 sm:pt-24 px-4 overflow-y-auto animate-fade-in"
       onClick={onClose}
     >

@@ -241,7 +241,19 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               delayMs={(idx % 4) * 55}
               className="bg-white rounded-[28px] overflow-hidden border border-[#E2EBE1] shadow-[0_4px_20px_rgba(45,90,61,0.05)] hover:shadow-[0_16px_36px_rgba(45,90,61,0.12)] hover:border-[#2D5A3D] card-elevate flex flex-col justify-between group cursor-pointer"
             >
-              <div onClick={() => setActiveModalDest(dest)} className="flex-1 flex flex-col justify-between">
+              <div 
+                role="button"
+                tabIndex={0}
+                aria-label={`View details for ${dest.name}`}
+                onClick={() => setActiveModalDest(dest)} 
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setActiveModalDest(dest);
+                  }
+                }}
+                className="flex-1 flex flex-col justify-between focus:outline-none focus:ring-2 focus:ring-[#2D5A3D]"
+              >
               <div>
                 <div className="relative h-52 overflow-hidden">
                   <img

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Logo, BrandIconMark } from './Logo';
-import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut } from 'lucide-react';
+import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut, Bell } from 'lucide-react';
 import { UserProfile, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
 import { isStandalone } from '../../services/deviceService';
@@ -51,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
-  const [isStandaloneApp, setIsStandaloneApp] = useState(true);
+  const [isStandaloneApp] = useState(() => isStandalone());
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try {
       return localStorage.getItem('tripverse_theme') === 'dark';
@@ -59,14 +59,13 @@ export const Navbar: React.FC<NavbarProps> = ({
       return false;
     }
   });
-  const [isMac, setIsMac] = useState(true);
-
-  useEffect(() => {
+  const [isMac] = useState(() => {
     if (typeof navigator !== 'undefined') {
       const platform = (navigator as unknown as { userAgentData?: { platform?: string } })?.userAgentData?.platform || navigator.platform || '';
-      setIsMac(/mac|iphone|ipad|ipod/i.test(platform));
+      return /mac|iphone|ipad|ipod/i.test(platform);
     }
-  }, []);
+    return true;
+  });
 
   // Lock body scroll on touch devices while mobile drawer is open to prevent awkward background jitter
   useEffect(() => {
@@ -89,10 +88,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [mobileMenuOpen]);
-
-  useEffect(() => {
-    setIsStandaloneApp(isStandalone());
-  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
@@ -246,6 +241,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               {isDarkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
             </button>
+            {/* Notifications Trigger */}
+            {onOpenNotifications && (
+              <button
+                type="button"
+                onClick={onOpenNotifications}
+                className="relative flex h-8 w-8 xl:h-9 xl:w-9 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer"
+                aria-label={`View notifications${unreadNotificationCount > 0 ? ` (${unreadNotificationCount} unread)` : ''}`}
+                title={`View notifications${unreadNotificationCount > 0 ? ` (${unreadNotificationCount} unread)` : ''}`}
+              >
+                <Bell className="h-4 w-4" />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-xs">
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </span>
+                )}
+              </button>
+            )}
             {/* Spotlight Global Search Trigger */}
             {onOpenSearch && (
               <button
@@ -458,6 +470,26 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Search className="w-5 h-5 text-slate-400 dark:text-slate-500" />
               <span>Search destinations & trips</span>
+            </button>
+          )}
+
+          {onOpenNotifications && (
+            <button
+              onClick={() => {
+                onOpenNotifications();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/80 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Bell className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                <span>Notifications</span>
+              </div>
+              {unreadNotificationCount > 0 && (
+                <span className="bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+                  {unreadNotificationCount}
+                </span>
+              )}
             </button>
           )}
 

@@ -13,6 +13,7 @@ import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensi
 import { triggerHaptic } from '../../services/deviceService';
 import { ConcodeBrainConfigModal } from './ConcodeBrainConfigModal';
 import { getUserSubscriptionQuota, consumeAssistantMinute } from '../../services/authService';
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 
 interface AIChatDrawerProps {
   trip: Trip;
@@ -331,8 +332,20 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>(getInitialMessages);
   const [inputQuery, setInputQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const quota = getUserSubscriptionQuota();
+  const [quota, setQuota] = useState(() => getUserSubscriptionQuota());
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useModalBehavior(isOpen, onClose);
+
+  useEffect(() => {
+    const handleQuota = () => setQuota(getUserSubscriptionQuota());
+    window.addEventListener('tripverse_quota_updated', handleQuota);
+    window.addEventListener('tripverse_auth_state_change', handleQuota);
+    return () => {
+      window.removeEventListener('tripverse_quota_updated', handleQuota);
+      window.removeEventListener('tripverse_auth_state_change', handleQuota);
+    };
+  }, []);
 
   // Reload messages when switching accounts or signing in/out
   useEffect(() => {
@@ -569,7 +582,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     }
   };
 
-  handleSendMessageRef.current = handleSendMessage;
+  useEffect(() => {
+    handleSendMessageRef.current = handleSendMessage;
+  });
 
   const scenarioChips = [
     { label: '✨ 3D Landmark Tour', prompt: 'Show me an interactive 3D WebGL tour of the landmark' },
@@ -591,7 +606,12 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/60 backdrop-blur-xs flex justify-end items-end sm:items-stretch">
+    <div 
+      role="dialog"
+      aria-modal="true"
+      aria-label="AI Travel Assistant"
+      className="fixed inset-0 z-50 overflow-hidden bg-slate-900/60 backdrop-blur-xs flex justify-end items-end sm:items-stretch"
+    >
       
       <div className="w-full sm:max-w-md md:max-w-lg bg-white h-[92dvh] sm:h-full max-h-[100dvh] rounded-t-3xl sm:rounded-none shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden">
         

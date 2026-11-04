@@ -103,8 +103,17 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
             >
               {/* Image Container with bleed, dark gradient & action arrow (Matching Reference Image) */}
               <div 
-                className="relative h-64 sm:h-72 overflow-hidden cursor-pointer"
+                role="button"
+                tabIndex={0}
+                aria-label={`View itinerary and details for ${dest.name}`}
+                className="relative h-64 sm:h-72 overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#2D5A3D]"
                 onClick={() => onSelectDestination(dest)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectDestination(dest);
+                  }
+                }}
               >
                 <img
                   src={dest.image}

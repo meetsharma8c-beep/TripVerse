@@ -35,6 +35,7 @@ import {
   verifyEmailOtp,
   resendEmailConfirmation
 } from '../../services/authService';
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -124,6 +125,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     onClose();
   }, [onClose]);
 
+  useModalBehavior(isOpen, handleModalClose);
+
   useEffect(() => {
     if (emailResendCountdown <= 0) return;
     const timer = setInterval(() => {
@@ -131,18 +134,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, [emailResendCountdown]);
-
-  // Close modal with Escape key
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleModalClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, handleModalClose]);
 
   if (!isOpen) return null;
 
@@ -429,6 +420,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <div 
+      role="dialog"
+      aria-modal="true"
+      aria-label="Sign in or create account"
       onClick={handleModalClose}
       className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
     >

@@ -35,8 +35,13 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
   // Recipient VPA derivation
   const recipientVpa = `${toUser.toLowerCase().replace(/[^a-z0-9]/g, '')}.travel@okhdfcbank`;
 
-  // Build UPI URI & QR Code (memoized to prevent re-requesting QR code every second on timer ticks)
-  const transactionRef = useMemo(() => `SETTLE${Date.now().toString().slice(-6)}`, [isOpen, toUser, fromUser, amount]);
+  const [transactionRef, setTransactionRef] = useState(() => `SETTLE${Date.now().toString().slice(-6)}`);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTransactionRef(`SETTLE${Date.now().toString().slice(-6)}`);
+    }
+  }, [isOpen, toUser, fromUser, amount]);
   const upiUri = useMemo(() => buildUpiPaymentUri({
     payeeVpa: recipientVpa,
     payeeName: toUser,

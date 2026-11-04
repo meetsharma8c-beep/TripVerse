@@ -128,7 +128,10 @@ export const PwaInstallPrompt: React.FC = () => {
       setShowIosModal(true);
     }
   };
-  handleInstallClickRef.current = handleInstallClick;
+
+  useEffect(() => {
+    handleInstallClickRef.current = handleInstallClick;
+  });
 
   if (isInstalled) {
     return null;

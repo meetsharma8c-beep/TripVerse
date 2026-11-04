@@ -1,14 +1,14 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { 
   X, 
   Sparkles, 
   Lock, 
   ArrowRight, 
-  Compass, 
   CheckCircle2, 
   ShieldCheck,
   Check
 } from 'lucide-react';
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 
 interface GuestPlannerRestrictedModalProps {
   isOpen: boolean;
@@ -25,15 +25,7 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
   onOpenSignIn,
   prefilledDestination
 }) => {
-  // Close on Escape key
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  useModalBehavior(isOpen, onClose);
 
   if (!isOpen) return null;
 

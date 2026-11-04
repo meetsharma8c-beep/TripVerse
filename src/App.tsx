@@ -153,6 +153,117 @@ export function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(getCurrentUser());
   const [savedItemIds, setSavedItemIds] = useState<string[]>(() => loadSavedItemIds());
 
+  // Sub-tab inside Trip Detail view
+  const [tripSubTab, setTripSubTab] = useState<
+    'itinerary' | 'hub' | 'packing' | 'expenses' | 'gems' | 'deals' | 'route' | 'breakstops' | 'budget' | 'safety'
+  >('itinerary');
+  const [tripsViewMode, setTripsViewMode] = useState<'passes' | 'portfolio'>('passes');
+
+  // Modals & Drawers
+  const [isPlannerOpen, setIsPlannerOpen] = useState(() => Boolean(initialRoute.openPlanner && !isGuestUser(getCurrentUser())));
+  const [isGuestPlannerRestrictedOpen, setIsGuestPlannerRestrictedOpen] = useState(() => Boolean(initialRoute.openPlanner && isGuestUser(getCurrentUser())));
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCollabModalOpen, setIsCollabModalOpen] = useState(() => (initialRoute as any).openCollab || false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalInitialMethod, setAuthModalInitialMethod] = useState<'google' | 'email' | 'phone' | 'guest'>('google');
+  const [authModalInitialSubMode, setAuthModalInitialSubMode] = useState<'login' | 'signup'>('login');
+  const [isLiveNavOpen, setIsLiveNavOpen] = useState(false);
+  const [isProModalOpen, setIsProModalOpen] = useState(() => (initialRoute as any).openPro || false);
+  const [isBestDealModalOpen, setIsBestDealModalOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(() => initialRoute.openBooking || false);
+  const [selectedDestinationForDetails, setSelectedDestinationForDetails] = useState<Destination | null>(() => initialRoute.dest || null);
+  const [activityModalState, setActivityModalState] = useState<{
+    isOpen: boolean;
+    dayNumber: number;
+    activity?: ItineraryActivity | null;
+  }>({
+    isOpen: false,
+    dayNumber: 1,
+    activity: null
+  });
+
+  // Planner prefill params
+  const [plannerPrefill, setPlannerPrefill] = useState<{
+    destination: string;
+    duration: number;
+    travelers: number;
+    budget: number;
+  }>({
+    destination: '',
+    duration: 3,
+    travelers: 3,
+    budget: 8000
+  });
+
+  // Quick 1-Click AI Trip Generator State (Reconciling "Plan in 30 Seconds" with stepped feedback)
+  const [isGeneratingTrip, setIsGeneratingTrip] = useState(false);
+  const [generationParams, setGenerationParams] = useState<{
+    destination: string;
+    duration: number;
+    travelers: number;
+    budget: number;
+  }>({
+    destination: 'Udaipur',
+    duration: 3,
+    travelers: 2,
+    budget: 8000
+  });
+
+  // Active currency
+  const [currency, setCurrency] = useState<Currency>(getStoredCurrency());
+
+  // Trip Replanning & Disruption State
+  const [isReplanningOpen, setIsReplanningOpen] = useState(false);
+  const [replanningInitialScreen, setReplanningInitialScreen] = useState<1 | 2 | 3 | 4 | 5 | 'refund'>(2);
+  const [activeDisruption, setActiveDisruption] = useState<DisruptionAlert | null>(null);
+  const [prevActiveTripId, setPrevActiveTripId] = useState<string | undefined>(undefined);
+  const [isDisruptionDismissed, setIsDisruptionDismissed] = useState(false);
+  const [activeChatQuery, setActiveChatQuery] = useState<string | undefined>(undefined);
+
+  // Feature 2: Photo Memories Scrapbook State
+  const [isPhotoJournalOpen, setIsPhotoJournalOpen] = useState(false);
+  const [photoJournalTrip, setPhotoJournalTrip] = useState<Trip | null>(null);
+
+  // Feature 3: Notification Center & Countdown State
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  // Feature 4: First-Time User Onboarding State
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+
+  // Feature 5: Post-Trip Review Modal State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewTrip, setReviewTrip] = useState<Trip | null>(null);
+
+  // Native & PWA App Opening Animation Screen State
+  const [showSplash, setShowSplash] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('nosplash') === 'true' || window.localStorage?.getItem('tripverse_skip_splash') === 'true' || window.sessionStorage?.getItem('tripverse_skip_splash') === 'true') {
+        return false;
+      }
+    }
+    return true;
+  });
+  const [splashPlatform, setSplashPlatform] = useState<'ios' | 'android' | undefined>(undefined);
+
+  // Genuine App Initialization Tracking
+  const [isAppReady, setIsAppReady] = useState<boolean>(false);
+  const [initStage, setInitStage] = useState<{ progress: number; message: string }>({
+    progress: 25,
+    message: 'Initializing travel intelligence...'
+  });
+
+  const handleFinishSplash = React.useCallback(() => {
+    setShowSplash(false);
+    try {
+      window.sessionStorage?.setItem('tripverse_skip_splash', 'true');
+    } catch {}
+  }, []);
+
   useEffect(() => {
     // Process pending redirect authentication (e.g. returning from Google Sign-In redirect on mobile/Safari)
     checkAndProcessFirebaseRedirectResult()
@@ -272,117 +383,6 @@ export function App() {
       }
     });
     return unsub;
-  }, []);
-
-  // Sub-tab inside Trip Detail view
-  const [tripSubTab, setTripSubTab] = useState<
-    'itinerary' | 'hub' | 'packing' | 'expenses' | 'gems' | 'deals' | 'route' | 'breakstops' | 'budget' | 'safety'
-  >('itinerary');
-  const [tripsViewMode, setTripsViewMode] = useState<'passes' | 'portfolio'>('passes');
-
-  // Modals & Drawers
-  const [isPlannerOpen, setIsPlannerOpen] = useState(() => Boolean(initialRoute.openPlanner && !isGuestUser(getCurrentUser())));
-  const [isGuestPlannerRestrictedOpen, setIsGuestPlannerRestrictedOpen] = useState(() => Boolean(initialRoute.openPlanner && isGuestUser(getCurrentUser())));
-  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
-  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isCollabModalOpen, setIsCollabModalOpen] = useState(() => (initialRoute as any).openCollab || false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalInitialMethod, setAuthModalInitialMethod] = useState<'google' | 'email' | 'phone' | 'guest'>('google');
-  const [authModalInitialSubMode, setAuthModalInitialSubMode] = useState<'login' | 'signup'>('login');
-  const [isLiveNavOpen, setIsLiveNavOpen] = useState(false);
-  const [isProModalOpen, setIsProModalOpen] = useState(() => (initialRoute as any).openPro || false);
-  const [isBestDealModalOpen, setIsBestDealModalOpen] = useState(false);
-  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(() => initialRoute.openBooking || false);
-  const [selectedDestinationForDetails, setSelectedDestinationForDetails] = useState<Destination | null>(() => initialRoute.dest || null);
-  const [activityModalState, setActivityModalState] = useState<{
-    isOpen: boolean;
-    dayNumber: number;
-    activity?: ItineraryActivity | null;
-  }>({
-    isOpen: false,
-    dayNumber: 1,
-    activity: null
-  });
-
-  // Planner prefill params
-  const [plannerPrefill, setPlannerPrefill] = useState<{
-    destination: string;
-    duration: number;
-    travelers: number;
-    budget: number;
-  }>({
-    destination: '',
-    duration: 3,
-    travelers: 3,
-    budget: 8000
-  });
-
-  // Quick 1-Click AI Trip Generator State (Reconciling "Plan in 30 Seconds" with stepped feedback)
-  const [isGeneratingTrip, setIsGeneratingTrip] = useState(false);
-  const [generationParams, setGenerationParams] = useState<{
-    destination: string;
-    duration: number;
-    travelers: number;
-    budget: number;
-  }>({
-    destination: 'Udaipur',
-    duration: 3,
-    travelers: 2,
-    budget: 8000
-  });
-
-  // Active currency
-  const [currency, setCurrency] = useState<Currency>(getStoredCurrency());
-
-  // Trip Replanning & Disruption State
-  const [isReplanningOpen, setIsReplanningOpen] = useState(false);
-  const [replanningInitialScreen, setReplanningInitialScreen] = useState<1 | 2 | 3 | 4 | 5 | 'refund'>(2);
-  const [activeDisruption, setActiveDisruption] = useState<DisruptionAlert | null>(null);
-  const [prevActiveTripId, setPrevActiveTripId] = useState<string | undefined>(undefined);
-  const [isDisruptionDismissed, setIsDisruptionDismissed] = useState(false);
-  const [activeChatQuery, setActiveChatQuery] = useState<string | undefined>(undefined);
-
-  // Feature 2: Photo Memories Scrapbook State
-  const [isPhotoJournalOpen, setIsPhotoJournalOpen] = useState(false);
-  const [photoJournalTrip, setPhotoJournalTrip] = useState<Trip | null>(null);
-
-  // Feature 3: Notification Center & Countdown State
-  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
-
-  // Feature 4: First-Time User Onboarding State
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-
-  // Feature 5: Post-Trip Review Modal State
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [reviewTrip, setReviewTrip] = useState<Trip | null>(null);
-
-  // Native & PWA App Opening Animation Screen State
-  const [showSplash, setShowSplash] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get('nosplash') === 'true' || window.localStorage?.getItem('tripverse_skip_splash') === 'true' || window.sessionStorage?.getItem('tripverse_skip_splash') === 'true') {
-        return false;
-      }
-    }
-    return true;
-  });
-  const [splashPlatform, setSplashPlatform] = useState<'ios' | 'android' | undefined>(undefined);
-
-  // Genuine App Initialization Tracking
-  const [isAppReady, setIsAppReady] = useState<boolean>(false);
-  const [initStage, setInitStage] = useState<{ progress: number; message: string }>({
-    progress: 25,
-    message: 'Initializing travel intelligence...'
-  });
-
-  const handleFinishSplash = React.useCallback(() => {
-    setShowSplash(false);
-    try {
-      window.sessionStorage?.setItem('tripverse_skip_splash', 'true');
-    } catch {}
   }, []);
 
   useEffect(() => {
@@ -571,6 +571,10 @@ export function App() {
         setIsAuthModalOpen(false);
         return;
       }
+      if (isProModalOpen) {
+        setIsProModalOpen(false);
+        return;
+      }
       if (isOnboardingOpen) {
         setIsOnboardingOpen(false);
         return;
@@ -636,6 +640,7 @@ export function App() {
         isPhotoJournalOpen ||
         isReviewModalOpen ||
         isAuthModalOpen ||
+        isProModalOpen ||
         isOnboardingOpen ||
         activityModalState.isOpen ||
         legalModalState.isOpen ||
@@ -656,6 +661,7 @@ export function App() {
         setIsPhotoJournalOpen(false);
         setIsReviewModalOpen(false);
         setIsAuthModalOpen(false);
+        setIsProModalOpen(false);
         setIsOnboardingOpen(false);
         setActivityModalState(prev => ({ ...prev, isOpen: false }));
         setLegalModalState(prev => ({ ...prev, isOpen: false }));
@@ -691,6 +697,8 @@ export function App() {
     isPhotoJournalOpen,
     isReviewModalOpen,
     isAuthModalOpen,
+    isProModalOpen,
+    isGuestPlannerRestrictedOpen,
     isOnboardingOpen,
     activityModalState.isOpen,
     legalModalState.isOpen,
@@ -699,7 +707,7 @@ export function App() {
     isCollabModalOpen,
     currentTab,
     trips,
-    currentUser?.uid
+    currentUser
   ]);
 
   // Spotlight Global Search (⌘K / Ctrl+K) Listener
@@ -1236,7 +1244,23 @@ export function App() {
           }
         }
         if (action.payload?.trip) {
-          handleTripGenerated(action.payload.trip);
+          const tripCandidate = action.payload.trip;
+          if (tripCandidate.id && Array.isArray(tripCandidate.days)) {
+            const trip = { ...tripCandidate };
+            if (currentUser?.uid) {
+              trip.userId = currentUser.uid;
+              trip.isUserCreated = true;
+            }
+            consumeTripCredit(currentUser);
+            saveOrUpdateTrip(trip, currentUser?.uid);
+            setTrips(prev => [trip, ...prev]);
+            setActiveTripIdState(trip.id);
+            setActiveTripId(trip.id, currentUser?.uid);
+            setCurrentTab('trip-detail');
+            setIsAIChatOpen(false);
+          } else {
+            handleTripGenerated(action.payload.trip);
+          }
         }
         break;
       case 'UPDATE_TRIP':
@@ -2273,7 +2297,7 @@ export function App() {
             onClose={() => setIsGuestPlannerRestrictedOpen(false)}
             onOpenSignUp={() => {
               setIsGuestPlannerRestrictedOpen(false);
-              setAuthModalInitialMethod('google');
+              setAuthModalInitialMethod('email');
               setAuthModalInitialSubMode('signup');
               setIsAuthModalOpen(true);
             }}
@@ -2301,7 +2325,7 @@ export function App() {
             }}
             onOpenAuthModal={() => {
               setIsPlannerOpen(false);
-              setAuthModalInitialMethod('google');
+              setAuthModalInitialMethod('email');
               setAuthModalInitialSubMode('signup');
               setIsAuthModalOpen(true);
             }}

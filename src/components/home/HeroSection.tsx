@@ -415,6 +415,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               {featuredDestinations.map((dest) => (
                 <div
                   key={dest.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Explore ${dest.name}`}
                   onClick={() => {
                     if (onSelectDestination) {
                       onSelectDestination(dest);
@@ -427,7 +430,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       });
                     }
                   }}
-                  className="w-36 sm:w-44 h-48 sm:h-56 rounded-3xl overflow-hidden relative shrink-0 snap-start shadow-md border border-[#E2EBE1] cursor-pointer group active:scale-98 transition-transform"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      if (onSelectDestination) {
+                        onSelectDestination(dest);
+                      } else {
+                        onQuickPlan({
+                          destination: dest.name,
+                          duration: 3,
+                          travelers: 2,
+                          budget: dest.startBudget
+                        });
+                      }
+                    }
+                  }}
+                  className="w-36 sm:w-44 h-48 sm:h-56 rounded-3xl overflow-hidden relative shrink-0 snap-start shadow-md border border-[#E2EBE1] cursor-pointer group active:scale-98 transition-transform focus:outline-none focus:ring-2 focus:ring-[#2D5A3D]"
                 >
                   <img
                     src={dest.image}
@@ -539,10 +557,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
           {/* AI Teaser Card with 3D Robot Mascot (Matching Reference Image Screen 1) */}
           <div
+            role="button"
+            tabIndex={0}
+            aria-label="Let AI craft your perfect trip"
             onClick={() => {
               if (onOpenPlanner) onOpenPlanner();
             }}
-            className="card-elevate mt-6 rounded-3xl bg-[#EAF0E9] border border-[#DCE6DA] p-4 sm:p-5 flex items-center justify-between gap-4 cursor-pointer hover:border-[#2D5A3D] group tv-stagger-4"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (onOpenPlanner) onOpenPlanner();
+              }
+            }}
+            className="card-elevate mt-6 rounded-3xl bg-[#EAF0E9] border border-[#DCE6DA] p-4 sm:p-5 flex items-center justify-between gap-4 cursor-pointer hover:border-[#2D5A3D] group tv-stagger-4 focus:outline-none focus:ring-2 focus:ring-[#2D5A3D]"
           >
             <div className="flex items-center gap-3.5 min-w-0">
               <div className="w-11 h-11 rounded-2xl bg-white text-[#2D5A3D] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform duration-300">
