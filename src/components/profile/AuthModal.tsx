@@ -26,6 +26,8 @@ import {
   signInWithGooglePopup, 
   signInWithGoogleRedirect,
   signInWithGoogleCredential,
+  shouldPreferGoogleRedirect,
+  isFirebaseConfigured,
   isMobileDevice,
   ensureGoogleIdentityServices,
   createAccountWithSupabase, 
@@ -108,6 +110,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Status & Feedback
   const [isLoading, setIsLoading] = useState(false);
+  const [isAutoRedirecting, setIsAutoRedirecting] = useState(false);
+  const [autoRedirectStatus, setAutoRedirectStatus] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const activeRequestIdRef = useRef(0);
@@ -115,6 +119,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const switchAuthTab = useCallback((nextMethod: 'google' | 'email' | 'guest', nextEmailSubMode?: 'login' | 'signup') => {
     activeRequestIdRef.current += 1;
     setIsLoading(false);
+    setIsAutoRedirecting(false);
+    setAutoRedirectStatus(null);
     setErrorMsg(null);
     setSuccessMsg(null);
     setAuthMethod(nextMethod);
@@ -127,6 +133,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (isOpen) {
       activeRequestIdRef.current += 1;
       setIsLoading(false);
+      setIsAutoRedirecting(false);
+      setAutoRedirectStatus(null);
       setErrorMsg(null);
       setSuccessMsg(null);
       ensureGoogleIdentityServices().catch(() => {});
@@ -137,6 +145,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleModalClose = useCallback(() => {
     activeRequestIdRef.current += 1;
     setIsLoading(false);
+    setIsAutoRedirecting(false);
+    setAutoRedirectStatus(null);
     clearPhoneAuthSession();
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -157,6 +167,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // ----------------------------------------------------------------------
   // 1. Google Sign-In & Sign-Up via Firebase OAuth2 Popup / Redirect
+  // Fully automated zero-DOM fallback when popups are blocked
   // ----------------------------------------------------------------------
   const handleTriggerGoogleAuth = async (forceRedirect: boolean = false) => {
     const reqId = ++activeRequestIdRef.current;
@@ -164,11 +175,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    // Pre-flight check: automatically engage redirect on iOS, WebViews, Brave, PWAs, or mobile screens
+    const preferRedirect = forceRedirect || shouldPreferGoogleRedirect();
+
     try {
-      if (forceRedirect) {
+      if (preferRedirect && isFirebaseConfigured()) {
+        setIsAutoRedirecting(true);
+        setAutoRedirectStatus('Connecting to Google via secure redirect...');
         await signInWithGoogleRedirect();
         return; // Page will redirect to Google
       }
+
       const user = await signInWithGooglePopup();
       if (activeRequestIdRef.current !== reqId) return;
       try {
@@ -182,6 +199,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } catch (err: any) {
       if (activeRequestIdRef.current !== reqId) return;
       const msg = err?.message || '';
+      const code = err?.code || '';
+
+      // AUTOMATED POPUP BLOCKER RECOVERY (ZERO DOM INTERACTION):
+      const isPopupBlocked =
+        code === 'auth/popup-blocked' ||
+        code === 'auth/cancelled-popup-request' ||
+        msg.toLowerCase().includes('popup-blocked') ||
+        msg.toLowerCase().includes('popup was blocked') ||
+        msg.toLowerCase().includes('popup has been blocked') ||
+        msg.toLowerCase().includes('popup_failed_to_open') ||
+        msg.toLowerCase().includes('failed to open popup') ||
+        msg.toLowerCase().includes('blocked by your browser');
+
+      if (isPopupBlocked && isFirebaseConfigured()) {
+        console.warn('[TripVerse Auth] Popup blocker detected in AuthModal. Automatically engaging zero-DOM redirect...');
+        setIsAutoRedirecting(true);
+        setAutoRedirectStatus('Popup blocked by browser. Automatically redirecting to Google...');
+        try {
+          await signInWithGoogleRedirect();
+          return;
+        } catch (redirectErr: any) {
+          setIsAutoRedirecting(false);
+          setAutoRedirectStatus(null);
+          setErrorMsg(redirectErr?.message || 'Failed to redirect to Google.');
+          setIsLoading(false);
+          return;
+        }
+      }
+
       if (
         err.code === 'auth/popup-closed-by-user' ||
         msg.toLowerCase().includes('popup-closed') ||
@@ -189,15 +235,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         msg.toLowerCase().includes('closed')
       ) {
         setIsLoading(false);
+        setIsAutoRedirecting(false);
         return;
       }
       console.error('Google Auth error:', err);
       setErrorMsg(
-        err.message || 'Google sign-in could not complete. You can try the Direct Redirect button below.'
+        err.message || 'Google sign-in could not complete.'
       );
       // NOTE: Never switch tab away from google! Keep user on Google tab.
     } finally {
-      if (activeRequestIdRef.current === reqId) {
+      if (activeRequestIdRef.current === reqId && !isAutoRedirecting) {
         setIsLoading(false);
       }
     }
@@ -609,10 +656,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <button
                   type="button"
                   onClick={() => handleTriggerGoogleAuth(false)}
-                  disabled={isLoading}
+                  disabled={isLoading || isAutoRedirecting}
                   className="w-full py-3.5 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
                 >
-                  {isLoading ? (
+                  {isAutoRedirecting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#2D5A3D]" />
+                      <span>{autoRedirectStatus || 'Redirecting to Google...'}</span>
+                    </>
+                  ) : isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin text-[#2D5A3D]" />
                       <span>Connecting to Google...</span>
@@ -630,22 +682,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   )}
                 </button>
 
-                {/* Direct Redirect Mode (100% immune to Safari pop-up blockers) */}
-                <button
-                  type="button"
-                  onClick={() => handleTriggerGoogleAuth(true)}
-                  disabled={isLoading}
-                  className="w-full py-2.5 px-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:bg-slate-100 text-slate-600 font-medium text-[11px] flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-                  title="Direct Redirect navigates to Google directly without opening a popup window, ensuring 100% compatibility on iPhone Safari and privacy browsers"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Direct Redirect Sign-In (Recommended for Safari & Mobile)</span>
-                </button>
-
-                {isLoading && (
+                {/* Automated popup protection guarantee */}
+                <div className="flex items-center justify-between w-full px-1 text-[11px] text-slate-500 pt-0.5">
+                  <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Popup-blocker auto-bypass active</span>
+                  </span>
                   <button
                     type="button"
-                    onClick={() => switchAuthTab('google')}
+                    onClick={() => handleTriggerGoogleAuth(true)}
+                    disabled={isLoading || isAutoRedirecting}
+                    className="text-slate-400 hover:text-slate-700 underline cursor-pointer"
+                    title="Direct Redirect navigates to Google directly without opening a popup window"
+                  >
+                    Direct redirect
+                  </button>
+                </div>
+
+                {(isLoading || isAutoRedirecting) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLoading(false);
+                      setIsAutoRedirecting(false);
+                      setAutoRedirectStatus(null);
+                      switchAuthTab('google');
+                    }}
                     className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 underline cursor-pointer mt-1"
                   >
                     Taking long? Tap to reset

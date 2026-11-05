@@ -564,6 +564,46 @@ export function isMobileDevice(): boolean {
 }
 
 /**
+ * Detects whether the current browser or environment restricts or blocks OAuth popups,
+ * requiring an automated seamless full-page redirect flow (zero DOM friction).
+ */
+export function shouldPreferGoogleRedirect(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  const nav = window.navigator as any;
+  const ua = nav?.userAgent || '';
+
+  // 1. iOS / iPadOS devices (Mobile Safari strictly restricts OAuth popups & partitioned cookies)
+  const isIos = /iPad|iPhone|iPod/.test(ua) || (nav?.platform === 'MacIntel' && (nav?.maxTouchPoints || 0) > 1);
+  if (isIos) return true;
+
+  // 2. In-App WebViews (Instagram, Facebook, TikTok, WhatsApp, Line, Twitter/X, WeChat, LinkedIn)
+  // Embedded WebViews block window.open and Google forbids OAuth in webviews
+  const isWebView = /(FBAN|FBAV|Instagram|Line|Twitter|Snapchat|TikTok|MicroMessenger|LinkedInApp|WebView|wv)/i.test(ua);
+  if (isWebView) return true;
+
+  // 3. Standalone PWA mode or Capacitor native runtime
+  const isStandalone = Boolean(
+    window.matchMedia?.('(display-mode: standalone)')?.matches ||
+    nav?.standalone === true ||
+    (window as any).Capacitor?.isNativePlatform?.()
+  );
+  if (isStandalone) return true;
+
+  // 4. Brave browser (Brave Shields blocks third-party auth popups by default)
+  const isBrave = Boolean(nav?.brave && typeof nav.brave.isBrave === 'function');
+  if (isBrave) return true;
+
+  // 5. Mobile viewports with touch screen (Google Auth officially recommends redirect for mobile)
+  const isMobileScreen = typeof window.innerWidth === 'number' && window.innerWidth < 768 && (
+    /Android|Mobile/i.test(ua) || (nav?.maxTouchPoints || 0) > 0
+  );
+  if (isMobileScreen) return true;
+
+  return false;
+}
+
+/**
  * Common handler for Firebase UserCredential (used by both popup and redirect results)
  */
 export async function handleFirebaseUserCredential(cred: any): Promise<AuthUser> {
@@ -664,18 +704,42 @@ export async function signInWithFirebaseGoogleAuth(): Promise<AuthUser> {
 }
 
 /**
- * Primary Google Sign-In: Prefers Firebase Auth when configured, with GIS fallback
+ * Primary Google Sign-In: Prefers Firebase Auth when configured, with GIS fallback.
+ * Automatically recovers from popup blockers by seamlessly auto-triggering the redirect flow without DOM friction.
  */
 export async function signInWithGooglePopup(): Promise<AuthUser> {
+  // If the browser environment is known to block or degrade popups, auto-switch to redirect immediately
+  if (shouldPreferGoogleRedirect() && isFirebaseConfigured()) {
+    console.log('[TripVerse Auth] Environment restricts popups - automatically switching to redirect flow...');
+    await signInWithGoogleRedirect();
+    return new Promise(() => {}); // Navigating to accounts.google.com
+  }
+
   // 1. If Firebase Auth is configured, attempt Firebase Auth popup
   if (isFirebaseConfigured()) {
     try {
       return await signInWithFirebaseGoogleAuth();
     } catch (fbErr: any) {
       const msg = fbErr?.message || '';
+      const code = fbErr?.code || '';
+
+      // AUTOMATED POPUP BLOCKER RECOVERY (ZERO DOM INTERACTION):
+      const isPopupBlocked =
+        code === 'auth/popup-blocked' ||
+        msg.toLowerCase().includes('popup-blocked') ||
+        msg.toLowerCase().includes('popup was blocked') ||
+        msg.toLowerCase().includes('popup has been blocked') ||
+        msg.toLowerCase().includes('failed to open popup');
+
+      if (isPopupBlocked) {
+        console.warn('[Firebase Auth] Browser blocked popup. Automatically transitioning to redirect flow without DOM intervention...');
+        await signInWithGoogleRedirect();
+        return new Promise(() => {}); // Window is navigating to Google
+      }
+
       if (
         fbErr?.code === 'auth/popup-closed-by-user' ||
-        fbErr?.code === 'auth/cancelled-popup-request' ||
+        (fbErr?.code === 'auth/cancelled-popup-request' && !msg.toLowerCase().includes('blocked')) ||
         msg.toLowerCase().includes('closed') ||
         msg.toLowerCase().includes('cancel')
       ) {
@@ -697,7 +761,7 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
       await signInWithGoogleRedirect();
       return new Promise(() => {});
     }
-    throw new Error('Google Sign-In is not configured (missing VITE_GOOGLE_CLIENT_ID). Please try the Direct Redirect button.');
+    throw new Error('Google Sign-In is not configured (missing VITE_GOOGLE_CLIENT_ID).');
   }
 
   await ensureGoogleIdentityServices();
@@ -721,12 +785,23 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
         const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: 'openid email profile',
-          error_callback: (errObj: any) => {
+          error_callback: async (errObj: any) => {
             const errType = errObj?.type || '';
             if (errType === 'popup_closed') {
               finishReject(new Error('Google sign-in was cancelled.'));
             } else if (errType === 'popup_failed_to_open') {
-              finishReject(new Error('Google popup was blocked by your browser. Please use the Direct Redirect button or allow popups.'));
+              // Automated recovery for GIS: If Firebase is configured, redirect automatically!
+              if (isFirebaseConfigured()) {
+                console.warn('[GIS Auth] Popup failed to open. Automatically switching to Google redirect flow...');
+                try {
+                  await signInWithGoogleRedirect();
+                  return;
+                } catch (rErr: any) {
+                  finishReject(rErr);
+                  return;
+                }
+              }
+              finishReject(new Error('Google popup was blocked by your browser. Please allow popups or switch to email sign-in.'));
             } else {
               finishReject(new Error(errObj?.message || 'Google Sign-In could not complete.'));
             }

@@ -30,7 +30,8 @@ import {
   consumeTripCredit,
   upgradeUserToPro,
   handleFirebaseUserCredential,
-  isMobileDevice
+  isMobileDevice,
+  shouldPreferGoogleRedirect
 } from '../src/services/authService';
 import { AuthUser } from '../src/types/auth';
 
@@ -341,5 +342,52 @@ describe('Auth Security & Verification Tests', () => {
     expect(proQuota.canCreateTrip).toBe(true);
     expect(proQuota.isPro).toBe(true);
     expect(proQuota.freeTripsRemaining).toBe(9999);
+  });
+
+  describe('Automated Google Auth Zero-DOM Redirect Detection', () => {
+    const originalNavigator = (global as any).window?.navigator;
+    const originalInnerWidth = (global as any).window?.innerWidth;
+
+    beforeEach(() => {
+      (global as any).window = (global as any).window || {};
+    });
+
+    it('automatically prefers redirect for iOS devices (iPhone/iPad) to prevent popup blocking', () => {
+      (global as any).window.navigator = {
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
+        platform: 'iPhone',
+        maxTouchPoints: 5
+      };
+      expect(shouldPreferGoogleRedirect()).toBe(true);
+    });
+
+    it('automatically prefers redirect for in-app WebViews (Instagram, Facebook, etc.)', () => {
+      (global as any).window.navigator = {
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 280.0.0.18.112',
+        platform: 'iPhone',
+        maxTouchPoints: 5
+      };
+      expect(shouldPreferGoogleRedirect()).toBe(true);
+    });
+
+    it('automatically prefers redirect for Standalone PWA mode', () => {
+      (global as any).window.navigator = {
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+        platform: 'MacIntel',
+        maxTouchPoints: 0,
+        standalone: true
+      };
+      expect(shouldPreferGoogleRedirect()).toBe(true);
+    });
+
+    it('allows standard popup on desktop browsers with wide screens', () => {
+      (global as any).window.navigator = {
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        platform: 'MacIntel',
+        maxTouchPoints: 0
+      };
+      (global as any).window.innerWidth = 1440;
+      expect(shouldPreferGoogleRedirect()).toBe(false);
+    });
   });
 });

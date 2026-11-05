@@ -222,9 +222,44 @@ function dropConsolePlugin(): Plugin {
     transform(code, id) {
       if (id.includes('node_modules')) return null;
       if (!/\.[jt]sx?$/.test(id)) return null;
-      if (!code.includes('console.')) return null;
+      if (!code.includes('console.log(') && !code.includes('console.debug(')) return null;
+      
+      // Robust scanner that respects string literals and nested parentheses
+      let result = '';
+      let i = 0;
+      while (i < code.length) {
+        if (code.startsWith('console.log(', i) || code.startsWith('console.debug(', i)) {
+          const startParen = code.indexOf('(', i);
+          let depth = 1;
+          let j = startParen + 1;
+          let inQuote = '';
+          while (j < code.length && depth > 0) {
+            const ch = code[j];
+            if (inQuote) {
+              if (ch === '\\') {
+                j++;
+              } else if (ch === inQuote) {
+                inQuote = '';
+              }
+            } else if (ch === '"' || ch === "'" || ch === '`') {
+              inQuote = ch;
+            } else if (ch === '(') {
+              depth++;
+            } else if (ch === ')') {
+              depth--;
+            }
+            j++;
+          }
+          if (code[j] === ';') j++;
+          result += 'void 0;';
+          i = j;
+        } else {
+          result += code[i];
+          i++;
+        }
+      }
       return {
-        code: code.replace(/\bconsole\.(log|debug)\([^)]*\);?/g, 'void 0;'),
+        code: result,
         map: null
       };
     }
