@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Destination, CurrencyCode } from '../../types/trip';
-import { X, Sparkles, MapPin, Wallet, Star, Bookmark, Check, Car, Utensils, Share2, ShieldCheck } from 'lucide-react';
+import { X, Sparkles, MapPin, Wallet, Star, Bookmark, Check, Car, Utensils, Share2, ShieldCheck, Compass } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { triggerHaptic } from '../../services/deviceService';
+import { Landmark3DViewer } from '../common/Landmark3DViewer';
 
 interface DestinationDetailModalProps {
   destination: Destination | null;
@@ -68,6 +69,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
 }) => {
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
   const [copiedLink, setCopiedLink] = useState(false);
+  const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
 
   useEffect(() => {
     const handleCurrency = () => setCurrency(getActiveCurrency());
@@ -145,6 +147,19 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('medium');
+                  setIs3DViewerOpen(true);
+                }}
+                className="px-3 py-2 rounded-full bg-emerald-600/95 hover:bg-emerald-500 text-white backdrop-blur-md transition-all shadow-md cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+                title="Explore in interactive 3D WebGL"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>3D View</span>
+              </button>
+
               {onToggleSaved && (
                 <button
                   type="button"
@@ -187,7 +202,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
           <div className="absolute bottom-4 left-5 right-5 text-white z-10">
             <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
               <MapPin className="w-3.5 h-3.5" />
-              <span>{destination.state}, India</span>
+              <span>{destination.state ? `${destination.state}, ` : ''}{destination.country || 'World'}</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-black font-display tracking-tight text-balance drop-shadow-md">
               {destination.name}
@@ -370,6 +385,16 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
         </div>
 
       </div>
+
+      {/* Interactive 3D WebGL Landmark Viewport */}
+      {is3DViewerOpen && (
+        <Landmark3DViewer
+          landmarkName={destination.popularActivities?.[0] || destination.name}
+          destination={destination.name}
+          isOpen={is3DViewerOpen}
+          onClose={() => setIs3DViewerOpen(false)}
+        />
+      )}
     </div>
   );
 };

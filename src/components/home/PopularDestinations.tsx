@@ -126,11 +126,18 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
 
                 {/* Top badges */}
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-extrabold text-[#152A1C] shadow-xs">
-                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    <span>{dest.rating}</span>
-                    <span className="text-[10px] text-[#2D5A3D] font-bold">Curated</span>
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-extrabold text-[#152A1C] shadow-xs">
+                      <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                      <span>{dest.rating}</span>
+                      <span className="text-[10px] text-[#2D5A3D] font-bold">Curated</span>
+                    </span>
+
+                    <span className="flex items-center gap-1 bg-emerald-950/70 text-emerald-300 border border-emerald-400/30 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] font-bold font-mono uppercase tracking-wider shadow-xs">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      <span>3D</span>
+                    </span>
+                  </div>
 
                   <button
                     onClick={(e) => {

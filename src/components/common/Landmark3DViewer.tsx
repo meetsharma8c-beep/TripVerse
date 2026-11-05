@@ -1,7 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
-import { X, Sun, Moon, Eye, RotateCw, Sparkles, Compass, MapPin } from 'lucide-react';
+import { 
+  X, 
+  Sun, 
+  Moon, 
+  Eye, 
+  RotateCw, 
+  Sparkles, 
+  Compass, 
+  MapPin, 
+  ZoomIn, 
+  ZoomOut, 
+  RotateCcw,
+  Building2,
+  Calendar,
+  Ruler
+} from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
+import { resolveLandmarkDetails, buildProceduralLandmark } from '../../services/landmark3DService';
 
 interface Landmark3DViewerProps {
   landmarkName: string;
@@ -14,12 +30,19 @@ interface Landmark3DViewerProps {
 export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
   landmarkName,
   destination,
-  landmarkType = 'heritage',
   isOpen,
   onClose
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
-  const [timeOfDay, setTimeOfDay] = useState<'day' | 'golden' | 'night'>('golden');
+  
+  // Resolve exact landmark architectural profile
+  const landmarkDetails = useMemo(() => {
+    return resolveLandmarkDetails(destination, landmarkName);
+  }, [destination, landmarkName]);
+
+  const [timeOfDay, setTimeOfDay] = useState<'day' | 'golden' | 'night'>(
+    landmarkDetails.defaultTimeOfDay || 'golden'
+  );
   const [isWireframe, setIsWireframe] = useState<boolean>(false);
   const [isAutoRotate, setIsAutoRotate] = useState<boolean>(true);
   const [webglSupported, setWebglSupported] = useState<boolean>(true);
@@ -54,7 +77,8 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 4, 9);
+    camera.position.set(...landmarkDetails.cameraPosition);
+    camera.lookAt(...landmarkDetails.cameraTarget);
     cameraRef.current = camera;
 
     // 2. Renderer with pixelRatio clamping for mobile performance
@@ -101,143 +125,8 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
     ring.position.y = 0.02;
     rootGroup.add(ring);
 
-    // Procedural landmark generation based on type
-    const lowerName = landmarkName.toLowerCase();
-    const isTower = lowerName.includes('tower') || lowerName.includes('burj') || lowerName.includes('minar') || lowerName.includes('khalifa');
-    const isTempleOrFort = lowerName.includes('temple') || lowerName.includes('fort') || lowerName.includes('palace') || lowerName.includes('mandir') || lowerName.includes('haveli');
-    const isNature = lowerName.includes('fall') || lowerName.includes('lake') || lowerName.includes('valley') || lowerName.includes('mountain') || lowerName.includes('park');
-
-    if (isTower) {
-      // Slender spire tower architecture
-      const baseGeo = new THREE.CylinderGeometry(1.2, 1.8, 1.5, 8);
-      const spireGeo1 = new THREE.CylinderGeometry(0.7, 1.2, 2.5, 8);
-      const spireGeo2 = new THREE.CylinderGeometry(0.1, 0.7, 2.2, 8);
-      const needleGeo = new THREE.CylinderGeometry(0.02, 0.08, 1.5, 8);
-
-      const stoneMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4, metalness: 0.6 });
-      const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.9 });
-      materials.push(stoneMat, glassMat);
-
-      const base = new THREE.Mesh(baseGeo, stoneMat);
-      base.position.y = 0.75;
-      base.castShadow = true;
-      rootGroup.add(base);
-
-      const tier1 = new THREE.Mesh(spireGeo1, glassMat);
-      tier1.position.y = 2.75;
-      tier1.castShadow = true;
-      rootGroup.add(tier1);
-
-      const tier2 = new THREE.Mesh(spireGeo2, glassMat);
-      tier2.position.y = 5.1;
-      tier2.castShadow = true;
-      rootGroup.add(tier2);
-
-      const needle = new THREE.Mesh(needleGeo, stoneMat);
-      needle.position.y = 6.95;
-      rootGroup.add(needle);
-    } else if (isTempleOrFort) {
-      // Majestic dome / citadel architecture
-      const baseGeo = new THREE.BoxGeometry(3.2, 1.2, 3.2);
-      const tierGeo = new THREE.BoxGeometry(2.2, 1.0, 2.2);
-      const domeGeo = new THREE.SphereGeometry(1.1, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-      const pillarGeo = new THREE.CylinderGeometry(0.18, 0.18, 2.8, 12);
-
-      const sandstoneMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6, metalness: 0.1 });
-      const marbleMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3, metalness: 0.1 });
-      materials.push(sandstoneMat, marbleMat);
-
-      const base = new THREE.Mesh(baseGeo, sandstoneMat);
-      base.position.y = 0.6;
-      base.castShadow = true;
-      base.receiveShadow = true;
-      rootGroup.add(base);
-
-      const tier = new THREE.Mesh(tierGeo, marbleMat);
-      tier.position.y = 1.7;
-      tier.castShadow = true;
-      rootGroup.add(tier);
-
-      const dome = new THREE.Mesh(domeGeo, sandstoneMat);
-      dome.position.y = 2.2;
-      dome.castShadow = true;
-      rootGroup.add(dome);
-
-      // 4 Corner Minarets / Pillars
-      const pillarPositions = [
-        [-1.4, -1.4],
-        [1.4, -1.4],
-        [-1.4, 1.4],
-        [1.4, 1.4]
-      ];
-      pillarPositions.forEach(([px, pz]) => {
-        const pillar = new THREE.Mesh(pillarGeo, marbleMat);
-        pillar.position.set(px, 1.4, pz);
-        pillar.castShadow = true;
-        rootGroup.add(pillar);
-
-        const miniDomeGeo = new THREE.SphereGeometry(0.3, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2);
-        const miniDome = new THREE.Mesh(miniDomeGeo, sandstoneMat);
-        miniDome.position.set(px, 2.8, pz);
-        rootGroup.add(miniDome);
-      });
-    } else if (isNature) {
-      // Natural peak, waterfall & pine trees
-      const mountainGeo = new THREE.ConeGeometry(2.4, 3.8, 7);
-      const snowGeo = new THREE.ConeGeometry(1.0, 1.6, 7);
-      const pineGeo = new THREE.ConeGeometry(0.5, 1.2, 5);
-      const trunkGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.4, 5);
-
-      const rockMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9, flatShading: true });
-      const snowMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.2 });
-      const foliageMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 });
-      const woodMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
-      materials.push(rockMat, snowMat, foliageMat, woodMat);
-
-      const mountain = new THREE.Mesh(mountainGeo, rockMat);
-      mountain.position.y = 1.9;
-      mountain.castShadow = true;
-      rootGroup.add(mountain);
-
-      const snowCap = new THREE.Mesh(snowGeo, snowMat);
-      snowCap.position.y = 3.0;
-      rootGroup.add(snowCap);
-
-      // Little alpine trees around base
-      const treeOffsets = [
-        [-1.8, 1.2],
-        [1.5, 1.4],
-        [-1.2, -1.5],
-        [1.6, -1.0]
-      ];
-      treeOffsets.forEach(([tx, tz]) => {
-        const trunk = new THREE.Mesh(trunkGeo, woodMat);
-        trunk.position.set(tx, 0.2, tz);
-        rootGroup.add(trunk);
-
-        const pine = new THREE.Mesh(pineGeo, foliageMat);
-        pine.position.set(tx, 0.8, tz);
-        pine.castShadow = true;
-        rootGroup.add(pine);
-      });
-    } else {
-      // General Heritage & Cultural Pavillion
-      const pavilionGeo = new THREE.CylinderGeometry(1.8, 2.2, 1.4, 12);
-      const roofGeo = new THREE.ConeGeometry(2.5, 1.6, 12);
-      const archMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4, metalness: 0.2 });
-      const roofMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.5 });
-      materials.push(archMat, roofMat);
-
-      const pavilion = new THREE.Mesh(pavilionGeo, archMat);
-      pavilion.position.y = 0.7;
-      pavilion.castShadow = true;
-      rootGroup.add(pavilion);
-
-      const roof = new THREE.Mesh(roofGeo, roofMat);
-      roof.position.y = 2.2;
-      roof.castShadow = true;
-      rootGroup.add(roof);
-    }
+    // Procedural landmark generation using bespoke architectural script
+    buildProceduralLandmark(landmarkDetails.id, rootGroup, materials);
 
     // Atmospheric golden floating particles
     const particleCount = 45;
@@ -300,8 +189,8 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
       prevMouseY = clientY;
 
       rootGroup.rotation.y += deltaX * 0.008;
-      camera.position.y = Math.max(1.5, Math.min(8.0, camera.position.y - deltaY * 0.015));
-      camera.lookAt(0, 1.8, 0);
+      camera.position.y = Math.max(1.2, Math.min(8.5, camera.position.y - deltaY * 0.015));
+      camera.lookAt(...landmarkDetails.cameraTarget);
     };
 
     const onPointerUp = () => {
@@ -322,7 +211,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
       animFrameIdRef.current = requestAnimationFrame(animate);
 
       if (isAutoRotate && !isDragging && rootGroup) {
-        rootGroup.rotation.y += 0.006;
+        rootGroup.rotation.y += 0.005;
       }
 
       // Gentle floating particle swirl
@@ -346,7 +235,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
       renderer.dispose();
       materials.forEach(m => m.dispose());
     };
-  }, [isOpen, landmarkName, isAutoRotate]);
+  }, [isOpen, landmarkDetails, isAutoRotate]);
 
   // Handle Time of Day lighting shifts
   useEffect(() => {
@@ -392,28 +281,44 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
     });
   }, [isWireframe]);
 
+  // Zoom controls
+  const handleZoom = (delta: number) => {
+    if (!cameraRef.current) return;
+    triggerHaptic('light');
+    const cam = cameraRef.current;
+    cam.position.z = Math.max(3.5, Math.min(14.0, cam.position.z + delta));
+  };
+
+  const handleResetCamera = () => {
+    if (!cameraRef.current || !groupRef.current) return;
+    triggerHaptic('medium');
+    cameraRef.current.position.set(...landmarkDetails.cameraPosition);
+    cameraRef.current.lookAt(...landmarkDetails.cameraTarget);
+    groupRef.current.rotation.set(0, 0, 0);
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col relative text-slate-100">
+      <div className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col relative text-slate-100">
         
         {/* Top Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/60">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-              <Sparkles className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 shadow-2xs">
+              <Sparkles className="w-4 h-4" />
             </span>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-bold text-sm text-white truncate">{landmarkName}</h3>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h3 className="font-bold text-sm text-white truncate">{landmarkDetails.landmarkName}</h3>
                 <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
                   WebGL 3D
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 flex items-center gap-1">
+              <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
                 <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
-                <span className="truncate">{destination}</span>
+                <span className="truncate">{landmarkDetails.destination}</span>
               </p>
             </div>
           </div>
@@ -424,13 +329,14 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
               onClose();
             }}
             className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+            aria-label="Close 3D Viewer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* 3D WebGL Canvas Viewport */}
-        <div className="relative w-full h-[320px] bg-gradient-to-b from-slate-950 to-slate-900 overflow-hidden">
+        <div className="relative w-full h-[320px] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 overflow-hidden select-none">
           {webglSupported ? (
             <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
           ) : (
@@ -439,7 +345,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
                 <Compass className="w-6 h-6 animate-pulse" />
               </div>
               <div className="space-y-1">
-                <h4 className="text-sm font-bold text-white">{landmarkName}</h4>
+                <h4 className="text-sm font-bold text-white">{landmarkDetails.landmarkName}</h4>
                 <p className="text-xs text-slate-400 max-w-xs">
                   Hardware 3D acceleration is restricted on this browser. Full interactive details and maps are active below.
                 </p>
@@ -447,8 +353,39 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
             </div>
           )}
 
-          {/* Overlay Controls */}
-          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-auto">
+          {/* Top Left Navigation Hint */}
+          <div className="absolute top-2.5 left-3 text-[10px] text-slate-400/90 font-mono flex items-center gap-1.5 pointer-events-none bg-slate-950/60 backdrop-blur-md px-2 py-1 rounded-lg border border-slate-800/80">
+            <Compass className="w-3 h-3 text-emerald-400 shrink-0" />
+            <span>Drag to rotate • Pinch / buttons to zoom</span>
+          </div>
+
+          {/* Top Right Zoom Controls */}
+          <div className="absolute top-2.5 right-3 flex items-center gap-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-700/60 shadow-lg pointer-events-auto">
+            <button
+              onClick={() => handleZoom(-1.2)}
+              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => handleZoom(1.2)}
+              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleResetCamera}
+              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              title="Reset View"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Bottom Overlay Controls */}
+          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-auto flex-wrap gap-2">
             {/* Lighting Modes */}
             <div className="flex items-center gap-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-xl border border-slate-700/60 shadow-lg">
               <button
@@ -456,7 +393,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
                   triggerHaptic('light');
                   setTimeOfDay('golden');
                 }}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
                   timeOfDay === 'golden' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'
                 }`}
                 title="Golden Hour Sunset"
@@ -469,7 +406,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
                   triggerHaptic('light');
                   setTimeOfDay('day');
                 }}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
                   timeOfDay === 'day' ? 'bg-sky-500 text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'
                 }`}
                 title="Daylight"
@@ -482,7 +419,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
                   triggerHaptic('light');
                   setTimeOfDay('night');
                 }}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
                   timeOfDay === 'night' ? 'bg-indigo-500 text-white shadow-xs' : 'text-slate-400 hover:text-white'
                 }`}
                 title="Night Sky"
@@ -499,7 +436,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
                   triggerHaptic('light');
                   setIsAutoRotate(!isAutoRotate);
                 }}
-                className={`p-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                className={`p-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                   isAutoRotate ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
                 }`}
                 title="Toggle Auto Rotation"
@@ -511,7 +448,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
                   triggerHaptic('light');
                   setIsWireframe(!isWireframe);
                 }}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
                   isWireframe ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
                 }`}
                 title="Toggle Wireframe Architecture"
@@ -521,23 +458,57 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
               </button>
             </div>
           </div>
-
-          {/* Interactive Hint */}
-          <div className="absolute top-2.5 left-3 text-[10px] text-slate-400/80 font-mono flex items-center gap-1 pointer-events-none">
-            <Compass className="w-3 h-3 text-emerald-400" />
-            <span>Drag to rotate • Pinch to zoom</span>
-          </div>
         </div>
 
-        {/* CONCODE Brain Landmark Intelligence Card */}
-        <div className="p-4 bg-slate-950 border-t border-slate-800 space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-slate-200">CONCODE WebGL 3D Intelligence</span>
-            <span className="text-[10px] text-emerald-400 font-mono">Guild: webgl ✨</span>
+        {/* CONCODE Brain Architectural Intelligence & Facts */}
+        <div className="p-4 bg-slate-950 border-t border-slate-800 space-y-3">
+          
+          {/* Metadata Badges Strip */}
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800">
+              <div className="flex items-center justify-center gap-1 text-[10px] uppercase font-bold text-slate-400">
+                <Building2 className="w-3 h-3 text-emerald-400" />
+                <span>Style</span>
+              </div>
+              <span className="text-xs font-bold text-white block truncate mt-0.5" title={landmarkDetails.architecturalStyle}>
+                {landmarkDetails.architecturalStyle}
+              </span>
+            </div>
+
+            <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800">
+              <div className="flex items-center justify-center gap-1 text-[10px] uppercase font-bold text-slate-400">
+                <Ruler className="w-3 h-3 text-sky-400" />
+                <span>Scale</span>
+              </div>
+              <span className="text-xs font-bold text-white block truncate mt-0.5" title={landmarkDetails.heightOrSize}>
+                {landmarkDetails.heightOrSize}
+              </span>
+            </div>
+
+            <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800">
+              <div className="flex items-center justify-center gap-1 text-[10px] uppercase font-bold text-slate-400">
+                <Calendar className="w-3 h-3 text-amber-400" />
+                <span>Built</span>
+              </div>
+              <span className="text-xs font-bold text-white block truncate mt-0.5" title={landmarkDetails.yearBuilt}>
+                {landmarkDetails.yearBuilt}
+              </span>
+            </div>
           </div>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Real-time interactive 3D procedural simulation generated by CONCODE Brain. Allows travelers to visualize architectural orientation, sun exposure, and elevation layout prior to booking.
-          </p>
+
+          {/* Curator Insight */}
+          <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800/80 space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-semibold text-slate-300 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-emerald-400" />
+                <span>Architectural Topography</span>
+              </span>
+              <span className="text-[10px] text-emerald-400 font-mono">CONCODE Brain: webgl ✨</span>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              {landmarkDetails.curatorInsight}
+            </p>
+          </div>
         </div>
 
       </div>
