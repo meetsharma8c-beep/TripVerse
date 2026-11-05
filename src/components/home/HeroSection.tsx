@@ -459,7 +459,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-1 text-white">
                     <div className="min-w-0 flex-1">
                       <h4 className="text-sm font-bold font-display truncate drop-shadow-md">{dest.name}</h4>
-                      <p className="text-[11px] text-white/80 font-medium truncate drop-shadow-sm">{dest.state}</p>
+                      <p className="text-[11px] text-white/80 font-medium truncate drop-shadow-sm">
+                        {dest.country && dest.country !== 'India' ? `${dest.state ? `${dest.state}, ` : ''}${dest.country}` : dest.state}
+                      </p>
                     </div>
                     {/* Circular White Arrow Button */}
                     <div className="w-6 h-6 rounded-full bg-white text-[#152A1C] flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
@@ -699,7 +701,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                                 {spot.name}
                               </span>
                               <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#F4F6F2] text-[#57685D] border border-[#E2EBE1]">
-                                {spot.state}
+                                {spot.country && spot.country !== 'India' && spot.country !== 'Worldwide' ? `${spot.country}` : spot.state}
                               </span>
                               <span className="text-[11px] font-mono text-[#2D5A3D] bg-[#E8EFE7] px-1.5 py-0.5 rounded border border-[#DCE7DB]">
                                 {spot.coordinates.lat.toFixed(2)}°, {spot.coordinates.lng.toFixed(2)}°

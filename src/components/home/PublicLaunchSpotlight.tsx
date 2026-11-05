@@ -54,7 +54,7 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
 
   const shareLinks = {
     whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(`${shareText} ${launchUrl}`)}`,
-    twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(launchUrl)}&hashtags=TripVerse,RoadTrip,TravelAI,IncredibleIndia`,
+    twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(launchUrl)}&hashtags=TripVerse,RoadTrip,TravelAI,Wanderlust`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(launchUrl)}`
   };
 
@@ -100,7 +100,7 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
                 className="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/20 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
               >
                 <Compass className="w-4 h-4 text-emerald-300" />
-                <span>Explore India</span>
+                <span>Explore the World</span>
               </button>
             </div>
           </div>

@@ -54,6 +54,24 @@ const TRAVELER_STYLES = [
   { id: 'Luxury & Leisure', label: 'Luxury & Leisure' }
 ];
 
+function detectUserCountry(): string {
+  try {
+    const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').toLowerCase();
+    if (tz.includes('calcutta') || tz.includes('kolkata') || tz.includes('asia/colombo')) return 'India';
+    if (tz.includes('london')) return 'United Kingdom';
+    if (tz.includes('paris')) return 'France';
+    if (tz.includes('berlin')) return 'Germany';
+    if (tz.includes('rome')) return 'Italy';
+    if (tz.includes('madrid')) return 'Spain';
+    if (tz.includes('tokyo')) return 'Japan';
+    if (tz.includes('dubai')) return 'United Arab Emirates';
+    if (tz.includes('toronto') || tz.includes('vancouver') || tz.includes('montreal')) return 'Canada';
+    if (tz.includes('sydney') || tz.includes('melbourne') || tz.includes('brisbane')) return 'Australia';
+    if (tz.includes('america') || tz.includes('new_york') || tz.includes('chicago') || tz.includes('los_angeles')) return 'United States';
+  } catch {}
+  return 'Worldwide';
+}
+
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
@@ -82,7 +100,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [emailLocation, setEmailLocation] = useState('India');
+  const [emailLocation, setEmailLocation] = useState(() => detectUserCountry());
   const [emailTravelerStyle, setEmailTravelerStyle] = useState('Budget explorer');
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [emailOtpToken, setEmailOtpToken] = useState('');
@@ -197,7 +215,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const user = await signInAnonymouslyWithSupabase({
         name: name.trim() || 'Explorer',
         travelerStyle: emailTravelerStyle || 'Budget explorer',
-        location: emailLocation || 'India'
+        location: emailLocation || detectUserCountry()
       });
       if (activeRequestIdRef.current !== reqId) return;
       try {
@@ -304,7 +322,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         email: email.trim(),
         password,
         travelerStyle: emailTravelerStyle,
-        location: emailLocation || 'India'
+        location: emailLocation || detectUserCountry()
       });
       if (activeRequestIdRef.current !== reqId) return;
 

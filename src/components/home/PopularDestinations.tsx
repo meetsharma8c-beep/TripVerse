@@ -152,7 +152,9 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                 <div className="absolute bottom-3 left-3 right-3 p-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 flex items-end justify-between gap-2 text-white shadow-lg">
                   <div className="min-w-0 flex-1">
                     <h3 className="text-lg font-bold font-display leading-tight truncate">{dest.name}</h3>
-                    <p className="text-xs text-white/80 font-medium mt-0.5 truncate">{dest.state}</p>
+                    <p className="text-xs text-white/80 font-medium mt-0.5 truncate">
+                      {dest.country && dest.country !== 'India' ? `${dest.state ? `${dest.state}, ` : ''}${dest.country}` : dest.state}
+                    </p>
                   </div>
 
                   {/* Circular White Arrow Button (Matching Reference Image) */}

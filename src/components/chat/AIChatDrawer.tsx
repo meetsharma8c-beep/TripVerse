@@ -14,6 +14,7 @@ import { triggerHaptic } from '../../services/deviceService';
 import { ConcodeBrainConfigModal } from './ConcodeBrainConfigModal';
 import { getUserSubscriptionQuota, consumeAssistantMinute } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
+import { formatCurrency, getActiveCurrency, CURRENCIES } from '../../services/currencyService';
 
 interface AIChatDrawerProps {
   trip: Trip;
@@ -433,7 +434,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         guild: 'fullstack',
         actionButtons: [
           { label: 'Plan a 5-day trip to Dubai', action: 'PLAN_DUBAI', primary: true },
-          { label: 'I have ₹1,00,000 budget', action: 'BUDGET_1LAKH' },
+          { label: `Budget: ${formatCurrency(100000)}`, action: 'BUDGET_1LAKH' },
           { label: 'I like food and architecture', action: 'PREF_FOOD_ARCH' },
           { label: 'Get Directions', action: 'START_NAV' }
         ]
@@ -511,9 +512,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     if (action === 'PLAN_DUBAI') {
       handleSendMessage('Plan a 5-day trip to Dubai');
     } else if (action === 'BUDGET_1LAKH') {
-      handleSendMessage('I have ₹1,00,000');
+      handleSendMessage(`I have a budget of ${formatCurrency(100000)}`);
     } else if (action === 'BUDGET_50K') {
-      handleSendMessage('I have ₹50,000');
+      handleSendMessage(`I have a budget of ${formatCurrency(50000)}`);
     } else if (action === 'PREF_FOOD_ARCH') {
       handleSendMessage('I like food and architecture');
     } else if (action === 'PREF_ADVENTURE') {
@@ -593,7 +594,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     { label: '🐝 Group Consensus', prompt: 'Plan a group trip with mixed preferences (adventure and food)' },
     { label: '🧠 Memory Ring', prompt: 'What do you remember in my travel profile memory ring?' },
     { label: '5-Day Dubai', prompt: 'Plan a 5-day trip to Dubai' },
-    { label: 'Budget ₹1 Lakh', prompt: 'I have ₹1,00,000' },
+    { label: `Budget ${formatCurrency(100000)}`, prompt: `I have a budget of ${formatCurrency(100000)}` },
     { label: 'Food & Arch', prompt: 'I like food and architecture' },
     { label: 'Day 3 Cheaper', prompt: 'Make Day 3 cheaper' },
     { label: 'Rainy Day Alt', prompt: 'Give me a rainy-day alternative' },
@@ -819,7 +820,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                           </span>
                         </div>
                         <span className="text-[11px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 shrink-0">
-                          ₹{Number(String(msg.structuredItinerary.totalCost ?? (msg.structuredItinerary as any).total_cost ?? 0).replace(/[^0-9.-]+/g, '') || 0).toLocaleString('en-IN')} Budget
+                          {formatCurrency(Number(String(msg.structuredItinerary.totalCost ?? (msg.structuredItinerary as any).total_cost ?? 0).replace(/[^0-9.-]+/g, '') || 0))} Budget
                         </span>
                       </div>
 

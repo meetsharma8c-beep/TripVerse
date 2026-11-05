@@ -1,10 +1,11 @@
-import { Trip, DayPlan, ItineraryActivity, RouteType, TravelPreference, Coordinates, Destination } from '../types/trip';
+import { Trip, DayPlan, ItineraryActivity, RouteType, TravelPreference, Coordinates, Destination, CurrencyCode } from '../types/trip';
 import { POPULAR_DESTINATIONS } from '../data/destinations';
 import { synthesizeDestination, resolveDestinationImage } from '../utils/destinationImages';
 import { generateTransportDeals } from './dealService';
 import { resolvePreciseLocationSync, PreciseLocation } from './locationService';
 import { selectHotelForTrip } from './hotelService';
 import { resolveTransitContext } from './transportFeasibilityEngine';
+import { getActiveCurrency, formatCurrency, CURRENCIES } from './currencyService';
 
 export interface PlannerInput {
   origin: string;
@@ -15,6 +16,7 @@ export interface PlannerInput {
   travelerType: any;
   budgetMode: 'per_person' | 'total';
   budgetAmount: number;
+  currency?: CurrencyCode;
   preferences: TravelPreference[];
   specialRequests?: string;
   transportMode: any;
@@ -161,7 +163,114 @@ function getRegionalCuisine(state: string, country: string, foodPreference: stri
       snack: 'Vada Pav with Dry Garlic Chutney'
     };
   }
-  if (normCountry && normCountry !== 'india') {
+
+  // ─── INTERNATIONAL REGIONAL CUISINES ───
+  if (normCountry.includes('italy') || normState.includes('rome') || normState.includes('lazio') || normState.includes('tuscany') || normState.includes('veneto')) {
+    return {
+      cuisineName: 'Italian & Mediterranean',
+      breakfast: 'Fresh Cornetto with Creamy Cappuccino & Fresh Blood Orange Juice',
+      lunch: isStrictVeg 
+        ? 'Handmade Tagliatelle al Tartufo & Crisp Caprese Salad with Buffalo Mozzarella'
+        : 'Authentic Roman Carbonara / Wood-Fired Margherita with Burrata & Basil',
+      dinner: 'Trattoria Candlelit Feast with Truffle Risotto, Rosemary Focaccia & Classic Tiramisu',
+      snack: 'Artisanal Pistachio & Stracciatella Gelato'
+    };
+  }
+  if (normCountry.includes('japan') || normState.includes('tokyo') || normState.includes('kyoto') || normState.includes('kanto') || normState.includes('kansai')) {
+    return {
+      cuisineName: 'Japanese Washoku',
+      breakfast: isStrictVeg
+        ? 'Steamed Japanese Rice, Miso Soup, Tamagoyaki & Pickled Tsukemono'
+        : 'Traditional Japanese Breakfast with Grilled Salmon, Miso Soup & Onigiri',
+      lunch: isStrictVeg
+        ? 'Crispy Vegetable Tempura Udon Bowl with Fresh Wasabi & Green Tea'
+        : 'Artisan Tonkotsu Ramen / Chef Nigiri Sushi Selection with Steamed Edamame',
+      dinner: 'Kaiseki Multi-course Feast with Matcha Infusions & Seasonal Delicacies',
+      snack: 'Warm Taiyaki Cake & Ceremonial Uji Matcha Latte'
+    };
+  }
+  if (normCountry.includes('france') || normState.includes('paris') || normState.includes('riviera') || normState.includes('provence')) {
+    return {
+      cuisineName: 'French Haute & Bistro',
+      breakfast: 'Flaky Butter Croissant, Pain au Chocolat & Fresh Cafe au Lait',
+      lunch: isStrictVeg
+        ? 'Provencal Ratatouille with Warm Crusty Baguette & Goat Cheese Tartine'
+        : 'Classic Quiche Lorraine or Bistro Duck Confit with French Pommes Frites',
+      dinner: 'Gourmet Bistro Dinner with French Onion Soup, Truffle Pasta & Crème Brûlée',
+      snack: 'Parisian Pistachio Macarons & Earl Grey Tea'
+    };
+  }
+  if (normCountry.includes('spain') || normState.includes('catalonia') || normState.includes('barcelona') || normState.includes('madrid')) {
+    return {
+      cuisineName: 'Spanish Tapas & Catalan',
+      breakfast: 'Pan con Tomate with Extra Virgin Olive Oil & Café con Leche',
+      lunch: isStrictVeg
+        ? 'Vegetable Garden Paella with Patatas Bravas & Pimientos de Padrón'
+        : 'Authentic Seafood Paella Valenciana with Gambas al Ajillo Tapas',
+      dinner: 'Evening Tapas Crawl: Tortilla Española, Manchego Cheese & Sangria',
+      snack: 'Crispy Churros dipped in Rich Dark Hot Chocolate'
+    };
+  }
+  if (normCountry.includes('united arab emirates') || normCountry.includes('uae') || normState.includes('dubai') || normState.includes('abu dhabi')) {
+    return {
+      cuisineName: 'Emirati & Levantine',
+      breakfast: 'Spiced Shakshuka with Warm Zaatar Pita & Mint Tea',
+      lunch: 'Velvety Hummus, Crisp Falafel, Fattoush Salad & Halloumi Skewers',
+      dinner: isStrictVeg
+        ? 'Vegetable Biryani with Spiced Yoghurt Raïta, Stuffed Vine Leaves & Baklava'
+        : 'Royal Mixed Grill Feast with Shish Tawook, Lamb Kofta & Kunafa',
+      snack: 'Medjool Dates filled with Almonds & Cardamom Arabic Coffee'
+    };
+  }
+  if (normCountry.includes('united states') || normState.includes('new york') || normState.includes('california')) {
+    return {
+      cuisineName: 'American Artisan & Farm-to-Table',
+      breakfast: 'Toasted Everything Bagel with Cream Cheese, Fresh Berries & Cold Brew',
+      lunch: 'Artisanal Wood-Fired Sourdough Pizza or Gourmet Avocado Toast Bowl',
+      dinner: 'Farm-to-Table Bistro Dinner with Truffle Fries & Warm Apple Pie with Vanilla Ice Cream',
+      snack: 'Warm Cinnamon Pretzel & Spiced Cider'
+    };
+  }
+  if (normCountry.includes('united kingdom') || normState.includes('london') || normState.includes('scotland')) {
+    return {
+      cuisineName: 'British & Gastro-pub',
+      breakfast: 'Traditional English Breakfast (Poached Eggs, Grilled Tomatoes, Mushrooms & Toast)',
+      lunch: isStrictVeg
+        ? 'Gourmet Veggie Shepherd’s Pie with Garden Peas & Buttered Mash'
+        : 'Crisp Beer-Battered Fish & Chips with Tartar Sauce & Minted Peas',
+      dinner: 'Classic Gastro-pub Roast with Yorkshire Pudding, Roasted Vegetables & Sticky Toffee Pudding',
+      snack: 'Traditional Cream Tea with Fresh Scones, Clotted Cream & Jam'
+    };
+  }
+  if (normCountry.includes('thailand') || normState.includes('bangkok') || normState.includes('phuket')) {
+    return {
+      cuisineName: 'Thai Royal & Street Gourmet',
+      breakfast: 'Silky Thai Rice Congee with Fresh Ginger & Thai Iced Tea',
+      lunch: 'Classic Pad Thai Noodles with Crushed Peanuts, Fresh Lime & Crispy Spring Rolls',
+      dinner: 'Fragrant Green Coconut Curry with Jasmine Rice & Som Tum Papaya Salad',
+      snack: 'Sweet Mango Sticky Rice with Rich Coconut Cream'
+    };
+  }
+  if (normCountry.includes('switzerland') || normState.includes('valais') || normState.includes('bern')) {
+    return {
+      cuisineName: 'Swiss Alpine',
+      breakfast: 'Bircher Muesli with Fresh Mountain Berries, Gruyère Cheese & Alpine Bread',
+      lunch: 'Golden Crisp Rösti Skillet with Melted Swiss Cheese & Fresh Herb Salad',
+      dinner: 'Traditional Alpine Cheese Fondue with Crusty Cubed Bread & Steamed Potatoes',
+      snack: 'Artisanal Swiss Dark Chocolate Pralines & Mountain Herb Tea'
+    };
+  }
+  if (normCountry.includes('greece') || normState.includes('santorini') || normState.includes('cyclades')) {
+    return {
+      cuisineName: 'Greek Aegean',
+      breakfast: 'Creamy Greek Strained Yoghurt with Thyme Honey & Roasted Walnuts',
+      lunch: 'Crisp Greek Horiatiki Salad with Kalamata Olives, Feta & Spanakopita Pie',
+      dinner: 'Sunset Seaside Feast: Baked Greek Moussaka with Oregano Roasted Lemon Potatoes',
+      snack: 'Honey-soaked Crispy Baklava with Greek Mountain Tea'
+    };
+  }
+
+  if (normCountry && normCountry !== 'india' && normCountry !== 'worldwide') {
     return {
       cuisineName: 'Continental & Regional Artisan',
       breakfast: 'Artisan Pastries, Fresh Seasonal Fruit & Cafe Latte',
@@ -294,11 +403,12 @@ export function generateAITrip(input: PlannerInput): Trip {
 
   // Exact display name for spot (e.g. "Mansarovar, Jaipur", "Chopta", "Polo Forest", "Hallstatt")
   const spotName = preciseLoc.name || matchedDest.name || rawDestName;
-  const state = preciseLoc.state || matchedDest.state || 'India';
-  const country = preciseLoc.country || 'India';
+  const state = preciseLoc.state || matchedDest.state || 'Destination';
+  const country = preciseLoc.country || matchedDest.country || 'Worldwide';
   const spotType = preciseLoc.spotType || 'nature';
   const category = preciseLoc.category || matchedDest.category || 'roadtrip';
   const transitContext = resolveTransitContext(spotName);
+  const activeCurrency: CurrencyCode = input.currency || getActiveCurrency();
 
   // Determine true destination coordinates
   const destCoords: Coordinates = input.destinationCoords || preciseLoc.coordinates || matchedDest.coordinates || { lat: 26.9124, lng: 75.7873 };
@@ -455,7 +565,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           estimatedCost: scaleExpense(sight1Fee * safeTravelers),
           travelTimeMin: Math.round(routeHours * 30),
           distanceKm: Math.round(routeDistKm * 0.5),
-          description: `${activityMeta.morningDesc} (Est. entry ticket: ~₹${sight1Fee}/person).`,
+          description: `${activityMeta.morningDesc} (Est. entry ticket: ~${formatCurrency(sight1Fee, activeCurrency)}/person).`,
           coordinates: { lat: destCoords.lat + 0.004, lng: destCoords.lng + 0.003 },
           tag: 'Attraction'
         },
@@ -564,7 +674,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           estimatedCost: scaleExpense(140 * cityMultiplier * safeTravelers),
           travelTimeMin: Math.round(routeHours * 30),
           distanceKm: Math.round(routeDistKm * 0.5),
-          description: `Suggested refreshment break & transit connection en-route (~₹${scaleExpense(140 * cityMultiplier)}/person).`,
+          description: `Suggested refreshment break & transit connection en-route (~${formatCurrency(scaleExpense(140 * cityMultiplier), activeCurrency)}/person).`,
           coordinates: {
             lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.5,
             lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.5
@@ -596,7 +706,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           estimatedCost: scaleExpense(340 * cityMultiplier * safeTravelers),
           travelTimeMin: 15,
           distanceKm: 1.5,
-          description: `Authentic regional feast: ${cuisine.lunch}. Tailored for ${foodPref} dining (~₹${scaleExpense(340 * cityMultiplier)}/person).`,
+          description: `Authentic regional feast: ${cuisine.lunch}. Tailored for ${foodPref} dining (~${formatCurrency(scaleExpense(340 * cityMultiplier), activeCurrency)}/person).`,
           coordinates: { lat: destCoords.lat - 0.003, lng: destCoords.lng + 0.003 },
           tag: 'Lunch'
         },
@@ -610,7 +720,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           estimatedCost: scaleExpense(day1SightFee * safeTravelers),
           travelTimeMin: 20,
           distanceKm: 2.5,
-          description: `${activityMeta.afternoonDesc} (Est. entry ticket: ~₹${day1SightFee}/person).`,
+          description: `${activityMeta.afternoonDesc} (Est. entry ticket: ~${formatCurrency(day1SightFee, activeCurrency)}/person).`,
           coordinates: { lat: destCoords.lat + 0.005, lng: destCoords.lng + 0.004 },
           tag: 'Attraction'
         },
@@ -638,7 +748,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           estimatedCost: scaleExpense(440 * cityMultiplier * safeTravelers),
           travelTimeMin: 10,
           distanceKm: 1.2,
-          description: `Evening feast enjoying ${cuisine.dinner} under starry skies (~₹${scaleExpense(440 * cityMultiplier)}/person).`,
+          description: `Evening feast enjoying ${cuisine.dinner} under starry skies (~${formatCurrency(scaleExpense(440 * cityMultiplier), activeCurrency)}/person).`,
           coordinates: { lat: destCoords.lat + 0.001, lng: destCoords.lng + 0.002 },
           tag: 'Dinner'
         }
@@ -814,7 +924,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           estimatedCost: scaleExpense(midSightFee * safeTravelers),
           travelTimeMin: 25,
           distanceKm: 5.0,
-          description: `Prime sightseeing and photography with picturesque landscapes and architecture (Est. ticket: ~₹${midSightFee}/person).`,
+          description: `Prime sightseeing and photography with picturesque landscapes and architecture (Est. ticket: ~${formatCurrency(midSightFee, activeCurrency)}/person).`,
           coordinates: { lat: destCoords.lat + 0.005 * d, lng: destCoords.lng + 0.004 * d },
           tag: 'Sightseeing'
         },
@@ -938,7 +1048,10 @@ export function generateAITrip(input: PlannerInput): Trip {
     destinationDetails: {
       image: resolveDestinationImage(spotName, category) || matchedDest.image,
       state: state,
-      description: matchedDest.description || `${spotName} in ${state}, ${country}. Handcrafted AI travel plan.`,
+      country: country,
+      countryCode: matchedDest.countryCode,
+      continent: matchedDest.continent,
+      description: matchedDest.description || `${spotName} in ${state ? `${state}, ` : ''}${country}. Handcrafted AI travel plan.`,
       coordinates: destCoords,
       category: category,
       preciseSpot: true,
@@ -948,6 +1061,7 @@ export function generateAITrip(input: PlannerInput): Trip {
     durationDays: daysCount,
     travelersCount: safeTravelers,
     travelerType: input.travelerType || 'friends',
+    currency: activeCurrency,
     totalBudget: totalBudget,
     budgetPerPerson: budgetPerPerson,
     preferences: input.preferences?.length ? input.preferences : ['culture', 'nature', 'budget'],
@@ -960,7 +1074,7 @@ export function generateAITrip(input: PlannerInput): Trip {
     isSample: false,
     createdAt: new Date().toISOString(),
     startDate: safeStartDate,
-    aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state}) for ${safeTravelers} traveler(s).${isSingleDay ? '' : ` Selected stay: ${recommendedHotel.name} (${recommendedHotel.starRating}★).`} Pacing: ${pacing.replace('_', ' ')}. Total budget calibrated to regional prices. Buffer estimate: ₹${Math.max(0, totalBudget - estimatedTotal).toLocaleString('en-IN')}.`,
+    aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state ? `${state}, ` : ''}${country}) for ${safeTravelers} traveler(s).${isSingleDay ? '' : ` Selected stay: ${recommendedHotel.name} (${recommendedHotel.starRating}★).`} Pacing: ${pacing.replace('_', ' ')}. Total budget calibrated to regional prices. Buffer estimate: ${formatCurrency(Math.max(0, totalBudget - estimatedTotal), activeCurrency)}.`,
     breakStops: [],
     budgetBreakdown: {
       transportation: transportCost,

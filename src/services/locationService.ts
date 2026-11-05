@@ -21,6 +21,139 @@ export interface PreciseLocation {
  */
 export const PRECISE_SPOTS_INDEX: PreciseLocation[] = [
   {
+    id: 'eiffel-tower-paris',
+    name: 'Eiffel Tower',
+    fullName: 'Eiffel Tower, Champ de Mars, Paris, France',
+    state: 'Île-de-France',
+    country: 'France',
+    coordinates: { lat: 48.8584, lng: 2.2945 },
+    category: 'heritage',
+    spotType: 'monument',
+    highlights: [
+      'Summit Observation Deck with 360° Paris Panorama',
+      'Champ de Mars Gardens & Seine River Walk',
+      'Evening Golden Illuminations & Twinkling Sparkle Show',
+      'Le Jules Verne Michelin-starred Dining'
+    ],
+    tagline: 'Global Iron Wonder • Champ de Mars • Panoramic Seine Vistas',
+    image: 'https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?auto=format&fit=crop&w=1200&q=80',
+    popularDish: 'Freshly baked Parisian Croissant, Macarons & Cafe au Lait'
+  },
+  {
+    id: 'colosseum-rome',
+    name: 'Colosseum',
+    fullName: 'Colosseum & Roman Forum, Rome, Italy',
+    state: 'Lazio',
+    country: 'Italy',
+    coordinates: { lat: 41.8902, lng: 12.4922 },
+    category: 'heritage',
+    spotType: 'monument',
+    highlights: [
+      'Ancient Roman Flavian Amphitheatre Arena Floor',
+      'Underground Hypogeum & Gladiator Tunnels',
+      'Palatine Hill Imperial Palaces Overlook',
+      'Roman Forum Via Sacra Historic Trail'
+    ],
+    tagline: 'Iconic Gladiatorial Arena • Roman Forum • Imperial Palatine Hill',
+    image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1200&q=80',
+    popularDish: 'Authentic Roman Spaghetti Carbonara & Creamy Artisanal Gelato'
+  },
+  {
+    id: 'statue-of-liberty-ny',
+    name: 'Statue of Liberty',
+    fullName: 'Statue of Liberty National Monument, New York, USA',
+    state: 'New York',
+    country: 'United States',
+    coordinates: { lat: 40.6892, lng: -74.0445 },
+    category: 'heritage',
+    spotType: 'monument',
+    highlights: [
+      'Liberty Island Ferry & Harbor Skyline Vista',
+      'Crown Access & Pedestal Observation Balcony',
+      'Ellis Island National Immigration Museum',
+      'Panoramic Views of Lower Manhattan & Brooklyn Bridge'
+    ],
+    tagline: 'Beacon of Freedom • New York Harbor • Crown Skyline Panorama',
+    image: 'https://images.unsplash.com/photo-1605130284535-11dd9eedc58a?auto=format&fit=crop&w=1200&q=80',
+    popularDish: 'New York Style Bagel with Lox & Wood-fired NY Pizza Slice'
+  },
+  {
+    id: 'burj-khalifa-dubai',
+    name: 'Burj Khalifa',
+    fullName: 'Burj Khalifa, Downtown Dubai, United Arab Emirates',
+    state: 'Dubai',
+    country: 'United Arab Emirates',
+    coordinates: { lat: 25.1972, lng: 55.2744 },
+    category: 'heritage',
+    spotType: 'monument',
+    highlights: [
+      'At The Top Level 148 Sky Lounge Vista (555m)',
+      'Dubai Fountain Synchronized Evening Water Show',
+      'Downtown Dubai Boulevard Promenade',
+      'Dubai Mall Underwater Zoo & Aquarium'
+    ],
+    tagline: 'World’s Tallest Skyscraper • Dubai Fountain • Observation Sky Deck',
+    image: 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=1200&q=80',
+    popularDish: 'Arabic Mixed Grill, Kunafa & Fragrant Cardamom Gahwa Coffee'
+  },
+  {
+    id: 'sagrada-familia-barcelona',
+    name: 'Sagrada Família',
+    fullName: 'Basílica de la Sagrada Família, Barcelona, Spain',
+    state: 'Catalonia',
+    country: 'Spain',
+    coordinates: { lat: 41.4036, lng: 2.1744 },
+    category: 'heritage',
+    spotType: 'temple',
+    highlights: [
+      'Gaudí’s UNESCO Masterpiece & Stained Glass Light Forest',
+      'Nativity & Passion Tower Panoramic Ascents',
+      'Crypt & Architectural Design Museum',
+      'Eixample District Catalan Tapas Trail'
+    ],
+    tagline: 'Antoni Gaudí Masterpiece • Forest of Stone • Luminous Stained Glass',
+    image: 'https://images.unsplash.com/photo-1583422409516-2895a77efded?auto=format&fit=crop&w=1200&q=80',
+    popularDish: 'Seafood Paella Valenciana & Patatas Bravas with Sangria'
+  },
+  {
+    id: 'sydney-opera-house',
+    name: 'Sydney Opera House',
+    fullName: 'Sydney Opera House, Bennelong Point, Sydney, Australia',
+    state: 'New South Wales',
+    country: 'Australia',
+    coordinates: { lat: -33.8568, lng: 151.2153 },
+    category: 'heritage',
+    spotType: 'monument',
+    highlights: [
+      'Architectural Sail Shells & Concert Hall Tour',
+      'Circular Quay Harbor Ferry Promenade',
+      'Sydney Harbour Bridge Pylon Lookout',
+      'Royal Botanic Garden Waterfront Walk'
+    ],
+    tagline: 'World Heritage Architectural Sails • Sydney Harbour • Waterfront Promenade',
+    image: 'https://images.unsplash.com/photo-1523428096881-5cb7994c4998?auto=format&fit=crop&w=1200&q=80',
+    popularDish: 'Fresh Sydney Rock Oysters, Barramundi & Flat White Coffee'
+  },
+  {
+    id: 'mount-fuji-japan',
+    name: 'Mount Fuji',
+    fullName: 'Mount Fuji & Fuji Five Lakes, Yamanashi/Shizuoka, Japan',
+    state: 'Chubu',
+    country: 'Japan',
+    coordinates: { lat: 35.3606, lng: 138.7274 },
+    category: 'mountain',
+    spotType: 'mountain',
+    highlights: [
+      'Lake Kawaguchiko Fuji Reflection Viewpoint',
+      'Chureito Pagoda Iconic Cherry Blossom Vista',
+      'Fuji Subaru 5th Station High Altitude Trails',
+      'Hakone Ropeway & Owakudani Geothermal Valley'
+    ],
+    tagline: 'Sacred Snow-Capped Volcano • Fuji Five Lakes • Chureito Pagoda',
+    image: 'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?auto=format&fit=crop&w=1200&q=80',
+    popularDish: 'Hoto Noodles Stew, Fresh Soba & Matcha Soft Serve'
+  },
+  {
     id: 'poicha-gujarat',
     name: 'Poicha',
     fullName: 'Poicha, Narmada District, Gujarat, India',
@@ -433,7 +566,7 @@ export async function searchLocations(
           const address = item.address || {};
           const cityOrTown = address.city || address.town || address.village || address.suburb || address.hamlet || address.county || item.name;
           const state = address.state || address.province || address.region || '';
-          const country = address.country || 'India';
+          const country = address.country || (address.country_code ? address.country_code.toUpperCase() : '') || 'Global';
           const displayName = item.display_name || '';
 
           // Determine spot type & category
@@ -473,7 +606,7 @@ export async function searchLocations(
             id: `osm-${item.osm_id || idx}-${Date.now()}`,
             name: title,
             fullName: displayName.split(',').slice(0, 3).join(', ').trim() || displayName,
-            state: state || (country === 'India' ? 'India' : country),
+            state: state || cityOrTown || country,
             country,
             coordinates: {
               lat: parseFloat(item.lat),
@@ -548,85 +681,250 @@ export function resolvePreciseLocationSync(input: string): PreciseLocation {
     return PRECISE_SPOTS_INDEX.find(s => s.id === 'statue-of-unity')!;
   }
 
-  // Categorize based on keywords
+  // Categorize based on keywords & Global Atlas
   let category: Destination['category'] = 'roadtrip';
   let spotType: PreciseLocation['spotType'] = 'city';
-  let state = 'India';
-  let country = 'India';
-  let coordinates: Coordinates = { lat: 26.9124, lng: 75.7873 }; // Universal safe geographic default
+  let state = 'Worldwide Destination';
+  let country = 'Worldwide';
+  let coordinates: Coordinates = { lat: 48.8566, lng: 2.3522 }; // Neutral international coordinate
 
-  if (norm.includes('gujarat') || norm.includes('ahmedabad') || norm.includes('surat') || norm.includes('vadodara') || norm.includes('rajkot') || norm.includes('kutch') || norm.includes('somnath') || norm.includes('dwarka') || norm.includes('polo')) {
+  // 1. UNITED STATES
+  if (norm.includes('new york') || norm.includes('manhattan') || norm.includes('brooklyn') || norm.includes('nyc')) {
+    state = 'New York';
+    country = 'United States';
+    coordinates = { lat: 40.7128, lng: -74.0060 };
+    category = 'roadtrip';
+  } else if (norm.includes('san francisco') || norm.includes('los angeles') || norm.includes('california') || norm.includes('san diego') || norm.includes('yosemite')) {
+    state = 'California';
+    country = 'United States';
+    coordinates = norm.includes('san francisco') ? { lat: 37.7749, lng: -122.4194 } : { lat: 34.0522, lng: -118.2437 };
+    category = norm.includes('yosemite') ? 'nature' : 'beach';
+  } else if (norm.includes('las vegas') || norm.includes('nevada') || norm.includes('grand canyon')) {
+    state = norm.includes('grand canyon') ? 'Arizona' : 'Nevada';
+    country = 'United States';
+    coordinates = norm.includes('grand canyon') ? { lat: 36.1069, lng: -112.1129 } : { lat: 36.1699, lng: -115.1398 };
+    category = norm.includes('grand canyon') ? 'nature' : 'roadtrip';
+  } else if (norm.includes('miami') || norm.includes('orlando') || norm.includes('florida')) {
+    state = 'Florida';
+    country = 'United States';
+    coordinates = { lat: 25.7617, lng: -80.1918 };
+    category = 'beach';
+  } else if (norm.includes('hawaii') || norm.includes('honolulu') || norm.includes('maui')) {
+    state = 'Hawaii';
+    country = 'United States';
+    coordinates = { lat: 21.3069, lng: -157.8583 };
+    category = 'beach';
+  } else if (norm.includes('chicago') || norm.includes('illinois')) {
+    state = 'Illinois';
+    country = 'United States';
+    coordinates = { lat: 41.8781, lng: -87.6298 };
+
+  // 2. UNITED KINGDOM
+  } else if (norm.includes('london') || norm.includes('england') || norm.includes('edinburgh') || norm.includes('scotland') || norm.includes('manchester')) {
+    state = norm.includes('edinburgh') || norm.includes('scotland') ? 'Scotland' : 'Greater London';
+    country = 'United Kingdom';
+    coordinates = norm.includes('edinburgh') ? { lat: 55.9533, lng: -3.1883 } : { lat: 51.5074, lng: -0.1278 };
+    category = 'heritage';
+
+  // 3. FRANCE
+  } else if (norm.includes('paris') || norm.includes('nice') || norm.includes('france') || norm.includes('lyon') || norm.includes('cannes') || norm.includes('marseille')) {
+    state = norm.includes('nice') || norm.includes('cannes') ? 'French Riviera' : 'Île-de-France';
+    country = 'France';
+    coordinates = norm.includes('nice') ? { lat: 43.7102, lng: 7.2620 } : { lat: 48.8566, lng: 2.3522 };
+    category = norm.includes('nice') ? 'beach' : 'heritage';
+
+  // 4. ITALY
+  } else if (norm.includes('rome') || norm.includes('italy') || norm.includes('florence') || norm.includes('venice') || norm.includes('milan') || norm.includes('amalfi')) {
+    state = norm.includes('venice') ? 'Veneto' : norm.includes('florence') ? 'Tuscany' : norm.includes('milan') ? 'Lombardy' : 'Lazio';
+    country = 'Italy';
+    coordinates = norm.includes('venice') ? { lat: 45.4408, lng: 12.3155 } : norm.includes('florence') ? { lat: 43.7696, lng: 11.2558 } : { lat: 41.9028, lng: 12.4964 };
+    category = 'heritage';
+
+  // 5. SPAIN
+  } else if (norm.includes('barcelona') || norm.includes('madrid') || norm.includes('spain') || norm.includes('seville') || norm.includes('mallorca') || norm.includes('ibiza')) {
+    state = norm.includes('madrid') ? 'Community of Madrid' : norm.includes('seville') ? 'Andalusia' : 'Catalonia';
+    country = 'Spain';
+    coordinates = norm.includes('madrid') ? { lat: 40.4168, lng: -3.7038 } : { lat: 41.3879, lng: 2.1699 };
+    category = norm.includes('ibiza') || norm.includes('mallorca') ? 'beach' : 'heritage';
+
+  // 6. JAPAN
+  } else if (norm.includes('japan') || norm.includes('tokyo') || norm.includes('kyoto') || norm.includes('osaka') || norm.includes('fuji') || norm.includes('hokkaido')) {
+    state = norm.includes('kyoto') || norm.includes('osaka') ? 'Kansai' : 'Kanto';
+    country = 'Japan';
+    coordinates = norm.includes('kyoto') ? { lat: 35.0116, lng: 135.7681 } : { lat: 35.6762, lng: 139.6503 };
+    category = 'heritage';
+
+  // 7. UAE & MIDDLE EAST
+  } else if (norm.includes('dubai') || norm.includes('uae') || norm.includes('abu dhabi') || norm.includes('qatar') || norm.includes('doha')) {
+    state = norm.includes('abu dhabi') ? 'Abu Dhabi' : 'Dubai';
+    country = 'United Arab Emirates';
+    coordinates = norm.includes('abu dhabi') ? { lat: 24.4539, lng: 54.3773 } : { lat: 25.2048, lng: 55.2708 };
+    category = 'adventure';
+
+  // 8. SWITZERLAND & AUSTRIA
+  } else if (norm.includes('switzerland') || norm.includes('interlaken') || norm.includes('zermatt') || norm.includes('zurich') || norm.includes('swiss alps') || norm.includes('lucerne')) {
+    state = 'Valais & Bernese Oberland';
+    country = 'Switzerland';
+    coordinates = { lat: 46.5590, lng: 8.5609 };
+    category = 'mountain';
+    spotType = 'hill_station';
+  } else if (norm.includes('austria') || norm.includes('hallstatt') || norm.includes('vienna') || norm.includes('salzburg')) {
+    state = 'Upper Austria';
+    country = 'Austria';
+    coordinates = { lat: 47.5622, lng: 13.6493 };
+    category = 'heritage';
+
+  // 9. GREECE & NETHERLANDS & GERMANY
+  } else if (norm.includes('greece') || norm.includes('santorini') || norm.includes('athens') || norm.includes('mykonos')) {
+    state = norm.includes('santorini') ? 'Cyclades' : 'Attica';
+    country = 'Greece';
+    coordinates = norm.includes('santorini') ? { lat: 36.3932, lng: 25.4615 } : { lat: 37.9838, lng: 23.7275 };
+    category = 'beach';
+  } else if (norm.includes('amsterdam') || norm.includes('netherlands') || norm.includes('holland')) {
+    state = 'North Holland';
+    country = 'Netherlands';
+    coordinates = { lat: 52.3676, lng: 4.9041 };
+    category = 'heritage';
+  } else if (norm.includes('germany') || norm.includes('berlin') || norm.includes('munich') || norm.includes('bavaria')) {
+    state = norm.includes('munich') || norm.includes('bavaria') ? 'Bavaria' : 'Berlin';
+    country = 'Germany';
+    coordinates = norm.includes('munich') ? { lat: 48.1351, lng: 11.5820 } : { lat: 52.5200, lng: 13.4050 };
+    category = 'heritage';
+
+  // 10. SOUTHEAST ASIA & OCEANIA
+  } else if (norm.includes('singapore')) {
+    state = 'Singapore';
+    country = 'Singapore';
+    coordinates = { lat: 1.3521, lng: 103.8198 };
+    category = 'nature';
+  } else if (norm.includes('thailand') || norm.includes('bangkok') || norm.includes('phuket') || norm.includes('chiang mai')) {
+    state = norm.includes('phuket') ? 'Phuket' : 'Bangkok';
+    country = 'Thailand';
+    coordinates = norm.includes('phuket') ? { lat: 7.8804, lng: 98.3923 } : { lat: 13.7563, lng: 100.5018 };
+    category = norm.includes('phuket') ? 'beach' : 'heritage';
+  } else if (norm.includes('bali') || norm.includes('indonesia') || norm.includes('jakarta')) {
+    state = 'Bali Province';
+    country = 'Indonesia';
+    coordinates = { lat: -8.4095, lng: 115.1889 };
+    category = 'nature';
+  } else if (norm.includes('australia') || norm.includes('sydney') || norm.includes('melbourne') || norm.includes('brisbane')) {
+    state = norm.includes('melbourne') ? 'Victoria' : 'New South Wales';
+    country = 'Australia';
+    coordinates = norm.includes('melbourne') ? { lat: -37.8136, lng: 144.9631 } : { lat: -33.8688, lng: 151.2093 };
+    category = 'beach';
+  } else if (norm.includes('new zealand') || norm.includes('auckland') || norm.includes('queenstown')) {
+    state = norm.includes('queenstown') ? 'Otago' : 'North Island';
+    country = 'New Zealand';
+    coordinates = norm.includes('queenstown') ? { lat: -45.0312, lng: 168.6626 } : { lat: -36.8485, lng: 174.7633 };
+    category = 'adventure';
+
+  // 11. CANADA & LATIN AMERICA & AFRICA
+  } else if (norm.includes('canada') || norm.includes('toronto') || norm.includes('vancouver') || norm.includes('banff') || norm.includes('montreal')) {
+    state = norm.includes('banff') ? 'Alberta' : norm.includes('vancouver') ? 'British Columbia' : 'Ontario';
+    country = 'Canada';
+    coordinates = norm.includes('banff') ? { lat: 51.1784, lng: -115.5708 } : { lat: 43.6532, lng: -79.3832 };
+    category = norm.includes('banff') ? 'mountain' : 'roadtrip';
+  } else if (norm.includes('brazil') || norm.includes('rio de janeiro') || norm.includes('sao paulo')) {
+    state = 'Rio de Janeiro';
+    country = 'Brazil';
+    coordinates = { lat: -22.9068, lng: -43.1729 };
+    category = 'beach';
+  } else if (norm.includes('south africa') || norm.includes('cape town')) {
+    state = 'Western Cape';
+    country = 'South Africa';
+    coordinates = { lat: -33.9249, lng: 18.4241 };
+    category = 'beach';
+  } else if (norm.includes('egypt') || norm.includes('cairo') || norm.includes('giza')) {
+    state = 'Cairo Governorate';
+    country = 'Egypt';
+    coordinates = { lat: 30.0444, lng: 31.2357 };
+    category = 'heritage';
+
+  // 12. INDIA (Fully preserved)
+  } else if (norm.includes('gujarat') || norm.includes('ahmedabad') || norm.includes('surat') || norm.includes('vadodara') || norm.includes('rajkot') || norm.includes('kutch') || norm.includes('somnath') || norm.includes('dwarka') || norm.includes('polo')) {
     state = 'Gujarat';
+    country = 'India';
     coordinates = norm.includes('polo') ? { lat: 24.0044, lng: 73.2386 } : { lat: 23.0225, lng: 72.5714 };
   } else if (norm.includes('rajasthan') || norm.includes('jaipur') || norm.includes('mansarovar') || norm.includes('jodhpur') || norm.includes('udaipur') || norm.includes('jaisalmer') || norm.includes('pushkar') || norm.includes('bikaner') || norm.includes('abu')) {
     state = 'Rajasthan';
+    country = 'India';
     coordinates = norm.includes('mansarovar') ? { lat: 26.8530, lng: 75.7645 } : { lat: 26.9124, lng: 75.7873 };
   } else if (norm.includes('uttarakhand') || norm.includes('rishikesh') || norm.includes('haridwar') || norm.includes('dehradun') || norm.includes('nainital') || norm.includes('mussoorie') || norm.includes('chopta') || norm.includes('tungnath') || norm.includes('kedarnath') || norm.includes('badrinath') || norm.includes('auli')) {
     state = 'Uttarakhand';
+    country = 'India';
     category = 'mountain';
     spotType = 'hill_station';
     coordinates = norm.includes('chopta') ? { lat: 30.4853, lng: 79.1788 } : { lat: 30.0668, lng: 79.0193 };
   } else if (norm.includes('himachal') || norm.includes('manali') || norm.includes('shimla') || norm.includes('kasol') || norm.includes('spiti') || norm.includes('kullu') || norm.includes('dharamshala') || norm.includes('dalhousie') || norm.includes('jibhi')) {
     state = 'Himachal Pradesh';
+    country = 'India';
     category = 'mountain';
     spotType = 'hill_station';
     coordinates = norm.includes('spiti') ? { lat: 32.2461, lng: 78.0349 } : { lat: 32.2432, lng: 77.1892 };
   } else if (norm.includes('karnataka') || norm.includes('bangalore') || norm.includes('bengaluru') || norm.includes('mysore') || norm.includes('coorg') || norm.includes('hampi') || norm.includes('gokarna') || norm.includes('chikmagalur')) {
     state = 'Karnataka';
+    country = 'India';
     coordinates = norm.includes('gokarna') ? { lat: 14.5479, lng: 74.3188 } : norm.includes('hampi') ? { lat: 15.3350, lng: 76.4600 } : { lat: 12.9716, lng: 77.5946 };
   } else if (norm.includes('kerala') || norm.includes('kochi') || norm.includes('munnar') || norm.includes('alleppey') || norm.includes('varkala') || norm.includes('wayanad')) {
     state = 'Kerala';
+    country = 'India';
     coordinates = norm.includes('varkala') ? { lat: 8.7379, lng: 76.7163 } : norm.includes('munnar') ? { lat: 10.0889, lng: 77.0595 } : { lat: 9.9312, lng: 76.2673 };
   } else if (norm.includes('goa') || norm.includes('panaji') || norm.includes('calangute') || norm.includes('baga') || norm.includes('palolem')) {
     state = 'Goa';
+    country = 'India';
     category = 'beach';
     spotType = 'beach';
     coordinates = { lat: 15.2993, lng: 74.1240 };
   } else if (norm.includes('maharashtra') || norm.includes('mumbai') || norm.includes('pune') || norm.includes('lonavala') || norm.includes('mahabaleshwar') || norm.includes('alibaug') || norm.includes('shirdi')) {
     state = 'Maharashtra';
+    country = 'India';
     coordinates = { lat: 18.5204, lng: 73.8567 };
   } else if (norm.includes('tamil') || norm.includes('chennai') || norm.includes('ooty') || norm.includes('kodaikanal') || norm.includes('dhanushkodi') || norm.includes('rameshwaram') || norm.includes('pondicherry') || norm.includes('puducherry')) {
     state = 'Tamil Nadu';
+    country = 'India';
     coordinates = norm.includes('dhanushkodi') ? { lat: 9.1762, lng: 79.4184 } : { lat: 13.0827, lng: 80.2707 };
-  } else if (norm.includes('austria') || norm.includes('hallstatt') || norm.includes('vienna') || norm.includes('salzburg')) {
-    state = 'Upper Austria';
-    country = 'Austria';
-    coordinates = { lat: 47.5622, lng: 13.6493 };
-  } else if (norm.includes('switzerland') || norm.includes('interlaken') || norm.includes('zermatt') || norm.includes('zurich')) {
-    state = 'Bern';
-    country = 'Switzerland';
-    coordinates = { lat: 46.6863, lng: 7.8632 };
-  } else if (norm.includes('france') || norm.includes('paris')) {
-    state = 'Île-de-France';
-    country = 'France';
-    coordinates = { lat: 48.8566, lng: 2.3522 };
-  } else if (norm.includes('japan') || norm.includes('tokyo') || norm.includes('kyoto')) {
-    state = 'Kanto';
-    country = 'Japan';
-    coordinates = { lat: 35.6762, lng: 139.6503 };
+  } else if (norm.includes('delhi') || norm.includes('punjab') || norm.includes('amritsar') || norm.includes('chandigarh')) {
+    state = norm.includes('delhi') ? 'Delhi NCR' : 'Punjab';
+    country = 'India';
+    coordinates = norm.includes('delhi') ? { lat: 28.6139, lng: 77.2090 } : { lat: 31.6340, lng: 74.8723 };
+  } else if (norm.includes('kashmir') || norm.includes('srinagar') || norm.includes('ladakh') || norm.includes('leh')) {
+    state = norm.includes('ladakh') || norm.includes('leh') ? 'Ladakh' : 'Jammu & Kashmir';
+    country = 'India';
+    category = 'mountain';
+    coordinates = norm.includes('ladakh') || norm.includes('leh') ? { lat: 34.1526, lng: 77.5771 } : { lat: 34.0837, lng: 74.7973 };
   }
 
-  if (norm.includes('temple') || norm.includes('mandir') || norm.includes('ghat') || norm.includes('dham') || norm.includes('spiritual')) {
+  if (norm.includes('temple') || norm.includes('mandir') || norm.includes('ghat') || norm.includes('dham') || norm.includes('spiritual') || norm.includes('basilica') || norm.includes('cathedral') || norm.includes('shrine') || norm.includes('mosque')) {
     category = 'spiritual';
     spotType = 'temple';
-  } else if (norm.includes('beach') || norm.includes('sea') || norm.includes('coast')) {
+  } else if (norm.includes('beach') || norm.includes('sea') || norm.includes('coast') || norm.includes('island') || norm.includes('ocean')) {
     category = 'beach';
     spotType = 'beach';
-  } else if (norm.includes('hill') || norm.includes('mountain') || norm.includes('pass') || norm.includes('valley') || norm.includes('trek')) {
+  } else if (norm.includes('hill') || norm.includes('mountain') || norm.includes('pass') || norm.includes('valley') || norm.includes('trek') || norm.includes('alps')) {
     category = 'mountain';
     spotType = 'hill_station';
-  } else if (norm.includes('fort') || norm.includes('palace') || norm.includes('monument') || norm.includes('ruin')) {
+  } else if (norm.includes('fort') || norm.includes('palace') || norm.includes('monument') || norm.includes('ruin') || norm.includes('castle') || norm.includes('tower')) {
     category = 'heritage';
     spotType = 'monument';
-  } else if (norm.includes('fall') || norm.includes('lake') || norm.includes('forest') || norm.includes('jungle')) {
+  } else if (norm.includes('fall') || norm.includes('lake') || norm.includes('forest') || norm.includes('jungle') || norm.includes('park') || norm.includes('river')) {
     category = 'nature';
     spotType = 'nature';
   }
 
+  // Construct clean formatted title
+  const locationParts: string[] = [clean];
+  if (state && state !== 'Worldwide Destination' && state.toLowerCase() !== clean.toLowerCase()) {
+    locationParts.push(state);
+  }
+  if (country && country !== 'Worldwide') {
+    locationParts.push(country);
+  }
+  const fullName = locationParts.join(', ');
+
   return {
     id: `custom-${clean.toLowerCase().replace(/\s+/g, '-')}`,
     name: clean,
-    fullName: `${clean}${state !== 'India' ? `, ${state}` : ''}${country !== 'India' ? `, ${country}` : ', India'}`,
+    fullName: fullName,
     state,
     country,
     coordinates,
@@ -635,10 +933,10 @@ export function resolvePreciseLocationSync(input: string): PreciseLocation {
     highlights: [
       `${clean} Cultural & Historic Landmark Tour`,
       `${clean} Iconic Heritage Architecture & Scenic Spots`,
-      `${clean} Artisan Craft Bazaar & Souvenir Walk`,
-      `${clean} Panoramic Viewpoint & Sunset Overlook`
+      `${clean} Artisan Culinary Feasts & Local Markets`,
+      `${clean} Panoramic Horizon & Golden Hour Sunset Walk`
     ],
-    tagline: `Precise Spot • ${state} • Handcrafted AI Itinerary`,
+    tagline: `Precise Spot • ${country !== 'Worldwide' ? `${country} • ` : ''}Handcrafted AI Itinerary`,
     image: undefined
   };
 }

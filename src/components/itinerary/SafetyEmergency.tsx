@@ -136,27 +136,196 @@ function getDestinationSafety(destinationName: string = ''): DestinationSafetyDa
     };
   }
 
-  // Default Universal Domestic & International Safety
+  // 5. Paris / France
+  if (norm.includes('paris') || norm.includes('france')) {
+    return {
+      advisoryLevel: 'Exercise Normal Caution',
+      emergencyNumbers: [
+        { label: 'European Universal Emergency', number: '112' },
+        { label: 'Police Nationale (Secours)', number: '17' },
+        { label: 'SAMU Medical Ambulance', number: '15' },
+        { label: 'Sapeurs-Pompiers (Fire & Rescue)', number: '18' }
+      ],
+      safeNeighborhoods: ['Le Marais', 'Saint-Germain-des-Prés', '7th Arrondissement (Eiffel)', 'Latin Quarter'],
+      cautionAreas: ['Gare du Nord surroundings late at night', 'Barbes-Rochechouart & isolated metro corridors'],
+      commonScams: [
+        {
+          title: 'The String / Friendship Bracelet Trap',
+          description: 'Men at the base of Sacré-Cœur grab your wrist and weave a string bracelet, then aggressively demand €20-€50.',
+          howToAvoid: 'Keep your hands in your pockets or close to your chest when climbing Montmartre stairs; firmly say "Non merci".'
+        },
+        {
+          title: 'The "Found Gold Ring" Trick',
+          description: 'Someone picks up a shiny brass ring off the sidewalk right in front of you, claiming you dropped it and asking for cash reward.',
+          howToAvoid: 'Ignore the gesture completely and keep walking without breaking your stride.'
+        },
+        {
+          title: 'Fake Charity Petition Boards',
+          description: 'Groups pretending to be deaf-mute volunteers asking for petition signatures while an accomplice picks your pockets.',
+          howToAvoid: 'Never stop for clipboard petitions near the Eiffel Tower, Louvre courtyard, or Notre-Dame.'
+        }
+      ]
+    };
+  }
+
+  // 6. Rome / Italy
+  if (norm.includes('rome') || norm.includes('italy')) {
+    return {
+      advisoryLevel: 'Exercise Normal Caution',
+      emergencyNumbers: [
+        { label: 'Carabinieri & European Emergency', number: '112' },
+        { label: 'Polizia di Stato', number: '113' },
+        { label: 'Pronto Soccorso (Ambulance)', number: '118' },
+        { label: 'Vigili del Fuoco (Fire)', number: '115' }
+      ],
+      safeNeighborhoods: ['Trastevere', 'Piazza Navona', 'Monti', 'Prati (Vatican)'],
+      cautionAreas: ['Termini Station outer plazas after 11 PM', 'Crowded Bus #64 and metro lines'],
+      commonScams: [
+        {
+          title: 'Gladiator Photo Extortion',
+          description: 'Costumed gladiators outside the Colosseum pose with you enthusiastically, then aggressively demand €50 per person.',
+          howToAvoid: 'Costumed touts are officially banned around the monument; avoid posing with them.'
+        },
+        {
+          title: 'Pickpocketing on Crowded Transit',
+          description: 'Teams create a jostle or distraction when boarding metro Line A or Bus 64.',
+          howToAvoid: 'Wear cross-body bags with zipper clips and keep your phone secured inside your jacket.'
+        }
+      ]
+    };
+  }
+
+  // 7. Tokyo / Japan
+  if (norm.includes('tokyo') || norm.includes('japan') || norm.includes('kyoto')) {
+    return {
+      advisoryLevel: 'Safe',
+      emergencyNumbers: [
+        { label: 'Police Assistance (Keisatsu)', number: '110' },
+        { label: 'Ambulance & Fire (Kyukyu)', number: '119' },
+        { label: 'Japan Helpline (24/7 English)', number: '0570-000-911' },
+        { label: 'Tokyo Metropolitan Tourist Info', number: '03-5321-3077' }
+      ],
+      safeNeighborhoods: ['Ginza', 'Shibuya', 'Shinjuku (West)', 'Asakusa', 'Roppongi Hills'],
+      cautionAreas: ['Kabukicho back alleys with aggressive bar touts after midnight'],
+      commonScams: [
+        {
+          title: 'Bottakuri (Exorbitant Bar Bill) Touts',
+          description: 'Street touts in Roppongi or Kabukicho promise cheap drinks and attractive hosts, then present a ¥100,000+ bill with hidden seating fees.',
+          howToAvoid: 'Never follow street touts into basement bars; only patronize establishments recommended by verified directories.'
+        },
+        {
+          title: 'Fake Buddhist Monk Donations',
+          description: 'Men dressed in robes hand out golden lucky talismans or peace cards and demand cash donations.',
+          howToAvoid: 'True Japanese Buddhist monks do not solicit cash on street corners; politely decline.'
+        }
+      ]
+    };
+  }
+
+  // 8. New York / USA
+  if (norm.includes('new york') || norm.includes('usa') || norm.includes('united states')) {
+    return {
+      advisoryLevel: 'Exercise Normal Caution',
+      emergencyNumbers: [
+        { label: 'Universal Emergency (Police / Fire / EMS)', number: '911' },
+        { label: 'NYC Non-Emergency City Services', number: '311' },
+        { label: 'Poison Control Center', number: '1-800-222-1222' },
+        { label: 'NYPD Tourist Information Desk', number: '212-343-4800' }
+      ],
+      safeNeighborhoods: ['Upper West Side', 'Greenwich Village', 'Hudson Yards', 'Battery Park City', 'Tribeca'],
+      cautionAreas: ['Empty subway stations in outer boroughs late at night', 'Times Square alleys after midnight'],
+      commonScams: [
+        {
+          title: 'Times Square CD / Mixtape Trap',
+          description: 'Aspiring artists thrust their music CD into your hands, ask for your name, write on it, and aggressively demand a $20 "donation".',
+          howToAvoid: 'Never accept items handed to you on sidewalks; keep your hands in your pockets and walk briskly.'
+        },
+        {
+          title: 'Fake Broadway / Comedy Club Tickets',
+          description: 'Street scalpers outside major theaters selling invalid printout barcodes.',
+          howToAvoid: 'Purchase theater tickets exclusively through official TKTS booths or official box offices.'
+        }
+      ]
+    };
+  }
+
+  // 9. Bangkok / Thailand
+  if (norm.includes('bangkok') || norm.includes('thailand') || norm.includes('phuket')) {
+    return {
+      advisoryLevel: 'Safe',
+      emergencyNumbers: [
+        { label: 'Tourist Police (English Speaking)', number: '1155' },
+        { label: 'Universal Police Emergency', number: '191' },
+        { label: 'Medical Ambulance Helpline', number: '1669' },
+        { label: 'Fire & Rescue Operations', number: '199' }
+      ],
+      safeNeighborhoods: ['Siam', 'Sukhumvit (Asok / Phrom Phong)', 'Silom', 'Riverside'],
+      cautionAreas: ['Patpong alleys after 1 AM', 'Unmetered taxis outside Grand Palace'],
+      commonScams: [
+        {
+          title: '"The Grand Palace is Closed Today" Tuk-Tuk Scam',
+          description: 'Friendly tuk-tuk drivers outside temples tell you the palace is closed for a Buddhist ceremony and offer to take you to a "special government gem market".',
+          howToAvoid: 'The Grand Palace is open daily; walk straight to the ticket counter and ignore street touts.'
+        },
+        {
+          title: 'Jetski Pre-existing Damage Claim',
+          description: 'Jetski operators in Phuket or Pattaya accuse you of causing hull cracks and demand thousands of Baht.',
+          howToAvoid: 'Only rent jetskis through hotel-affiliated operators and photograph every scratch before riding.'
+        }
+      ]
+    };
+  }
+
+  // 10. Default Universal Domestic (India) vs International Safety
+  const isIndia = norm.includes('india') || norm.includes('delhi') || norm.includes('mumbai') || norm.includes('bangalore') || norm.includes('kolkata') || norm.includes('chennai');
+
+  if (isIndia) {
+    return {
+      advisoryLevel: 'Exercise Normal Caution',
+      emergencyNumbers: [
+        { label: 'National Universal Emergency Response', number: '112' },
+        { label: 'Police Assistance', number: '100' },
+        { label: 'Medical Ambulance Support', number: '108' },
+        { label: 'NHAI Highway & Breakdown Helpline', number: '1033' }
+      ],
+      safeNeighborhoods: ['City Center', 'Old Quarter Walking Street', 'Well-lit Transit Hubs'],
+      cautionAreas: ['Poorly-lit alleys after midnight', 'Unregulated public transit at late hours'],
+      commonScams: [
+        {
+          title: 'Broken Meter or Flat Rate Taxi Scam',
+          description: 'Drivers outside airports or railway stations claim the meter is broken and charge 4x the regular tariff.',
+          howToAvoid: 'Insist on using the meter, use official prepaid taxi booths inside terminals, or book via rideshare apps.'
+        },
+        {
+          title: 'Overly Friendly "Free" Tour Detours',
+          description: 'Friendly strangers inviting you for tea, only to lead you into souvenir emporiums with aggressive sales tactics.',
+          howToAvoid: 'Keep polite boundaries with strangers offering unsolicited personalized shopping tours.'
+        }
+      ]
+    };
+  }
+
+  // Universal International Default
   return {
     advisoryLevel: 'Exercise Normal Caution',
     emergencyNumbers: [
-      { label: 'National Universal Emergency Response', number: '112' },
-      { label: 'Police Assistance', number: '100' },
-      { label: 'Medical Ambulance Support', number: '108' },
-      { label: 'NHAI Highway & Breakdown Helpline', number: '1033' }
+      { label: 'European & Global Universal Emergency', number: '112' },
+      { label: 'North American Emergency (US / Canada)', number: '911' },
+      { label: 'UK & Commonwealth Emergency', number: '999' },
+      { label: 'International Consular & SOS Assistance', number: '+1-202-501-4444' }
     ],
-    safeNeighborhoods: ['City Center', 'Old Quarter Walking Street', 'Well-lit Transit Hubs'],
-    cautionAreas: ['Poorly-lit alleys after midnight', 'Unregulated public transit at late hours'],
+    safeNeighborhoods: ['City Center', 'Pedestrian Promenade', 'Well-lit Transit Terminals'],
+    cautionAreas: ['Poorly-lit alleys after midnight', 'Unregulated unlicensed taxis at late hours'],
     commonScams: [
       {
-        title: 'Broken Meter or Flat Rate Taxi Scam',
-        description: 'Drivers outside airports or railway stations claim the meter is broken and charge 4x the regular tariff.',
-        howToAvoid: 'Insist on using the meter, use official prepaid taxi booths inside terminals, or book via rideshare apps.'
+        title: 'Broken Taxi Meter Scam',
+        description: 'Taxis outside international airports claim their digital meter is broken and demand exorbitant fixed rates.',
+        howToAvoid: 'Always use official airport taxi dispatch desks, licensed rideshare apps (Uber/Grab/Bolt), or agreed metered tariffs.'
       },
       {
-        title: 'Overly Friendly "Free" Tour Detours',
-        description: 'Friendly strangers inviting you for tea, only to lead you into souvenir emporiums with aggressive sales tactics.',
-        howToAvoid: 'Keep polite boundaries with strangers offering unsolicited personalized shopping tours.'
+        title: 'Spill / Distraction Pickpocket Trick',
+        description: 'Someone accidentally drops ketchup, coffee, or coins near you, offering to help clean your jacket while taking your wallet.',
+        howToAvoid: 'Step back, keep your hands on your belongings, and walk away calmly without accepting assistance.'
       }
     ]
   };

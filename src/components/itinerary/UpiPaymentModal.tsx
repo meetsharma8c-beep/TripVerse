@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowRight, X, Clock, RefreshCw, Copy, Check, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatCurrency, SupportedCurrency } from '../../services/currencyService';
-import { triggerHaptic } from '../../services/deviceService';
+import { triggerHaptic, openExternalUrl } from '../../services/deviceService';
 import { buildUpiPaymentUri, getUpiQrCodeUrl } from '../../services/paymentGatewayService';
 
 interface UpiPaymentModalProps {
@@ -166,90 +166,124 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
         {!isSettled ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center space-y-3 shadow-xs">
             
-            {/* 5-Min Timer Pill */}
-            <div className="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-              <div className="flex items-center gap-2">
-                <div className="relative flex items-center justify-center w-7 h-7">
-                  <svg className="w-7 h-7 -rotate-90">
-                    <circle cx="14" cy="14" r={timerRadius} className="stroke-slate-200" strokeWidth="2.5" fill="transparent" />
-                    <circle
-                      cx="14"
-                      cy="14"
-                      r={timerRadius}
-                      className={secondsRemaining > 60 ? 'stroke-emerald-600' : 'stroke-rose-500 animate-pulse'}
-                      strokeWidth="2.5"
-                      strokeDasharray={timerCircumference}
-                      strokeDashoffset={strokeDashoffset}
-                      strokeLinecap="round"
-                      fill="transparent"
-                    />
-                  </svg>
-                  <Clock className={`w-3 h-3 absolute ${secondsRemaining > 60 ? 'text-emerald-600' : 'text-rose-500'}`} />
-                </div>
-                <div className="text-left">
-                  <span className="text-[9px] uppercase font-bold text-slate-400 block">QR Valid For</span>
-                  <span className="text-xs font-mono font-black text-slate-900">{formatTimer(secondsRemaining)}</span>
-                </div>
-              </div>
+            {currency === 'INR' ? (
+              <>
+                {/* 5-Min Timer Pill */}
+                <div className="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex items-center justify-center w-7 h-7">
+                      <svg className="w-7 h-7 -rotate-90">
+                        <circle cx="14" cy="14" r={timerRadius} className="stroke-slate-200" strokeWidth="2.5" fill="transparent" />
+                        <circle
+                          cx="14"
+                          cy="14"
+                          r={timerRadius}
+                          className={secondsRemaining > 60 ? 'stroke-emerald-600' : 'stroke-rose-500 animate-pulse'}
+                          strokeWidth="2.5"
+                          strokeDasharray={timerCircumference}
+                          strokeDashoffset={strokeDashoffset}
+                          strokeLinecap="round"
+                          fill="transparent"
+                        />
+                      </svg>
+                      <Clock className={`w-3 h-3 absolute ${secondsRemaining > 60 ? 'text-emerald-600' : 'text-rose-500'}`} />
+                    </div>
+                    <div className="text-left">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block">QR Valid For</span>
+                      <span className="text-xs font-mono font-black text-slate-900">{formatTimer(secondsRemaining)}</span>
+                    </div>
+                  </div>
 
-              {secondsRemaining === 0 ? (
-                <button
-                  type="button"
-                  onClick={handleRegenerate}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>Refresh</span>
-                </button>
-              ) : (
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  Active
-                </span>
-              )}
-            </div>
+                  {secondsRemaining === 0 ? (
+                    <button
+                      type="button"
+                      onClick={handleRegenerate}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Refresh</span>
+                    </button>
+                  ) : (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                      Active
+                    </span>
+                  )}
+                </div>
 
-            {/* QR Matrix */}
-            {secondsRemaining > 0 ? (
-              <div className="space-y-2">
-                <div className="relative mx-auto w-40 h-40 p-2 rounded-xl border border-slate-200 bg-white shadow-xs flex items-center justify-center">
-                  <img src={qrCodeUrl} alt="Scan to pay settlement" className="w-full h-full object-contain rounded-lg" />
-                  <div className="absolute inset-0 m-auto w-8 h-8 rounded-lg bg-white/95 border border-emerald-700 shadow-sm flex items-center justify-center">
-                    <span className="text-[10px] font-black text-emerald-800">UPI</span>
+                {/* QR Matrix */}
+                {secondsRemaining > 0 ? (
+                  <div className="space-y-2">
+                    <div className="relative mx-auto w-40 h-40 p-2 rounded-xl border border-slate-200 bg-white shadow-xs flex items-center justify-center">
+                      <img src={qrCodeUrl} alt="Scan to pay settlement" className="w-full h-full object-contain rounded-lg" />
+                      <div className="absolute inset-0 m-auto w-8 h-8 rounded-lg bg-white/95 border border-emerald-700 shadow-sm flex items-center justify-center">
+                        <span className="text-[10px] font-black text-emerald-800">UPI</span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Scan using GPay, PhonePe, Paytm, or CRED
+                    </p>
+                  </div>
+                ) : (
+                  <div className="py-4 space-y-2">
+                    <p className="text-xs text-rose-600 font-bold">QR code expired (5-minute security timeout)</p>
+                    <button
+                      type="button"
+                      onClick={handleRegenerate}
+                      className="px-4 py-1.5 rounded-xl bg-emerald-800 text-white font-bold text-xs"
+                    >
+                      Regenerate QR Code
+                    </button>
+                  </div>
+                )}
+
+                {/* Recipient VPA */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs bg-slate-50 p-2.5 rounded-xl">
+                  <div className="text-left truncate mr-2">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block">Recipient UPI VPA</span>
+                    <span className="font-mono font-bold text-slate-800 truncate block">{recipientVpa}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyVpa}
+                    className="shrink-0 p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-emerald-700 hover:border-emerald-300 transition-colors cursor-pointer"
+                    title="Copy VPA"
+                  >
+                    {copiedVpa ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* International Settlement View */
+              <div className="space-y-4 py-2">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-left space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">Direct International Settle</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Global P2P</span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Settle directly with <strong>{toUser}</strong> via your preferred peer-to-peer app, Revolut tag, or bank transfer in {currency}.
+                  </p>
+                  <div className="pt-1 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openExternalUrl(`https://paypal.me/${toUser.toLowerCase().replace(/[^a-z0-9]/g, '')}/${amount}`)}
+                      className="flex-1 py-2 px-3 rounded-xl bg-[#0070BA] hover:bg-[#005ea6] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <span>Pay via PayPal.Me</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyVpa}
+                      className="py-2 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      {copiedVpa ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>Copy Handle</span>
+                    </button>
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-500">
-                  Scan using GPay, PhonePe, Paytm, or CRED
-                </p>
-              </div>
-            ) : (
-              <div className="py-4 space-y-2">
-                <p className="text-xs text-rose-600 font-bold">QR code expired (5-minute security timeout)</p>
-                <button
-                  type="button"
-                  onClick={handleRegenerate}
-                  className="px-4 py-1.5 rounded-xl bg-emerald-800 text-white font-bold text-xs"
-                >
-                  Regenerate QR Code
-                </button>
               </div>
             )}
-
-            {/* Recipient VPA */}
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs bg-slate-50 p-2.5 rounded-xl">
-              <div className="text-left truncate mr-2">
-                <span className="text-[9px] uppercase font-bold text-slate-400 block">Recipient UPI VPA</span>
-                <span className="font-mono font-bold text-slate-800 truncate block">{recipientVpa}</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleCopyVpa}
-                className="shrink-0 p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-emerald-700 hover:border-emerald-300 transition-colors cursor-pointer"
-                title="Copy VPA"
-              >
-                {copiedVpa ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
-            </div>
 
             {/* Confirmation CTA */}
             <button
@@ -275,7 +309,7 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
 
         <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 pt-1">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-          <span>NPCI Unified Payments Interface • End-to-End Encrypted</span>
+          <span>{currency === 'INR' ? 'NPCI Unified Payments Interface • End-to-End Encrypted' : 'Bank-Grade 256-Bit SSL Encryption • Verified Traveler Settlement'}</span>
         </div>
       </section>
     </div>

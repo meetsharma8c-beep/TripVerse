@@ -30,6 +30,7 @@ import { getStoredCurrency, setActiveCurrency, Currency } from './services/curre
 import { generateNotifications } from './services/notificationService';
 import { AIAppAction } from './services/aiAssistant';
 import { triggerHaptic } from './services/deviceService';
+import { formatCurrency } from './services/currencyService';
 
 // Common Components
 import { Navbar } from './components/common/Navbar';
@@ -1336,7 +1337,7 @@ export function App() {
         ...activeTrip.budgetBreakdown,
         [category]: Math.max(400, activeTrip.budgetBreakdown[category] - savings)
       },
-      aiRationale: `Budget optimized: ${reason} (Saved ₹${savings.toLocaleString('en-IN')}).`
+      aiRationale: `Budget optimized: ${reason} (Saved ${formatCurrency(savings)}).`
     };
     handleUpdateTrip(updated);
 

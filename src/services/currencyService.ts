@@ -12,13 +12,6 @@ export interface CurrencyConfig {
 }
 
 export const CURRENCIES: Record<CurrencyCode, CurrencyConfig> = {
-  INR: {
-    code: 'INR',
-    symbol: '₹',
-    name: 'Indian Rupee',
-    rateFromINR: 1.0,
-    formatPattern: 'en-IN'
-  },
   USD: {
     code: 'USD',
     symbol: '$',
@@ -40,6 +33,13 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyConfig> = {
     rateFromINR: 0.0095, // 1 GBP ≈ 105 INR
     formatPattern: 'en-GB'
   },
+  INR: {
+    code: 'INR',
+    symbol: '₹',
+    name: 'Indian Rupee',
+    rateFromINR: 1.0,
+    formatPattern: 'en-IN'
+  },
   AED: {
     code: 'AED',
     symbol: 'د.إ',
@@ -53,10 +53,153 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyConfig> = {
     name: 'Japanese Yen',
     rateFromINR: 1.85, // 1 INR ≈ 1.85 JPY
     formatPattern: 'ja-JP'
+  },
+  CAD: {
+    code: 'CAD',
+    symbol: 'CA$',
+    name: 'Canadian Dollar',
+    rateFromINR: 0.0163, // 1 CAD ≈ 61.3 INR
+    formatPattern: 'en-CA'
+  },
+  AUD: {
+    code: 'AUD',
+    symbol: 'A$',
+    name: 'Australian Dollar',
+    rateFromINR: 0.0182, // 1 AUD ≈ 55 INR
+    formatPattern: 'en-AU'
+  },
+  SGD: {
+    code: 'SGD',
+    symbol: 'S$',
+    name: 'Singapore Dollar',
+    rateFromINR: 0.016, // 1 SGD ≈ 62.5 INR
+    formatPattern: 'en-SG'
+  },
+  CHF: {
+    code: 'CHF',
+    symbol: 'CHF',
+    name: 'Swiss Franc',
+    rateFromINR: 0.0105, // 1 CHF ≈ 95.2 INR
+    formatPattern: 'de-CH'
+  },
+  NZD: {
+    code: 'NZD',
+    symbol: 'NZ$',
+    name: 'New Zealand Dollar',
+    rateFromINR: 0.0198, // 1 NZD ≈ 50.5 INR
+    formatPattern: 'en-NZ'
+  },
+  THB: {
+    code: 'THB',
+    symbol: '฿',
+    name: 'Thai Baht',
+    rateFromINR: 0.43, // 1 INR ≈ 0.43 THB
+    formatPattern: 'th-TH'
   }
 };
 
 const STORAGE_KEY_CURRENCY = 'tripverse_active_currency';
+
+/**
+ * Automatically detects the ideal starting currency based on the user's browser language,
+ * system locale, and timezone. Guarantees a seamless native experience worldwide.
+ */
+export function detectDefaultCurrency(): CurrencyCode {
+  try {
+    if (typeof navigator !== 'undefined') {
+      const languages = navigator.languages || [navigator.language || ''];
+      const langStr = languages.join(',').toLowerCase();
+      const timeZone = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').toLowerCase();
+
+      // 1. South Asia / India
+      if (
+        langStr.includes('en-in') || 
+        langStr.includes('hi') || 
+        langStr.includes('ta') || 
+        langStr.includes('te') || 
+        langStr.includes('bn') || 
+        langStr.includes('gu') || 
+        langStr.includes('mr') || 
+        timeZone.includes('calcutta') || 
+        timeZone.includes('kolkata') || 
+        timeZone.includes('asia/colombo')
+      ) {
+        return 'INR';
+      }
+
+      // 2. United Kingdom
+      if (langStr.includes('en-gb') || timeZone.includes('london')) {
+        return 'GBP';
+      }
+
+      // 3. Japan
+      if (langStr.includes('ja') || timeZone.includes('tokyo')) {
+        return 'JPY';
+      }
+
+      // 4. UAE / Gulf
+      if (langStr.includes('en-ae') || langStr.includes('ar-ae') || timeZone.includes('dubai')) {
+        return 'AED';
+      }
+
+      // 5. Canada
+      if (langStr.includes('en-ca') || langStr.includes('fr-ca') || timeZone.includes('toronto') || timeZone.includes('vancouver') || timeZone.includes('montreal')) {
+        return 'CAD';
+      }
+
+      // 6. Australia
+      if (langStr.includes('en-au') || timeZone.includes('sydney') || timeZone.includes('melbourne') || timeZone.includes('brisbane') || timeZone.includes('perth')) {
+        return 'AUD';
+      }
+
+      // 7. Singapore
+      if (langStr.includes('en-sg') || timeZone.includes('singapore')) {
+        return 'SGD';
+      }
+
+      // 8. Switzerland
+      if (langStr.includes('de-ch') || langStr.includes('fr-ch') || timeZone.includes('zurich')) {
+        return 'CHF';
+      }
+
+      // 9. New Zealand
+      if (langStr.includes('en-nz') || timeZone.includes('auckland')) {
+        return 'NZD';
+      }
+
+      // 10. Thailand
+      if (langStr.includes('th') || timeZone.includes('bangkok')) {
+        return 'THB';
+      }
+
+      // 11. Eurozone
+      if (
+        langStr.includes('de') || 
+        langStr.includes('fr') || 
+        langStr.includes('es') || 
+        langStr.includes('it') || 
+        langStr.includes('nl') || 
+        langStr.includes('el') ||
+        langStr.includes('pt') || 
+        timeZone.includes('europe') || 
+        timeZone.includes('paris') || 
+        timeZone.includes('berlin') || 
+        timeZone.includes('rome') || 
+        timeZone.includes('madrid')
+      ) {
+        return 'EUR';
+      }
+
+      // 12. North America / USA
+      if (langStr.includes('en-us') || timeZone.includes('america')) {
+        return 'USD';
+      }
+    }
+  } catch {
+    // fallback gracefully
+  }
+  return 'USD';
+}
 
 export function getActiveCurrency(): CurrencyCode {
   try {
@@ -67,7 +210,7 @@ export function getActiveCurrency(): CurrencyCode {
   } catch {
     // fallback
   }
-  return 'INR';
+  return detectDefaultCurrency();
 }
 
 export const getStoredCurrency = getActiveCurrency;
@@ -92,6 +235,16 @@ export function convertFromINR(amountInINR: number | undefined | null, targetCur
 }
 
 /**
+ * Converts an amount from a foreign currency to INR
+ */
+export function convertToINR(amount: number | undefined | null, fromCurrency: CurrencyCode = getActiveCurrency()): number {
+  const safeAmount = Number.isFinite(Number(amount)) ? Number(amount) : 0;
+  const config = CURRENCIES[fromCurrency] || CURRENCIES.INR;
+  const rate = Number.isFinite(config.rateFromINR) && config.rateFromINR > 0 ? config.rateFromINR : 1;
+  return Math.round(safeAmount / rate);
+}
+
+/**
  * Formats an amount with the currency symbol and locale separators, guaranteed never to show NaN
  */
 export function formatCurrency(
@@ -104,7 +257,25 @@ export function formatCurrency(
   const rate = Number.isFinite(config.rateFromINR) ? config.rateFromINR : 1;
   const converted = safeAmount * rate;
   
-  const formattedNumber = Math.round(converted).toLocaleString(config.formatPattern || 'en-IN');
+  const formattedNumber = Math.round(converted).toLocaleString(config.formatPattern || 'en-US');
+  
+  if (showCode) {
+    return `${config.symbol}${formattedNumber} ${config.code}`;
+  }
+  return `${config.symbol}${formattedNumber}`;
+}
+
+/**
+ * Formats an amount directly given in the target currency (e.g., $1500 directly, not converted from INR)
+ */
+export function formatDirectCurrency(
+  amountInTargetCurrency: number | undefined | null,
+  currency: CurrencyCode = getActiveCurrency(),
+  showCode: boolean = false
+): string {
+  const safeAmount = Number.isFinite(Number(amountInTargetCurrency)) ? Number(amountInTargetCurrency) : 0;
+  const config = CURRENCIES[currency] || CURRENCIES.USD;
+  const formattedNumber = Math.round(safeAmount).toLocaleString(config.formatPattern || 'en-US');
   
   if (showCode) {
     return `${config.symbol}${formattedNumber} ${config.code}`;

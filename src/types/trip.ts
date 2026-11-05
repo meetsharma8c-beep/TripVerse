@@ -106,6 +106,9 @@ export interface Trip {
   destinationDetails?: {
     image: string;
     state: string;
+    country?: string;
+    countryCode?: string;
+    continent?: string;
     description: string;
     coordinates?: Coordinates;
     category?: string;
@@ -116,6 +119,7 @@ export interface Trip {
   durationDays: number;
   travelersCount: number;
   travelerType: TravelerType;
+  currency?: CurrencyCode;
   totalBudget: number;
   budgetPerPerson: number;
   preferences: TravelPreference[];
@@ -232,6 +236,9 @@ export interface Destination {
   id: string;
   name: string;
   state: string;
+  country?: string;
+  countryCode?: string;
+  continent?: 'Europe' | 'Asia' | 'North America' | 'South America' | 'Oceania' | 'Africa' | 'Middle East';
   category: 'heritage' | 'mountain' | 'beach' | 'spiritual' | 'adventure' | 'weekend' | 'roadtrip' | 'nature';
   tagline: string;
   description: string;
@@ -245,7 +252,7 @@ export interface Destination {
 }
 
 
-export type CurrencyCode = 'INR' | 'USD' | 'EUR' | 'GBP' | 'AED' | 'JPY';
+export type CurrencyCode = 'INR' | 'USD' | 'EUR' | 'GBP' | 'AED' | 'JPY' | 'CAD' | 'AUD' | 'SGD' | 'CHF' | 'NZD' | 'THB';
 
 export interface UserProfile {
   name: string;
