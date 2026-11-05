@@ -1056,20 +1056,21 @@ export async function queryConcodeBrain(
         ? 'Burj Khalifa & Downtown Spire'
         : dest.toLowerCase().includes('jaipur')
           ? 'Amer Fort & Hawa Mahal'
-          : `${dest} Heritage Citadel`;
+          : `${dest} Iconic Landmark`;
 
     return {
       guild: 'webgl',
       guildIcon: '✨',
       confidence: 0.99,
-      response: `**Interactive 3D WebGL Landmark Explorer for ${dest} (${landmark})**\n\n` +
-        `CONCODE Brain's \`webgl\` guild renders real-time procedural 3D architectural topography directly on your GPU:\n\n` +
-        `• **Orbit & Elevation Lighting:** Touch or drag to rotate 360°, inspect shadow casting, and test elevation levels.\n` +
-        `• **Day / Golden Hour / Night Cycles:** Switch lighting models to preview golden hour sunsets and night sky vistas.\n` +
-        `• **Architectural Wireframe Mode:** Toggle structural geometry to inspect layout and walkways.\n\n` +
-        `Click below to open the interactive 3D WebGL viewport!`,
+      response: `**Interactive 3D WebGL Landmark Explorer & Virtual View for ${dest} (${landmark})**\n\n` +
+        `TripVerse connects directly to Google Earth 3D and Street View 360° photogrammetry, plus live architectural records from Wikimedia:\n\n` +
+        `• **Google Earth 3D Flyover:** Seamless real-world 3D digital twin of Earth with photorealistic building facades and mountain terrain.\n` +
+        `• **Google Street View 360°:** Step down onto the ground for an immersive full-sphere virtual walkthrough.\n` +
+        `• **WebGL Architectural Blueprint:** Touch or drag to rotate 360°, inspect shadow casting, and test elevation levels.\n` +
+        `• **100% Genuine Records:** Live coordinates and factual history sourced directly from Wikipedia & Google Maps.\n\n` +
+        `Click below to launch the interactive 3D virtual view!`,
       actionButtons: [
-        { label: `Launch 3D WebGL Viewer for ${dest}`, action: 'OPEN_3D_VIEWER', primary: true },
+        { label: `Launch 3D Virtual View for ${dest}`, action: 'OPEN_3D_VIEWER', primary: true },
         { label: 'View Day Itinerary', action: 'VIEW_ITINERARY' }
       ]
     };

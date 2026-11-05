@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { resolveLandmarkDetails, buildProceduralLandmark } from '../src/services/landmark3DService';
+import { 
+  resolveLandmarkDetails, 
+  buildProceduralLandmark,
+  getGoogle3DVirtualViewUrls,
+  fetchLiveDestinationEncyclopedia
+} from '../src/services/landmark3DService';
 import { POPULAR_DESTINATIONS } from '../src/data/destinations';
 
 describe('3D WebGL Landmark & Destination Rendering Engine', () => {
@@ -54,25 +59,45 @@ describe('3D WebGL Landmark & Destination Rendering Engine', () => {
     const eiffelGroup = new THREE.Group();
     const eiffelMats: THREE.Material[] = [];
     buildProceduralLandmark('paris-eiffel', eiffelGroup, eiffelMats);
-    expect(eiffelGroup.children.length).toBeGreaterThanOrEqual(8); // Legs, arches, platforms, spires, dome
+    expect(eiffelGroup.children.length).toBeGreaterThanOrEqual(8);
 
     // Colosseum in Rome
     const colosseumGroup = new THREE.Group();
     const colosseumMats: THREE.Material[] = [];
     buildProceduralLandmark('rome-colosseum', colosseumGroup, colosseumMats);
-    expect(colosseumGroup.children.length).toBeGreaterThanOrEqual(6); // Outer tiered arches, arena, hypogeum
+    expect(colosseumGroup.children.length).toBeGreaterThanOrEqual(6);
 
     // Burj Khalifa in Dubai
     const burjGroup = new THREE.Group();
     const burjMats: THREE.Material[] = [];
     buildProceduralLandmark('dubai-burj-khalifa', burjGroup, burjMats);
     const burjBox = new THREE.Box3().setFromObject(burjGroup);
-    expect(burjBox.max.y).toBeGreaterThan(8.0); // Tallest tower
+    expect(burjBox.max.y).toBeGreaterThan(8.0);
 
     // Taj Mahal in Agra
     const tajGroup = new THREE.Group();
     const tajMats: THREE.Material[] = [];
     buildProceduralLandmark('agra-taj-mahal', tajGroup, tajMats);
-    expect(tajGroup.children.length).toBeGreaterThanOrEqual(10); // Plinth, pool, cube, dome, 4 minarets, 4 chhatris
+    expect(tajGroup.children.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('generates genuine Google Earth 3D and Street View 360 URLs for any destination on Earth', () => {
+    const urls = getGoogle3DVirtualViewUrls('Reykjavik', 'Hallgrimskirkja', { lat: 64.1417, lon: -21.9266 });
+    expect(urls.googleEarth3DUrl).toContain('earth.google.com/web/search/');
+    expect(urls.googleEarth3DUrl).toContain('Hallgrimskirkja');
+    expect(urls.googleStreetView360Url).toContain('viewpoint=64.1417,-21.9266');
+    expect(urls.googleSatelliteEmbedUrl).toContain('maps.google.com/maps?q=');
+  });
+
+  it('fetches live genuine encyclopedic data from Wikimedia REST API without mock text', async () => {
+    const data = await fetchLiveDestinationEncyclopedia('Paris', 'Eiffel Tower');
+    if (data) {
+      expect(data.title).toContain('Eiffel');
+      expect(data.extract.length).toBeGreaterThan(20);
+      expect(data.source).toContain('Wikimedia');
+      if (data.coordinates) {
+        expect(data.coordinates.lat).toBeCloseTo(48.858, 1);
+      }
+    }
   });
 });

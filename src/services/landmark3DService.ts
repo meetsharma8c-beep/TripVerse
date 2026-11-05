@@ -13,6 +13,106 @@ export interface LandmarkMetadata {
   defaultTimeOfDay?: 'day' | 'golden' | 'night';
 }
 
+export interface GenuineEncyclopediaData {
+  title: string;
+  description?: string;
+  extract: string;
+  coordinates?: {
+    lat: number;
+    lon: number;
+  };
+  thumbnail?: string;
+  originalImage?: string;
+  wikipediaUrl?: string;
+  wikibaseItem?: string;
+  source: string;
+}
+
+export interface Google3DVirtualViewUrls {
+  googleEarth3DUrl: string;
+  googleStreetView360Url: string;
+  googleSatelliteEmbedUrl: string;
+  googleMapsUrl: string;
+}
+
+/**
+ * Live factual encyclopedia query to Wikimedia / Wikipedia REST API.
+ * 100% genuine data for ANY destination, landmark, city, or site on Earth (zero mock data).
+ */
+export async function fetchLiveDestinationEncyclopedia(
+  destination: string,
+  landmark?: string
+): Promise<GenuineEncyclopediaData | null> {
+  const cleanLandmark = (landmark || '').trim();
+  const cleanDest = (destination || '').trim();
+  
+  // Try landmark first, then destination
+  const queriesToTry = [
+    cleanLandmark,
+    cleanDest,
+    `${cleanDest} ${cleanLandmark}`.trim()
+  ].filter(q => q && q.length > 1);
+
+  for (const q of queriesToTry) {
+    try {
+      const endpoint = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(q.replace(/\s+/g, '_'))}`;
+      const res = await fetch(endpoint, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.type !== 'disambiguation' && (data.extract || data.description)) {
+          return {
+            title: data.title || q,
+            description: data.description,
+            extract: data.extract || data.description || '',
+            coordinates: data.coordinates ? { lat: data.coordinates.lat, lon: data.coordinates.lon } : undefined,
+            thumbnail: data.thumbnail?.source,
+            originalImage: data.originalimage?.source,
+            wikipediaUrl: data.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(data.title || q)}`,
+            wikibaseItem: data.wikibase_item,
+            source: 'Wikimedia Foundation & Wikipedia REST API'
+          };
+        }
+      }
+    } catch {
+      // Continue to next query candidate
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Builds direct Google Earth 3D, Google Street View 360°, and Google 3D Satellite URLs
+ * for ANY destination or coordinate on Earth.
+ */
+export function getGoogle3DVirtualViewUrls(
+  destination: string,
+  landmark?: string,
+  coordinates?: { lat: number; lon: number }
+): Google3DVirtualViewUrls {
+  const query = [landmark, destination].filter(Boolean).join(', ') || destination;
+  const encodedQuery = encodeURIComponent(query);
+
+  const googleEarth3DUrl = `https://earth.google.com/web/search/${encodedQuery}`;
+  
+  const googleStreetView360Url = coordinates
+    ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${coordinates.lat},${coordinates.lon}`
+    : `https://www.google.com/maps/search/${encodeURIComponent(query + ' street view')}`;
+
+  const googleSatelliteEmbedUrl = `https://maps.google.com/maps?q=${encodedQuery}&t=k&z=17&ie=UTF8&iwloc=&output=embed`;
+  
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+
+  return {
+    googleEarth3DUrl,
+    googleStreetView360Url,
+    googleSatelliteEmbedUrl,
+    googleMapsUrl
+  };
+}
+
 /**
  * Resolves destination & landmark names to a bespoke procedural 3D architectural profile
  */
