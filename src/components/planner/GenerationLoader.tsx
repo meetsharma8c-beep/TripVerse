@@ -18,17 +18,17 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
   const getModeStepText = (mode: TransportMode) => {
     switch (mode) {
       case 'flight':
-        return 'Preparing flight budget estimate';
+        return 'Analyzing flight corridors & international transit...';
       case 'train':
-        return 'Preparing train budget estimate';
+        return 'Analyzing railway lines & express schedules...';
       case 'bus':
-        return 'Preparing a bus travel estimate';
+        return 'Preparing a bus travel estimate...';
       case 'car':
-        return 'Estimating your driving itinerary';
+        return 'Estimating your highway driving itinerary...';
       case 'bike':
-        return 'Preparing a motorcycle trip estimate';
+        return 'Preparing a scenic motorcycle rider route...';
       default:
-        return 'Preparing travel estimates';
+        return 'Preparing transit estimates...';
     }
   };
 
@@ -37,7 +37,8 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
     'Analyzing your traveler choices & constraints...',
     getModeStepText(transportMode),
     'Customizing food trails & dining preferences...',
-    'Curating signature landmarks & viewpoints...',
+    'Accessing original destination & landmark photos...',
+    'Curating verified local hotels & stay photography...',
     'Scheduling day-by-day timing & activities...',
     'Optimizing budget allocation across your trip...',
     'Finalizing personalized journey blueprint...'

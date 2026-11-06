@@ -79,6 +79,7 @@ export interface ItineraryActivity {
   completed?: boolean;
   notes?: string;
   isCustom?: boolean;
+  image?: string;
 }
 
 export interface DayPlan {
@@ -87,6 +88,7 @@ export interface DayPlan {
   theme: string;
   activities: ItineraryActivity[];
   dayEstimatedCost: number;
+  image?: string;
 }
 
 export interface BudgetBreakdown {

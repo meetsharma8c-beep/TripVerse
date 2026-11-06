@@ -660,23 +660,38 @@ export function generateAITrip(input: PlannerInput): Trip {
           time: depTime,
           title: outboundTransitTitle,
           type: 'departure',
-          location: `${input.origin || 'City Center'} Transit Corridor`,
+          location: isAir ? `${input.origin || 'Origin'} Airport / Terminal` : `${input.origin || 'City Center'} Transit Corridor`,
           estimatedCost: Math.round(transportCost * 0.5),
           travelTimeMin: 0,
           distanceKm: 0,
-          description: `Departure towards ${spotName}.${transitContext.multiModalGuidance ? ' ' + transitContext.multiModalGuidance : ''}`,
+          description: isAir
+            ? `Flight departure towards ${spotName}.${transitContext.multiModalGuidance ? ' ' + transitContext.multiModalGuidance : ''}`
+            : `Departure towards ${spotName}.${transitContext.multiModalGuidance ? ' ' + transitContext.multiModalGuidance : ''}`,
           coordinates: originCoords,
-          tag: 'Start Point'
+          tag: isAir ? 'Flight Departure' : 'Start Point'
         },
-        {
+        isAir ? {
+          id: `act-1-bs`,
+          dayNumber: 1,
+          time: bsTime,
+          title: `Arrival at ${transitContext.primaryAirport?.name || `${spotName} International Airport`}`,
+          type: 'arrival',
+          location: `${transitContext.primaryAirport?.name || spotName} Terminal`,
+          estimatedCost: scaleExpense(250 * cityMultiplier * safeTravelers),
+          travelTimeMin: 45,
+          distanceKm: 25,
+          description: `Flight arrival, baggage collection, and express city transit/cab transfer to your accommodation in ${spotName}.`,
+          coordinates: destCoords,
+          tag: 'Airport Arrival'
+        } : {
           id: `act-1-bs`,
           dayNumber: 1,
           time: bsTime,
           title: outboundHaltTitle,
           type: 'breakstop',
-          location: isAir ? (transitContext.primaryAirport?.name || 'Airport Transfer Hub') : isRail ? (transitContext.primaryRailwayStation?.name || 'Rail Transfer Hub') : 'En-route Highway Food Plaza',
+          location: isRail ? (transitContext.primaryRailwayStation?.name || 'Rail Transfer Hub') : 'En-route Highway Food Plaza',
           estimatedCost: scaleExpense(140 * cityMultiplier * safeTravelers),
-          travelTimeMin: Math.round(routeHours * 30),
+          travelTimeMin: Math.min(120, Math.round(routeHours * 20)),
           distanceKm: Math.round(routeDistKm * 0.5),
           description: `Suggested refreshment break & transit connection en-route (~${formatCurrency(scaleExpense(140 * cityMultiplier), activeCurrency)}/person).`,
           coordinates: {
@@ -693,8 +708,8 @@ export function generateAITrip(input: PlannerInput): Trip {
           type: 'hotel',
           location: `${recommendedHotel.name}, ${recommendedHotel.neighborhood}, ${spotName}`,
           estimatedCost: Math.min(stayCost, Math.round(stayCost / Math.max(1, daysCount - 1))),
-          travelTimeMin: Math.round(routeHours * 30),
-          distanceKm: Math.round(routeDistKm * 0.5),
+          travelTimeMin: isAir ? 30 : Math.min(120, Math.round(routeHours * 20)),
+          distanceKm: isAir ? 15 : Math.round(routeDistKm * 0.5),
           description: `${recommendedHotel.starRating}★ ${recommendedHotel.roomType}. Amenities: ${recommendedHotel.amenities.slice(0, 3).join(', ')}. ${recommendedHotel.cancellationPolicy}.`,
           coordinates: { lat: destCoords.lat + 0.002, lng: destCoords.lng - 0.002 },
           tag: `Suggested Stay • ${recommendedHotel.tier.toUpperCase()}`,

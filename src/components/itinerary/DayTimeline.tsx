@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { DayPlan, ItineraryActivity, TransportDeal, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
-import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
+import { resolveDestinationImage, handleImageError, DEFAULT_TRAVEL_FALLBACK_IMAGE } from '../../utils/destinationImages';
+import { fetchOriginalPhoto, getInstantPhoto } from '../../services/originalPhotoService';
 import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { Landmark3DViewer } from '../common/Landmark3DViewer';
@@ -18,6 +19,47 @@ interface DayTimelineProps {
   onToggleComplete?: (dayNumber: number, activityId: string) => void;
   onOptimizeWithAI?: () => void;
 }
+
+const DayThumbnailImage: React.FC<{
+  day: DayPlan;
+  destination?: string;
+}> = ({ day, destination = '' }) => {
+  const primaryActivity = day.activities?.find(a => a.type === 'attraction' || a.type === 'viewpoint') || day.activities?.[0];
+  
+  const initialUrl = 
+    day.image || 
+    primaryActivity?.image || 
+    getInstantPhoto(primaryActivity?.title || day.title || destination) ||
+    resolveDestinationImage(primaryActivity?.location || primaryActivity?.title || destination);
+
+  const [imgSrc, setImgSrc] = useState<string>(initialUrl);
+
+  useEffect(() => {
+    let isMounted = true;
+    const targetQuery = primaryActivity?.title || day.title || day.theme || destination;
+    
+    // If not already a custom photo or if it is currently a fallback, fetch original photo live
+    if (!day.image || imgSrc === DEFAULT_TRAVEL_FALLBACK_IMAGE) {
+      fetchOriginalPhoto(targetQuery, destination).then(photo => {
+        if (isMounted && photo) {
+          setImgSrc(photo);
+        }
+      });
+    }
+    return () => { isMounted = false; };
+  }, [day, primaryActivity, destination]);
+
+  return (
+    <div className="w-20 h-18 sm:w-24 sm:h-20 rounded-2xl overflow-hidden shadow-xs border border-[#E2EBE1] bg-[#E8EFE7]">
+      <img
+        src={imgSrc}
+        alt={day.title}
+        onError={(e) => handleImageError(e, resolveDestinationImage(destination))}
+        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+      />
+    </div>
+  );
+};
 
 export const DayTimeline: React.FC<DayTimelineProps> = ({
   itinerary,
@@ -113,10 +155,6 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
         {itinerary.map((day) => {
           const isExpanded = !!expandedDays[day.dayNumber];
           const topActivities = day.activities.slice(0, 4);
-          
-          // Image preview for the day
-          const primaryActivity = day.activities.find(a => a.type === 'attraction' || a.type === 'viewpoint') || day.activities[0];
-          const dayThumb = primaryActivity ? resolveDestinationImage(primaryActivity.location || primaryActivity.title) : '/images/destinations/meghalaya.jpg';
 
           return (
             <div key={day.dayNumber} className="relative z-10 flex items-start gap-3 sm:gap-4 group">
@@ -183,14 +221,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
 
                   {/* Right Thumbnail Image matching Reference Screen 2 */}
                   <div className="shrink-0">
-                    <div className="w-20 h-18 sm:w-24 sm:h-20 rounded-2xl overflow-hidden shadow-xs border border-[#E2EBE1] bg-[#E8EFE7]">
-                      <img
-                        src={dayThumb}
-                        alt={day.title}
-                        onError={(e) => handleImageError(e)}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                      />
-                    </div>
+                    <DayThumbnailImage day={day} destination={destination} />
                   </div>
 
                 </div>

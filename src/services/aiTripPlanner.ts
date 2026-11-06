@@ -4,6 +4,7 @@ import { resolveTransitContext } from './transportFeasibilityEngine';
 import { getStoredConcodeConfig } from './concodeBrainService';
 import { CONCODE_MASTER_PROMPT } from './concodeMasterPrompt';
 import { getActiveCurrency, CURRENCIES } from './currencyService';
+import { enrichTripWithOriginalPhotos } from './originalPhotoService';
 
 const ACTIVITY_TYPES = new Set(['food', 'attraction', 'viewpoint', 'nightlife', 'rest']);
 
@@ -308,22 +309,29 @@ export function applyItinerary(days: any[], input: PlannerInput, trip: Trip): Tr
         }
     }
 
+    const modeLabel = trip.transportMode === 'flight' ? 'flight' : trip.transportMode === 'train' ? 'rail' : 'road';
+
     return {
         ...trip,
         itinerary: plannedDays,
-        aiRationale: `Genuinely planned by ConCode AI Brain. Customized for ${trip.travelersCount} ${trip.travelerType || 'traveler(s)'} based on your choices: ${trip.preferences.join(', ') || 'scenic highlights'}, ${trip.foodPreference || 'authentic'} dining, and ${trip.transportMode || 'road'} transit with a target budget of ₹${trip.totalBudget.toLocaleString('en-IN')}${input.specialRequests?.trim() ? ` (Request: “${input.specialRequests.trim().slice(0, 150)}”)` : ''}.`
+        aiRationale: `Genuinely planned by ConCode AI Brain. Customized for ${trip.travelersCount} ${trip.travelerType || 'traveler(s)'} based on your choices: ${trip.preferences.join(', ') || 'scenic highlights'}, ${trip.foodPreference || 'authentic'} dining, and ${modeLabel} transit with a target budget of ₹${trip.totalBudget.toLocaleString('en-IN')}${input.specialRequests?.trim() ? ` (Request: “${input.specialRequests.trim().slice(0, 150)}”)` : ''}.`
     };
 }
 
 export async function generatePersonalizedTrip(input: PlannerInput): Promise<Trip> {
     const fallback = generateAITrip(input);
     const itinerary = await requestPersonalizedItinerary(buildPrompt(input, fallback), fallback, input);
-    const personalized = itinerary ? applyItinerary(itinerary, input, fallback) : null;
-    if (personalized) return personalized;
-
-    return {
+    const rawTrip: Trip = (itinerary ? applyItinerary(itinerary, input, fallback) : null) || {
         ...fallback,
         aiRationale: fallback.aiRationale
     };
+
+    // Enrich the trip with genuine, original photography during the loading state
+    try {
+        const enriched = await enrichTripWithOriginalPhotos(rawTrip, input.destination || input.destinationName);
+        return enriched;
+    } catch {
+        return rawTrip;
+    }
 }
 
