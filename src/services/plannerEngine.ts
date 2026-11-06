@@ -852,20 +852,37 @@ export function generateAITrip(input: PlannerInput): Trip {
           id: `act-${d}-return`,
           dayNumber: d,
           time: depTime,
-          title: `Commence Return Journey to ${input.origin || 'Origin'}`,
+          title: isAir
+            ? `Flight Departure from ${transitContext.primaryAirport?.name || spotName}`
+            : `Commence Return Journey to ${input.origin || 'Origin'}`,
           type: 'departure',
-          location: isAir ? (transitContext.primaryAirport?.name || `${spotName} Departure`) : isRail ? (transitContext.primaryRailwayStation?.name || `${spotName} Station`) : `${spotName} Highway Gateway`,
+          location: isAir ? (transitContext.primaryAirport?.name || `${spotName} Airport`) : isRail ? (transitContext.primaryRailwayStation?.name || `${spotName} Station`) : `${spotName} Highway Gateway`,
           estimatedCost: Math.round(transportCost * 0.5),
           travelTimeMin: 0,
           distanceKm: 0,
-          description: `Return journey from ${spotName} towards ${input.origin || 'Origin'}.`,
+          description: isAir
+            ? `Airport check-in and scheduled flight return towards ${input.origin || 'Origin'}.`
+            : `Return journey from ${spotName} towards ${input.origin || 'Origin'}.`,
           coordinates: {
             lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.75,
             lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.75
           },
           tag: 'Return'
         },
-        {
+        isAir ? {
+          id: `act-${d}-flight`,
+          dayNumber: d,
+          time: bsTime,
+          title: `Return Flight & In-Air Transit to ${input.origin || 'Home'}`,
+          type: 'arrival',
+          location: `${input.origin || 'Origin'} Airport Terminal`,
+          estimatedCost: scaleExpense(150 * cityMultiplier * safeTravelers),
+          travelTimeMin: Math.min(600, Math.round(routeHours * 60)),
+          distanceKm: routeDistKm,
+          description: `In-flight return corridor, landing at arrival terminal, baggage claim, and local transit home.`,
+          coordinates: originCoords,
+          tag: 'Flight Arrival'
+        } : {
           id: `act-${d}-bs`,
           dayNumber: d,
           time: bsTime,
@@ -873,7 +890,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           type: 'breakstop',
           location: 'Along the return route — confirm stop before travel',
           estimatedCost: scaleExpense(100 * cityMultiplier * safeTravelers),
-          travelTimeMin: 120,
+          travelTimeMin: Math.min(120, Math.round(routeHours * 20)),
           distanceKm: Math.round(routeDistKm * 0.5),
           description: 'Suggested break timing only; confirm a suitable stop and its facilities before travel.',
           coordinates: {
@@ -888,13 +905,13 @@ export function generateAITrip(input: PlannerInput): Trip {
           time: arrTime,
           title: `Safe Arrival in ${input.origin || 'Home'}`,
           type: 'arrival',
-          location: input.origin || 'Home City',
+          location: `${input.origin || 'City Center'} Terminal / Home`,
           estimatedCost: 0,
-          travelTimeMin: 150,
-          distanceKm: Math.round(routeDistKm * 0.5),
-          description: `Trip to ${spotName} concluded smoothly within planned budget.`,
+          travelTimeMin: isAir ? 45 : Math.round(routeHours * 30),
+          distanceKm: isAir ? 20 : Math.round(routeDistKm * 0.5),
+          description: `Safe homecoming completing your memorable ${daysCount}-day ${spotName} adventure. Unpack, unwind, and log your memories!`,
           coordinates: originCoords,
-          tag: 'Destination'
+          tag: 'Journey End'
         }
       ];
 
