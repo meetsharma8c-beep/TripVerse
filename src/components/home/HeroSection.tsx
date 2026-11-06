@@ -20,6 +20,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 import { searchLocations, PreciseLocation } from '../../services/locationService';
 import { Trip, Destination } from '../../types/trip';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
@@ -46,6 +47,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onOpenPlanner,
   onSelectDestination
 }) => {
+  const { t } = useLanguage();
   const [destination, setDestination] = useState('');
   const [duration, setDuration] = useState(3);
   const [travelers, setTravelers] = useState(3);
@@ -316,7 +318,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       setShowDropdown(true);
                     }}
                     onFocus={() => setShowDropdown(true)}
-                    placeholder="Where do you want to go?"
+                    placeholder={t('hero.searchPlaceholder')}
                     className="w-full bg-transparent dark:bg-transparent text-sm sm:text-base font-semibold text-[#152A1C] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-400 focus:outline-none border-0 ring-0 focus:ring-0 shadow-none"
                     style={{ backgroundColor: 'transparent' }}
                   />
@@ -330,7 +332,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         setSuggestions([]);
                       }}
                       className="p-1 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
-                      aria-label="Clear search"
+                      aria-label={t('hero.clearSearch')}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -340,8 +342,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <button
                   type="submit"
                   className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#2D5A3D] hover:bg-[#244931] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#2D5A3D]/30 active:scale-95 transition-all cursor-pointer"
-                  aria-label="Search destination"
-                  title="Search destination"
+                  aria-label={t('hero.searchDestination')}
+                  title={t('hero.searchDestination')}
                 >
                   <Search className="w-5 h-5" />
                 </button>
@@ -351,8 +353,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               {showDropdown && suggestions.length > 0 && (
                 <div className="absolute left-2 right-2 sm:left-4 sm:right-4 top-full mt-2 bg-white rounded-3xl border border-[#E2EBE1] shadow-2xl z-50 overflow-hidden divide-y divide-[#E2EBE1] max-h-60 overflow-y-auto animate-in fade-in">
                   <div className="px-4 py-2 bg-[#F4F6F2] text-[11px] font-bold uppercase tracking-wider text-[#57685D] flex items-center justify-between">
-                    <span>Suggested Places</span>
-                    <span>Verified Geocoding</span>
+                    <span>{t('hero.suggestedPlaces')}</span>
+                    <span>{t('hero.verifiedGeocoding')}</span>
                   </div>
                   {suggestions.map((spot) => {
                     const IconComp =
@@ -395,14 +397,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           <div className="mt-8 sm:mt-10 lg:hidden">
             <div className="flex items-center justify-between mb-3 px-1">
               <h3 className="text-base font-display font-bold text-[#152A1C]">
-                Inspiring Destinations
+                {t('hero.inspiringDestinations')}
               </h3>
               <button
                 type="button"
                 onClick={onExplore}
                 className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <span>See all</span>
+                <span>{t('hero.seeAll')}</span>
               </button>
             </div>
 
@@ -494,7 +496,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           <div className="mt-8 sm:mt-12 tv-stagger-4">
             <div className="flex items-center justify-between mb-3 px-1">
               <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#57685D]">
-                Quick Actions
+                {t('hero.quickActions')}
               </h3>
             </div>
             <div className="grid grid-cols-4 gap-2 sm:gap-4">
@@ -509,7 +511,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
-                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">AI Itinerary</span>
+                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">{t('hero.aiItinerary')}</span>
               </button>
 
               {/* 2. Smart Route */}
@@ -528,7 +530,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <Compass className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
-                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">Smart Route</span>
+                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">{t('hero.smartRoute')}</span>
               </button>
 
               {/* 3. Budget Plan */}
@@ -540,7 +542,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <Wallet className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
-                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">Budget Plan</span>
+                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">{t('hero.budgetPlan')}</span>
               </button>
 
               {/* 4. Travel Guide */}
@@ -552,7 +554,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
-                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">Travel Guide</span>
+                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">{t('hero.travelGuide')}</span>
               </button>
             </div>
           </div>
@@ -561,7 +563,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           <div
             role="button"
             tabIndex={0}
-            aria-label="Let AI craft your perfect trip"
+            aria-label={t('hero.aiTeaserTitle')}
             onClick={() => {
               if (onOpenPlanner) onOpenPlanner();
             }}
@@ -579,10 +581,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
               <div>
                 <h4 className="text-sm sm:text-base font-bold text-[#152A1C] leading-snug">
-                  Let AI craft your perfect trip
+                  {t('hero.aiTeaserTitle')}
                 </h4>
                 <p className="text-xs text-[#57685D] mt-0.5">
-                  Personalized. Optimized. Unforgettable.
+                  {t('hero.aiTeaserSubtitle')}
                 </p>
               </div>
             </div>
@@ -604,8 +606,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 shadow-[0_20px_48px_-12px_rgba(45,90,61,0.08)] border border-[#E2EBE1] relative">
             <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#E2EBE1] flex-wrap gap-2">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Trip Parameters</span>
-                <h2 className="text-xl sm:text-2xl font-bold text-[#152A1C]">Plan in 30 Seconds</h2>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('hero.tripParameters')}</span>
+                <h2 className="text-xl sm:text-2xl font-bold text-[#152A1C]">{t('hero.planIn30Seconds')}</h2>
               </div>
               <button
                 type="button"
@@ -614,7 +616,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 title="Learn how TripVerse budget estimates work"
               >
                 <CheckCircle2 className="w-4 h-4 text-[#2D5A3D] shrink-0" />
-                <span>Budget Estimates</span>
+                <span>{t('hero.budgetEstimates')}</span>
                 <Info className="w-3.5 h-3.5 opacity-80" />
               </button>
             </div>
@@ -629,10 +631,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 >
                   <div className="flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-[#2D5A3D]" />
-                    <span>Destination or Specific Spot</span>
+                    <span>{t('hero.destinationLabel')}</span>
                   </div>
                   <span className="text-[11px] font-bold text-[#2D5A3D] bg-[#EAF0E9] px-2.5 py-0.5 rounded-full border border-[#DCE7DB]">
-                    Any Spot Worldwide
+                    {t('hero.anySpotWorldwide')}
                   </span>
                 </label>
                 <div className="relative">
@@ -645,7 +647,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       setShowDropdown(true);
                     }}
                     onFocus={() => setShowDropdown(true)}
-                    placeholder="Enter spot or route (e.g. Udaipur, Manali, Chopta, Goa, Hallstatt)..."
+                    placeholder={t('hero.destinationPlaceholder')}
                     className="w-full pl-4 pr-10 py-3 sm:py-3.5 min-h-[44px] rounded-2xl bg-[#F4F6F2] border border-[#DCE7DB] text-[#152A1C] font-semibold placeholder:text-[#57685D] focus:bg-white focus:outline-none focus:border-[#2D5A3D] focus:ring-4 focus:ring-[#2D5A3D]/10 transition-all text-sm sm:text-base"
                   />
                   <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -751,7 +753,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     className="block text-xs font-bold uppercase tracking-wider text-[#152A1C] mb-1.5 flex items-center gap-1.5"
                   >
                     <Calendar className="w-3.5 h-3.5 text-[#2D5A3D]" />
-                    <span>Trip Duration</span>
+                    <span>{t('hero.durationDays')}</span>
                   </label>
                   <select
                     id="hero-duration-select"
@@ -773,7 +775,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#152A1C] mb-1.5 flex items-center gap-1.5">
                     <Users className="w-3.5 h-3.5 text-[#2D5A3D]" />
-                    <span>Travelers</span>
+                    <span>{t('hero.travelersCount')}</span>
                   </label>
                   <div className="flex items-center justify-between px-3 py-1.5 min-h-[44px] rounded-2xl bg-[#F4F6F2] border border-[#DCE7DB]">
                     <button
@@ -808,7 +810,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     className="text-xs font-bold uppercase tracking-wider text-[#152A1C] flex items-center gap-1.5"
                   >
                     <Wallet className="w-3.5 h-3.5 text-[#2D5A3D]" />
-                    <span>Total Group Budget</span>
+                    <span>{t('hero.totalBudget')}</span>
                   </label>
                   
                   {/* Direct Exact Budget Input */}
@@ -860,7 +862,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   className="btn-liquid-primary flex-1 min-h-[52px] flex items-center justify-center gap-2 py-4 px-6 rounded-full text-white font-display font-bold text-base shadow-xl shadow-[#2D5A3D]/25 group"
                 >
                   <Sparkles className="w-5 h-5 text-emerald-100 shrink-0" />
-                  <span className="whitespace-nowrap">Plan My Trip (Instant AI)</span>
+                  <span className="whitespace-nowrap">{t('hero.planMyTripBtn')}</span>
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1 shrink-0" />
                 </button>
 
@@ -870,7 +872,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   className="btn-liquid-glass min-h-[52px] flex items-center justify-center gap-2 py-3.5 px-6 rounded-full text-[#152A1C] font-bold text-sm whitespace-nowrap"
                 >
                   <Compass className="w-4 h-4 text-[#2D5A3D] shrink-0" />
-                  <span>Explore Destinations</span>
+                  <span>{t('hero.exploreDestinations')}</span>
                 </button>
               </div>
 

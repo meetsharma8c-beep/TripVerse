@@ -3,6 +3,7 @@ import { Trip } from '../../types/trip';
 import { MapPin, ArrowRight, Share2, Trash2, Sparkles, Clock, Camera, Star } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 
 interface MyTripsViewProps {
   trips: Trip[];
@@ -25,6 +26,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
   onOpenMemories,
   onOpenReview
 }) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'ongoing' | 'completed' | 'draft'>('all');
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
 
@@ -37,11 +39,11 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
   }, []);
 
   const tabs = [
-    { id: 'all', label: 'All Trips' },
-    { id: 'upcoming', label: 'Upcoming' },
-    { id: 'ongoing', label: 'Ongoing' },
-    { id: 'completed', label: 'Completed' },
-    { id: 'draft', label: 'Drafts' },
+    { id: 'all', label: t('trips.all') },
+    { id: 'upcoming', label: t('trips.upcoming') },
+    { id: 'ongoing', label: t('trips.ongoing') },
+    { id: 'completed', label: t('trips.completed') },
+    { id: 'draft', label: t('trips.draft') },
   ];
 
   const filteredTrips = activeTab === 'all'
@@ -51,13 +53,13 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
   const getStatusBadge = (status: Trip['status']) => {
     switch (status) {
       case 'upcoming':
-        return { label: 'Upcoming', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+        return { label: t('trips.upcoming'), bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
       case 'ongoing':
-        return { label: 'In Progress', bg: 'bg-blue-50 text-blue-700 border-blue-200' };
+        return { label: t('trips.ongoing'), bg: 'bg-blue-50 text-blue-700 border-blue-200' };
       case 'completed':
-        return { label: 'Completed', bg: 'bg-slate-100 text-slate-700 border-slate-200' };
+        return { label: t('trips.completed'), bg: 'bg-slate-100 text-slate-700 border-slate-200' };
       case 'draft':
-        return { label: 'Draft', bg: 'bg-amber-50 text-amber-700 border-amber-200' };
+        return { label: t('trips.draft'), bg: 'bg-amber-50 text-amber-700 border-amber-200' };
     }
   };
 
@@ -67,12 +69,12 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Your Travel Portfolio</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('trips.portfolio')}</span>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#152A1C] tracking-tight">
-            My Trips & Itineraries
+            {t('trips.title')}
           </h1>
           <p className="text-xs sm:text-sm text-[#5A7362] mt-0.5 font-medium">
-            Manage your past and upcoming AI journeys with budget tracking.
+            {t('trips.subtitle')}
           </p>
         </div>
 
@@ -81,7 +83,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-bold text-xs sm:text-sm shadow-[0_4px_16px_rgba(45,90,61,0.2)] active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
         >
           <Sparkles className="w-4 h-4 text-emerald-300" />
-          <span>Plan New Trip</span>
+          <span>{t('trips.planNew')}</span>
         </button>
       </div>
 
@@ -110,11 +112,11 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
           </div>
           <div className="space-y-1.5">
             <h3 className="text-xl font-bold font-display text-[#152A1C]">
-              {trips.length === 0 ? "No trips yet." : "No trips in this category"}
+              {trips.length === 0 ? t('trips.emptyTitle') : "No trips in this category"}
             </h3>
             <p className="text-xs text-[#5A7362] max-w-xs mx-auto leading-relaxed">
               {trips.length === 0 
-                ? "Create your first trip to start planning." 
+                ? t('trips.emptySubtitle') 
                 : "No saved journeys found for the selected filter."}
             </p>
           </div>
@@ -123,7 +125,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
             className="px-6 py-2.5 rounded-2xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-bold text-xs shadow-md shadow-[#2D5A3D]/20 active:scale-95 transition-all inline-flex items-center gap-2 cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-emerald-300" />
-            <span>Plan a New Trip with AI</span>
+            <span>{t('trips.planNew')}</span>
           </button>
         </div>
       ) : (

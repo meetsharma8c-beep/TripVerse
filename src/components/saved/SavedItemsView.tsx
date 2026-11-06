@@ -5,6 +5,7 @@ import { Trip, Destination } from '../../types/trip';
 import { Bookmark, Trash2, Sparkles, Star, Compass } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 
 interface SavedItemsViewProps {
   savedItemIds: string[];
@@ -23,6 +24,7 @@ export const SavedItemsView: React.FC<SavedItemsViewProps> = ({
   onPlanTripForDestination,
   onSelectDestination
 }) => {
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState<'all' | 'destinations' | 'breakstops'>('all');
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
 
@@ -45,18 +47,18 @@ export const SavedItemsView: React.FC<SavedItemsViewProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Your Travel Bookmarks</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('saved.bookmarks')}</span>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#152A1C] tracking-tight">
-            Saved Places & Pitstops
+            {t('saved.title')}
           </h1>
           <p className="text-xs sm:text-sm text-[#5A7362] mt-0.5 font-medium">
-            Quickly access your bookmarked destinations, highway food stops, and stays.
+            {t('saved.subtitle')}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-[#E8EFE7] text-[#2D5A3D] border border-[#8EA78D]/30">
-            {totalSaved} Saved Items
+            {totalSaved} {t('saved.allItems')}
           </span>
         </div>
       </div>
@@ -64,9 +66,9 @@ export const SavedItemsView: React.FC<SavedItemsViewProps> = ({
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-[#E2EBE1] pb-3">
         {[
-          { id: 'all', label: `All Items (${totalSaved})` },
-          { id: 'destinations', label: `Destinations (${savedDestinations.length})` },
-          { id: 'breakstops', label: `Highway Stops (${savedBreakStops.length})` },
+          { id: 'all', label: `${t('saved.allItems')} (${totalSaved})` },
+          { id: 'destinations', label: `${t('saved.destinations')} (${savedDestinations.length})` },
+          { id: 'breakstops', label: `${t('saved.breakstops')} (${savedBreakStops.length})` },
         ].map(tab => (
           <button
             key={tab.id}
@@ -88,9 +90,9 @@ export const SavedItemsView: React.FC<SavedItemsViewProps> = ({
             <Bookmark className="w-9 h-9 stroke-[1.8]" />
           </div>
           <div className="space-y-1.5">
-            <h3 className="text-xl font-bold font-display text-[#152A1C]">Your Travel Wishlist is Empty</h3>
+            <h3 className="text-xl font-bold font-display text-[#152A1C]">{t('saved.emptyTitle')}</h3>
             <p className="text-xs text-[#5A7362] max-w-xs mx-auto leading-relaxed">
-              Explore destinations and save places you want to check out on a future trip.
+              {t('saved.emptySubtitle')}
             </p>
           </div>
           <button
@@ -98,7 +100,7 @@ export const SavedItemsView: React.FC<SavedItemsViewProps> = ({
             className="px-6 py-2.5 rounded-2xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-bold text-xs shadow-md shadow-[#2D5A3D]/20 active:scale-95 transition-all inline-flex items-center gap-2 cursor-pointer"
           >
             <Compass className="w-4 h-4 text-emerald-300" />
-            <span>Discover Top Destinations</span>
+            <span>{t('saved.planTrip')}</span>
           </button>
         </div>
       ) : (

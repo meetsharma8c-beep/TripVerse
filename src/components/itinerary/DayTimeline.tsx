@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DayPlan, ItineraryActivity, TransportDeal, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError, DEFAULT_TRAVEL_FALLBACK_IMAGE } from '../../utils/destinationImages';
 import { fetchOriginalPhoto, getInstantPhoto } from '../../services/originalPhotoService';
 import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, Info, ShieldCheck, Zap } from 'lucide-react';
@@ -74,6 +75,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
   onToggleComplete,
   onOptimizeWithAI
 }) => {
+  const { t } = useLanguage();
   const [selectedDay, setSelectedDay] = useState<number>(1);
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({ 1: true });
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
@@ -150,7 +152,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
       <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#E8EFE7]/60 border border-[#8EA78D]/30 text-xs text-[#2D5A3D]">
         <Compass className="w-4 h-4 text-[#2D5A3D] shrink-0" />
         <span className="flex-1">
-          Smart Itinerary: Real-time routes, optimized timings & verified local spots. Tap any day to inspect details.
+          {t('itinerary.smartItineraryAdvisory')}
         </span>
       </div>
 
@@ -177,7 +179,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                 onClick={() => toggleDayExpanded(day.dayNumber)}
                 className="w-10 sm:w-11 h-10 sm:h-11 rounded-full bg-[#2D5A3D] text-white font-display font-bold flex flex-col items-center justify-center shrink-0 shadow-[0_2px_10px_rgba(45,90,61,0.2)] transition-transform group-hover:scale-105 cursor-pointer ring-4 ring-[#F4F6F2]"
               >
-                <span className="text-[9px] uppercase tracking-wider text-[#A8C7A5] font-semibold leading-none">Day</span>
+                <span className="text-[9px] uppercase tracking-wider text-[#A8C7A5] font-semibold leading-none">{t('itinerary.day')}</span>
                 <span className="text-sm font-black leading-none mt-0.5">{day.dayNumber}</span>
               </button>
 

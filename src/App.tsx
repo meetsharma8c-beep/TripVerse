@@ -31,6 +31,7 @@ import { generateNotifications } from './services/notificationService';
 import { AIAppAction } from './services/aiAssistant';
 import { triggerHaptic } from './services/deviceService';
 import { formatCurrency } from './services/currencyService';
+import { useLanguage } from './services/languageService';
 
 // Common Components
 import { Navbar } from './components/common/Navbar';
@@ -142,6 +143,7 @@ import confetti from 'canvas-confetti';
 import { resolveRouteFromBrowser } from './utils/routeResolver';
 
 export function App() {
+  const { t } = useLanguage();
   const initialTrips = React.useMemo(() => loadTrips(), []);
   const initialRoute = React.useMemo(() => resolveRouteFromBrowser(initialTrips), [initialTrips]);
 
@@ -1680,7 +1682,7 @@ export function App() {
                   onClick={() => setCurrentTab('trips')}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 >
-                  <span>← Back to My Trips</span>
+                  <span>← {t('itinerary.backToTrips')}</span>
                 </button>
 
                 <button
@@ -1688,7 +1690,7 @@ export function App() {
                   className="flex items-center gap-1.5 text-xs font-bold text-[#2D5A3D] bg-[#EAF0E9] px-3 py-1.5 rounded-full border border-[#8EA78D]/40 cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>AI Travel Assistant Available</span>
+                  <span>{t('itinerary.aiAssistantAvailable')}</span>
                 </button>
               </div>
 
@@ -1705,7 +1707,7 @@ export function App() {
                 </button>
 
                 <h1 className="text-base font-display font-bold text-[#152A1C] text-center">
-                  Your Itinerary
+                  {t('itinerary.yourItinerary')}
                 </h1>
 
                 <div className="flex items-center gap-1.5">

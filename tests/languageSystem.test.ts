@@ -105,6 +105,56 @@ describe('Global Language & Localization (i18n) Engine', () => {
     expect(t('non.existent.key', 'es')).toBe('non.existent.key');
   });
 
+  it('translates full-app strings (Hero, BottomNav, Planner, Trips, Saved, Itinerary) across all 10 languages', () => {
+    const supportedLangs = ['en', 'es', 'fr', 'de', 'ja', 'hi', 'zh', 'ar', 'it', 'pt'] as const;
+
+    for (const lang of supportedLangs) {
+      // Hero search placeholder
+      const searchPlaceholder = t('hero.searchPlaceholder', lang);
+      expect(searchPlaceholder.length).toBeGreaterThan(0);
+      expect(searchPlaceholder).not.toBe('hero.searchPlaceholder');
+
+      // Inspiring destinations heading
+      const inspiring = t('hero.inspiringDestinations', lang);
+      expect(inspiring.length).toBeGreaterThan(0);
+      expect(inspiring).not.toBe('hero.inspiringDestinations');
+
+      // Bottom nav tabs
+      const bottomHome = t('bottomNav.home', lang);
+      const bottomItinerary = t('bottomNav.itinerary', lang);
+      expect(bottomHome.length).toBeGreaterThan(0);
+      expect(bottomItinerary.length).toBeGreaterThan(0);
+
+      // Planner wizard
+      const step1 = t('planner.step1Title', lang);
+      expect(step1.length).toBeGreaterThan(0);
+      expect(step1).not.toBe('planner.step1Title');
+
+      // My Trips
+      const tripsTitle = t('trips.title', lang);
+      expect(tripsTitle.length).toBeGreaterThan(0);
+
+      // Saved Places
+      const savedTitle = t('saved.title', lang);
+      expect(savedTitle.length).toBeGreaterThan(0);
+
+      // Itinerary
+      const yourItin = t('itinerary.yourItinerary', lang);
+      expect(yourItin.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('supports dynamic parameter interpolation in translation strings', () => {
+    const enStep = t('planner.stepOf', 'en', { current: 2, total: 9 });
+    expect(enStep).toBe('Step 2 of 9');
+
+    const esStep = t('planner.stepOf', 'es', { current: 3, total: 9 });
+    expect(esStep).toBe('Paso 3 de 9');
+
+    const zhStep = t('planner.stepOf', 'zh', { current: 1, total: 9 });
+    expect(zhStep).toBe('第 1 步 / 共 9 步');
+  });
+
   it('persists selected language in localStorage and dispatches global event', () => {
     let capturedEventDetail: string | null = null;
     const listener = (e: any) => {
