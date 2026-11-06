@@ -32,6 +32,20 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
   const [appliedTips, setAppliedTips] = useState<Record<string, boolean>>({});
 
   const suggestions = [
+    ...(trip.transitPassRoi && trip.transitPassRoi.netSavings > 0 ? [{
+      id: 'tip-transit-pass',
+      category: 'transportation' as keyof BudgetBreakdown,
+      savings: trip.transitPassRoi.netSavings,
+      title: `${trip.transitPassRoi.passName} Arbitrage`,
+      desc: `Save ~${formatCurrency(trip.transitPassRoi.netSavings, currency)} vs individual transit taps. Includes ${trip.transitPassRoi.coverageAreas.join(', ')} (${trip.transitPassRoi.validityDuration}). Buy at ${trip.transitPassRoi.purchaseLocation}.`
+    }] : []),
+    ...(trip.taxFreeGuidance && trip.taxFreeGuidance.refundPercentage > 0 ? [{
+      id: 'tip-tax-free',
+      category: 'miscellaneous' as keyof BudgetBreakdown,
+      savings: Math.round(trip.totalBudget * 0.04),
+      title: `${trip.taxFreeGuidance.refundPercentage}% Instant Tax-Free Retail Refund`,
+      desc: `Claim ${trip.taxFreeGuidance.refundPercentage}% instant sales tax exemption at checkout on purchases over ${trip.taxFreeGuidance.currency} ${trip.taxFreeGuidance.minimumThresholdAmount.toLocaleString()} by presenting your physical passport.`
+    }] : []),
     {
       id: 'tip-hotel',
       category: 'accommodation' as keyof BudgetBreakdown,
@@ -195,7 +209,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
             </h3>
           </div>
           <span className="text-xs font-bold text-[#2D5A3D] shrink-0">
-            Total Potential Savings: {formatCurrency(1250, currency)}
+            Total Potential Savings: {formatCurrency(suggestions.reduce((acc, s) => acc + s.savings, 0), currency)}
           </span>
         </div>
 

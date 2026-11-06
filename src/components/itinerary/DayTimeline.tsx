@@ -3,9 +3,10 @@ import { DayPlan, ItineraryActivity, TransportDeal, CurrencyCode } from '../../t
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { resolveDestinationImage, handleImageError, DEFAULT_TRAVEL_FALLBACK_IMAGE } from '../../utils/destinationImages';
 import { fetchOriginalPhoto, getInstantPhoto } from '../../services/originalPhotoService';
-import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass } from 'lucide-react';
+import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, Info, ShieldCheck, Zap } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { Landmark3DViewer } from '../common/Landmark3DViewer';
+import { toggleDayWeatherMode } from '../../services/smartTravelEngine';
 
 interface DayTimelineProps {
   itinerary: DayPlan[];
@@ -79,6 +80,15 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [is3DOpen, setIs3DOpen] = useState(false);
   const [selected3DLandmark, setSelected3DLandmark] = useState('');
+  const [weatherSwappedDays, setWeatherSwappedDays] = useState<Record<number, boolean>>({});
+
+  const handleToggleWeatherMode = (dayNumber: number) => {
+    triggerHaptic('medium');
+    setWeatherSwappedDays(prev => ({
+      ...prev,
+      [dayNumber]: !prev[dayNumber]
+    }));
+  };
 
   useEffect(() => {
     const handleCurrencyEvent = (e: Event) => {
@@ -154,7 +164,9 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
 
         {itinerary.map((day) => {
           const isExpanded = !!expandedDays[day.dayNumber];
-          const topActivities = day.activities.slice(0, 4);
+          const isRainActive = !!weatherSwappedDays[day.dayNumber];
+          const activeDay = isRainActive ? toggleDayWeatherMode(day, true) : day;
+          const topActivities = activeDay.activities.slice(0, 4);
 
           return (
             <div key={day.dayNumber} className="relative z-10 flex items-start gap-3 sm:gap-4 group">
@@ -230,30 +242,110 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                 {isExpanded && (
                   <div className="border-t border-[#E2EBE1] bg-[#F8FAF7]/50 p-4 sm:p-5 space-y-4 animate-fade-in">
                     
-                    <div className="flex items-center justify-between pb-1">
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#5A7362]">
-                        Detailed Schedule ({day.activities.length} items)
-                      </span>
+                    {/* Circadian Jet-Lag Protection Banner */}
+                    {day.dayNumber === 1 && day.circadianAdvice && day.circadianAdvice.isSignificantShift && (
+                      <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/90 flex items-start gap-2.5 text-xs text-amber-950 shadow-2xs">
+                        <Sunrise className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="flex-1 space-y-1">
+                          <div className="font-bold flex items-center gap-1.5 flex-wrap">
+                            <span>Circadian Jet-Lag Protection Active (+{day.circadianAdvice.deltaUtcHours}h Shift)</span>
+                            <span className="text-[10px] font-extrabold uppercase bg-amber-200/70 text-amber-900 px-2 py-0.5 rounded-full">
+                              Melatonin Sync
+                            </span>
+                          </div>
+                          <p className="text-amber-900/90 leading-relaxed text-[11px]">
+                            {day.circadianAdvice.melatoninResetSlot.scientificRationale}
+                          </p>
+                          <div className="flex items-center gap-3 text-[11px] font-semibold text-amber-800 flex-wrap pt-0.5">
+                            <span>☀️ Outdoor Light Window: {day.circadianAdvice.melatoninResetSlot.startTime} – {day.circadianAdvice.melatoninResetSlot.endTime}</span>
+                            <span>•</span>
+                            <span>🚶 Max Pacing Cap: {day.circadianAdvice.recommendedMaxStepsDay1.toLocaleString()} steps</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                      {onAddActivity && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            triggerHaptic('light');
-                            onAddActivity(day.dayNumber);
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-[#2D5A3D] hover:bg-[#234730] text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-xs active:scale-95"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Add Stop</span>
-                        </button>
-                      )}
+                    {/* Cultural Insights Strip (Day 1) */}
+                    {day.culturalInsights && day.culturalInsights.length > 0 && (
+                      <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 space-y-2 text-xs">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-[#2D5A3D]" />
+                            <strong className="text-[#152A1C] uppercase tracking-wider text-[11px]">Local Customs & Friction Guardrails</strong>
+                          </div>
+                          <span className="text-[10px] font-bold text-[#2D5A3D] bg-white px-2 py-0.5 rounded-full border border-emerald-200">
+                            {day.culturalInsights.length} Verified Rules
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                          {day.culturalInsights.slice(0, 4).map(ci => (
+                            <div key={ci.id} className="p-2.5 rounded-xl bg-white border border-emerald-100 text-[11px] space-y-0.5">
+                              <div className="font-bold text-[#152A1C] flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A3D]" />
+                                <span>{ci.title}</span>
+                              </div>
+                              <p className="text-slate-600 line-clamp-2">{ci.detail}</p>
+                              <div className="text-[10px] text-[#2D5A3D] font-semibold pt-0.5">Tip: {ci.actionableTip}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Schedule Header with TSP Badge and Rain Mode Button */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-1 gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#5A7362]">
+                          Detailed Schedule ({activeDay.activities.length} items)
+                        </span>
+                        {activeDay.tspOptimized && (
+                          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Zap className="w-2.5 h-2.5 text-emerald-700" />
+                            TSP Route Optimized
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Dynamic Weather Rain-Mode 1-Click Toggle */}
+                        {day.activities.some(a => a.indoorMirror) && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleWeatherMode(day.dayNumber);
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 ${
+                              isRainActive
+                                ? 'bg-sky-600 text-white border border-sky-700 shadow-sm'
+                                : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200'
+                            }`}
+                          >
+                            <CloudRain className="w-3.5 h-3.5" />
+                            <span>{isRainActive ? 'Rain Mode Active (Indoor Mirrors)' : 'Rain Forecast? Swap to Indoor Mirrors'}</span>
+                          </button>
+                        )}
+
+                        {onAddActivity && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              triggerHaptic('light');
+                              onAddActivity(day.dayNumber);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-[#2D5A3D] hover:bg-[#234730] text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-xs active:scale-95"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add Stop</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Timeline items for this day */}
                     <div className="space-y-3">
-                      {day.activities.map((act, idx) => {
+                      {activeDay.activities.map((act, idx) => {
                         const Icon = getActivityIcon(act.type);
 
                         return (
@@ -297,6 +389,27 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                                 {act.isCustom && (
                                   <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded-md shrink-0">
                                     Custom
+                                  </span>
+                                )}
+
+                                {act.queueSlot === 'early_morning_low_crowd' && (
+                                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-md shrink-0">
+                                    🌅 Low-Queue Slot
+                                  </span>
+                                )}
+                                {act.queueSlot === 'midday_timed_indoor' && (
+                                  <span className="text-[10px] font-bold text-indigo-800 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded-md shrink-0">
+                                    🏛️ Timed Indoor
+                                  </span>
+                                )}
+                                {act.queueSlot === 'evening_vibrant' && (
+                                  <span className="text-[10px] font-bold text-purple-800 bg-purple-50 border border-purple-200 px-1.5 py-0.2 rounded-md shrink-0">
+                                    🌃 Nightlife Peak
+                                  </span>
+                                )}
+                                {act.isIndoorSwapped && (
+                                  <span className="text-[10px] font-bold text-sky-800 bg-sky-100 border border-sky-300 px-1.5 py-0.2 rounded-md shrink-0">
+                                    🌧️ Indoor Mirror
                                   </span>
                                 )}
                               </div>
@@ -404,6 +517,28 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                               </p>
                             )}
 
+                            {act.culturalTip && (
+                              <div className="mt-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-700 space-y-1">
+                                {act.culturalTip.etiquette && (
+                                  <div className="flex items-start gap-1.5">
+                                    <span className="font-bold text-[#2D5A3D] shrink-0">Etiquette:</span>
+                                    <span>{act.culturalTip.etiquette}</span>
+                                  </div>
+                                )}
+                                {act.culturalTip.paymentAlert && (
+                                  <div className="flex items-start gap-1.5 text-amber-800 font-medium">
+                                    <span className="font-bold text-amber-900 shrink-0">Payment Note:</span>
+                                    <span>{act.culturalTip.paymentAlert}</span>
+                                  </div>
+                                )}
+                                {act.culturalTip.tippingRule === 'strictly_no_tipping' && (
+                                  <div className="flex items-center gap-1 text-emerald-700 font-bold">
+                                    <span>🚫 Strictly Zero Tipping: Omotenashi hospitality is included in full.</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             {/* External Links (Maps, Zomato, Stays) */}
                             <div className="mt-2 pt-2 border-t border-[#E2EBE1] flex items-center justify-between gap-2 flex-wrap">
                               <div className="flex items-center gap-2 flex-wrap">
@@ -468,6 +603,50 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                         );
                       })}
                     </div>
+
+                    {/* Multi-Persona Parallel Group Explorer Card */}
+                    {activeDay.groupBranches && activeDay.groupBranches.length > 0 && (
+                      <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/70 to-slate-50 border border-emerald-200 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-lg bg-[#2D5A3D] text-white flex items-center justify-center">
+                              <Users className="w-3.5 h-3.5" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-bold text-[#152A1C] uppercase tracking-wide">
+                                Multi-Persona Parallel Explorer Sprints
+                              </h4>
+                              <div className="text-[11px] text-slate-500">Autonomous afternoon tracks with unified group evening convergence</div>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold text-[#2D5A3D] bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                            Pareto Optimized
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                          {activeDay.groupBranches.map(branch => (
+                            <div key={branch.branchId} className="p-3 rounded-xl bg-white border border-[#E2EBE1] shadow-2xs space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-[#2D5A3D]">{branch.timeWindow}</span>
+                                <span className="text-[10px] text-slate-400 font-semibold">{branch.distanceToConvergenceMeters}m to dinner</span>
+                              </div>
+                              <div className="text-xs font-bold text-[#152A1C]">{branch.activityTitle}</div>
+                              <div className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">{branch.description}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {activeDay.groupBranches[0]?.convergenceAnchor && (
+                          <div className="p-2.5 rounded-xl bg-emerald-100/60 border border-emerald-200 flex items-center gap-2 text-xs text-[#2D5A3D]">
+                            <Sparkles className="w-4 h-4 text-[#2D5A3D] shrink-0" />
+                            <span className="font-medium">
+                              <strong>{activeDay.groupBranches[0].convergenceAnchor.time} Convergence:</strong> {activeDay.groupBranches[0].convergenceAnchor.venueName} — {activeDay.groupBranches[0].convergenceAnchor.instructions}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Transport Deal Banner on Day 1 */}
                     {day.dayNumber === 1 && bestDeal && (

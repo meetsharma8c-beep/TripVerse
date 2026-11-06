@@ -17,7 +17,10 @@ import {
   X,
   Check,
   Star,
-  ArrowRight
+  ArrowRight,
+  Globe,
+  CreditCard,
+  Sparkles
 } from 'lucide-react';
 
 interface PrintTravelGuideModalProps {
@@ -238,6 +241,68 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
               ))}
             </div>
           </div>
+
+          {/* Border Security Sentinel & Transit Pass ROI (Smart Travel Dossier) */}
+          {(trip.borderSecuritySentinel || trip.transitPassRoi) && (
+            <div className="border border-sky-200 rounded-2xl p-4 bg-sky-50/40 print-avoid-break break-inside-avoid space-y-3">
+              <h2 className="text-sm font-black uppercase tracking-wider text-sky-950 border-b border-sky-200 pb-2 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-sky-700" />
+                  <span>Border Protocol, Arrival Declarations & Transit Pass Guide</span>
+                </span>
+                <span className="text-[10px] font-bold text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full">
+                  IATA Timatic Protocol
+                </span>
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {/* Passport & Arrival QR */}
+                {trip.borderSecuritySentinel && (
+                  <div className="p-3 bg-white rounded-xl border border-sky-100 space-y-1.5">
+                    <div className="font-bold text-sky-950 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-sky-700" />
+                      <span>Passport & Border Compliance</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600">
+                      Passport must be valid for at least <strong>{trip.borderSecuritySentinel.passportValidityRequiredMonths} months</strong> from your return date.
+                    </p>
+                    {trip.borderSecuritySentinel.mandatoryArrivalDeclarations.map((decl, idx) => (
+                      <div key={idx} className="p-2 bg-sky-50 rounded-lg text-[11px] text-sky-900 font-medium">
+                        <strong>Mandatory QR:</strong> {decl.name} ({decl.cost}). Submit on official portal {decl.submissionWindowHoursPrior}h before departure.
+                      </div>
+                    ))}
+                    {trip.borderSecuritySentinel.transitVisaWarning?.appliesToSelfTransfer && (
+                      <div className="text-[10px] text-amber-800 font-semibold pt-0.5">
+                        ⚠️ {trip.borderSecuritySentinel.transitVisaWarning.warningText}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Transit Pass ROI & Tax Free Shopping */}
+                {trip.transitPassRoi && (
+                  <div className="p-3 bg-white rounded-xl border border-sky-100 space-y-1.5">
+                    <div className="font-bold text-sky-950 flex items-center gap-1">
+                      <CreditCard className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>Transit Pass ROI Recommendation</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-semibold text-slate-800">{trip.transitPassRoi.passName}</span>
+                      <span className="font-bold text-emerald-700">Save ~{formatCurrency(trip.transitPassRoi.netSavings, currency)}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Validity: {trip.transitPassRoi.validityDuration}. Coverage: {trip.transitPassRoi.coverageAreas.join(', ')}.
+                    </p>
+                    {trip.taxFreeGuidance && trip.taxFreeGuidance.refundPercentage > 0 && (
+                      <div className="pt-1 text-[11px] text-slate-600 border-t border-slate-100">
+                        <strong>Tax-Free Shopping:</strong> {trip.taxFreeGuidance.refundPercentage}% instant refund on purchases over {trip.taxFreeGuidance.currency} {trip.taxFreeGuidance.minimumThresholdAmount.toLocaleString()} with passport.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Day-by-Day Schedule */}
           <div>

@@ -1,4 +1,15 @@
 import type { Hotel } from '../services/hotelService';
+import type { 
+  IndoorMirrorActivity, 
+  ActivityCulturalTip, 
+  QueueSlot, 
+  ParallelGroupBranch, 
+  CircadianPacingAdvice, 
+  CulturalInsight, 
+  BorderSecuritySentinel, 
+  TransitPassRoi, 
+  TaxFreeShoppingGuidance 
+} from './smartTravel';
 
 export type TravelerType = 'solo' | 'couple' | 'friends' | 'family' | 'business';
 
@@ -80,6 +91,12 @@ export interface ItineraryActivity {
   notes?: string;
   isCustom?: boolean;
   image?: string;
+  indoorMirror?: IndoorMirrorActivity;
+  originalOutdoor?: { title: string; location: string; description: string; image?: string; estimatedCost?: number; coordinates?: Coordinates };
+  culturalTip?: ActivityCulturalTip;
+  queueSlot?: QueueSlot;
+  isIndoorSwapped?: boolean;
+  parallelBranch?: ParallelGroupBranch;
 }
 
 export interface DayPlan {
@@ -89,6 +106,11 @@ export interface DayPlan {
   activities: ItineraryActivity[];
   dayEstimatedCost: number;
   image?: string;
+  circadianAdvice?: CircadianPacingAdvice;
+  isWeatherSwapped?: boolean;
+  tspOptimized?: boolean;
+  culturalInsights?: CulturalInsight[];
+  groupBranches?: ParallelGroupBranch[];
 }
 
 export interface BudgetBreakdown {
@@ -164,6 +186,10 @@ export interface Trip {
   expenses?: ExpenseItem[];
   packingList?: PackingItem[];
   collaboration?: CollaborationSession;
+  borderSecuritySentinel?: BorderSecuritySentinel;
+  transitPassRoi?: TransitPassRoi;
+  taxFreeGuidance?: TaxFreeShoppingGuidance;
+  circadianPacing?: CircadianPacingAdvice;
 }
 
 export interface TripPhotoMemory {

@@ -6,6 +6,7 @@ import { resolvePreciseLocationSync, PreciseLocation } from './locationService';
 import { selectHotelForTrip } from './hotelService';
 import { resolveTransitContext, getFeasibleTransportModes } from './transportFeasibilityEngine';
 import { getActiveCurrency, formatCurrency, CURRENCIES } from './currencyService';
+import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
 
 export interface PlannerInput {
   origin: string;
@@ -1075,7 +1076,7 @@ export function generateAITrip(input: PlannerInput): Trip {
     safeStartDate = new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
   }
 
-  return {
+  const rawTrip: Trip = {
     id: `trip-${Date.now()}`,
     name: `${input.origin || 'Origin'} → ${spotName} | ${daysCount} ${daysCount === 1 ? 'Day' : 'Days'}`,
     origin: input.origin || 'Ahmedabad, Gujarat',
@@ -1134,4 +1135,6 @@ export function generateAITrip(input: PlannerInput): Trip {
     },
     travelDataStatus: 'pending'
   };
+
+  return enrichTripWithSmartIntelligence(rawTrip);
 }

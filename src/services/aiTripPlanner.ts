@@ -5,6 +5,7 @@ import { getStoredConcodeConfig } from './concodeBrainService';
 import { CONCODE_MASTER_PROMPT } from './concodeMasterPrompt';
 import { getActiveCurrency, CURRENCIES } from './currencyService';
 import { enrichTripWithOriginalPhotos } from './originalPhotoService';
+import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
 
 const ACTIVITY_TYPES = new Set(['food', 'attraction', 'viewpoint', 'nightlife', 'rest']);
 
@@ -326,12 +327,15 @@ export async function generatePersonalizedTrip(input: PlannerInput): Promise<Tri
         aiRationale: fallback.aiRationale
     };
 
+    // Enrich with 7-pillar smart intelligence (Circadian, TSP, Cultural, Weather Mirrors, Border Sentinel, PPP)
+    const smartTrip = enrichTripWithSmartIntelligence(rawTrip);
+
     // Enrich the trip with genuine, original photography during the loading state
     try {
-        const enriched = await enrichTripWithOriginalPhotos(rawTrip, input.destination || input.destinationName);
+        const enriched = await enrichTripWithOriginalPhotos(smartTrip, input.destination || input.destinationName);
         return enriched;
     } catch {
-        return rawTrip;
+        return smartTrip;
     }
 }
 
