@@ -89,18 +89,95 @@ function buildServerlessItinerary(ctx) {
       ? 'Pure Vegetarian'
       : 'Authentic Regional';
 
+  const normDest = (dest + ' ' + (ctx.destination_region || '')).toLowerCase();
+  let defaultHighlights = [
+    `${dest} Heritage Citadel & Courtyard`,
+    `${dest} Scenic Waterfront & Promenade`,
+    `${dest} Old Bazaar & Artisan Quarter`,
+    `${dest} Hilltop Sunset Panorama`,
+    `${dest} Cultural Museum & Gardens`,
+    `${dest} Nature Trail & Viewpoint`,
+    `${dest} Artisan Handloom & Craft Market`,
+    `${dest} Evening Heritage Stroll & Cultural Square`
+  ];
+
+  if (normDest.includes('tokyo') || normDest.includes('japan')) {
+    defaultHighlights = [
+      'Shibuya Crossing & Hachiko Statue',
+      'Senso-ji Temple & Nakamise-dori Asakusa',
+      'Meiji Jingu Shrine & Yoyogi Park',
+      'Tokyo Skytree & Solamachi Panorama',
+      'TeamLab Planets Immersive Digital Art',
+      'Akihabara Electric Town & Retro Gaming',
+      'Shinjuku Gyoen National Garden',
+      'Tsukiji Outer Market Food Tour',
+      'Tokyo Tower & Shiba Park Vista',
+      'Roppongi Hills Mori Art Museum',
+      'Ueno Park & Tokyo National Museum',
+      'Imperial Palace East Gardens'
+    ];
+  } else if (normDest.includes('paris') || normDest.includes('france')) {
+    defaultHighlights = [
+      'Eiffel Tower Summit Tour',
+      'Louvre Museum Masterpieces & Pyramid',
+      'Musée d\'Orsay Impressionist Masterpieces',
+      'Arc de Triomphe & Champs-Élysées',
+      'Cathédrale Notre-Dame & Île de la Cité',
+      'Sacré-Cœur Basilica & Montmartre',
+      'Sainte-Chapelle Stained Glass',
+      'Seine River Sunset Cruise from Pont Neuf',
+      'Jardin du Luxembourg & Medici Fountain',
+      'Palace of Versailles Hall of Mirrors'
+    ];
+  } else if (normDest.includes('york') || normDest.includes('nyc') || normDest.includes('manhattan')) {
+    defaultHighlights = [
+      'Central Park & Bethesda Terrace Walk',
+      'Empire State Building 86th Floor Observatory',
+      'Statue of Liberty & Ellis Island',
+      'Times Square & Broadway Theater District',
+      'The Metropolitan Museum of Art (The Met)',
+      'Brooklyn Bridge Pedestrian Promenade',
+      'The High Line & Hudson Yards Vessel',
+      'Top of the Rock Observation Deck'
+    ];
+  } else if (normDest.includes('rome') || normDest.includes('italy')) {
+    defaultHighlights = [
+      'Colosseum & Gladiator Arena Floor',
+      'Roman Forum & Palatine Hill Ruins',
+      'Vatican Museums & Sistine Chapel',
+      'St. Peter\'s Basilica & Dome Climb',
+      'The Pantheon & Piazza della Rotonda',
+      'Trevi Fountain Evening Stroll',
+      'Spanish Steps & Piazza di Spagna',
+      'Trastevere Food Tour & Trattorias'
+    ];
+  } else if (normDest.includes('dubai') || normDest.includes('uae')) {
+    defaultHighlights = [
+      'Burj Khalifa Level 148 Sky Deck',
+      'The Dubai Fountain Synchronized Show',
+      'Dubai Mall & Underwater Zoo',
+      'Red Dune Desert Safari & Bedouin BBQ',
+      'Palm Jumeirah & The View at The Palm',
+      'Dubai Frame Sky Glass Bridge',
+      'Dubai Marina Walk & Yacht Promenade',
+      'Old Dubai Gold & Spice Souks (Deira)'
+    ];
+  } else if (normDest.includes('jaipur')) {
+    defaultHighlights = [
+      'Amber Fort & Sheesh Mahal (Mirror Palace)',
+      'Hawa Mahal (Palace of Winds)',
+      'City Palace Complex & Chandra Mahal',
+      'Jantar Mantar UNESCO Astronomical Observatory',
+      'Nahargarh Fort Sunset Skyline Viewpoint',
+      'Jal Mahal (Water Palace) & Man Sagar Lake',
+      'Albert Hall Museum & Ram Niwas Gardens',
+      'Johari Bazaar & Bapu Bazaar Artisan Walk'
+    ];
+  }
+
   const highlights = Array.isArray(ctx.known_destination_highlights) && ctx.known_destination_highlights.length > 0
     ? ctx.known_destination_highlights
-    : [
-        `${dest} Heritage Citadel & Courtyard`,
-        `${dest} Scenic Waterfront & Promenade`,
-        `${dest} Old Bazaar & Artisan Quarter`,
-        `${dest} Hilltop Sunset Panorama`,
-        `${dest} Cultural Museum & Gardens`,
-        `${dest} Historic Temple & Stepwell`,
-        `${dest} Nature Trail & Viewpoint`,
-        `${dest} Craft Village & Local Market`
-      ];
+    : defaultHighlights;
 
   const itinerary = [];
   let highlightIdx = 0;

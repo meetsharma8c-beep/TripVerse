@@ -1,4 +1,6 @@
 import { Coordinates, Destination } from '../types/trip';
+import { resolveCanonicalDestination } from './canonicalCityService';
+import { getDestinationHighlights } from './landmarkAtlasService';
 
 export interface PreciseLocation {
   id: string;
@@ -681,6 +683,28 @@ export function resolvePreciseLocationSync(input: string): PreciseLocation {
     return PRECISE_SPOTS_INDEX.find(s => s.id === 'statue-of-unity')!;
   }
 
+  // 1b. Canonical Destination Check (maps "Tokyo, Japan", "to tokyo", "Paris, France", etc.)
+  const canonical = resolveCanonicalDestination(clean);
+  if (canonical.matchedDestination) {
+    const dest = canonical.matchedDestination;
+    const realHighlights = getDestinationHighlights(dest.name, 16);
+    const country = dest.country || canonical.country || 'India';
+    return {
+      id: dest.id,
+      name: dest.name,
+      fullName: `${dest.name}, ${dest.state}, ${country}`,
+      state: dest.state,
+      country,
+      coordinates: dest.coordinates,
+      category: dest.category,
+      spotType: 'city',
+      highlights: realHighlights.length > 0 ? realHighlights : (dest.popularActivities || []),
+      tagline: dest.tagline,
+      image: dest.image,
+      popularDish: `Authentic regional cuisine of ${dest.name}`
+    };
+  }
+
   // Categorize based on keywords & Global Atlas
   let category: Destination['category'] = 'roadtrip';
   let spotType: PreciseLocation['spotType'] = 'city';
@@ -930,12 +954,14 @@ export function resolvePreciseLocationSync(input: string): PreciseLocation {
     coordinates,
     category,
     spotType,
-    highlights: [
-      `${clean} Cultural & Historic Landmark Tour`,
-      `${clean} Iconic Heritage Architecture & Scenic Spots`,
-      `${clean} Artisan Culinary Feasts & Local Markets`,
-      `${clean} Panoramic Horizon & Golden Hour Sunset Walk`
-    ],
+    highlights: getDestinationHighlights(clean).length > 0
+      ? getDestinationHighlights(clean)
+      : [
+          `${clean} Cultural & Historic Landmark Tour`,
+          `${clean} Iconic Heritage Architecture & Scenic Spots`,
+          `${clean} Artisan Culinary Feasts & Local Markets`,
+          `${clean} Panoramic Horizon & Golden Hour Sunset Walk`
+        ],
     tagline: `Precise Spot • ${country !== 'Worldwide' ? `${country} • ` : ''}Handcrafted AI Itinerary`,
     image: undefined
   };

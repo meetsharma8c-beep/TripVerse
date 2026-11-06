@@ -7,6 +7,8 @@ import { selectHotelForTrip } from './hotelService';
 import { resolveTransitContext, getFeasibleTransportModes } from './transportFeasibilityEngine';
 import { getActiveCurrency, formatCurrency, CURRENCIES } from './currencyService';
 import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
+import { resolveCanonicalDestination } from './canonicalCityService';
+import { getDestinationHighlights } from './landmarkAtlasService';
 
 export interface PlannerInput {
   origin: string;
@@ -385,27 +387,29 @@ export function generateAITrip(input: PlannerInput): Trip {
   const budgetPerPerson = Math.round(totalBudget / safeTravelers);
 
   const rawDestName = (input.destinationName || input.destination || 'Scenic Getaway').trim() || 'Scenic Getaway';
+  const canonical = resolveCanonicalDestination(rawDestName);
   const preciseLoc: PreciseLocation = input.preciseLocation || resolvePreciseLocationSync(rawDestName);
 
-  // Exact catalog match only if user typed exact name; otherwise synthesize to keep spot name
-  let matchedDest: Destination | undefined = POPULAR_DESTINATIONS.find(
+  // Exact catalog match using canonical entity or direct name match
+  let matchedDest: Destination | undefined = canonical.matchedDestination || POPULAR_DESTINATIONS.find(
     d => d.name.toLowerCase() === rawDestName.toLowerCase() ||
-      d.id === preciseLoc.id
+      d.id === preciseLoc.id ||
+      d.id === canonical.destinationId
   );
 
   if (!matchedDest) {
     matchedDest = synthesizeDestination(
-      preciseLoc.name || rawDestName,
+      canonical.canonicalName || preciseLoc.name || rawDestName,
       input.destinationCoords || preciseLoc.coordinates,
       preciseLoc.category,
-      preciseLoc.state
+      canonical.state || preciseLoc.state
     );
   }
 
-  // Exact display name for spot (e.g. "Mansarovar, Jaipur", "Chopta", "Polo Forest", "Hallstatt")
-  const spotName = preciseLoc.name || matchedDest.name || rawDestName;
-  const state = preciseLoc.state || matchedDest.state || 'Destination';
-  const country = preciseLoc.country || matchedDest.country || 'Worldwide';
+  // Exact display name for spot (e.g. "Tokyo", "Paris", "Mansarovar, Jaipur", "Chopta", "Polo Forest")
+  const spotName = (input.preciseLocation ? input.preciseLocation.name : canonical.canonicalName) || preciseLoc.name || matchedDest.name || rawDestName;
+  const state = canonical.state || preciseLoc.state || matchedDest.state || 'Destination';
+  const country = canonical.country || preciseLoc.country || matchedDest.country || 'Worldwide';
   const spotType = preciseLoc.spotType || 'nature';
   const category = preciseLoc.category || matchedDest.category || 'roadtrip';
   const transitContext = resolveTransitContext(spotName);
@@ -455,20 +459,12 @@ export function generateAITrip(input: PlannerInput): Trip {
   const cuisine = getRegionalCuisine(state, country, foodPref);
   const activityMeta = getActivityTypeMeta(spotType, category);
 
-  // Compile full deduplicated highlights list with enough unique entries for up to 30 days
+  // Compile full deduplicated highlights list with genuine famous spots from the Landmark Atlas
+  const atlasHighlights = getDestinationHighlights(spotName, 25);
   const rawHighlights = Array.from(new Set([
+    ...atlasHighlights,
     ...(matchedDest.popularActivities || []),
-    ...(preciseLoc.highlights || []),
-    `${spotName} Historic & Scenic Landmark Tour`,
-    `${spotName} Cultural Discovery & Panorama`,
-    `${spotName} Local Artisan Heritage Market`,
-    `${spotName} Panoramic Trail & Nature Walk`,
-    `${spotName} Old Quarter Architecture Walk`,
-    `${spotName} Lakeside / Valley Promenade`,
-    `${spotName} Botanical & Heritage Gardens`,
-    `${spotName} Craft Village & Folk Museum`,
-    `${spotName} Morning Ridge & Viewpoint Trail`,
-    `${spotName} Sunset Overlook & Cultural Square`
+    ...(preciseLoc.highlights || [])
   ].filter(Boolean)));
   const highlights = rawHighlights;
   let nextHighlightCursor = 0;
@@ -748,7 +744,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           id: `act-1-sunset`,
           dayNumber: 1,
           time: sunsetTime,
-          title: `${spotName} ${activityMeta.eveningVerb}`,
+          title: takeUniqueHighlight(activityMeta.eveningVerb),
           type: 'viewpoint',
           location: `${spotName} Panoramic Viewpoint`,
           estimatedCost: scaleExpense(30 * safeTravelers),

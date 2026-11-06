@@ -16,7 +16,18 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.9,
     recommendedDuration: '5 Days',
     bestTime: 'Apr - Oct',
-    popularActivities: ['Eiffel Tower Summit Tour', 'Louvre Museum Masterpieces', 'Seine Sunset River Cruise', 'Montmartre Artists Walk'],
+    popularActivities: [
+      'Eiffel Tower Summit Tour',
+      'Louvre Museum Masterpieces & Pyramid',
+      'Musée d\'Orsay Impressionist Masterpieces',
+      'Arc de Triomphe & Champs-Élysées',
+      'Cathédrale Notre-Dame & Île de la Cité',
+      'Sacré-Cœur Basilica & Montmartre',
+      'Sainte-Chapelle Stained Glass',
+      'Seine River Sunset Cruise from Pont Neuf',
+      'Jardin du Luxembourg & Medici Fountain',
+      'Palace of Versailles Hall of Mirrors'
+    ],
     coordinates: { lat: 48.8566, lng: 2.3522 }
   },
   {
@@ -34,7 +45,20 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.9,
     recommendedDuration: '6 Days',
     bestTime: 'Mar - May & Oct - Nov',
-    popularActivities: ['Shibuya Crossing Experience', 'Senso-ji Temple Asakusa', 'Akihabara Tech & Anime', 'TeamLab Planets Immersive Art'],
+    popularActivities: [
+      'Shibuya Crossing & Hachiko Statue',
+      'Senso-ji Temple & Nakamise-dori Asakusa',
+      'Meiji Jingu Shrine & Yoyogi Park',
+      'Tokyo Skytree & Solamachi Panorama',
+      'TeamLab Planets Immersive Digital Art',
+      'Akihabara Electric Town & Retro Gaming',
+      'Shinjuku Gyoen National Garden',
+      'Tsukiji Outer Market Food Tour',
+      'Tokyo Tower & Shiba Park Vista',
+      'Roppongi Hills Mori Art Museum',
+      'Ueno Park & Tokyo National Museum',
+      'Imperial Palace East Gardens'
+    ],
     coordinates: { lat: 35.6762, lng: 139.6503 }
   },
   {
@@ -52,7 +76,18 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.9,
     recommendedDuration: '5 Days',
     bestTime: 'Apr - Jun & Sep - Oct',
-    popularActivities: ['Colosseum & Roman Forum Walk', 'Vatican Museums & Sistine Chapel', 'Trevi Fountain Evening Stroll', 'Trastevere Food Tour'],
+    popularActivities: [
+      'Colosseum & Gladiator Arena Floor',
+      'Roman Forum & Palatine Hill Ruins',
+      'Vatican Museums & Sistine Chapel',
+      'St. Peter\'s Basilica & Dome Climb',
+      'The Pantheon & Piazza della Rotonda',
+      'Trevi Fountain Evening Stroll',
+      'Piazza Navona & Bernini Fountains',
+      'Spanish Steps & Piazza di Spagna',
+      'Trastevere Food Tour & Trattorias',
+      'Borghese Gallery & Gardens'
+    ],
     coordinates: { lat: 41.9028, lng: 12.4964 }
   },
   {
@@ -70,7 +105,18 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.8,
     recommendedDuration: '5 Days',
     bestTime: 'Apr - Jun & Sep - Nov',
-    popularActivities: ['Central Park Bike Tour', 'Top of the Rock Skyline Vista', 'Broadway Evening Theater', 'High Line & Hudson Yards Walk'],
+    popularActivities: [
+      'Central Park & Bethesda Terrace Walk',
+      'Empire State Building 86th Floor Observatory',
+      'Statue of Liberty & Ellis Island',
+      'Times Square & Broadway Theater District',
+      'The Metropolitan Museum of Art (The Met)',
+      'Brooklyn Bridge Pedestrian Promenade',
+      'The High Line & Hudson Yards Vessel',
+      '9/11 Memorial & One World Observatory',
+      'Top of the Rock Observation Deck',
+      'Museum of Modern Art (MoMA)'
+    ],
     coordinates: { lat: 40.7128, lng: -74.0060 }
   },
   {
@@ -88,7 +134,18 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.8,
     recommendedDuration: '5 Days',
     bestTime: 'Nov - Mar',
-    popularActivities: ['Burj Khalifa Level 148 Vista', 'Red Dune Desert Safari & BBQ', 'Dubai Marina Yacht Cruise', 'Old Dubai Gold & Spice Souk'],
+    popularActivities: [
+      'Burj Khalifa Level 148 Sky Deck',
+      'The Dubai Fountain Synchronized Show',
+      'Dubai Mall & Underwater Zoo',
+      'Red Dune Desert Safari & Bedouin BBQ',
+      'Palm Jumeirah & The View at The Palm',
+      'Dubai Frame Sky Glass Bridge',
+      'Dubai Marina Walk & Yacht Promenade',
+      'Old Dubai Gold & Spice Souks (Deira)',
+      'Museum of the Future',
+      'Al Fahidi Historic District & Abra Ride'
+    ],
     coordinates: { lat: 25.2048, lng: 55.2708 }
   },
   {
@@ -106,7 +163,16 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.9,
     recommendedDuration: '5 Days',
     bestTime: 'May - Oct',
-    popularActivities: ['Sagrada Família Guided Tour', 'Park Güell Panoramic Views', 'Gothic Quarter Walking Tour', 'Barceloneta Beach Promenade'],
+    popularActivities: [
+      'Sagrada Família & Nativity Towers',
+      'Park Güell Mosaic Serpentine Bench',
+      'Casa Batlló Dragon Roof & Noble Floor',
+      'Gothic Quarter (Barri Gòtic) Walk',
+      'La Boqueria Market & Las Ramblas',
+      'Barceloneta Beach Promenade & Seafood',
+      'Montjuïc Castle & Cable Car View',
+      'Picasso Museum in El Born'
+    ],
     coordinates: { lat: 41.3879, lng: 2.1699 }
   },
   {
@@ -214,7 +280,16 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.9,
     recommendedDuration: '7 Days',
     bestTime: 'Apr - Oct',
-    popularActivities: ['Uluwatu Sunset Temple', 'Tegallalang Rice Terrace', 'Nusa Penida Boat Tour', 'Ubud Art Market'],
+    popularActivities: [
+      'Uluwatu Cliff Sunset & Kecak Dance',
+      'Tanah Lot Ocean Rock Temple',
+      'Tegallalang Rice Terraces & Jungle Swing',
+      'Sacred Monkey Forest Sanctuary (Ubud)',
+      'Mount Batur Sunrise Volcano Trek',
+      'Tirta Empul Holy Water Temple Springs',
+      'Nusa Penida Coastal Day Trip',
+      'Campuhan Ridge Walk & Ubud Cafes'
+    ],
     coordinates: { lat: -8.4095, lng: 115.1889 }
   },
   {
@@ -232,7 +307,16 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.9,
     recommendedDuration: '5 Days',
     bestTime: 'Mar - May & Oct - Nov',
-    popularActivities: ['Fushimi Inari Taisha', 'Arashiyama Bamboo Grove', 'Kinkaku-ji Golden Pavilion', 'Gion Evening Walk'],
+    popularActivities: [
+      'Fushimi Inari Taisha 10,000 Torii Gates',
+      'Arashiyama Bamboo Forest & Togetsukyo Bridge',
+      'Kinkaku-ji Golden Pavilion',
+      'Kiyomizu-dera Wooden Stage & Waterfall',
+      'Gion Historic Geisha District & Tea Houses',
+      'Nijo Castle & Nightingale Floors',
+      'Nishiki Market Culinary Stroll',
+      'Philosopher\'s Path (Tetsugaku-no-michi)'
+    ],
     coordinates: { lat: 35.0116, lng: 135.7681 }
   },
   {
@@ -265,7 +349,16 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.9,
     recommendedDuration: '3 - 4 Days',
     bestTime: 'Oct - Mar',
-    popularActivities: ['City Palace Tour', 'Lake Pichola Boat Cruise', 'Bagore Ki Haveli Folk Show', 'Sajjangarh Sunset'],
+    popularActivities: [
+      'City Palace Complex & Crystal Gallery',
+      'Lake Pichola Sunset Boat Cruise to Jag Mandir',
+      'Jagdish Temple & Old City Heritage Alleys',
+      'Saheliyon Ki Bari (Garden of Royal Maids)',
+      'Bagore Ki Haveli Dharohar Evening Folk Show',
+      'Monsoon Palace (Sajjangarh) Sunset Panorama',
+      'Fateh Sagar Lake Promenade & Nehru Park',
+      'Ambrai Ghat Waterfront Twilight View'
+    ],
     coordinates: { lat: 24.5854, lng: 73.7125 }
   },
   {
@@ -280,7 +373,16 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.8,
     recommendedDuration: '4 - 5 Days',
     bestTime: 'All Year / Snow in Dec-Feb',
-    popularActivities: ['Solang Valley Paragliding', 'Old Manali Cafe Crawl', 'Jogini Waterfalls Trek', 'Atal Tunnel Drive'],
+    popularActivities: [
+      'Solang Valley Adventure & Paragliding',
+      'Atal Tunnel & Sissu Waterfall Snow Point',
+      'Hadimba Devi Ancient Cedar Pagoda Temple',
+      'Old Manali Bohemian Village & Cafes',
+      'Jogini Waterfall Pine Forest Trek',
+      'Vashisht Hot Sulphur Springs & Temple',
+      'Mall Road Evening Stroll & Tibetan Market',
+      'Beas River White Water Rafting at Kullu'
+    ],
     coordinates: { lat: 32.2396, lng: 77.1887 }
   },
   {
@@ -295,7 +397,16 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.8,
     recommendedDuration: '3 - 5 Days',
     bestTime: 'Nov - Mar',
-    popularActivities: ['Anjuna Beach Sunset', 'Scuba Diving at Grande Island', 'Fontainhas Heritage Walk', 'Night Market'],
+    popularActivities: [
+      'Basilica of Bom Jesus (UNESCO World Heritage)',
+      'Fort Aguada & 17th-Century Lighthouse',
+      'Dudhsagar Waterfalls Jeep Jungle Safari',
+      'Fontainhas Latin Quarter Portuguese Walk',
+      'Chapora Fort (Dil Chahta Hai Sunset View)',
+      'Palolem Beach Crescent & Kayaking',
+      'Anjuna Beach Flea Market & Sunset',
+      'Baga & Calangute Beach Watersports'
+    ],
     coordinates: { lat: 15.2993, lng: 74.1240 }
   },
   {
@@ -325,7 +436,16 @@ export const POPULAR_DESTINATIONS: Destination[] = [
     rating: 4.7,
     recommendedDuration: '2 - 3 Days',
     bestTime: 'Oct - Mar',
-    popularActivities: ['Amber Fort Tour', 'Hawa Mahal Photo Op', 'Nahargarh Fort Sunset', 'Chokhi Dhani Dinner'],
+    popularActivities: [
+      'Amber Fort & Sheesh Mahal (Mirror Palace)',
+      'Hawa Mahal (Palace of Winds)',
+      'City Palace Complex & Chandra Mahal',
+      'Jantar Mantar UNESCO Astronomical Observatory',
+      'Nahargarh Fort Sunset Skyline Viewpoint',
+      'Jal Mahal (Water Palace) & Man Sagar Lake',
+      'Albert Hall Museum & Ram Niwas Gardens',
+      'Johari Bazaar & Bapu Bazaar Artisan Walk'
+    ],
     coordinates: { lat: 26.9124, lng: 75.7873 }
   },
   {

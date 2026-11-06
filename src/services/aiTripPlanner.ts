@@ -6,6 +6,7 @@ import { CONCODE_MASTER_PROMPT } from './concodeMasterPrompt';
 import { getActiveCurrency, CURRENCIES } from './currencyService';
 import { enrichTripWithOriginalPhotos } from './originalPhotoService';
 import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
+import { getDestinationHighlights } from './landmarkAtlasService';
 
 const ACTIVITY_TYPES = new Set(['food', 'attraction', 'viewpoint', 'nightlife', 'rest']);
 
@@ -34,7 +35,9 @@ export function buildPrompt(input: PlannerInput, baseline: Trip): string {
         selectedStay: baseline.selectedHotel?.name,
         foodPreference: baseline.foodPreference,
         priorities: baseline.priorities,
-        knownDestinationHighlights: baseline.destinationDetails?.highlights || [],
+        knownDestinationHighlights: (baseline.destinationDetails?.highlights && baseline.destinationDetails.highlights.length >= 8)
+            ? baseline.destinationDetails.highlights
+            : getDestinationHighlights(baseline.destination, 20),
         transitAwareness: {
             nearestPracticalRailwayStation: transitContext.primaryRailwayStation?.name || 'No direct station',
             nearestAirport: transitContext.primaryAirport?.name || 'No direct airport',
@@ -53,6 +56,7 @@ CONCODE Principles:
 - LOCAL FEASIBILITY & CHRONOLOGY: Ensure activities within each day are geographically coherent and never repeat the same attraction across different days.
 - TIME WINDOWS: Day 1 local activities must be scheduled from 2:00 PM onwards (after arrival/check-in), middle days from 9:00 AM to 9:00 PM, and the final day (Day ${baseline.durationDays}) between 8:30 AM and 2:00 PM (before return departure).
 - DIETARY STRICTNESS: Strictly honor foodPreference="${baseline.foodPreference}".
+- FAMOUS LANDMARKS MANDATE: Every scheduled attraction, viewpoint, and cultural experience MUST be a verified, iconic, real-world landmark, historic site, sacred shrine/temple, museum, or famous district specific to "${baseline.destination}" (such as the provided known destination highlights). NEVER generate generic placeholder titles like "${baseline.destination} Tour", "${baseline.destination} Landmark", "${baseline.destination} Cultural Center", or "${baseline.destination} Promenade".
 
 Traveler details (JSON):
 ${JSON.stringify(travelerContext, null, 2)}
