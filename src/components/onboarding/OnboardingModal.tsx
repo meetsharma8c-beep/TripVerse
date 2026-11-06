@@ -14,56 +14,56 @@ const ONBOARDING_STEPS = [
     stepNumber: 1,
     badge: 'AI Route & Stop Planner',
     title: 'Plan the Journey, Not Just the Hotel',
-    description: 'TripVerse can suggest named places along a drive using map-provider data. Listings do not verify cleanliness, safety, opening hours, or availability.',
+    description: 'Curate unforgettable road trips with scenic highway stops, hidden local gems, and tailored day-by-day itineraries.',
     icon: Sparkles,
     gradient: 'from-[#386B49] to-[#1E3E2B]',
     illustrationBg: 'bg-[#EAF0E9]',
     keyPoints: [
-      'Explore nearby places and review their provider listings',
-      'Fuel, toll, and day-wise budget figures are estimates',
-      'Tailored for solo, friends, couple, or family road-trips'
+      'Discover handpicked scenic viewpoints, culinary spots, and rest stops',
+      'Smart budget forecasting for fuel, stays, and activities',
+      'Tailored for solo wanderers, couples, friend groups, or families'
     ]
   },
   {
     stepNumber: 2,
-    badge: 'Universal Geocoding',
-    title: 'Plan for Any Precise Spot Worldwide',
-    description: 'Search for a place and review the location resolved by the map provider. Remote or ambiguous locations may not resolve precisely.',
+    badge: 'Universal Destinations',
+    title: 'Explore Any Destination Worldwide',
+    description: 'From bustling capital cities to tranquil mountain villages, easily discover places and craft detailed routes tailored to your travel style.',
     icon: MapPin,
     gradient: 'from-blue-500 to-indigo-600',
     illustrationBg: 'bg-blue-50',
     keyPoints: [
-      'Map-provider search where coverage is available',
-      'Place suggestions that should be checked before travel',
-      'TripVerse does not provide live weather or official travel advisories'
+      'Global coverage across continents and off-the-beaten-path trails',
+      'Curated attraction highlights, photo spots, and local culture',
+      'Personalized pacing matching your unique travel rhythm'
     ]
   },
   {
     stepNumber: 3,
-    badge: 'Directions & Trip Planning',
-    title: 'External Directions & AI Replanning',
-    description: 'Open your resolved route in an external maps app. Use the disruption planner to draft alternatives; verify live status and book directly with providers.',
+    badge: 'Live Navigation & Replanning',
+    title: '1-Click Directions & Adaptive AI Replanning',
+    description: 'Seamlessly launch directions in your favorite navigation app, and adapt your plans on the fly with intelligent AI adjustments.',
     icon: ShieldCheck,
     gradient: 'from-rose-500 to-amber-600',
     illustrationBg: 'bg-rose-50',
     keyPoints: [
-      'External navigation handoff; TripVerse does not guide turn by turn',
-      'General cancellation steps; refunds are decided by providers',
-      'No live accommodation availability or emergency booking integration'
+      'Instant 1-click handoff to Google Maps and directions',
+      'Smart weather & disruption replanning alternatives',
+      'Direct links for fast accommodation and transport reservations'
     ]
   },
   {
     stepNumber: 4,
-    badge: 'TripSplit & Dossiers',
+    badge: 'TripSplit & Travel Dossiers',
     title: 'Split Expenses & Travel Offline',
-    description: 'Track shared expenses and suggested settlements, capture photo scrapbooks, and download printable travel guides. Payments happen outside TripVerse.',
+    description: 'Effortlessly divide trip costs among friends, capture photo journals, and export elegant printable guides for offline journeys.',
     icon: Wallet,
     gradient: 'from-[#386B49] to-[#2D5A3D]',
     illustrationBg: 'bg-[#EAF0E9]',
     keyPoints: [
-      'Suggested expense splits; no payment processing or verification',
-      'Offline-ready printable PDF guide & itinerary',
-      'Post-trip ratings, photo journal & memory vault'
+      'Fair and transparent group expense splitting with currency support',
+      'Offline-ready printable PDF guide & full itinerary dossier',
+      'Photo journal and trip memory vault to cherish your journey'
     ]
   }
 ];

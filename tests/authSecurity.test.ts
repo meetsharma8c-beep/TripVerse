@@ -31,7 +31,13 @@ import {
   upgradeUserToPro,
   handleFirebaseUserCredential,
   isMobileDevice,
-  shouldPreferGoogleRedirect
+  shouldPreferGoogleRedirect,
+  verifyEmailCredentialsOnly,
+  finalizeTwoFactorLogin,
+  clearActiveSession,
+  parseGoogleUserFromCredential,
+  sendTwoFactorOtp,
+  verifyTwoFactorOtp
 } from '../src/services/authService';
 import { AuthUser } from '../src/types/auth';
 
@@ -388,6 +394,165 @@ describe('Auth Security & Verification Tests', () => {
       };
       (global as any).window.innerWidth = 1440;
       expect(shouldPreferGoogleRedirect()).toBe(false);
+    });
+  });
+
+  describe('Two-Factor Authentication (2FA) Security Architecture', () => {
+    it('verifyEmailCredentialsOnly verifies password without activating session (Factor 1)', async () => {
+      const testUser: AuthUser = {
+        uid: '00000000-0000-4000-8000-000000000099',
+        email: 'twofa_test@domain.com',
+        displayName: 'Two Factor Test',
+        photoURL: '',
+        travelerStyle: 'Budget explorer',
+        travelStyleTag: 'Verified Explorer',
+        location: 'India',
+        occupation: 'Explorer',
+        age: 25,
+        emailVerified: true,
+        provider: 'email',
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+        savedPlaceIds: []
+      };
+
+      const correctHash = await hashPassword('SecretTwoFaPass2026!');
+      saveAccounts([{ user: testUser, passwordHash: correctHash }]);
+
+      // Factor 1 credential verification
+      const result = await verifyEmailCredentialsOnly({
+        email: 'twofa_test@domain.com',
+        password: 'SecretTwoFaPass2026!'
+      });
+
+      expect(result.user.email).toBe('twofa_test@domain.com');
+      expect(result.passwordHash).toBe(correctHash);
+
+      // Session MUST NOT be stored before Factor 2 is completed
+      expect((global as any).localStorage.getItem('tripverse_auth_session_v3')).toBeNull();
+    });
+
+    it('verifyEmailCredentialsOnly rejects invalid password during Factor 1', async () => {
+      const testUser: AuthUser = {
+        uid: '00000000-0000-4000-8000-000000000098',
+        email: 'twofa_fail@domain.com',
+        displayName: 'Fail Test',
+        photoURL: '',
+        travelerStyle: 'Budget explorer',
+        travelStyleTag: 'Verified Explorer',
+        location: 'India',
+        occupation: 'Explorer',
+        age: 25,
+        emailVerified: true,
+        provider: 'email',
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+        savedPlaceIds: []
+      };
+
+      const correctHash = await hashPassword('RealPassword999!');
+      saveAccounts([{ user: testUser, passwordHash: correctHash }]);
+
+      await expect(
+        verifyEmailCredentialsOnly({ email: 'twofa_fail@domain.com', password: 'IncorrectPassword' })
+      ).rejects.toThrow(/invalid login credentials|invalid email or password/i);
+    });
+
+    it('finalizeTwoFactorLogin activates authenticated session upon Factor 2 completion', () => {
+      const testUser: AuthUser = {
+        uid: '00000000-0000-4000-8000-000000000097',
+        email: 'finalized_2fa@domain.com',
+        displayName: 'Finalized User',
+        photoURL: '',
+        travelerStyle: 'Budget explorer',
+        travelStyleTag: 'Verified Explorer',
+        location: 'India',
+        occupation: 'Explorer',
+        age: 25,
+        emailVerified: true,
+        provider: 'email',
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+        savedPlaceIds: []
+      };
+
+      finalizeTwoFactorLogin(testUser, 'oauth_2fa_verified');
+
+      const rawSession = (global as any).localStorage.getItem('tripverse_auth_session_v3');
+      expect(rawSession).not.toBeNull();
+      const session = JSON.parse(rawSession!);
+      expect(session.user.email).toBe('finalized_2fa@domain.com');
+    });
+
+    it('parseGoogleUserFromCredential extracts Google user profile without storing session', () => {
+      const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+      const payload = Buffer.from(JSON.stringify({
+        email: 'google_explorer@gmail.com',
+        name: 'Google Explorer',
+        sub: 'google_sub_123456789',
+        picture: 'https://lh3.googleusercontent.com/test',
+        email_verified: true
+      })).toString('base64url');
+      const mockJwt = `${header}.${payload}.mockSignature`;
+
+      const user = parseGoogleUserFromCredential(mockJwt);
+      expect(user.email).toBe('google_explorer@gmail.com');
+      expect(user.displayName).toBe('Google Explorer');
+      expect(user.provider).toBe('google');
+
+      // Session must remain empty until 2FA completes
+      expect((global as any).localStorage.getItem('tripverse_auth_session_v3')).toBeNull();
+    });
+
+    it('sendTwoFactorOtp dispatches 6-digit OTP code and receives verification token', async () => {
+      const originalFetch = global.fetch;
+      global.fetch = async () => ({
+        ok: true,
+        json: async () => ({
+          success: true,
+          token: '1700000000.signature_hash_test',
+          expiresAt: Date.now() + 600000,
+          devCode: '852963',
+          message: 'Code dispatched.'
+        })
+      }) as any;
+
+      try {
+        const result = await sendTwoFactorOtp('meet.sharma8c@gmail.com', 'Meet');
+        expect(result.success).toBe(true);
+        expect(result.token).toBe('1700000000.signature_hash_test');
+        expect(result.devCode).toBe('852963');
+      } finally {
+        global.fetch = originalFetch;
+      }
+    });
+
+    it('verifyTwoFactorOtp verifies valid 6-digit OTP and throws on invalid code', async () => {
+      const originalFetch = global.fetch;
+      global.fetch = async (_url: any, options: any) => {
+        const body = JSON.parse(options?.body || '{}');
+        if (body.code === '123456') {
+          return {
+            ok: true,
+            json: async () => ({ success: true, verified: true })
+          } as any;
+        }
+        return {
+          ok: false,
+          json: async () => ({ success: false, message: 'Incorrect 2FA code.' })
+        } as any;
+      };
+
+      try {
+        const successRes = await verifyTwoFactorOtp('test@domain.com', '123456', 'token.sig');
+        expect(successRes.success).toBe(true);
+
+        await expect(
+          verifyTwoFactorOtp('test@domain.com', '000000', 'token.sig')
+        ).rejects.toThrow(/incorrect 2fa code/i);
+      } finally {
+        global.fetch = originalFetch;
+      }
     });
   });
 });

@@ -214,6 +214,151 @@ function smsApiDevPlugin(): Plugin {
   };
 }
 
+function emailOtpDevPlugin(resendKey?: string): Plugin {
+  const activeKey = resendKey || process.env.RESEND_API_KEY || 'REDACTED_RESEND_API_KEY';
+  const hmacSecret = 'REDACTED_DEV_HMAC_SALT';
+
+  function signOtp(email: string, code: string, expiresAt: number) {
+    const crypto = require('crypto');
+    return crypto.createHmac('sha256', hmacSecret)
+      .update(`${email.trim().toLowerCase()}:${code}:${expiresAt}`)
+      .digest('hex');
+  }
+
+  return {
+    name: 'email-otp-dev-proxy',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url || !req.url.startsWith('/api/email-otp')) {
+          return next();
+        }
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, authorization');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          return res.end();
+        }
+
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          return res.end(JSON.stringify({ error: 'Method not allowed' }));
+        }
+
+        let bodyRaw = '';
+        req.on('data', chunk => { bodyRaw += chunk; });
+        req.on('end', async () => {
+          try {
+            const body = bodyRaw ? JSON.parse(bodyRaw) : {};
+            const { action, email, code, token } = body;
+            const emailNorm = String(email || '').trim().toLowerCase();
+
+            if (!emailNorm || !emailNorm.includes('@')) {
+              res.statusCode = 400;
+              return res.end(JSON.stringify({ success: false, message: 'Valid email required' }));
+            }
+
+            if (action === 'send') {
+              const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+              const expiresAt = Date.now() + 10 * 60 * 1000;
+              const signature = signOtp(emailNorm, otpCode, expiresAt);
+              const verificationToken = `${expiresAt}.${signature}`;
+
+              const htmlContent = `
+                <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;background:#fff;border-radius:16px;border:1px solid #e2e8f0;">
+                  <h2 style="color:#0f172a;margin:0 0 8px;">TripVerse Two-Factor Verification</h2>
+                  <p style="color:#64748b;font-size:14px;">Your 6-digit 2FA security code is:</p>
+                  <div style="background:#F4F7F5;border:2px dashed #2D5A3D;padding:16px;text-align:center;border-radius:12px;margin:16px 0;">
+                    <span style="font-size:32px;font-weight:800;letter-spacing:6px;color:#2D5A3D;font-family:monospace;">${otpCode}</span>
+                  </div>
+                  <p style="color:#94a3b8;font-size:12px;">Valid for 10 minutes. Never share this code with anyone.</p>
+                </div>
+              `;
+
+              try {
+                const resendRes = await fetch('https://api.resend.com/emails', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${activeKey}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    from: 'TripVerse <onboarding@resend.dev>',
+                    to: emailNorm,
+                    subject: `${otpCode} is your TripVerse 2FA verification code`,
+                    html: htmlContent
+                  })
+                });
+                const resendData: any = await resendRes.json();
+                if (!resendRes.ok) {
+                  if (typeof resendData.message === 'string' && resendData.message.includes('You can only send testing emails')) {
+                    res.statusCode = 200;
+                    return res.end(JSON.stringify({
+                      success: true,
+                      isSandboxNotice: true,
+                      sandboxNotice: `Resend sandbox active: real emails delivered to meet.sharma8c@gmail.com. For testing ${emailNorm}, your 2FA code is: ${otpCode}`,
+                      devCode: otpCode,
+                      message: `2FA security code generated for ${emailNorm}.`,
+                      email: emailNorm,
+                      token: verificationToken,
+                      expiresAt
+                    }));
+                  }
+                }
+              } catch (sendErr) {
+                console.warn('[Dev Resend Warning]', sendErr);
+              }
+
+              res.statusCode = 200;
+              return res.end(JSON.stringify({
+                success: true,
+                message: `Verification code sent to ${emailNorm}`,
+                email: emailNorm,
+                token: verificationToken,
+                expiresAt
+              }));
+            }
+
+            if (action === 'verify') {
+              const cleanCode = String(code || '').trim().replace(/\D/g, '');
+              if (cleanCode.length !== 6) {
+                res.statusCode = 400;
+                return res.end(JSON.stringify({ success: false, message: 'Please enter 6 digits' }));
+              }
+              const activeToken = token;
+              if (!activeToken || !activeToken.includes('.')) {
+                res.statusCode = 400;
+                return res.end(JSON.stringify({ success: false, message: 'Invalid verification token' }));
+              }
+              const [expiresAtStr, signature] = activeToken.split('.');
+              const expiresAt = parseInt(expiresAtStr, 10);
+              if (Date.now() > expiresAt) {
+                res.statusCode = 400;
+                return res.end(JSON.stringify({ success: false, message: 'Verification code expired' }));
+              }
+              const expectedSig = signOtp(emailNorm, cleanCode, expiresAt);
+              if (signature !== expectedSig) {
+                res.statusCode = 400;
+                return res.end(JSON.stringify({ success: false, message: 'Incorrect 2FA code. Please check your inbox and try again.' }));
+              }
+              res.statusCode = 200;
+              return res.end(JSON.stringify({ success: true, verified: true }));
+            }
+
+            res.statusCode = 400;
+            return res.end(JSON.stringify({ success: false, message: 'Invalid action' }));
+          } catch (err: any) {
+            res.statusCode = 500;
+            return res.end(JSON.stringify({ success: false, message: err?.message || 'Error' }));
+          }
+        });
+      });
+    }
+  };
+}
+
 function dropConsolePlugin(): Plugin {
   return {
     name: 'drop-console',
@@ -278,6 +423,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       concodeApiDevPlugin(concodeUrl, concodeKey),
       smsApiDevPlugin(),
+      emailOtpDevPlugin(env.RESEND_API_KEY),
       dropConsolePlugin()
     ],
     build: {

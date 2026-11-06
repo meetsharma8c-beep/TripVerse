@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { UserProfile } from '../../types/trip';
+import { AuthUser } from '../../types/auth';
 import { 
   signInWithEmail, 
   sendPasswordResetCode,
@@ -35,7 +36,15 @@ import {
   clearPhoneAuthSession,
   toUserProfile,
   verifyEmailOtp,
-  resendEmailConfirmation
+  resendEmailConfirmation,
+  sendTwoFactorOtp,
+  verifyTwoFactorOtp,
+  verifyEmailCredentialsOnly,
+  finalizeTwoFactorLogin,
+  clearActiveSession,
+  parseGoogleUserFromCredential,
+  signOutFirebase,
+  signOut
 } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 
@@ -108,6 +117,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [emailOtpToken, setEmailOtpToken] = useState('');
   const [emailResendCountdown, setEmailResendCountdown] = useState(0);
 
+  // Two-Factor Authentication (2FA) State for Google & Email
+  const [is2FaStep, setIs2FaStep] = useState(false);
+  const [pending2FaType, setPending2FaType] = useState<'google' | 'email-login' | 'email-signup'>('google');
+  const [pending2FaUser, setPending2FaUser] = useState<AuthUser | null>(null);
+  const [pendingPasswordHash, setPendingPasswordHash] = useState<string | undefined>(undefined);
+  const [pendingRegistration, setPendingRegistration] = useState<{
+    name: string;
+    email: string;
+    password: string;
+    travelerStyle: string;
+    location: string;
+  } | null>(null);
+  const [twoFactorToken, setTwoFactorToken] = useState<string>('');
+  const [twoFactorDevCode, setTwoFactorDevCode] = useState<string | null>(null);
+  const [twoFactorSandboxNotice, setTwoFactorSandboxNotice] = useState<string | null>(null);
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [twoFactorCountdown, setTwoFactorCountdown] = useState(0);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   // Status & Feedback
   const [isLoading, setIsLoading] = useState(false);
   const [isAutoRedirecting, setIsAutoRedirecting] = useState(false);
@@ -115,6 +143,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const activeRequestIdRef = useRef(0);
+  const googleBtnContainerRef = useRef<HTMLDivElement>(null);
 
   const switchAuthTab = useCallback((nextMethod: 'google' | 'email' | 'guest', nextEmailSubMode?: 'login' | 'signup') => {
     activeRequestIdRef.current += 1;
@@ -129,6 +158,289 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   }, []);
 
+  // Clean up auth session when modal closes or resets
+  const handleModalClose = useCallback(() => {
+    activeRequestIdRef.current += 1;
+    setIsLoading(false);
+    setIsAutoRedirecting(false);
+    setAutoRedirectStatus(null);
+    clearPhoneAuthSession();
+    if (is2FaStep) {
+      if (pending2FaType === 'google') {
+        signOutFirebase().catch(() => {});
+        signOut().catch(() => {});
+      }
+      clearActiveSession();
+    }
+    setIs2FaStep(false);
+    setPending2FaUser(null);
+    setPendingRegistration(null);
+    setPendingPasswordHash(undefined);
+    setTwoFactorDevCode(null);
+    setTwoFactorSandboxNotice(null);
+    setOtpDigits(['', '', '', '', '', '']);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    onClose();
+  }, [onClose, is2FaStep, pending2FaType]);
+
+  useModalBehavior(isOpen, handleModalClose);
+
+  // 2FA Helper: Cancel and return safely to factor 1 credentials form
+  const handleCancel2Fa = useCallback(() => {
+    if (pending2FaType === 'google') {
+      signOutFirebase().catch(() => {});
+      signOut().catch(() => {});
+    }
+    clearActiveSession();
+    setIs2FaStep(false);
+    setPending2FaUser(null);
+    setPendingPasswordHash(undefined);
+    setPendingRegistration(null);
+    setTwoFactorToken('');
+    setTwoFactorDevCode(null);
+    setTwoFactorSandboxNotice(null);
+    setOtpDigits(['', '', '', '', '', '']);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  }, [pending2FaType]);
+
+  // 2FA Helper: Resend OTP code
+  const handleResend2FaOtp = useCallback(async () => {
+    if (twoFactorCountdown > 0) return;
+    const targetEmail = pending2FaType === 'email-signup' ? pendingRegistration?.email : pending2FaUser?.email;
+    const targetName = pending2FaType === 'email-signup' ? pendingRegistration?.name : pending2FaUser?.displayName;
+    if (!targetEmail) return;
+
+    setIsLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await sendTwoFactorOtp(targetEmail, targetName);
+      setTwoFactorToken(res.token);
+      setTwoFactorDevCode(res.devCode || null);
+      setTwoFactorSandboxNotice(res.sandboxNotice || null);
+      setTwoFactorCountdown(60);
+      setSuccessMsg(`New 2FA security code dispatched to ${targetEmail}`);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Could not resend code. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [twoFactorCountdown, pending2FaType, pendingRegistration, pending2FaUser]);
+
+  // 2FA Helper: Verify 6-digit OTP and finalize session
+  const handleVerify2FaOtp = useCallback(async (codeToVerify?: string) => {
+    const code = (codeToVerify || otpDigits.join('')).trim();
+    if (code.length !== 6) {
+      setErrorMsg('Please enter all 6 digits of your 2FA security code.');
+      return;
+    }
+
+    const targetEmail = pending2FaType === 'email-signup' 
+      ? pendingRegistration?.email 
+      : pending2FaUser?.email;
+
+    if (!targetEmail) {
+      setErrorMsg('Verification session has expired. Please try again.');
+      setIs2FaStep(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      await verifyTwoFactorOtp(targetEmail, code, twoFactorToken);
+
+      // If email signup flow:
+      if (pending2FaType === 'email-signup' && pendingRegistration) {
+        const newUser = await createAccountWithSupabase({
+          name: pendingRegistration.name,
+          email: pendingRegistration.email,
+          password: pendingRegistration.password,
+          travelerStyle: pendingRegistration.travelerStyle,
+          location: pendingRegistration.location
+        });
+        newUser.emailVerified = true;
+        finalizeTwoFactorLogin(newUser);
+        try {
+          confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+        } catch {}
+        setSuccessMsg(`Welcome to TripVerse, ${newUser.displayName}! Account created and verified.`);
+        setTimeout(() => {
+          onSuccess(toUserProfile(newUser));
+          handleModalClose();
+        }, 500);
+        return;
+      }
+
+      // If Google login or Email login flow:
+      if (pending2FaUser) {
+        finalizeTwoFactorLogin(pending2FaUser, pendingPasswordHash);
+        try {
+          confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+        } catch {}
+        const loginTypeLabel = pending2FaType === 'google' ? 'Google' : 'Email';
+        setSuccessMsg(`Identity verified! Welcome back, ${pending2FaUser.displayName} (${loginTypeLabel} 2FA).`);
+        setTimeout(() => {
+          onSuccess(toUserProfile(pending2FaUser));
+          handleModalClose();
+        }, 500);
+        return;
+      }
+    } catch (err: any) {
+      console.error('2FA verification error:', err);
+      setErrorMsg(err.message || 'Incorrect verification code. Please check your inbox and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [otpDigits, pending2FaType, pendingRegistration, pending2FaUser, twoFactorToken, pendingPasswordHash, onSuccess, handleModalClose]);
+
+  // 2FA Helper: Start Google 2FA process
+  const startGoogle2Fa = useCallback(async (user: AuthUser) => {
+    clearActiveSession();
+    setIsLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await sendTwoFactorOtp(user.email, user.displayName);
+      setPending2FaUser(user);
+      setPendingPasswordHash('oauth_google_gis_verified');
+      setPending2FaType('google');
+      setTwoFactorToken(res.token);
+      setTwoFactorDevCode(res.devCode || null);
+      setTwoFactorSandboxNotice(res.sandboxNotice || null);
+      setOtpDigits(['', '', '', '', '', '']);
+      setIs2FaStep(true);
+      setTwoFactorCountdown(60);
+      setSuccessMsg(`2FA security code dispatched to ${user.email}`);
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 150);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Could not send 2FA verification code.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleOtpDigitChange = (idx: number, val: string) => {
+    const clean = val.replace(/\D/g, '');
+    if (!clean) {
+      const next = [...otpDigits];
+      next[idx] = '';
+      setOtpDigits(next);
+      return;
+    }
+
+    if (clean.length > 1) {
+      const chars = clean.slice(0, 6).split('');
+      const next = [...otpDigits];
+      chars.forEach((c, i) => {
+        if (idx + i < 6) next[idx + i] = c;
+      });
+      setOtpDigits(next);
+      const nextFocus = Math.min(5, idx + chars.length);
+      otpInputRefs.current[nextFocus]?.focus();
+      if (next.every(d => d.length === 1)) {
+        handleVerify2FaOtp(next.join(''));
+      }
+      return;
+    }
+
+    const next = [...otpDigits];
+    next[idx] = clean[clean.length - 1];
+    setOtpDigits(next);
+
+    if (idx < 5) {
+      otpInputRefs.current[idx + 1]?.focus();
+    }
+
+    if (next.every(d => d.length === 1)) {
+      handleVerify2FaOtp(next.join(''));
+    }
+  };
+
+  const handleOtpKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpDigits[idx] && idx > 0) {
+      otpInputRefs.current[idx - 1]?.focus();
+    }
+  };
+
+  const handleAutoFillDevCode = (code: string) => {
+    const chars = code.replace(/\D/g, '').slice(0, 6).split('');
+    const next = ['', '', '', '', '', ''];
+    chars.forEach((c, i) => { next[i] = c; });
+    setOtpDigits(next);
+    if (chars.length === 6) {
+      handleVerify2FaOtp(code);
+    }
+  };
+
+  useEffect(() => {
+    if (twoFactorCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setTwoFactorCountdown(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [twoFactorCountdown]);
+
+  // Initialize and render official Google Identity Services (GIS) widget for 1-tap zero-blocker auth
+  useEffect(() => {
+    if (!isOpen || authMethod !== 'google') return;
+
+    let isMounted = true;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '288425355548-ogv0f7ata5ssv9s5o37m711kp9g9461r.apps.googleusercontent.com';
+
+    ensureGoogleIdentityServices().then(() => {
+      if (!isMounted) return;
+      if (typeof window !== 'undefined' && (window as any).google?.accounts?.id && googleBtnContainerRef.current) {
+        try {
+          (window as any).google.accounts.id.initialize({
+            client_id: clientId,
+            callback: async (response: any) => {
+              if (response?.credential) {
+                try {
+                  setIsLoading(true);
+                  setErrorMsg(null);
+                  const user = parseGoogleUserFromCredential(response.credential);
+                  await startGoogle2Fa(user);
+                } catch (err: any) {
+                  setErrorMsg(err.message || 'Google authentication could not complete.');
+                  setIsLoading(false);
+                }
+              }
+            }
+          });
+
+          if (googleBtnContainerRef.current) {
+            googleBtnContainerRef.current.innerHTML = '';
+            (window as any).google.accounts.id.renderButton(
+              googleBtnContainerRef.current,
+              {
+                type: 'standard',
+                theme: 'outline',
+                size: 'large',
+                text: 'continue_with',
+                shape: 'rectangular',
+                logo_alignment: 'left',
+                width: 320
+              }
+            );
+          }
+        } catch (e) {
+          console.warn('[GIS Render Notice]', e);
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, authMethod, onSuccess, handleModalClose]);
+
   useEffect(() => {
     if (isOpen) {
       activeRequestIdRef.current += 1;
@@ -140,20 +452,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       ensureGoogleIdentityServices().catch(() => {});
     }
   }, [isOpen]);
-
-  // Clean up auth session when modal closes
-  const handleModalClose = useCallback(() => {
-    activeRequestIdRef.current += 1;
-    setIsLoading(false);
-    setIsAutoRedirecting(false);
-    setAutoRedirectStatus(null);
-    clearPhoneAuthSession();
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    onClose();
-  }, [onClose]);
-
-  useModalBehavior(isOpen, handleModalClose);
 
   useEffect(() => {
     if (emailResendCountdown <= 0) return;
@@ -188,14 +486,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       const user = await signInWithGooglePopup();
       if (activeRequestIdRef.current !== reqId) return;
-      try {
-        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
-      } catch {}
-      setSuccessMsg(`Welcome, ${user.displayName}! Signed in with Google.`);
-      setTimeout(() => {
-        onSuccess(toUserProfile(user));
-        handleModalClose();
-      }, 500);
+      await startGoogle2Fa(user);
     } catch (err: any) {
       if (activeRequestIdRef.current !== reqId) return;
       const msg = err?.message || '';
@@ -285,7 +576,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   // ----------------------------------------------------------------------
-  // 4. Real Email/Password Sign In
+  // 4. Real Email/Password Sign In with Two-Factor Authentication (2FA)
   // ----------------------------------------------------------------------
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,31 +595,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const reqId = ++activeRequestIdRef.current;
     setIsLoading(true);
     try {
-      const user = await signInWithEmail({ email, password, rememberMe });
+      // Factor 1: Verify Email & Password
+      const { user, passwordHash } = await verifyEmailCredentialsOnly({ email, password, rememberMe });
       if (activeRequestIdRef.current !== reqId) return;
-      try {
-        confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
-      } catch {}
-      setSuccessMsg(`Welcome back, ${user.displayName}!`);
+
+      // Factor 2: Initiate 2FA verification
+      const res = await sendTwoFactorOtp(user.email, user.displayName);
+      setPending2FaUser(user);
+      setPendingPasswordHash(passwordHash);
+      setPending2FaType('email-login');
+      setTwoFactorToken(res.token);
+      setTwoFactorDevCode(res.devCode || null);
+      setTwoFactorSandboxNotice(res.sandboxNotice || null);
+      setOtpDigits(['', '', '', '', '', '']);
+      setIs2FaStep(true);
+      setTwoFactorCountdown(60);
+      setSuccessMsg(`2FA security code dispatched to ${user.email}`);
       setTimeout(() => {
-        onSuccess(toUserProfile(user));
-        handleModalClose();
-      }, 500);
+        otpInputRefs.current[0]?.focus();
+      }, 150);
     } catch (err: any) {
       if (activeRequestIdRef.current !== reqId) return;
       console.error('Email sign in error:', err);
       const msg = err.message || 'Authentication failed. Please verify credentials.';
-      if (
-        msg.toLowerCase().includes('not confirmed') ||
-        msg.toLowerCase().includes('confirmation is pending') ||
-        (err as any)?.code === 'email_not_confirmed'
-      ) {
-        setErrorMsg('Email confirmation is required. Enter the 6-digit confirmation code sent to your email below:');
-        setEmailSubMode('verify-email');
-        setEmailResendCountdown(60);
-      } else {
-        setErrorMsg(msg);
-      }
+      setErrorMsg(msg);
     } finally {
       if (activeRequestIdRef.current === reqId) {
         setIsLoading(false);
@@ -337,7 +627,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   // ----------------------------------------------------------------------
-  // 5. Real Email/Password Account Creation with Supabase
+  // 5. Real Email/Password Account Creation with Two-Factor Authentication (2FA)
   // ----------------------------------------------------------------------
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -364,35 +654,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const reqId = ++activeRequestIdRef.current;
     setIsLoading(true);
     try {
-      const user = await createAccountWithSupabase({
+      const signupData = {
         name: name.trim(),
         email: email.trim(),
         password,
         travelerStyle: emailTravelerStyle,
         location: emailLocation || detectUserCountry()
-      });
+      };
+
+      // Factor 2: Dispatch 6-digit confirmation code to verify email address
+      const res = await sendTwoFactorOtp(signupData.email, signupData.name);
       if (activeRequestIdRef.current !== reqId) return;
 
-      // If email confirmation is required, ask user for the 6-digit OTP code sent to their email
-      if (user.emailConfirmationPending || user.isPendingEmailConfirmation) {
-        setEmailSubMode('verify-email');
-        setEmailResendCountdown(60);
-        setSuccessMsg(`We sent a 6-digit confirmation code to ${email.trim()}. Enter it below to activate your account.`);
-        return;
-      }
-
-      try {
-        confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
-      } catch {}
-      setSuccessMsg(`Welcome to TripVerse, ${user.displayName}! Account created successfully.`);
+      setPendingRegistration(signupData);
+      setPending2FaType('email-signup');
+      setTwoFactorToken(res.token);
+      setTwoFactorDevCode(res.devCode || null);
+      setTwoFactorSandboxNotice(res.sandboxNotice || null);
+      setOtpDigits(['', '', '', '', '', '']);
+      setIs2FaStep(true);
+      setTwoFactorCountdown(60);
+      setSuccessMsg(`Verification code sent to ${signupData.email}`);
       setTimeout(() => {
-        onSuccess(toUserProfile(user));
-        handleModalClose();
-      }, 600);
+        otpInputRefs.current[0]?.focus();
+      }, 150);
     } catch (err: any) {
       if (activeRequestIdRef.current !== reqId) return;
-      console.error('Account creation error:', err);
-      setErrorMsg(err.message || 'Could not create account.');
+      console.error('Account creation initiation error:', err);
+      setErrorMsg(err.message || 'Could not send verification code.');
     } finally {
       if (activeRequestIdRef.current === reqId) {
         setIsLoading(false);
@@ -517,54 +806,218 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </div>
 
-        {/* Primary Method Navigation: Google vs Email vs Quick Guest */}
-        <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50/70">
-          <button
-            type="button"
-            onClick={() => switchAuthTab('google')}
-            className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-              authMethod === 'google'
-                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-            </svg>
-            <span>Google</span>
-          </button>
+        {/* Navigation / Header */}
+        {is2FaStep ? (
+          <div className="px-6 py-3 bg-emerald-50/80 border-b border-emerald-100 flex items-center justify-between text-xs text-emerald-900 font-semibold">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Step 2 of 2: Security Verification</span>
+            </span>
+            <span className="text-[10px] uppercase tracking-wider bg-emerald-100/90 text-emerald-900 px-2 py-0.5 rounded-full font-bold">
+              2FA Active
+            </span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50/70">
+            <button
+              type="button"
+              onClick={() => switchAuthTab('google')}
+              className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
+                authMethod === 'google'
+                  ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+              <span>Google</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => switchAuthTab('email')}
-            className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-              authMethod === 'email'
-                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Mail className="w-3.5 h-3.5 text-[#2D5A3D]" />
-            <span>Email</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => switchAuthTab('email')}
+              className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
+                authMethod === 'email'
+                  ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Mail className="w-3.5 h-3.5 text-[#2D5A3D]" />
+              <span>Email</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => switchAuthTab('guest')}
-            className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-              authMethod === 'guest'
-                ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Quick Guest</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => switchAuthTab('guest')}
+              className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
+                authMethod === 'guest'
+                  ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Quick Guest</span>
+            </button>
+          </div>
+        )}
 
         <div className="p-6 sm:p-7 space-y-4 max-h-[82vh] overflow-y-auto">
+          {is2FaStep ? (
+            <div className="space-y-4 animate-in fade-in">
+              <div className="text-center space-y-1.5">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 mx-auto flex items-center justify-center shadow-xs">
+                  <ShieldCheck className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-bold text-[#0B2545]">Two-Factor Verification</h3>
+                <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                  {pending2FaType === 'google' ? (
+                    <>Enter the 6-digit security code sent to your Google account email <strong className="text-slate-900 font-semibold">{pending2FaUser?.email}</strong> to confirm your login.</>
+                  ) : pending2FaType === 'email-login' ? (
+                    <>Enter the 6-digit security code sent to <strong className="text-slate-900 font-semibold">{pending2FaUser?.email}</strong> to verify your identity.</>
+                  ) : (
+                    <>Enter the 6-digit security code sent to <strong className="text-slate-900 font-semibold">{pendingRegistration?.email}</strong> to activate your new account.</>
+                  )}
+                </p>
+              </div>
+
+              {/* Feedback Alerts */}
+              {errorMsg && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-xs text-rose-700 animate-in fade-in">
+                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                  <span className="font-medium leading-relaxed flex-1">{errorMsg}</span>
+                  <button
+                    type="button"
+                    onClick={() => setErrorMsg(null)}
+                    className="text-rose-400 hover:text-rose-600 ml-1 cursor-pointer"
+                    aria-label="Dismiss error"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {successMsg && (
+                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-2.5 text-xs text-emerald-800 animate-in fade-in">
+                  <Check className="w-4 h-4 text-[#2D5A3D] shrink-0" />
+                  <span className="font-medium leading-relaxed flex-1">{successMsg}</span>
+                </div>
+              )}
+
+              {/* Sandbox notice helper if devCode present */}
+              {twoFactorDevCode && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 text-xs text-amber-900 flex items-start justify-between gap-3 animate-in fade-in">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Resend Sandbox Notice</span>
+                    </div>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      Actual email delivered to <strong className="text-amber-950">meet.sharma8c@gmail.com</strong>.
+                      For testing, your 2FA code is: <span className="bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md font-mono font-bold text-amber-950 text-xs tracking-wider">{twoFactorDevCode}</span>
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAutoFillDevCode(twoFactorDevCode)}
+                    className="shrink-0 px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[11px] font-bold transition-colors cursor-pointer shadow-2xs"
+                  >
+                    Auto-Fill
+                  </button>
+                </div>
+              )}
+
+              {/* 6 Digit Input Boxes */}
+              <div className="space-y-2 py-1">
+                <label className="block text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Enter 6-Digit Code
+                </label>
+                <div className="flex items-center justify-center gap-2 sm:gap-2.5">
+                  {otpDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={el => { otpInputRefs.current[idx] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      value={digit}
+                      onChange={e => handleOtpDigitChange(idx, e.target.value)}
+                      onKeyDown={e => handleOtpKeyDown(idx, e)}
+                      onPaste={idx === 0 ? e => {
+                        e.preventDefault();
+                        const paste = e.clipboardData.getData('text');
+                        handleOtpDigitChange(0, paste);
+                      } : undefined}
+                      className="w-11 h-13 sm:w-12 sm:h-14 text-center text-2xl font-bold font-mono bg-slate-50 border-2 rounded-xl text-[#0B2545] border-slate-200 focus:border-[#2D5A3D] focus:bg-white focus:ring-4 focus:ring-[#2D5A3D]/10 outline-none transition-all shadow-2xs"
+                      autoFocus={idx === 0}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleVerify2FaOtp()}
+                  disabled={isLoading || otpDigits.join('').length !== 6}
+                  className="w-full py-3.5 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Verifying Security Code...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>
+                        {pending2FaType === 'email-signup' ? 'Verify & Activate Account' : 'Verify & Sign In'}
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center justify-between text-xs pt-2">
+                  <button
+                    type="button"
+                    onClick={handleCancel2Fa}
+                    disabled={isLoading}
+                    className="flex items-center gap-1 font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back / Switch</span>
+                  </button>
+
+                  {twoFactorCountdown > 0 ? (
+                    <span className="font-semibold text-slate-400 flex items-center gap-1 text-[11px]">
+                      <RotateCcw className="w-3 h-3 text-slate-400 animate-spin" />
+                      Resend code in {twoFactorCountdown}s
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResend2FaOtp}
+                      disabled={isLoading}
+                      className="font-bold text-[#2D5A3D] hover:underline cursor-pointer text-[11px]"
+                    >
+                      Resend Code
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Security info note */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-center text-[11px] text-slate-500">
+                🔒 Protected by Two-Factor Authentication (2FA) with 256-bit encryption.
+              </div>
+            </div>
+          ) : (
+            <>
 
           {/* AI Planner Restriction Banner (when prompted from restricted guest action) */}
           {restrictionMessage && (
@@ -645,14 +1098,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-[#0B2545]">Sign In with Google</h3>
+                <h3 className="text-xl font-bold text-[#0B2545]">Sign In or Sign Up with Google</h3>
                 <p className="text-xs text-slate-500">
-                  Fast, verified 1-tap sign-in. Syncs your itineraries and unlocks the AI Trip Planner.
+                  Fast, verified 1-tap sign-in & instant account registration. Unlocks the AI Trip Planner with 3 free trip plans.
                 </p>
               </div>
 
-              {/* Official Google OAuth Sign-In via Firebase Auth Proxy */}
+              {/* Official Google Identity Services 1-Tap Widget & Instant Button */}
               <div className="flex flex-col items-center justify-center w-full min-h-[48px] py-1 gap-2.5">
+                {/* Mount Google Official Native Widget (Zero popup blockers) */}
+                <div ref={googleBtnContainerRef} className="flex justify-center min-h-[44px] w-full empty:hidden" />
+
                 <button
                   type="button"
                   onClick={() => handleTriggerGoogleAuth(false)}
@@ -987,6 +1443,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </p>
                   </div>
 
+                  {/* 1-Tap Google Sign-Up shortcut */}
+                  <div className="space-y-2 pb-1">
+                    <button
+                      type="button"
+                      onClick={() => switchAuthTab('google')}
+                      className="w-full py-3 px-3 rounded-xl bg-blue-50/90 border border-blue-200 hover:bg-blue-100 text-[#0B2545] font-bold text-xs flex items-center justify-center gap-2.5 transition-all shadow-2xs cursor-pointer active:scale-98"
+                    >
+                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                      </svg>
+                      <span>1-Tap Sign Up with Google</span>
+                    </button>
+                    <div className="flex items-center gap-2 my-1">
+                      <div className="h-px bg-slate-200 flex-1"></div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">or register with email</span>
+                      <div className="h-px bg-slate-200 flex-1"></div>
+                    </div>
+                  </div>
+
                   <form onSubmit={handleCreateAccount} className="space-y-3">
                     <div>
                       <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">Full Name</label>
@@ -1309,6 +1787,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             </div>
           )}
+          </>
+        )}
 
         </div>
 

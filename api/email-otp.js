@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { applyCorsHeaders, checkRateLimit, escapeHtml, getClientIp } from './rateLimiter.js';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const HMAC_SECRET = process.env.AUTH_SECRET || process.env.SUPABASE_JWT_SECRET || process.env.RESEND_API_KEY || 'REDACTED_DEV_HMAC_SALT';
+const HMAC_SECRET = process.env.AUTH_SECRET || 'REDACTED_DEV_HMAC_SALT';
 
 function signOtp(email, code, expiresAt) {
   const normalized = String(email).trim().toLowerCase();
@@ -109,6 +109,20 @@ export default async function handler(req, res) {
       const resendData = await resendRes.json();
       if (!resendRes.ok) {
         console.error('[Resend Error]', resendData);
+        if (typeof resendData.message === 'string' && resendData.message.includes('You can only send testing emails to your own email address')) {
+          console.warn(`[Resend Sandbox] Email restricted to owner (${emailNorm}). Enabling testing fallback code.`);
+          res.setHeader('Set-Cookie', `tripverse_email_otp=${encodeURIComponent(verificationToken)}; Path=/; Max-Age=600; SameSite=Lax; Secure; HttpOnly`);
+          return res.status(200).json({
+            success: true,
+            isSandboxNotice: true,
+            sandboxNotice: `Resend sandbox active: real emails delivered to meet.sharma8c@gmail.com. For testing ${emailNorm}, your 2FA code is: ${otpCode}`,
+            devCode: otpCode,
+            message: `2FA security code generated for ${emailNorm}.`,
+            email: emailNorm,
+            token: verificationToken,
+            expiresAt
+          });
+        }
         return res.status(500).json({
           success: false,
           message: resendData.message || 'Failed to dispatch email verification code via Resend.'

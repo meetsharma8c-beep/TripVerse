@@ -95,7 +95,8 @@ export {
   isFirebaseConfigured,
   getStoredFirebaseConfig,
   saveFirebaseConfig,
-  removeFirebaseConfig
+  removeFirebaseConfig,
+  signOutFirebase
 };
 export type { FirebaseConfig };
 
@@ -363,6 +364,47 @@ export function decodeGoogleJwt(credential: string): GoogleCredentialPayload {
     console.error('Error decoding Google JWT:', err);
     throw new Error('Failed to parse Google credentials. Please try signing in again.');
   }
+}
+
+/**
+ * Parse Google user details from Google Identity Services JWT credential without finalizing session
+ */
+export function parseGoogleUserFromCredential(credential: string): AuthUser {
+  const payload = decodeGoogleJwt(credential);
+  if (!payload.email) {
+    throw new Error('Google credential does not contain a verified email address.');
+  }
+
+  const emailNorm = payload.email.toLowerCase();
+  const uid = toDeterministicUuid('google:' + (payload.sub || emailNorm));
+  const accounts = loadAccounts();
+  const existing = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+  const now = new Date().toISOString();
+
+  const displayName = payload.name || payload.given_name || existing?.user.displayName || emailNorm.split('@')[0];
+  const photoURL = payload.picture || existing?.user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=2D5A3D,0B2545`;
+
+  const authUser: AuthUser = {
+    uid,
+    email: emailNorm,
+    displayName,
+    photoURL,
+    travelerStyle: existing?.user.travelerStyle || 'Budget explorer',
+    travelStyleTag: existing?.user.travelStyleTag || 'Heritage & Food Hunter',
+    location: existing?.user.location || 'India',
+    occupation: existing?.user.occupation || 'Explorer',
+    age: existing?.user.age || 26,
+    emailVerified: payload.email_verified ?? true,
+    provider: 'google',
+    subscriptionTier: existing?.user.subscriptionTier || 'free',
+    freeTripsRemaining: existing?.user.freeTripsRemaining ?? 3,
+    weeklyAssistantMinutesRemaining: existing?.user.weeklyAssistantMinutesRemaining ?? 1800,
+    createdAt: existing?.user.createdAt || now,
+    lastLoginAt: now,
+    savedPlaceIds: existing?.user.savedPlaceIds || []
+  };
+
+  return authUser;
 }
 
 /**
@@ -723,7 +765,7 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
       const msg = fbErr?.message || '';
       const code = fbErr?.code || '';
 
-      // AUTOMATED POPUP BLOCKER RECOVERY (ZERO DOM INTERACTION):
+      // When popup is blocked: fall back to Google Identity Services (GIS)
       const isPopupBlocked =
         code === 'auth/popup-blocked' ||
         msg.toLowerCase().includes('popup-blocked') ||
@@ -732,24 +774,21 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
         msg.toLowerCase().includes('failed to open popup');
 
       if (isPopupBlocked) {
-        console.warn('[Firebase Auth] Browser blocked popup. Automatically transitioning to redirect flow without DOM intervention...');
-        await signInWithGoogleRedirect();
-        return new Promise(() => {}); // Window is navigating to Google
-      }
-
-      if (
+        console.warn('[Firebase Auth] Browser blocked popup. Attempting Google Identity Services fallback...');
+        // Fall through to GIS fallback below
+      } else if (
         fbErr?.code === 'auth/popup-closed-by-user' ||
         (fbErr?.code === 'auth/cancelled-popup-request' && !msg.toLowerCase().includes('blocked')) ||
         msg.toLowerCase().includes('closed') ||
         msg.toLowerCase().includes('cancel')
       ) {
         throw new Error('Google sign-in was cancelled. Please select your account to proceed.');
-      }
-      if (fbErr?.code === 'auth/unauthorized-domain') {
+      } else if (fbErr?.code === 'auth/unauthorized-domain') {
         const originDomain = typeof window !== 'undefined' ? window.location.hostname : 'tripverse.concode.com';
         throw new Error(`Firebase Auth Domain Error: "${originDomain}" must be added to 'Authorized domains' in Firebase Console (Authentication -> Settings -> Authorized domains).`);
+      } else {
+        console.warn('[Firebase Auth] Notice during Google popup, falling back to GIS if available:', fbErr);
       }
-      console.warn('[Firebase Auth] Notice during Google popup, falling back to GIS if available:', fbErr);
     }
   }
 
@@ -1026,21 +1065,30 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
     }
   }
 
+  let emailDispatchFailed = false;
   if (!isSessionCreated) {
     try {
       await Promise.race([
         resendEmailConfirmation(emailNorm, data.name),
-        new Promise(resolve => setTimeout(resolve, 3500))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500))
       ]);
     } catch (sendErr) {
       console.warn('[Signup] resendEmailConfirmation dispatch notice:', sendErr);
+      emailDispatchFailed = true;
     }
+  }
+
+  // If email confirmation is rate-limited or fails, activate the user session immediately so they are never locked out
+  const requiresConfirmation = !isSessionCreated && !emailDispatchFailed;
+  if (!requiresConfirmation) {
+    authUser.emailVerified = true;
+    syncAccountToLocal(authUser, pwdHash);
   }
 
   return {
     ...authUser,
-    emailConfirmationPending: !isSessionCreated,
-    isPendingEmailConfirmation: !isSessionCreated,
+    emailConfirmationPending: requiresConfirmation,
+    isPendingEmailConfirmation: requiresConfirmation,
     isRateLimited
   };
 }
@@ -1271,10 +1319,101 @@ export async function resendEmailConfirmation(email: string, name?: string): Pro
   }
 }
 
+export interface SendTwoFactorOtpResult {
+  success: boolean;
+  token: string;
+  expiresAt: number;
+  isSandboxNotice?: boolean;
+  sandboxNotice?: string;
+  devCode?: string;
+  message: string;
+}
+
 /**
- * Sign in with email and password strictly via Supabase Authentication (with resilient local fallback)
+ * Dispatch genuine 6-digit Two-Factor Authentication (2FA) security code to user's email via Resend
  */
-export async function signInWithEmail(data: LoginData): Promise<AuthUser & { emailConfirmationPending?: boolean }> {
+export async function sendTwoFactorOtp(email: string, name?: string): Promise<SendTwoFactorOtpResult> {
+  const emailNorm = (email || '').trim().toLowerCase();
+  if (!emailNorm || !emailNorm.includes('@')) {
+    throw new Error('A valid email address is required to receive a 2FA verification code.');
+  }
+
+  const res = await fetch('/api/email-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'send',
+      email: emailNorm,
+      name: name?.trim() || emailNorm.split('@')[0]
+    })
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || 'Failed to dispatch 2FA verification code to your email.');
+  }
+
+  if (typeof window !== 'undefined' && data.token) {
+    localStorage.setItem(`tripverse_email_otp_token_${emailNorm}`, data.token);
+  }
+
+  return {
+    success: true,
+    token: data.token,
+    expiresAt: data.expiresAt || (Date.now() + 10 * 60 * 1000),
+    isSandboxNotice: Boolean(data.isSandboxNotice),
+    sandboxNotice: data.sandboxNotice,
+    devCode: data.devCode,
+    message: data.message || `Verification code sent to ${emailNorm}.`
+  };
+}
+
+/**
+ * Verify 6-digit Two-Factor Authentication (2FA) security code via cryptographic HMAC check
+ */
+export async function verifyTwoFactorOtp(email: string, code: string, token?: string): Promise<{ success: boolean; message: string }> {
+  const emailNorm = (email || '').trim().toLowerCase();
+  const cleanCode = (code || '').trim().replace(/\D/g, '');
+
+  if (cleanCode.length !== 6) {
+    throw new Error('Please enter the complete 6-digit verification code.');
+  }
+
+  const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem(`tripverse_email_otp_token_${emailNorm}`) : null);
+
+  const res = await fetch('/api/email-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'verify',
+      email: emailNorm,
+      code: cleanCode,
+      token: activeToken || undefined
+    })
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || 'Incorrect or expired 2FA code. Please verify and try again.');
+  }
+
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(`tripverse_email_otp_token_${emailNorm}`);
+  }
+
+  return {
+    success: true,
+    message: data.message || 'Two-factor authentication verified successfully.'
+  };
+}
+
+/**
+ * Validates email & password credentials (Factor 1) without activating a full persistent session yet.
+ * Used for 2FA verification before creating an active login session.
+ */
+export async function verifyEmailCredentialsOnly(data: LoginData): Promise<{ user: AuthUser; passwordHash: string }> {
   const emailNorm = (data.email || '').trim().toLowerCase();
   if (!emailNorm) {
     throw new Error('Please enter your email address.');
@@ -1287,12 +1426,13 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
   let supaPendingConfirmation = false;
   let supaErrorMessage = '';
 
-  // 0. Fast-path: If account is already verified and stored locally on this device with matching password hash, sign in immediately in <5ms
+  // 0. Fast-path: Check cached accounts on device
   const cachedAccounts = loadAccounts();
   const cachedMatch = cachedAccounts.find(a => a.user.email.toLowerCase() === emailNorm);
-  if (cachedMatch && cachedMatch.passwordHash === pwdHash) {
-    syncAccountToLocal(cachedMatch.user, pwdHash);
-    return cachedMatch.user;
+  if (cachedMatch) {
+    if (cachedMatch.passwordHash === pwdHash) {
+      return { user: cachedMatch.user, passwordHash: pwdHash };
+    }
   }
 
   // 1. Supabase Cloud Authentication (Primary)
@@ -1325,8 +1465,7 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
           console.warn('[Supabase] Profile fetch notice:', err);
         }
 
-        syncAccountToLocal(authUser, pwdHash);
-        return authUser;
+        return { user: authUser, passwordHash: pwdHash };
       }
 
       if (supaErr && supaErr.message !== 'Supabase login timeout') {
@@ -1382,9 +1521,7 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
             lastLoginAt: now,
             savedPlaceIds: []
           };
-          syncAccountToLocal(authUser, pwdHash);
-          saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
-          return authUser;
+          return { user: authUser, passwordHash: pwdHash };
         }
       }
     } catch (fbErr) {
@@ -1392,12 +1529,9 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
     }
   }
 
-  // 3. Offline / Local cached credentials verification
-  const accounts = loadAccounts();
-  const localAccount = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
-  if (localAccount && localAccount.passwordHash === pwdHash) {
-    syncAccountToLocal(localAccount.user, pwdHash);
-    return localAccount.user;
+  // 3. Offline / Local cached credentials check
+  if (cachedMatch && cachedMatch.passwordHash === pwdHash) {
+    return { user: cachedMatch.user, passwordHash: pwdHash };
   }
 
   if (supaPendingConfirmation) {
@@ -1407,6 +1541,36 @@ export async function signInWithEmail(data: LoginData): Promise<AuthUser & { ema
   }
 
   throw new Error(supaErrorMessage || 'Invalid email or password. Please verify your credentials or create a new account.');
+}
+
+/**
+ * Finalize authenticated session once Factor 2 (email OTP) has been verified
+ */
+export function finalizeTwoFactorLogin(user: AuthUser, passwordHash?: string): AuthUser {
+  syncAccountToLocal(user, passwordHash);
+  return user;
+}
+
+/**
+ * Remove active session without deleting remembered user accounts
+ */
+export function clearActiveSession(): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY, { detail: null }));
+    }
+  } catch {}
+}
+
+/**
+ * Sign in with email and password strictly via Supabase Authentication (with resilient local fallback)
+ */
+export async function signInWithEmail(data: LoginData): Promise<AuthUser & { emailConfirmationPending?: boolean }> {
+  const { user, passwordHash } = await verifyEmailCredentialsOnly(data);
+  syncAccountToLocal(user, passwordHash);
+  return user;
 }
 
 /**

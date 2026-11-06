@@ -48,7 +48,6 @@ import { PullToRefresh } from './components/common/PullToRefresh';
 import { HeroSection } from './components/home/HeroSection';
 import { FeaturePillars } from './components/home/FeaturePillars';
 import { PopularDestinations } from './components/home/PopularDestinations';
-import { HighwayBreakstopsShowcase } from './components/home/HighwayBreakstopsShowcase';
 import { PublicLaunchSpotlight } from './components/home/PublicLaunchSpotlight';
 import { AIGenerationSkeleton } from './components/common/AIGenerationSkeleton';
 
@@ -1648,18 +1647,6 @@ export function App() {
                 />
               </div>
 
-              {/* Verified Highway Corridor & Pitstop Engine Showcase (Differentiator) */}
-              <HighwayBreakstopsShowcase
-                onPlanCorridor={(destName) => {
-                  handleQuickPlanDirect({
-                    destination: destName,
-                    duration: 3,
-                    travelers: 2,
-                    budget: 9500
-                  });
-                }}
-              />
-
               {/* Brand 5 Feature Pillars */}
               <FeaturePillars />
 
@@ -2298,7 +2285,7 @@ export function App() {
             onClose={() => setIsGuestPlannerRestrictedOpen(false)}
             onOpenSignUp={() => {
               setIsGuestPlannerRestrictedOpen(false);
-              setAuthModalInitialMethod('email');
+              setAuthModalInitialMethod('google');
               setAuthModalInitialSubMode('signup');
               setIsAuthModalOpen(true);
             }}
@@ -2326,7 +2313,7 @@ export function App() {
             }}
             onOpenAuthModal={() => {
               setIsPlannerOpen(false);
-              setAuthModalInitialMethod('email');
+              setAuthModalInitialMethod('google');
               setAuthModalInitialSubMode('signup');
               setIsAuthModalOpen(true);
             }}
