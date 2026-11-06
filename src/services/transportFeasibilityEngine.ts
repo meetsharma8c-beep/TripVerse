@@ -9,6 +9,9 @@
  * - Honesty About Uncertainty (Confirmed / Likely / Possible / Unavailable / Unknown)
  */
 
+import { TransportMode, Coordinates } from '../types/trip';
+import { resolvePreciseLocationSync } from './locationService';
+
 export type FeasibilityConfidence = 'CONFIRMED' | 'LIKELY' | 'POSSIBLE' | 'UNAVAILABLE' | 'UNKNOWN';
 
 export interface TransitHubInfo {
@@ -25,11 +28,31 @@ export interface DestinationTransitProfile {
   hasDirectTrain: boolean;
   primaryRailwayStation: TransitHubInfo | null;
   roadConnectivity: {
-    status: 'all_weather_highway' | 'mountain_ghat' | 'seasonal_high_altitude' | 'expressway';
+    status: 'all_weather_highway' | 'mountain_ghat' | 'seasonal_high_altitude' | 'expressway' | 'island_no_bridge';
     notes: string;
   };
   requiresMultiModal: boolean;
   multiModalGuidance?: string;
+  isOverseas?: boolean;
+  isIsland?: boolean;
+}
+
+export interface FeasibleTransportModeOption {
+  id: TransportMode;
+  label: string;
+  iconName: 'Car' | 'Bike' | 'Bus' | 'Train' | 'Plane' | 'Sparkles';
+  desc: string;
+  isAvailable: boolean;
+  unavailableReason?: string;
+  badge?: string;
+}
+
+export interface FeasibleTransportResult {
+  availableModes: TransportMode[];
+  allModes: FeasibleTransportModeOption[];
+  recommendedDefaultMode: TransportMode;
+  routeType: 'international_overseas' | 'domestic_island' | 'domestic_mountain' | 'short_commute' | 'domestic_standard';
+  transitNotice?: string;
 }
 
 export interface FeasibilityAssessment {
@@ -357,6 +380,100 @@ const DESTINATION_PROFILES: Record<string, DestinationTransitProfile> = {
       notes: 'Four-lane national highways (NH48 / NH27).'
     },
     requiresMultiModal: false
+  },
+  tokyo: {
+    destination: 'Tokyo, Japan',
+    hasDirectAirport: true,
+    primaryAirport: {
+      name: 'Tokyo Haneda (HND) / Narita (NRT)',
+      code: 'HND / NRT',
+      distanceKm: 20,
+      transferNotes: 'International gateway served by non-stop and 1-stop flights from Delhi, Mumbai, Bengaluru.'
+    },
+    hasDirectTrain: false,
+    primaryRailwayStation: null,
+    roadConnectivity: {
+      status: 'island_no_bridge',
+      notes: 'Overseas island country separated by oceans. Overland road, bus, and rail transit are unavailable.'
+    },
+    requiresMultiModal: false,
+    isOverseas: true,
+    isIsland: true
+  },
+  andaman: {
+    destination: 'Port Blair & Andaman Islands',
+    hasDirectAirport: true,
+    primaryAirport: {
+      name: 'Veer Savarkar International Airport, Port Blair',
+      code: 'IXZ',
+      distanceKm: 3,
+      transferNotes: 'Direct flights from Chennai, Kolkata, Bengaluru, Delhi, Mumbai, Hyderabad.'
+    },
+    hasDirectTrain: false,
+    primaryRailwayStation: null,
+    roadConnectivity: {
+      status: 'island_no_bridge',
+      notes: 'Archipelago in Bay of Bengal with no road bridge or railway from mainland India. Flight is required.'
+    },
+    requiresMultiModal: true,
+    multiModalGuidance: 'Fly into Port Blair (IXZ), then take inter-island catamarans (Makruzz, Nautika) to Havelock or Neil Island.',
+    isIsland: true
+  },
+  lakshadweep: {
+    destination: 'Lakshadweep Islands',
+    hasDirectAirport: true,
+    primaryAirport: {
+      name: 'Agatti Airport, Lakshadweep',
+      code: 'AGX',
+      distanceKm: 2,
+      transferNotes: 'Flights operate from Kochi (COK). Boats connect onward to Kavaratti & Bangaram.'
+    },
+    hasDirectTrain: false,
+    primaryRailwayStation: null,
+    roadConnectivity: {
+      status: 'island_no_bridge',
+      notes: 'Arabian Sea coral islands. No road bridge or rail link connects from mainland.'
+    },
+    requiresMultiModal: true,
+    isIsland: true
+  },
+  maldives: {
+    destination: 'Maldives (Male & Atolls)',
+    hasDirectAirport: true,
+    primaryAirport: {
+      name: 'Velana International Airport, Malé',
+      code: 'MLE',
+      distanceKm: 5,
+      transferNotes: 'Direct flights from Kochi, Bengaluru, Mumbai, Delhi. Speedboat or seaplane transfer onward.'
+    },
+    hasDirectTrain: false,
+    primaryRailwayStation: null,
+    roadConnectivity: {
+      status: 'island_no_bridge',
+      notes: 'Indian Ocean atolls. No overland road or rail connectivity.'
+    },
+    requiresMultiModal: true,
+    isOverseas: true,
+    isIsland: true
+  },
+  bali: {
+    destination: 'Bali, Indonesia',
+    hasDirectAirport: true,
+    primaryAirport: {
+      name: 'Ngurah Rai International Airport, Denpasar',
+      code: 'DPS',
+      distanceKm: 12,
+      transferNotes: 'Direct or 1-stop flights via Singapore, Kuala Lumpur, or Bangkok.'
+    },
+    hasDirectTrain: false,
+    primaryRailwayStation: null,
+    roadConnectivity: {
+      status: 'island_no_bridge',
+      notes: 'Indonesian island across the sea. Overland road and train transit are unavailable.'
+    },
+    requiresMultiModal: false,
+    isOverseas: true,
+    isIsland: true
   }
 };
 
@@ -373,8 +490,31 @@ export function resolveTransitContext(rawDestination: string): DestinationTransi
     }
   }
 
-  // Generic fallback for major cities where destination is typically a direct station/airport
-  const cleanName = rawDestination.split(',')[0].trim() || 'Destination';
+  // Check if international / overseas via location service
+  const loc = resolvePreciseLocationSync(rawDestination);
+  const cleanName = loc.name || rawDestination.split(',')[0].trim() || 'Destination';
+  const isIntl = Boolean(loc.country && loc.country.toLowerCase() !== 'india' && loc.country.toLowerCase() !== 'worldwide');
+
+  if (isIntl) {
+    return {
+      destination: `${cleanName}, ${loc.country || 'International'}`,
+      hasDirectAirport: true,
+      primaryAirport: {
+        name: `${cleanName} International Airport`,
+        transferNotes: 'Subject to international airline schedule verification.'
+      },
+      hasDirectTrain: false,
+      primaryRailwayStation: null,
+      roadConnectivity: {
+        status: 'island_no_bridge',
+        notes: 'Overseas international route. Overland road and train travel unavailable from origin.'
+      },
+      requiresMultiModal: false,
+      isOverseas: true
+    };
+  }
+
+  // Generic fallback for domestic destinations
   return {
     destination: cleanName,
     hasDirectAirport: true,
@@ -556,5 +696,285 @@ export function evaluateTransportFeasibility(
         tradeoffs: 'All-weather operational gateway in winter; strictly observe 48-hour acclimatization.'
       }
     ] : undefined
+  };
+}
+
+function computeHaversineDistanceKm(c1: Coordinates, c2: Coordinates): number {
+  const R = 6371;
+  const dLat = (c2.lat - c1.lat) * (Math.PI / 180);
+  const dLng = (c2.lng - c1.lng) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(c1.lat * (Math.PI / 180)) *
+    Math.cos(c2.lat * (Math.PI / 180)) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.max(15, Math.round(R * c));
+}
+
+const ISLAND_DESTINATION_KEYWORDS = [
+  'andaman', 'port blair', 'havelock', 'neil island', 'swaraj dweep', 'shaheed dweep',
+  'nicobar', 'lakshadweep', 'agatti', 'kavaratti', 'bangaram', 'maldives', 'male',
+  'bali', 'hawaii', 'phuket', 'koh samui', 'mauritius', 'seychelles', 'fiji',
+  'boracay', 'santorini', 'mykonos', 'ibiza', 'mallorca'
+];
+
+const NO_TRAIN_MOUNTAIN_KEYWORDS = [
+  'manali', 'leh', 'ladakh', 'spiti', 'kaza', 'kasol', 'shimla', 'munnar',
+  'ooty', 'nainital', 'ranikhet', 'almora', 'kausani', 'auli', 'chopta',
+  'mussoorie', 'kedarnath', 'badrinath', 'gangotri', 'yamunotri', 'kodaikanal',
+  'coorg', 'madikeri', 'gangtok', 'pelling', 'lachung', 'tawang', 'ziro',
+  'gulmarg', 'pahalgam', 'sonamarg', 'mahabaleshwar', 'panchgani', 'wayanad',
+  'dalhousie', 'dharamshala', 'mcleodganj', 'kullu'
+];
+
+const NO_DIRECT_AIRPORT_KEYWORDS = [
+  'spiti', 'kaza', 'kasol', 'mount abu', 'alibaug', 'hampi', 'ranthambore',
+  'coorg', 'madikeri', 'gokarna', 'pachmarhi', 'nainital', 'mussoorie',
+  'kodaikanal', 'munnar', 'mahabaleshwar', 'lonavala', 'chikmagalur',
+  'alleppey', 'ranikhet', 'kausani', 'chopta', 'kedarnath', 'badrinath'
+];
+
+const INTERNATIONAL_DESTINATION_KEYWORDS = [
+  'tokyo', 'japan', 'kyoto', 'osaka', 'paris', 'france', 'london', 'uk', 'united kingdom',
+  'england', 'usa', 'united states', 'new york', 'dubai', 'uae', 'abu dhabi',
+  'singapore', 'thailand', 'bangkok', 'bali', 'indonesia', 'rome', 'italy',
+  'switzerland', 'zurich', 'interlaken', 'austria', 'vienna', 'spain', 'madrid',
+  'barcelona', 'amsterdam', 'netherlands', 'germany', 'berlin', 'australia',
+  'sydney', 'maldives', 'vietnam', 'hanoi', 'greece', 'athens', 'canada', 'toronto'
+];
+
+/**
+ * Logically evaluates which modes of transport are physically and geographically
+ * feasible between the given origin and destination.
+ *
+ * Excludes impossible modes (e.g. driving or trains across oceans to Tokyo,
+ * trains to mountain towns with no rail tracks, direct flights for 80km commutes, etc.).
+ */
+export function getFeasibleTransportModes(
+  rawOrigin: string,
+  rawDestination: string,
+  travelDate?: string
+): FeasibleTransportResult {
+  const normDest = (rawDestination || '').toLowerCase().trim();
+  const normOrigin = (rawOrigin || '').toLowerCase().trim();
+
+  // If destination is empty or very short, all modes are permitted
+  if (normDest.length < 2) {
+    return {
+      availableModes: ['car', 'bike', 'bus', 'train', 'flight', 'any'],
+      allModes: [
+        { id: 'car', label: 'Car / Road Trip', iconName: 'Car', desc: 'Flexible with break stops', isAvailable: true },
+        { id: 'bike', label: 'Motorbike / Rider', iconName: 'Bike', desc: 'Thrill & scenic curves', isAvailable: true },
+        { id: 'bus', label: 'Volvo / Sleeper Bus', iconName: 'Bus', desc: 'Budget & overnight', isAvailable: true },
+        { id: 'train', label: 'Express Train', iconName: 'Train', desc: 'Comfort & scenery', isAvailable: true },
+        { id: 'flight', label: 'Flight', iconName: 'Plane', desc: 'Fastest arrival', isAvailable: true },
+        { id: 'any', label: 'Best AI Recommendation', iconName: 'Sparkles', desc: 'Optimal for budget & comfort', isAvailable: true }
+      ],
+      recommendedDefaultMode: 'car',
+      routeType: 'domestic_standard'
+    };
+  }
+
+  // Resolve locations
+  const destLoc = resolvePreciseLocationSync(rawDestination);
+  const originLoc = resolvePreciseLocationSync(rawOrigin || 'Ahmedabad, Gujarat');
+
+  const originCountry = (originLoc?.country || 'India').trim().toLowerCase();
+  const destCountry = (destLoc?.country || 'India').trim().toLowerCase();
+
+  const isInternational =
+    INTERNATIONAL_DESTINATION_KEYWORDS.some(k => normDest.includes(k)) ||
+    (originCountry !== destCountry && destCountry !== 'worldwide');
+
+  const isIsland =
+    ISLAND_DESTINATION_KEYWORDS.some(k => normDest.includes(k));
+
+  const isNoTrain =
+    NO_TRAIN_MOUNTAIN_KEYWORDS.some(k => normDest.includes(k));
+
+  const isNoAirport =
+    NO_DIRECT_AIRPORT_KEYWORDS.some(k => normDest.includes(k));
+
+  // Compute straight-line distance
+  const c1 = originLoc?.coordinates || { lat: 23.0225, lng: 72.5714 };
+  const c2 = destLoc?.coordinates || { lat: 28.6139, lng: 77.2090 };
+  const distanceKm = computeHaversineDistanceKm(c1, c2);
+
+  const isShortCommute = !isInternational && !isIsland && distanceKm < 200;
+  const isUltraLongDistance = distanceKm > 1200;
+
+  // High altitude seasonal winter closure check
+  const isWinterDate = travelDate ? (
+    /-(11|12|01|02|03|04)-/.test(travelDate) ||
+    /\b(nov|dec|jan|feb|mar|apr)/i.test(travelDate) ||
+    /20\d\d-(11|12|01|02|03|04)/.test(travelDate)
+  ) : false;
+  const isSeasonalHighAltitude = ['spiti', 'kaza', 'leh', 'ladakh'].some(k => normDest.includes(k));
+  const isWinterRoadClosed = isSeasonalHighAltitude && isWinterDate;
+
+  // 1. CAR / ROAD TRIP
+  let carAvailable = true;
+  let carReason: string | undefined;
+  if (isInternational) {
+    carAvailable = false;
+    carReason = 'Overseas/international route across oceans cannot be reached by road.';
+  } else if (isIsland) {
+    carAvailable = false;
+    carReason = 'Island destination with no road bridge connecting from the mainland.';
+  } else if (isWinterRoadClosed) {
+    carAvailable = false;
+    carReason = 'High mountain road passes closed in winter due to heavy snow.';
+  }
+
+  // 2. MOTORBIKE / RIDER
+  let bikeAvailable = true;
+  let bikeReason: string | undefined;
+  if (isInternational) {
+    bikeAvailable = false;
+    bikeReason = 'Motorcycle cannot cross international ocean corridors.';
+  } else if (isIsland) {
+    bikeAvailable = false;
+    bikeReason = 'No road bridge from the mainland.';
+  } else if (isWinterRoadClosed) {
+    bikeAvailable = false;
+    bikeReason = 'High mountain passes closed in winter due to heavy snow.';
+  } else if (isUltraLongDistance) {
+    bikeAvailable = false;
+    bikeReason = `Distance exceeds 1,200 km (~${distanceKm} km); impractical for motorcycle on standard trip.`;
+  }
+
+  // 3. BUS / VOLVO
+  let busAvailable = true;
+  let busReason: string | undefined;
+  if (isInternational) {
+    busAvailable = false;
+    busReason = 'No international bus routes operate across seas.';
+  } else if (isIsland) {
+    busAvailable = false;
+    busReason = 'No road bridge connects the mainland to this island.';
+  } else if (isWinterRoadClosed) {
+    busAvailable = false;
+    busReason = 'Bus services suspended across high mountain passes in winter.';
+  }
+
+  // 4. TRAIN / RAILWAY
+  let trainAvailable = true;
+  let trainReason: string | undefined;
+  if (isInternational) {
+    trainAvailable = false;
+    trainReason = 'No international rail network connects across oceans.';
+  } else if (isIsland) {
+    trainAvailable = false;
+    trainReason = 'No railway connection across the sea.';
+  } else if (isNoTrain) {
+    trainAvailable = false;
+    trainReason = `No direct railway reaches ${destLoc.name || 'this destination'}; broad-gauge trains terminate at distant railheads.`;
+  }
+
+  // 5. FLIGHT / AIR
+  let flightAvailable = true;
+  let flightReason: string | undefined;
+  if (isShortCommute) {
+    flightAvailable = false;
+    flightReason = `Short road/expressway corridor (~${distanceKm} km); direct commercial flights are not operated.`;
+  } else if (isNoAirport && !isInternational) {
+    flightAvailable = false;
+    flightReason = `No direct commercial passenger airport in ${destLoc.name || 'this town'}.`;
+  }
+
+  // Build the complete allModes list
+  const allModes: FeasibleTransportModeOption[] = [
+    {
+      id: 'car',
+      label: 'Car / Road Trip',
+      iconName: 'Car',
+      desc: carAvailable ? 'Flexible with break stops' : (carReason || 'Road trip unavailable'),
+      isAvailable: carAvailable,
+      unavailableReason: carReason
+    },
+    {
+      id: 'bike',
+      label: 'Motorbike / Rider',
+      iconName: 'Bike',
+      desc: bikeAvailable ? 'Thrill & scenic curves' : (bikeReason || 'Motorbike route unavailable'),
+      isAvailable: bikeAvailable,
+      unavailableReason: bikeReason
+    },
+    {
+      id: 'bus',
+      label: 'Volvo / Sleeper Bus',
+      iconName: 'Bus',
+      desc: busAvailable ? 'Budget & overnight' : (busReason || 'Bus route unavailable'),
+      isAvailable: busAvailable,
+      unavailableReason: busReason
+    },
+    {
+      id: 'train',
+      label: 'Express Train',
+      iconName: 'Train',
+      desc: trainAvailable ? 'Comfort & scenery' : (trainReason || 'Direct rail unavailable'),
+      isAvailable: trainAvailable,
+      unavailableReason: trainReason
+    },
+    {
+      id: 'flight',
+      label: 'Flight',
+      iconName: 'Plane',
+      desc: flightAvailable ? 'Fastest arrival' : (flightReason || 'Direct flight unavailable'),
+      isAvailable: flightAvailable,
+      unavailableReason: flightReason
+    },
+    {
+      id: 'any',
+      label: 'Best AI Recommendation',
+      iconName: 'Sparkles',
+      desc: 'Optimal for budget & comfort',
+      isAvailable: true
+    }
+  ];
+
+  const availableModes = allModes.filter(m => m.isAvailable).map(m => m.id);
+
+  // Determine recommendedDefaultMode & transit notice
+  let recommendedDefaultMode: TransportMode = 'car';
+  let routeType: FeasibleTransportResult['routeType'] = 'domestic_standard';
+  let transitNotice: string | undefined;
+
+  const cleanDest = destLoc.name || rawDestination.split(',')[0].trim();
+  const cleanOrigin = originLoc.name || (rawOrigin ? rawOrigin.split(',')[0].trim() : 'Origin');
+
+  if (isInternational) {
+    routeType = 'international_overseas';
+    recommendedDefaultMode = 'flight';
+    transitNotice = `✈️ Overseas route: ${cleanOrigin} → ${cleanDest} requires international air travel. Road, rail, and bus travel are unavailable.`;
+  } else if (isIsland) {
+    routeType = 'domestic_island';
+    recommendedDefaultMode = 'flight';
+    transitNotice = `🏝️ Island destination: ${cleanDest} is separated by sea. Direct air travel is the only commercial passenger transit.`;
+  } else if (isNoTrain) {
+    routeType = 'domestic_mountain';
+    recommendedDefaultMode = flightAvailable && distanceKm > 600 ? 'flight' : 'car';
+    transitNotice = `🏔️ Mountain destination: No direct railway reaches ${cleanDest}. Road transit (Car, Bike, Bus)${flightAvailable ? ' or regional flight' : ''} available.`;
+  } else if (isShortCommute) {
+    routeType = 'short_commute';
+    recommendedDefaultMode = trainAvailable ? 'train' : 'car';
+    transitNotice = `🛣️ Short corridor (~${distanceKm} km): Road and rail travel recommended; direct commercial flights are not operated.`;
+  } else {
+    routeType = 'domestic_standard';
+    recommendedDefaultMode = distanceKm > 800 ? 'flight' : distanceKm > 400 ? 'train' : 'car';
+  }
+
+  // Ensure recommended mode is definitely in availableModes
+  if (!availableModes.includes(recommendedDefaultMode)) {
+    recommendedDefaultMode = availableModes[0] || 'any';
+  }
+
+  return {
+    availableModes,
+    allModes,
+    recommendedDefaultMode,
+    routeType,
+    transitNotice
   };
 }

@@ -52,6 +52,7 @@ import { GenerationLoader } from './GenerationLoader';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { searchLocations, resolvePreciseLocationSync, PreciseLocation } from '../../services/locationService';
 import { getUserSubscriptionQuota, getCurrentUser, isGuestUser } from '../../services/authService';
+import { getFeasibleTransportModes } from '../../services/transportFeasibilityEngine';
 
 interface PlannerWizardProps {
   initialDestination?: string;
@@ -219,6 +220,18 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   // Step 6: Transportation
   const [transportMode, setTransportMode] = useState<TransportMode>('car');
 
+  // Real-time transport feasibility based on geographic origin, destination & travel date
+  const transportFeasibility = React.useMemo(() => {
+    return getFeasibleTransportModes(origin, destination, startDate);
+  }, [origin, destination, startDate]);
+
+  // Keep transportMode valid: if current selection is not available for this route/destination, auto-promote to recommended default
+  React.useEffect(() => {
+    if (!transportFeasibility.availableModes.includes(transportMode)) {
+      setTransportMode(transportFeasibility.recommendedDefaultMode);
+    }
+  }, [transportFeasibility, transportMode]);
+
   // Step 7: Accommodation
   const [accommodationType, setAccommodationType] = useState<AccommodationType>('budget');
 
@@ -275,6 +288,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   };
 
   const handleFinalSubmit = () => {
+    const finalTransportMode = transportFeasibility.availableModes.includes(transportMode)
+      ? transportMode
+      : transportFeasibility.recommendedDefaultMode;
+
     const input: PlannerInput = {
       origin,
       originCoords,
@@ -286,7 +303,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
       budgetAmount,
       preferences,
       specialRequests: specialRequests.trim(),
-      transportMode,
+      transportMode: finalTransportMode,
       accommodationType,
       foodPreference,
       priorities,
@@ -1055,33 +1072,47 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                 </p>
               </div>
 
+              {/* Geographic Feasibility Notice Banner */}
+              {transportFeasibility.transitNotice && (
+                <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-xs sm:text-sm flex items-start gap-2.5">
+                  <span className="text-base shrink-0 leading-none mt-0.5">ℹ️</span>
+                  <div>
+                    <span className="font-bold block text-amber-900">{transportFeasibility.transitNotice}</span>
+                    <span className="text-[11px] text-amber-700/90 mt-0.5 block">
+                      Unavailable travel options for this route are automatically excluded to keep your itinerary realistic.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Grid: Only render physically and geographically feasible modes */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {[
-                  { id: 'car', label: 'Car / Road Trip', icon: Car, desc: 'Flexible with break stops' },
-                  { id: 'bike', label: 'Motorbike / Rider', icon: Bike, desc: 'Thrill & scenic curves' },
-                  { id: 'bus', label: 'Volvo / Sleeper Bus', icon: Bus, desc: 'Budget & overnight' },
-                  { id: 'train', label: 'Express Train', icon: Train, desc: 'Comfort & scenery' },
-                  { id: 'flight', label: 'Flight', icon: Plane, desc: 'Fastest arrival' },
-                  { id: 'any', label: 'Best AI Recommendation', icon: Sparkles, desc: 'Optimal for budget' },
-                ].map(t => {
-                  const Icon = t.icon;
-                  const isSelected = transportMode === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setTransportMode(t.id as TransportMode)}
-                      className={`p-3.5 rounded-2xl border text-left transition-all ${isSelected
-                        ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                        }`}
-                    >
-                      <Icon className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
-                      <span className="text-xs sm:text-sm font-bold text-slate-900 block">{t.label}</span>
-                      <span className="text-[11px] text-slate-500">{t.desc}</span>
-                    </button>
-                  );
-                })}
+                {transportFeasibility.allModes
+                  .filter(m => m.isAvailable)
+                  .map(t => {
+                    const IconComponent =
+                      t.id === 'car' ? Car :
+                      t.id === 'bike' ? Bike :
+                      t.id === 'bus' ? Bus :
+                      t.id === 'train' ? Train :
+                      t.id === 'flight' ? Plane : Sparkles;
+                    const isSelected = transportMode === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setTransportMode(t.id as TransportMode)}
+                        className={`p-3.5 rounded-2xl border text-left transition-all ${isSelected
+                          ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                          }`}
+                      >
+                        <IconComponent className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
+                        <span className="text-xs sm:text-sm font-bold text-slate-900 block">{t.label}</span>
+                        <span className="text-[11px] text-slate-500">{t.desc}</span>
+                      </button>
+                    );
+                  })}
               </div>
 
               <div className="flex items-center gap-3 p-3.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-200/80 rounded-2xl text-xs text-slate-700">

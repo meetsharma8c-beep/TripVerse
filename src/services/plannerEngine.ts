@@ -4,7 +4,7 @@ import { synthesizeDestination, resolveDestinationImage } from '../utils/destina
 import { generateTransportDeals } from './dealService';
 import { resolvePreciseLocationSync, PreciseLocation } from './locationService';
 import { selectHotelForTrip } from './hotelService';
-import { resolveTransitContext } from './transportFeasibilityEngine';
+import { resolveTransitContext, getFeasibleTransportModes } from './transportFeasibilityEngine';
 import { getActiveCurrency, formatCurrency, CURRENCIES } from './currencyService';
 
 export interface PlannerInput {
@@ -408,6 +408,10 @@ export function generateAITrip(input: PlannerInput): Trip {
   const spotType = preciseLoc.spotType || 'nature';
   const category = preciseLoc.category || matchedDest.category || 'roadtrip';
   const transitContext = resolveTransitContext(spotName);
+  const routeFeasibility = getFeasibleTransportModes(input.origin || '', spotName, input.startDate);
+  const effectiveTransportMode = (input.transportMode && routeFeasibility.availableModes.includes(input.transportMode))
+    ? input.transportMode
+    : routeFeasibility.recommendedDefaultMode;
   const activeCurrency: CurrencyCode = input.currency || getActiveCurrency();
 
   // Determine true destination coordinates
@@ -419,7 +423,7 @@ export function generateAITrip(input: PlannerInput): Trip {
   // Calculate real highway distance & duration
   const straightLineDist = haversineDistKm(originCoords, destCoords);
   const routeDistKm = Math.max(45, Math.round(straightLineDist * 1.25));
-  const avgSpeed = input.transportMode === 'flight' ? 450 : input.transportMode === 'bike' ? 55 : 68;
+  const avgSpeed = effectiveTransportMode === 'flight' ? 450 : effectiveTransportMode === 'bike' ? 55 : 68;
   const routeHours = Math.max(1, Math.round((routeDistKm / avgSpeed) * 10) / 10);
 
   // Calculate budget allocation percentages (1-day trip needs 0 overnight stay budget)
@@ -430,8 +434,8 @@ export function generateAITrip(input: PlannerInput): Trip {
   let actPct = isSingleDay ? 0.22 : 0.16;
 
   if (!isSingleDay) {
-    if (input.transportMode === 'flight') { transportPct = 0.36; stayPct = 0.28; }
-    if (input.transportMode === 'bike' || input.transportMode === 'bus') transportPct = 0.18;
+    if (effectiveTransportMode === 'flight') { transportPct = 0.36; stayPct = 0.28; }
+    if (effectiveTransportMode === 'bike' || effectiveTransportMode === 'bus') transportPct = 0.18;
     if (input.accommodationType === '5star' || input.accommodationType === '4star') { stayPct = 0.38; transportPct = Math.min(transportPct, 0.25); }
     if (input.accommodationType === 'hostel') stayPct = 0.20;
   }
@@ -498,8 +502,8 @@ export function generateAITrip(input: PlannerInput): Trip {
     : 1;
   const scaleExpense = (rawAmount: number) => Math.max(0, Math.round(rawAmount * budgetScale));
 
-  const isAir = input.transportMode === 'flight' && transitContext.primaryAirport !== null;
-  const isRail = input.transportMode === 'train' && transitContext.primaryRailwayStation !== null;
+  const isAir = effectiveTransportMode === 'flight' && transitContext.primaryAirport !== null;
+  const isRail = effectiveTransportMode === 'train' && transitContext.primaryRailwayStation !== null;
   const outboundTransitTitle = isAir
     ? `Flight from ${input.origin || 'Origin'} to ${transitContext.primaryAirport?.name || spotName}`
     : isRail
@@ -1024,7 +1028,7 @@ export function generateAITrip(input: PlannerInput): Trip {
 
   // Generate best transport deal and alternatives tailored to the selected transport mode
   const { bestDeal, allDeals } = generateTransportDeals({
-    mode: input.transportMode || 'car',
+    mode: effectiveTransportMode,
     origin: input.origin || 'Origin',
     destination: spotName,
     durationDays: daysCount,
@@ -1065,7 +1069,7 @@ export function generateAITrip(input: PlannerInput): Trip {
     totalBudget: totalBudget,
     budgetPerPerson: budgetPerPerson,
     preferences: input.preferences?.length ? input.preferences : ['culture', 'nature', 'budget'],
-    transportMode: input.transportMode || 'car',
+    transportMode: effectiveTransportMode,
     accommodationType: input.accommodationType || 'budget',
     foodPreference: foodPref,
     priorities: input.priorities?.length ? input.priorities : ['budget', 'comfort'],

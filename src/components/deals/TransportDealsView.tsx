@@ -5,7 +5,7 @@ import { resolveDestinationImage, handleImageError } from '../../utils/destinati
 import { fetchLiveDestinationWeather, getDestinationWeather } from '../../services/weatherService';
 import { loadTripPacking, saveTripPacking } from '../../services/storageService';
 import { generateSmartPackingList } from '../../services/packingService';
-import { resolveTransitContext } from '../../services/transportFeasibilityEngine';
+import { resolveTransitContext, getFeasibleTransportModes } from '../../services/transportFeasibilityEngine';
 import { getBookingForTrip } from '../../services/paymentGatewayService';
 
 interface TransportDealsViewProps {
@@ -68,6 +68,29 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
   const query = encodeURIComponent(`${origin} to ${destination}`);
   const transitCtx = resolveTransitContext(trip.destination);
   const booking = getBookingForTrip(trip.id);
+
+  // Geographic feasibility check: evaluate which transport modes are physically available
+  const feasibility = React.useMemo(() => {
+    return getFeasibleTransportModes(trip.origin || '', trip.destination || '', trip.startDate);
+  }, [trip.origin, trip.destination, trip.startDate]);
+
+  // Filter out any modes that are unavailable for this route/destination
+  const visibleModes = React.useMemo(() => {
+    return MODES.filter(m => {
+      if (m.id === 'public') {
+        return feasibility.availableModes.includes('train') || feasibility.availableModes.includes('bus');
+      }
+      return feasibility.availableModes.includes(m.id);
+    });
+  }, [feasibility]);
+
+  // Automatically update selected mode if it's not feasible
+  useEffect(() => {
+    const isCurrentModeFeasible = visibleModes.some(m => m.id === mode);
+    if (!isCurrentModeFeasible && visibleModes.length > 0) {
+      setMode(visibleModes[0].id);
+    }
+  }, [visibleModes, mode]);
 
   // Derived 3-letter uppercase station / airport codes
   const originCode = origin.slice(0, 3).toUpperCase() || 'ORG';
@@ -398,12 +421,20 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
           </p>
         </div>
 
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-950">
-          TripVerse connects you directly with certified carriers. Search live schedules and book directly with zero markups.
-        </div>
+        {feasibility.transitNotice && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-950 flex items-start gap-2.5">
+            <span className="text-base shrink-0 leading-none mt-0.5">ℹ️</span>
+            <div>
+              <span className="font-bold block text-amber-900">{feasibility.transitNotice}</span>
+              <span className="text-[11px] text-amber-700/90 mt-0.5 block">
+                Transport modes unavailable for this route have been excluded.
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {MODES.map(({ id, label, Icon: ModeIcon }) => (
+          {visibleModes.map(({ id, label, Icon: ModeIcon }) => (
             <button
               key={id}
               type="button"
