@@ -16,7 +16,8 @@ import {
   Sparkles,
   Compass,
   RotateCcw,
-  ShieldCheck
+  ShieldCheck,
+  Users
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { UserProfile } from '../../types/trip';
@@ -130,11 +131,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     location: string;
   } | null>(null);
   const [twoFactorToken, setTwoFactorToken] = useState<string>('');
-  const [twoFactorDevCode, setTwoFactorDevCode] = useState<string | null>(null);
-  const [twoFactorSandboxNotice, setTwoFactorSandboxNotice] = useState<string | null>(null);
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [twoFactorCountdown, setTwoFactorCountdown] = useState(0);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [isGisRendered, setIsGisRendered] = useState(false);
 
   // Status & Feedback
   const [isLoading, setIsLoading] = useState(false);
@@ -152,6 +152,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setAutoRedirectStatus(null);
     setErrorMsg(null);
     setSuccessMsg(null);
+    setIsGisRendered(false);
     setAuthMethod(nextMethod);
     if (nextEmailSubMode) {
       setEmailSubMode(nextEmailSubMode);
@@ -176,11 +177,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setPending2FaUser(null);
     setPendingRegistration(null);
     setPendingPasswordHash(undefined);
-    setTwoFactorDevCode(null);
-    setTwoFactorSandboxNotice(null);
     setOtpDigits(['', '', '', '', '', '']);
     setErrorMsg(null);
     setSuccessMsg(null);
+    setIsGisRendered(false);
     onClose();
   }, [onClose, is2FaStep, pending2FaType]);
 
@@ -198,8 +198,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setPendingPasswordHash(undefined);
     setPendingRegistration(null);
     setTwoFactorToken('');
-    setTwoFactorDevCode(null);
-    setTwoFactorSandboxNotice(null);
     setOtpDigits(['', '', '', '', '', '']);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -218,8 +216,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const res = await sendTwoFactorOtp(targetEmail, targetName);
       setTwoFactorToken(res.token);
-      setTwoFactorDevCode(res.devCode || null);
-      setTwoFactorSandboxNotice(res.sandboxNotice || null);
       setTwoFactorCountdown(60);
       setSuccessMsg(`New 2FA security code dispatched to ${targetEmail}`);
     } catch (err: any) {
@@ -310,8 +306,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPendingPasswordHash('oauth_google_gis_verified');
       setPending2FaType('google');
       setTwoFactorToken(res.token);
-      setTwoFactorDevCode(res.devCode || null);
-      setTwoFactorSandboxNotice(res.sandboxNotice || null);
       setOtpDigits(['', '', '', '', '', '']);
       setIs2FaStep(true);
       setTwoFactorCountdown(60);
@@ -369,16 +363,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleAutoFillDevCode = (code: string) => {
-    const chars = code.replace(/\D/g, '').slice(0, 6).split('');
-    const next = ['', '', '', '', '', ''];
-    chars.forEach((c, i) => { next[i] = c; });
-    setOtpDigits(next);
-    if (chars.length === 6) {
-      handleVerify2FaOtp(code);
-    }
-  };
-
   useEffect(() => {
     if (twoFactorCountdown <= 0) return;
     const timer = setInterval(() => {
@@ -429,6 +413,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 width: 320
               }
             );
+            if (isMounted) {
+              setIsGisRendered(true);
+            }
           }
         } catch (e) {
           console.warn('[GIS Render Notice]', e);
@@ -438,8 +425,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     return () => {
       isMounted = false;
+      setIsGisRendered(false);
     };
-  }, [isOpen, authMethod, onSuccess, handleModalClose]);
+  }, [isOpen, authMethod, startGoogle2Fa]);
 
   useEffect(() => {
     if (isOpen) {
@@ -605,8 +593,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPendingPasswordHash(passwordHash);
       setPending2FaType('email-login');
       setTwoFactorToken(res.token);
-      setTwoFactorDevCode(res.devCode || null);
-      setTwoFactorSandboxNotice(res.sandboxNotice || null);
       setOtpDigits(['', '', '', '', '', '']);
       setIs2FaStep(true);
       setTwoFactorCountdown(60);
@@ -669,8 +655,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPendingRegistration(signupData);
       setPending2FaType('email-signup');
       setTwoFactorToken(res.token);
-      setTwoFactorDevCode(res.devCode || null);
-      setTwoFactorSandboxNotice(res.sandboxNotice || null);
       setOtpDigits(['', '', '', '', '', '']);
       setIs2FaStep(true);
       setTwoFactorCountdown(60);
@@ -907,29 +891,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               )}
 
-              {/* Sandbox notice helper if devCode present */}
-              {twoFactorDevCode && (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 text-xs text-amber-900 flex items-start justify-between gap-3 animate-in fade-in">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 font-bold text-amber-950">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Resend Sandbox Notice</span>
-                    </div>
-                    <p className="text-[11px] text-amber-800 leading-relaxed">
-                      Actual email delivered to <strong className="text-amber-950">meet.sharma8c@gmail.com</strong>.
-                      For testing, your 2FA code is: <span className="bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md font-mono font-bold text-amber-950 text-xs tracking-wider">{twoFactorDevCode}</span>
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleAutoFillDevCode(twoFactorDevCode)}
-                    className="shrink-0 px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[11px] font-bold transition-colors cursor-pointer shadow-2xs"
-                  >
-                    Auto-Fill
-                  </button>
-                </div>
-              )}
-
               {/* 6 Digit Input Boxes */}
               <div className="space-y-2 py-1">
                 <label className="block text-center text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -1109,34 +1070,60 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* Mount Google Official Native Widget (Zero popup blockers) */}
                 <div ref={googleBtnContainerRef} className="flex justify-center min-h-[44px] w-full empty:hidden" />
 
-                <button
-                  type="button"
-                  onClick={() => handleTriggerGoogleAuth(false)}
-                  disabled={isLoading || isAutoRedirecting}
-                  className="w-full py-3.5 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
-                >
-                  {isAutoRedirecting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-[#2D5A3D]" />
-                      <span>{autoRedirectStatus || 'Redirecting to Google...'}</span>
-                    </>
-                  ) : isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-[#2D5A3D]" />
-                      <span>Connecting to Google...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                      </svg>
-                      <span>Continue with Google</span>
-                    </>
-                  )}
-                </button>
+                {isGisRendered ? (
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerGoogleAuth(false)}
+                    disabled={isLoading || isAutoRedirecting}
+                    className="w-full py-2.5 px-3 rounded-xl hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 disabled:opacity-50"
+                  >
+                    {isAutoRedirecting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2D5A3D]" />
+                        <span>{autoRedirectStatus || 'Redirecting to Google...'}</span>
+                      </>
+                    ) : isLoading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2D5A3D]" />
+                        <span>Opening Google account picker...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Sign in with a different Google account</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerGoogleAuth(false)}
+                    disabled={isLoading || isAutoRedirecting}
+                    className="w-full py-3.5 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
+                  >
+                    {isAutoRedirecting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-[#2D5A3D]" />
+                        <span>{autoRedirectStatus || 'Redirecting to Google...'}</span>
+                      </>
+                    ) : isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-[#2D5A3D]" />
+                        <span>Connecting to Google...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                        </svg>
+                        <span>Continue with Google</span>
+                      </>
+                    )}
+                  </button>
+                )}
 
                 {/* Automated popup protection guarantee */}
                 <div className="flex items-center justify-between w-full px-1 text-[11px] text-slate-500 pt-0.5">

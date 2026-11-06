@@ -757,7 +757,89 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
     return new Promise(() => {}); // Navigating to accounts.google.com
   }
 
-  // 1. If Firebase Auth is configured, attempt Firebase Auth popup
+  // 1. If Google Identity Services (GIS) OAuth2 client is available, prefer GIS token client directly
+  // This opens the official Google OAuth consent/account selector popup and operates without Firebase authorized-domain limits
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '288425355548-ogv0f7ata5ssv9s5o37m711kp9g9461r.apps.googleusercontent.com';
+
+  if (typeof window !== 'undefined') {
+    try {
+      await ensureGoogleIdentityServices();
+      if ((window as any).google?.accounts?.oauth2 && clientId) {
+        return await new Promise<AuthUser>((resolve, reject) => {
+          let settled = false;
+          const finishResolve = (u: AuthUser) => {
+            if (settled) return;
+            settled = true;
+            resolve(u);
+          };
+          const finishReject = (err: Error) => {
+            if (settled) return;
+            settled = true;
+            reject(err);
+          };
+
+          try {
+            const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
+              client_id: clientId,
+              scope: 'openid email profile',
+              error_callback: async (errObj: any) => {
+                const errType = errObj?.type || '';
+                if (errType === 'popup_closed') {
+                  finishReject(new Error('Google sign-in was cancelled.'));
+                } else if (errType === 'popup_failed_to_open') {
+                  if (isFirebaseConfigured()) {
+                    console.warn('[GIS Auth] Popup failed to open. Automatically switching to Google redirect flow...');
+                    try {
+                      await signInWithGoogleRedirect();
+                      return;
+                    } catch (rErr: any) {
+                      finishReject(rErr);
+                      return;
+                    }
+                  }
+                  finishReject(new Error('Google popup was blocked by your browser. Please allow popups to proceed.'));
+                } else {
+                  finishReject(new Error(errObj?.message || 'Google Sign-In could not complete.'));
+                }
+              },
+              callback: async (tokenResponse: any) => {
+                if (tokenResponse.error) {
+                  if (tokenResponse.error === 'access_denied') {
+                    finishReject(new Error('Google sign-in was cancelled.'));
+                  } else {
+                    finishReject(new Error(tokenResponse.error_description || tokenResponse.error || 'Google Sign-In failed.'));
+                  }
+                  return;
+                }
+                try {
+                  const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                  });
+                  const info = await res.json();
+                  if (!info.email) {
+                    finishReject(new Error('Google account does not contain a verified email address.'));
+                    return;
+                  }
+                  const user = await signInWithGoogleUserInfo(info);
+                  finishResolve(user);
+                } catch (err: any) {
+                  finishReject(new Error(err?.message || 'Failed to fetch Google profile.'));
+                }
+              }
+            });
+            tokenClient.requestAccessToken({ prompt: 'select_account' });
+          } catch (initErr: any) {
+            console.warn('[GIS Token Client init failed, trying Firebase fallback]', initErr);
+            finishReject(initErr);
+          }
+        });
+      }
+    } catch (gisInitErr) {
+      console.warn('[TripVerse Auth] GIS token client attempt bypassed, trying Firebase:', gisInitErr);
+    }
+  }
+
+  // 2. If Firebase Auth is configured and GIS wasn't available, attempt Firebase Auth popup
   if (isFirebaseConfigured()) {
     try {
       return await signInWithFirebaseGoogleAuth();
@@ -765,119 +847,23 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
       const msg = fbErr?.message || '';
       const code = fbErr?.code || '';
 
-      // When popup is blocked: fall back to Google Identity Services (GIS)
-      const isPopupBlocked =
-        code === 'auth/popup-blocked' ||
-        msg.toLowerCase().includes('popup-blocked') ||
-        msg.toLowerCase().includes('popup was blocked') ||
-        msg.toLowerCase().includes('popup has been blocked') ||
-        msg.toLowerCase().includes('failed to open popup');
-
-      if (isPopupBlocked) {
-        console.warn('[Firebase Auth] Browser blocked popup. Attempting Google Identity Services fallback...');
-        // Fall through to GIS fallback below
-      } else if (
-        fbErr?.code === 'auth/popup-closed-by-user' ||
-        (fbErr?.code === 'auth/cancelled-popup-request' && !msg.toLowerCase().includes('blocked')) ||
+      if (
+        code === 'auth/popup-closed-by-user' ||
+        (code === 'auth/cancelled-popup-request' && !msg.toLowerCase().includes('blocked')) ||
         msg.toLowerCase().includes('closed') ||
         msg.toLowerCase().includes('cancel')
       ) {
         throw new Error('Google sign-in was cancelled. Please select your account to proceed.');
-      } else if (fbErr?.code === 'auth/unauthorized-domain') {
-        const originDomain = typeof window !== 'undefined' ? window.location.hostname : 'tripverse.concode.com';
-        throw new Error(`Firebase Auth Domain Error: "${originDomain}" must be added to 'Authorized domains' in Firebase Console (Authentication -> Settings -> Authorized domains).`);
+      } else if (code === 'auth/unauthorized-domain') {
+        console.warn('[Firebase Auth] Domain not whitelisted in Firebase Console, auto-triggering redirect fallback...');
+        await signInWithGoogleRedirect();
+        return new Promise(() => {});
       } else {
-        console.warn('[Firebase Auth] Notice during Google popup, falling back to GIS if available:', fbErr);
+        console.warn('[Firebase Auth] Popup error, falling back to redirect:', fbErr);
+        await signInWithGoogleRedirect();
+        return new Promise(() => {});
       }
     }
-  }
-
-  // 2. Fallback to Google Identity Services (GIS)
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-
-  if (!clientId) {
-    if (isFirebaseConfigured()) {
-      await signInWithGoogleRedirect();
-      return new Promise(() => {});
-    }
-    throw new Error('Google Sign-In is not configured (missing VITE_GOOGLE_CLIENT_ID).');
-  }
-
-  await ensureGoogleIdentityServices();
-
-  // GIS OAuth2 Token Client (Official user button click popup flow)
-  if (typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2 && clientId) {
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const finishResolve = (u: AuthUser) => {
-        if (settled) return;
-        settled = true;
-        resolve(u);
-      };
-      const finishReject = (err: Error) => {
-        if (settled) return;
-        settled = true;
-        reject(err);
-      };
-
-      try {
-        const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
-          client_id: clientId,
-          scope: 'openid email profile',
-          error_callback: async (errObj: any) => {
-            const errType = errObj?.type || '';
-            if (errType === 'popup_closed') {
-              finishReject(new Error('Google sign-in was cancelled.'));
-            } else if (errType === 'popup_failed_to_open') {
-              // Automated recovery for GIS: If Firebase is configured, redirect automatically!
-              if (isFirebaseConfigured()) {
-                console.warn('[GIS Auth] Popup failed to open. Automatically switching to Google redirect flow...');
-                try {
-                  await signInWithGoogleRedirect();
-                  return;
-                } catch (rErr: any) {
-                  finishReject(rErr);
-                  return;
-                }
-              }
-              finishReject(new Error('Google popup was blocked by your browser. Please allow popups or switch to email sign-in.'));
-            } else {
-              finishReject(new Error(errObj?.message || 'Google Sign-In could not complete.'));
-            }
-          },
-          callback: async (tokenResponse: any) => {
-            if (tokenResponse.error) {
-              if (tokenResponse.error === 'access_denied') {
-                finishReject(new Error('Google sign-in was blocked (access_denied). Please sign in with Email & Password.'));
-              } else if (tokenResponse.error === 'redirect_uri_mismatch' || String(tokenResponse.error_description || '').includes('mismatch')) {
-                const originUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tripverse-pied.vercel.app';
-                finishReject(new Error(`Google OAuth Error (redirect_uri_mismatch): Please add "${originUrl}" to Authorized JavaScript Origins in Google Cloud Console.`));
-              } else {
-                finishReject(new Error(tokenResponse.error_description || tokenResponse.error || 'Google Sign-In failed.'));
-              }
-              return;
-            }
-            try {
-              const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
-              });
-              const info = await res.json();
-              if (!info.email) {
-                finishReject(new Error('Google account does not contain a verified email address.'));
-                return;
-              }
-              const user = await signInWithGoogleUserInfo(info);
-              finishResolve(user);
-            } catch (err: any) {
-              finishReject(new Error(err?.message || 'Failed to fetch Google profile.'));
-            }
-          }
-        });
-        tokenClient.requestAccessToken({ prompt: 'select_account' });
-      } catch (err: any) {
-        finishReject(new Error(err?.message || 'Google Sign-In could not open popup.'));
-      }
-    });
   }
 
   throw new Error('Google Sign-In service is initializing. Please tap again in a moment.');
