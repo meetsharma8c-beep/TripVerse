@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Logo, BrandIconMark } from './Logo';
-import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut, Bell, Languages } from 'lucide-react';
+import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, ChevronDown, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut, Bell, Languages } from 'lucide-react';
 import { UserProfile, CurrencyCode, LanguageCode } from '../../types/trip';
 import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
 import { getActiveLanguage, setActiveLanguage, LANGUAGES, t } from '../../services/languageService';
@@ -51,6 +51,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
   const [language, setLanguage] = useState<LanguageCode>(getActiveLanguage());
   const [isStandaloneApp] = useState(() => isStandalone());
@@ -61,6 +63,19 @@ export const Navbar: React.FC<NavbarProps> = ({
       return false;
     }
   });
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    if (isProfileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isProfileMenuOpen]);
   const [isMac] = useState(() => {
     if (typeof navigator !== 'undefined') {
       const platform = (navigator as unknown as { userAgentData?: { platform?: string } })?.userAgentData?.platform || navigator.platform || '';
@@ -248,23 +263,25 @@ export const Navbar: React.FC<NavbarProps> = ({
             </nav>
           </div>
 
-          {/* Right Action & Profile: Search, Currency, CTA, Sign In / Sign Out */}
-          <div className="flex items-center gap-1.5 xl:gap-2 2xl:gap-2.5 shrink-0">
+          {/* Right Action & Profile: Theme, Notifs, Search, Locale, CTA, User Menu */}
+          <div className="flex items-center gap-1 xl:gap-1.5 2xl:gap-2 shrink-0">
+            {/* Theme Toggle Button */}
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="flex h-8 w-8 xl:h-9 xl:w-9 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
               aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
               title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
             >
               {isDarkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
             </button>
+
             {/* Notifications Trigger */}
             {onOpenNotifications && (
               <button
                 type="button"
                 onClick={onOpenNotifications}
-                className="relative flex h-8 w-8 xl:h-9 xl:w-9 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer"
+                className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
                 aria-label={`View notifications${unreadNotificationCount > 0 ? ` (${unreadNotificationCount} unread)` : ''}`}
                 title={`View notifications${unreadNotificationCount > 0 ? ` (${unreadNotificationCount} unread)` : ''}`}
               >
@@ -276,46 +293,46 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
               </button>
             )}
-            {/* Spotlight Global Search Trigger */}
+
+            {/* Global Search Trigger (Responsive: Icon on < 2xl, Full Pill on 2xl) */}
             {onOpenSearch && (
               <button
                 onClick={onOpenSearch}
-                className="flex items-center gap-1.5 h-8 xl:h-9 px-2.5 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white text-xs font-semibold transition-all border border-[#DCE7DB] dark:border-slate-700 cursor-pointer shadow-2xs hover:border-[#C4D9C3] dark:hover:border-slate-600 shrink-0"
+                className="flex items-center gap-1.5 h-8 px-2 2xl:px-2.5 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white text-xs font-semibold transition-all border border-[#DCE7DB] dark:border-slate-700 cursor-pointer shadow-2xs shrink-0"
                 title={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
                 aria-label={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
               >
                 <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="hidden 2xl:inline">Search...</span>
-                <kbd className="hidden 2xl:inline text-[10px] font-mono bg-[#F4F6F2] dark:bg-slate-900 px-1.5 py-0.5 rounded border border-[#DCE7DB] dark:border-slate-700 text-slate-500 dark:text-slate-400 shadow-2xs">
+                <kbd className="hidden 2xl:inline text-[10px] font-mono bg-[#F4F6F2] dark:bg-slate-900 px-1 py-0.5 rounded border border-[#DCE7DB] dark:border-slate-700 text-slate-500 dark:text-slate-400 shadow-2xs">
                   {isMac ? '⌘K' : 'Ctrl+K'}
                 </kbd>
               </button>
             )}
 
-            {/* Language Selector */}
-            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-8 xl:h-9 px-2 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0">
+            {/* Compact Language Selector Pill */}
+            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-8 px-2 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0" title="Change Language">
               <Languages className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
               <select
                 value={language}
                 onChange={(e) => handleLanguageChange(e.target.value as LanguageCode)}
-                className="bg-transparent text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer pr-0.5"
+                className="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer pr-0.5"
                 aria-label="Select Language"
               >
                 {Object.values(LANGUAGES).map((l) => (
                   <option key={l.code} value={l.code} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                    {l.flag} {l.nativeName} ({l.code.toUpperCase()})
+                    {l.flag} {l.code.toUpperCase()}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Currency Selector */}
-            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-8 xl:h-9 px-2 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0">
-              <Globe className="hidden 2xl:block w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+            {/* Compact Currency Selector Pill */}
+            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-8 px-2 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0" title="Change Currency">
               <select
                 value={currency}
                 onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
-                className="bg-transparent text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer pr-0.5"
+                className="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer pr-0.5"
                 aria-label="Select Currency"
               >
                 {Object.keys(CURRENCIES).map((c) => (
@@ -331,71 +348,144 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenProModal}
-                className={`flex items-center gap-1 h-8 xl:h-9 px-2.5 xl:px-3 rounded-full text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer shadow-2xs border ${
+                className={`flex items-center gap-1 h-8 px-2 xl:px-2.5 rounded-full text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer shadow-2xs border ${
                   quota.isPro
                     ? 'bg-amber-500/10 border-amber-300/40 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20'
                     : 'bg-[#E8EFE7] dark:bg-emerald-950/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400'
                 }`}
-                title={quota.isPro ? 'TripVerse Pro Active (30h/week AI Co-Pilot)' : 'Unlock Unlimited Trips with TripVerse Pro'}
+                title={quota.isPro ? 'TripVerse Pro Active' : 'Unlock Unlimited Trips with TripVerse Pro'}
               >
                 <Crown className={`w-3.5 h-3.5 shrink-0 ${quota.isPro ? 'text-amber-500 fill-amber-500' : 'text-[#2D5A3D] dark:text-emerald-400'}`} />
-                <span className="hidden 2xl:inline">{quota.isPro ? 'PRO' : 'Get Pro'}</span>
-                <span className="2xl:hidden">{quota.isPro ? 'PRO' : 'Pro'}</span>
+                <span>{quota.isPro ? 'PRO' : 'Pro'}</span>
               </button>
             )}
 
-            {/* Primary CTA: "Plan My Trip" */}
+            {/* Primary CTA: "Plan Trip" */}
             <button
               onClick={onOpenPlanner}
-              className="btn-liquid-primary flex items-center gap-1.5 h-8 xl:h-9 px-3 xl:px-4 rounded-full text-white font-bold text-xs xl:text-[13px] whitespace-nowrap group shrink-0"
+              className="btn-liquid-primary flex items-center gap-1.5 h-8 px-2.5 xl:px-3.5 rounded-full text-white font-bold text-xs whitespace-nowrap group shrink-0"
             >
               <PlaneTakeoff className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              <span>Plan My Trip</span>
-              <ChevronRight className="hidden 2xl:block w-3.5 h-3.5 opacity-80 shrink-0" />
+              <span>Plan Trip</span>
             </button>
 
-            {/* User Profile Pill & Sign In / Sign Out Button */}
+            {/* User Profile Menu with Integrated Sign Out */}
             {!isAuthenticated ? (
               <button
                 type="button"
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1.5 h-8 xl:h-9 px-3 xl:px-4 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 text-[#2D5A3D] dark:text-emerald-400 text-xs xl:text-[13px] font-bold whitespace-nowrap shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold whitespace-nowrap shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95"
                 title="Sign In / Register"
               >
                 <User className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
                 <span>Sign In</span>
               </button>
             ) : (
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="relative shrink-0" ref={profileMenuRef}>
                 <button
                   type="button"
-                  onClick={() => onNavigate('profile')}
-                  className="flex items-center gap-1.5 h-8 xl:h-9 pl-1 pr-1 xl:pr-2.5 rounded-full bg-white dark:bg-slate-800 border border-[#DCE7DB] dark:border-slate-700 hover:border-[#2D5A3D] dark:hover:border-emerald-500 transition-colors cursor-pointer shadow-2xs shrink-0"
-                  title="View Profile"
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                  className="flex items-center gap-1.5 h-8 pl-1 pr-2 rounded-full bg-white dark:bg-slate-800 border border-[#DCE7DB] dark:border-slate-700 hover:border-[#2D5A3D] dark:hover:border-emerald-500 transition-colors cursor-pointer shadow-2xs shrink-0"
+                  title="Account Menu"
+                  aria-expanded={isProfileMenuOpen}
                 >
                   <img
                     src={userProfile.avatar}
                     alt={userProfile.name}
-                    className="w-6 h-6 xl:w-6.5 xl:h-6.5 rounded-full object-cover ring-2 ring-[#2D5A3D]/30 shrink-0"
+                    className="w-6 h-6 rounded-full object-cover ring-2 ring-[#2D5A3D]/30 shrink-0"
                   />
-                  <span className="hidden xl:inline text-xs font-bold text-[#152A1C] dark:text-slate-100 max-w-[68px] 2xl:max-w-[85px] truncate">
+                  <span className="hidden xl:inline text-xs font-bold text-[#152A1C] dark:text-slate-100 max-w-[70px] truncate">
                     {(userProfile?.name || 'Traveler').split(' ')[0]}
                   </span>
+                  <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180 text-[#2D5A3D]' : ''}`} />
                 </button>
-                {onSignOut && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm('Are you sure you want to sign out of your TripVerse account?')) {
-                        onSignOut();
-                      }
-                    }}
-                    className="flex items-center gap-1 h-8 xl:h-9 px-2.5 xl:px-3 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-bold whitespace-nowrap shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95"
-                    title="Sign Out"
-                  >
-                    <LogOut className="w-3.5 h-3.5 shrink-0" />
-                    <span>Sign Out</span>
-                  </button>
+
+                {/* Dropdown Popover */}
+                {isProfileMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                    {/* User Header */}
+                    <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 mb-1">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={userProfile.avatar}
+                          alt={userProfile.name}
+                          className="w-8 h-8 rounded-full object-cover ring-2 ring-[#2D5A3D]/30 shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {userProfile.name || 'Traveler'}
+                          </p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                            {userProfile.email || 'traveler@tripverse.com'}
+                          </p>
+                        </div>
+                      </div>
+                      {quota.isPro && (
+                        <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-amber-300/40">
+                          <Crown className="w-3 h-3" />
+                          <span>TripVerse Pro Member</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Menu Items */}
+                    <div className="space-y-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          onNavigate('profile');
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9] dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      >
+                        <User className="w-4 h-4 text-slate-400" />
+                        <span>Profile & Preferences</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          onNavigate('trips');
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9] dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      >
+                        <MapPin className="w-4 h-4 text-slate-400" />
+                        <span>My Trips</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          onNavigate('saved');
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9] dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      >
+                        <Bookmark className="w-4 h-4 text-slate-400" />
+                        <span>Saved Spots</span>
+                      </button>
+                    </div>
+
+                    {/* Sign Out Action inside Dropdown */}
+                    {onSignOut && (
+                      <div className="pt-1 mt-1 border-t border-slate-100 dark:border-slate-800/80">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            if (confirm('Are you sure you want to sign out of your TripVerse account?')) {
+                              onSignOut();
+                            }
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                        >
+                          <LogOut className="w-4 h-4 shrink-0" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
