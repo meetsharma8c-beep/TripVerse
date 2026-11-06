@@ -1070,31 +1070,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* Mount Google Official Native Widget (Zero popup blockers) */}
                 <div ref={googleBtnContainerRef} className="flex justify-center min-h-[44px] w-full empty:hidden" />
 
-                {isGisRendered ? (
-                  <button
-                    type="button"
-                    onClick={() => handleTriggerGoogleAuth(false)}
-                    disabled={isLoading || isAutoRedirecting}
-                    className="w-full py-2.5 px-3 rounded-xl hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 disabled:opacity-50"
-                  >
-                    {isAutoRedirecting ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2D5A3D]" />
-                        <span>{autoRedirectStatus || 'Redirecting to Google...'}</span>
-                      </>
-                    ) : isLoading ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2D5A3D]" />
-                        <span>Opening Google account picker...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Users className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Sign in with a different Google account</span>
-                      </>
-                    )}
-                  </button>
-                ) : (
+                {/* Only render fallback button if the official Google Identity Services widget has not mounted */}
+                {!isGisRendered && (
                   <button
                     type="button"
                     onClick={() => handleTriggerGoogleAuth(false)}
