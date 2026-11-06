@@ -367,6 +367,72 @@ export function decodeGoogleJwt(credential: string): GoogleCredentialPayload {
 }
 
 /**
+ * Detect if Two-Factor Authentication is active for a Google user:
+ * 1. Honors explicit user settings stored in TripVerse profile / account.
+ * 2. Analyzes Google OpenID Connect (OIDC) ID token authentication claims:
+ *    - AMR (Authentication Methods References): 'mfa', 'hwk' (security keys/passkeys), 'swk', 'sms', 'tel', 'otp', 'totp', etc.
+ *    - ACR (Authentication Context Class Reference): 'mfa', '2fa', 'otp'.
+ */
+export function isGoogleUser2FaEnabled(
+  payload: GoogleCredentialPayload,
+  existingUser?: AuthUser | null
+): boolean {
+  // If user explicitly configured two-factor in TripVerse profile, respect that setting
+  if (typeof existingUser?.twoFactorEnabled === 'boolean') {
+    return existingUser.twoFactorEnabled;
+  }
+
+  // Check Google OpenID Connect token AMR claims
+  const amr = Array.isArray(payload.amr) ? payload.amr.map(m => String(m).toLowerCase()) : [];
+  if (amr.length > 0) {
+    const mfaIndicators = ['mfa', 'hwk', 'swk', 'sms', 'tel', 'otp', 'totp'];
+    const hasMfaIndicator = amr.some(method => mfaIndicators.includes(method));
+    if (hasMfaIndicator || (amr.length > 1 && amr.includes('pwd'))) {
+      return true;
+    }
+  }
+
+  // Check ACR (Authentication Context Class Reference)
+  if (payload.acr) {
+    const acr = String(payload.acr).toLowerCase();
+    if (acr.includes('mfa') || acr.includes('2fa') || acr.includes('otp')) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export interface GoogleAuthParseResult {
+  user: AuthUser;
+  is2FaRequired: boolean;
+  payload: GoogleCredentialPayload;
+}
+
+/**
+ * Parses Google JWT credential and determines if 2FA verification step is required.
+ */
+export function parseGoogleAuthResult(credential: string): GoogleAuthParseResult {
+  const payload = decodeGoogleJwt(credential);
+  if (!payload.email) {
+    throw new Error('Google credential does not contain a verified email address.');
+  }
+
+  const emailNorm = payload.email.toLowerCase();
+  const accounts = loadAccounts();
+  const existing = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+  const is2FaRequired = isGoogleUser2FaEnabled(payload, existing?.user);
+  const user = parseGoogleUserFromCredential(credential);
+  user.twoFactorEnabled = is2FaRequired;
+
+  return {
+    user,
+    is2FaRequired,
+    payload
+  };
+}
+
+/**
  * Parse Google user details from Google Identity Services JWT credential without finalizing session
  */
 export function parseGoogleUserFromCredential(credential: string): AuthUser {
@@ -383,6 +449,7 @@ export function parseGoogleUserFromCredential(credential: string): AuthUser {
 
   const displayName = payload.name || payload.given_name || existing?.user.displayName || emailNorm.split('@')[0];
   const photoURL = payload.picture || existing?.user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=2D5A3D,0B2545`;
+  const is2Fa = isGoogleUser2FaEnabled(payload, existing?.user);
 
   const authUser: AuthUser = {
     uid,
@@ -395,6 +462,7 @@ export function parseGoogleUserFromCredential(credential: string): AuthUser {
     occupation: existing?.user.occupation || 'Explorer',
     age: existing?.user.age || 26,
     emailVerified: payload.email_verified ?? true,
+    twoFactorEnabled: is2Fa,
     provider: 'google',
     subscriptionTier: existing?.user.subscriptionTier || 'free',
     freeTripsRemaining: existing?.user.freeTripsRemaining ?? 3,
@@ -1669,6 +1737,18 @@ export async function updateAuthProfile(updates: Partial<UserProfile & AuthUser>
 }
 
 /**
+ * Toggle Two-Factor Authentication (2FA) status for the currently authenticated user
+ */
+export async function toggleUserTwoFactor(enabled: boolean): Promise<AuthUser> {
+  const updated = await updateAuthProfile({ twoFactorEnabled: enabled });
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY, { detail: updated }));
+    window.dispatchEvent(new CustomEvent('tripverse_auth_state_change', { detail: { user: updated } }));
+  }
+  return updated;
+}
+
+/**
  * Sign out current user from Supabase & local session
  */
 export async function signOut(): Promise<void> {
@@ -2062,7 +2142,8 @@ export function toUserProfile(user: AuthUser): UserProfile {
     foodPreference: 'Authentic Local & Hygienic Stops',
     accommodationPreference: 'Boutique Stays & Clean Hotels',
     savedPlaceIds: user.savedPlaceIds || [],
-    tripsCount: 0
+    tripsCount: 0,
+    twoFactorEnabled: user.twoFactorEnabled ?? false
   };
 }
 

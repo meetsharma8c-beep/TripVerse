@@ -37,6 +37,9 @@ import {
   clearActiveSession,
   getCurrentUser,
   parseGoogleUserFromCredential,
+  isGoogleUser2FaEnabled,
+  parseGoogleAuthResult,
+  toggleUserTwoFactor,
   sendTwoFactorOtp,
   verifyTwoFactorOtp
 } from '../src/services/authService';
@@ -581,6 +584,151 @@ describe('Auth Security & Verification Tests', () => {
       expect(activeUser).not.toBeNull();
       expect(activeUser?.email).toBe('ms.concode@gmail.com');
       expect(activeUser?.provider).toBe('google');
+    });
+
+    it('detects 2FA enabled based on Google token AMR claims (mfa, hwk, swk, otp)', () => {
+      // 1. Google 2-Step Verification with password + MFA
+      expect(isGoogleUser2FaEnabled({
+        sub: '101',
+        email: 'user_mfa@gmail.com',
+        name: 'MFA User',
+        amr: ['pwd', 'mfa']
+      })).toBe(true);
+
+      // 2. Passkey / Hardware key
+      expect(isGoogleUser2FaEnabled({
+        sub: '102',
+        email: 'user_key@gmail.com',
+        name: 'Key User',
+        amr: ['hwk']
+      })).toBe(true);
+
+      // 3. OTP factor
+      expect(isGoogleUser2FaEnabled({
+        sub: '103',
+        email: 'user_otp@gmail.com',
+        name: 'OTP User',
+        amr: ['otp']
+      })).toBe(true);
+
+      // 4. ACR claim
+      expect(isGoogleUser2FaEnabled({
+        sub: '104',
+        email: 'user_acr@gmail.com',
+        name: 'ACR User',
+        acr: '2fa'
+      })).toBe(true);
+
+      // 5. Single factor password only -> false
+      expect(isGoogleUser2FaEnabled({
+        sub: '105',
+        email: 'user_pwd@gmail.com',
+        name: 'Standard User',
+        amr: ['pwd']
+      })).toBe(false);
+
+      // 6. No AMR / standard token -> false
+      expect(isGoogleUser2FaEnabled({
+        sub: '106',
+        email: 'user_standard@gmail.com',
+        name: 'Basic User'
+      })).toBe(false);
+    });
+
+    it('honors user explicit 2FA profile preference regardless of token claims', () => {
+      const mockExistingUser: AuthUser = {
+        uid: 'user-pref-1',
+        email: 'pref@gmail.com',
+        displayName: 'Pref User',
+        photoURL: '',
+        travelerStyle: '',
+        travelStyleTag: '',
+        location: '',
+        occupation: '',
+        age: 25,
+        emailVerified: true,
+        provider: 'google',
+        createdAt: '',
+        lastLoginAt: '',
+        twoFactorEnabled: true
+      };
+
+      // Explicitly enabled in profile, even if token is single factor ['pwd']
+      expect(isGoogleUser2FaEnabled({
+        sub: '107',
+        email: 'pref@gmail.com',
+        name: 'Pref User',
+        amr: ['pwd']
+      }, mockExistingUser)).toBe(true);
+
+      // Explicitly disabled in profile, even if token has mfa
+      mockExistingUser.twoFactorEnabled = false;
+      expect(isGoogleUser2FaEnabled({
+        sub: '107',
+        email: 'pref@gmail.com',
+        name: 'Pref User',
+        amr: ['pwd', 'mfa']
+      }, mockExistingUser)).toBe(false);
+    });
+
+    it('parseGoogleAuthResult returns is2FaRequired appropriately', () => {
+      const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+      
+      // Token with MFA
+      const mfaPayload = {
+        sub: '201',
+        email: 'mfa_test@gmail.com',
+        name: 'MFA Tester',
+        email_verified: true,
+        amr: ['pwd', 'mfa']
+      };
+      const mfaJwt = `${header}.${btoa(JSON.stringify(mfaPayload))}.signature`;
+      const mfaResult = parseGoogleAuthResult(mfaJwt);
+      expect(mfaResult.is2FaRequired).toBe(true);
+      expect(mfaResult.user.twoFactorEnabled).toBe(true);
+
+      // Token without MFA (single factor)
+      const nonMfaPayload = {
+        sub: '202',
+        email: 'nomfa_test@gmail.com',
+        name: 'Standard Tester',
+        email_verified: true,
+        amr: ['pwd']
+      };
+      const nonMfaJwt = `${header}.${btoa(JSON.stringify(nonMfaPayload))}.signature`;
+      const nonMfaResult = parseGoogleAuthResult(nonMfaJwt);
+      expect(nonMfaResult.is2FaRequired).toBe(false);
+      expect(nonMfaResult.user.twoFactorEnabled).toBe(false);
+    });
+
+    it('toggleUserTwoFactor modifies account and session state', async () => {
+      const initialUser: AuthUser = {
+        uid: 'toggle-user-uid',
+        email: 'toggle_test@gmail.com',
+        displayName: 'Toggle User',
+        photoURL: '',
+        travelerStyle: 'Budget explorer',
+        travelStyleTag: 'Verified Explorer',
+        location: 'India',
+        occupation: 'Explorer',
+        age: 26,
+        emailVerified: true,
+        provider: 'google',
+        twoFactorEnabled: false,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString()
+      };
+
+      finalizeTwoFactorLogin(initialUser);
+      expect(getCurrentUser()?.twoFactorEnabled).toBe(false);
+
+      const enabledUser = await toggleUserTwoFactor(true);
+      expect(enabledUser.twoFactorEnabled).toBe(true);
+      expect(getCurrentUser()?.twoFactorEnabled).toBe(true);
+
+      const disabledUser = await toggleUserTwoFactor(false);
+      expect(disabledUser.twoFactorEnabled).toBe(false);
+      expect(getCurrentUser()?.twoFactorEnabled).toBe(false);
     });
   });
 });

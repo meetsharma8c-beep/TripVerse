@@ -269,6 +269,7 @@ export interface UserProfile {
   accommodationPreference: string;
   savedPlaceIds: string[];
   tripsCount: number;
+  twoFactorEnabled?: boolean;
   preferredCurrency?: CurrencyCode;
 }
 

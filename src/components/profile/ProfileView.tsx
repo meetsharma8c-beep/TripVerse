@@ -11,6 +11,7 @@ import {
   getSavedAccounts, 
   switchAccount, 
   updateAuthProfile, 
+  toggleUserTwoFactor,
   toUserProfile,
   getUserSubscriptionQuota
 } from '../../services/authService';
@@ -59,6 +60,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const [activeBadgesCount, setActiveBadgesCount] = useState<number>(0);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
+  const [isToggling2Fa, setIsToggling2Fa] = useState(false);
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => propCurrentUser ?? getCurrentUser());
 
@@ -172,6 +174,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       if (onSignOut) {
         onSignOut();
       }
+    }
+  };
+
+  const handleToggleTwoFactor = async () => {
+    if (!currentUser) return;
+    setIsToggling2Fa(true);
+    try {
+      const nextState = !currentUser.twoFactorEnabled;
+      const updated = await toggleUserTwoFactor(nextState);
+      setAuthUser(updated);
+      onUpdateProfile(toUserProfile(updated));
+    } catch (err) {
+      console.error('Failed to toggle two-factor authentication:', err);
+    } finally {
+      setIsToggling2Fa(false);
     }
   };
 
@@ -829,6 +846,67 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Account Security & Two-Factor Authentication Card */}
+      {currentUser && (
+        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 text-center sm:text-left">
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+              currentUser.twoFactorEnabled
+                ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                : 'bg-slate-100 text-slate-500 border border-slate-200'
+            }`}>
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 justify-center sm:justify-start">
+                <h4 className="text-sm font-bold text-slate-900">Two-Factor Authentication (2FA)</h4>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${
+                  currentUser.twoFactorEnabled
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                }`}>
+                  {currentUser.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 max-w-xl">
+                {currentUser.twoFactorEnabled
+                  ? 'Two-step verification is active. Every sign-in requires a secure 6-digit email OTP.'
+                  : 'TripVerse automatically detects 2-Step Verification on your Google account. You can also explicitly enforce 2FA here.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-center sm:justify-end shrink-0">
+            <button
+              onClick={handleToggleTwoFactor}
+              disabled={isToggling2Fa}
+              className={`w-full sm:w-auto px-4 py-2.5 rounded-xl font-bold text-xs border transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs ${
+                currentUser.twoFactorEnabled
+                  ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-xs'
+              } disabled:opacity-50`}
+            >
+              {isToggling2Fa ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  <span>Updating...</span>
+                </>
+              ) : currentUser.twoFactorEnabled ? (
+                <>
+                  <Lock className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Disable 2FA</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Enable 2FA</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Account Session & Security Card */}
       <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">

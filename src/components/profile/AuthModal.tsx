@@ -37,7 +37,8 @@ import {
   verifyEmailCredentialsOnly,
   finalizeTwoFactorLogin,
   clearActiveSession,
-  parseGoogleUserFromCredential
+  parseGoogleUserFromCredential,
+  parseGoogleAuthResult
 } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 
@@ -382,8 +383,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 try {
                   setIsLoading(true);
                   setErrorMsg(null);
-                  const user = parseGoogleUserFromCredential(response.credential);
-                  await startGoogle2Fa(user);
+                  const { user, is2FaRequired } = parseGoogleAuthResult(response.credential);
+                  if (is2FaRequired) {
+                    await startGoogle2Fa(user);
+                  } else {
+                    isAuthCompletedRef.current = true;
+                    setIs2FaStep(false);
+                    finalizeTwoFactorLogin(user, 'oauth_google_gis_verified');
+                    try {
+                      confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+                    } catch {}
+                    setSuccessMsg(`Welcome, ${user.displayName}! Signed in with Google.`);
+                    successTimeoutRef.current = setTimeout(() => {
+                      onSuccess(toUserProfile(user));
+                      onClose();
+                    }, 500);
+                  }
                 } catch (err: any) {
                   setErrorMsg(err.message || 'Google authentication could not complete.');
                   setIsLoading(false);

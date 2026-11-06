@@ -26,6 +26,7 @@ export interface AuthUser {
   age: number;
   emailVerified: boolean;
   isAnonymous?: boolean;
+  twoFactorEnabled?: boolean;
   provider: AuthProvider;
   createdAt: string;
   lastLoginAt: string;
@@ -67,6 +68,9 @@ export interface GoogleCredentialPayload {
   picture?: string;
   given_name?: string;
   family_name?: string;
+  amr?: string[];
+  acr?: string;
+  auth_time?: number;
 }
 
 export interface VerificationCodeRecord {
