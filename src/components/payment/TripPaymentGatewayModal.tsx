@@ -390,11 +390,11 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[250] flex items-start sm:items-center justify-center bg-slate-950/85 p-2 sm:p-4 backdrop-blur-md overflow-y-auto overscroll-contain"
+      className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-950/85 p-2 sm:p-4 backdrop-blur-md overflow-y-auto overscroll-contain"
       onClick={onClose}
     >
       <div 
-        className="my-auto flex w-full max-w-4xl max-h-[92vh] sm:max-h-[88vh] flex-col overflow-hidden rounded-[24px] sm:rounded-[32px] border border-emerald-900/40 bg-white shadow-2xl transition-all"
+        className="my-auto flex w-full max-w-4xl max-h-[96vh] sm:max-h-[92vh] flex-col overflow-hidden rounded-[24px] sm:rounded-[32px] border border-emerald-900/40 bg-white shadow-2xl transition-all"
         onClick={e => e.stopPropagation()}
       >
         {/* ================================================================ */}
@@ -438,19 +438,24 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         </header>
 
         {/* ================================================================ */}
+        {/* 2. BODY SCROLL CONTAINER (ZERO CLIPPING & SMOOTH RESPONSIVE)     */}
+        {/* ================================================================ */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain focus:outline-none">
+
+        {/* ================================================================ */}
         {/* STAGE A: CHECKOUT SCREEN                                          */}
         {/* ================================================================ */}
         {gatewayStage === 'checkout' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[540px]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-0">
             
             {/* ------------------------------------------------------------ */}
             {/* LEFT COLUMN: PAYMENT METHOD TABS (7 cols)                     */}
             {/* ------------------------------------------------------------ */}
-            <div className="lg:col-span-7 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-100 bg-slate-50/60 p-4 sm:p-6">
+            <div className="lg:col-span-7 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-100 bg-slate-50/60 p-3.5 sm:p-5">
               
               {/* Payment Methods Pill Selector */}
-              <div className="mb-4">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+              <div className="mb-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
                   Select Payment Method
                 </span>
 
@@ -533,37 +538,37 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                   {/* Sub-tab A: DYNAMIC QR CODE DISPLAY WITH 5-MINUTE COUNTDOWN */}
                   {upiSubTab === 'qr' && (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 text-center shadow-xs space-y-3">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 text-center shadow-xs space-y-2.5">
                       
                       {/* LIVE 5-MINUTE COUNTDOWN TIMER BADGE */}
-                      <div className="flex items-center justify-between bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200/80">
+                      <div className="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
                         <div className="flex items-center gap-2">
-                          <div className="relative flex items-center justify-center w-8 h-8">
-                            <svg className="w-8 h-8 -rotate-90">
+                          <div className="relative flex items-center justify-center w-7 h-7">
+                            <svg className="w-7 h-7 -rotate-90">
                               <circle
-                                cx="16"
-                                cy="16"
-                                r={timerRadius}
+                                cx="14"
+                                cy="14"
+                                r={11}
                                 className="stroke-slate-200"
-                                strokeWidth="3"
+                                strokeWidth="2.5"
                                 fill="transparent"
                               />
                               <circle
-                                cx="16"
-                                cy="16"
-                                r={timerRadius}
+                                cx="14"
+                                cy="14"
+                                r={11}
                                 className={`${getTimerColorClass()} transition-all duration-1000`}
-                                strokeWidth="3"
-                                strokeDasharray={timerCircumference}
-                                strokeDashoffset={timerStrokeDashoffset}
+                                strokeWidth="2.5"
+                                strokeDasharray={69.1}
+                                strokeDashoffset={(69.1 * (300 - secondsRemaining)) / 300}
                                 strokeLinecap="round"
                                 fill="transparent"
                               />
                             </svg>
-                            <Clock className={`w-3.5 h-3.5 absolute ${getTimerColorClass()}`} />
+                            <Clock className={`w-3 h-3 absolute ${getTimerColorClass()}`} />
                           </div>
                           <div className="text-left">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">QR Expires In</span>
+                            <span className="text-[9px] uppercase font-bold text-slate-400 block leading-tight">QR Expires In</span>
                             <span className={`text-xs sm:text-sm font-black font-mono tracking-tight ${getTimerColorClass()}`}>
                               {formatTimerString(secondsRemaining)}
                             </span>
@@ -574,14 +579,14 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                           <button
                             type="button"
                             onClick={handleRegenerateQr}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1 text-xs font-bold text-white hover:bg-emerald-800 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-800 transition-colors cursor-pointer"
                           >
                             <RefreshCw className="w-3 h-3" />
                             Regenerate
                           </button>
                         ) : (
-                          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                             <span>Live Scanner Active</span>
                           </div>
                         )}
@@ -589,40 +594,40 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                       {/* QR Display or Expired State */}
                       {secondsRemaining > 0 ? (
-                        <div className="space-y-3">
-                          <div className="relative mx-auto w-48 h-48 sm:w-52 sm:h-52 p-2 rounded-2xl border border-slate-200 bg-white shadow-md flex items-center justify-center">
+                        <div className="space-y-2">
+                          <div className="relative mx-auto w-36 h-36 sm:w-40 sm:h-40 p-1.5 rounded-2xl border border-slate-200 bg-white shadow-xs flex items-center justify-center">
                             <img
                               src={upiQrUrl}
                               alt="Scan UPI QR Code to Pay"
                               className="w-full h-full object-contain rounded-xl"
                             />
                             {/* TripVerse Center Branding Pill */}
-                            <div className="absolute inset-0 m-auto w-10 h-10 rounded-xl bg-white/95 border border-emerald-700 shadow-md flex items-center justify-center">
-                              <span className="text-xs font-black text-emerald-800">TV</span>
+                            <div className="absolute inset-0 m-auto w-8 h-8 rounded-lg bg-white/95 border border-emerald-700 shadow-sm flex items-center justify-center">
+                              <span className="text-[10px] font-black text-emerald-800">TV</span>
                             </div>
                           </div>
 
-                          <p className="text-xs text-slate-600 font-medium">
+                          <p className="text-[11px] text-slate-600 font-medium">
                             Scan with any UPI App: <strong className="text-slate-900">Google Pay, PhonePe, Paytm, CRED, BHIM</strong>
                           </p>
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-mono font-bold text-emerald-900">
-                            <span>Merchant UPI: {(import.meta as any).env?.VITE_MERCHANT_UPI_VPA || 'tripverse@razorpay'}</span>
-                          </div>
-
-                          <div className="flex items-center justify-center gap-2 pt-1">
+                          
+                          <div className="flex flex-wrap items-center justify-center gap-2">
+                            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-mono font-bold text-emerald-900">
+                              <span>Merchant UPI: {(import.meta as any).env?.VITE_MERCHANT_UPI_VPA || 'tripverse@razorpay'}</span>
+                            </div>
                             <button
                               type="button"
                               onClick={handleCopyUpiLink}
-                              className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-full transition-colors cursor-pointer border border-slate-200"
                             >
-                              {copiedUpi ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                              <span>{copiedUpi ? 'Copied UPI Intent' : 'Copy UPI Link'}</span>
+                              {copiedUpi ? <Check className="w-2.5 h-2.5 text-emerald-600" /> : <Copy className="w-2.5 h-2.5" />}
+                              <span>{copiedUpi ? 'Copied' : 'Copy UPI Link'}</span>
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <div className="py-8 space-y-3 text-center">
-                          <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
+                        <div className="py-6 space-y-2.5 text-center">
+                          <AlertCircle className="w-9 h-9 text-rose-500 mx-auto" />
                           <h4 className="text-sm font-bold text-slate-900">QR Code Expired</h4>
                           <p className="text-xs text-slate-500 max-w-xs mx-auto">
                             The 5-minute security window has elapsed. Please regenerate a fresh QR code to proceed.
@@ -630,9 +635,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                           <button
                             type="button"
                             onClick={handleRegenerateQr}
-                            className="inline-flex items-center gap-2 rounded-xl bg-emerald-800 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-900 transition-colors shadow-sm cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-900 transition-colors shadow-sm cursor-pointer"
                           >
-                            <RefreshCw className="w-4 h-4" />
+                            <RefreshCw className="w-3.5 h-3.5" />
                             Generate Fresh QR Code (5 Min)
                           </button>
                         </div>
@@ -642,7 +647,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                       <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
                         <a
                           href={upiPaymentUri}
-                          className="flex-1 py-2.5 px-4 rounded-xl border border-emerald-700 text-emerald-800 hover:bg-emerald-50 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                          className="flex-1 py-2 px-3 rounded-xl border border-emerald-700 text-emerald-800 hover:bg-emerald-50 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <Smartphone className="w-3.5 h-3.5" />
                           <span>Open Installed UPI App</span>
@@ -650,7 +655,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                         <button
                           type="button"
                           onClick={() => initiatePayment('Dynamic UPI QR')}
-                          className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                          className="flex-1 py-2 px-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
                           <span>Verify via Razorpay Gateway</span>
@@ -752,10 +757,10 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
               {/* TAB CONTENT 2: CREDIT / DEBIT CARDS */}
               {activeTab === 'card' && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-xs">
+                <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 space-y-3 shadow-xs">
                   {/* Virtual Card Preview Header */}
-                  <div className="rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-4 text-white shadow-md relative overflow-hidden">
-                    <div className="flex justify-between items-center mb-4">
+                  <div className="rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-3 text-white shadow-md relative overflow-hidden">
+                    <div className="flex justify-between items-center mb-2.5">
                       <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400">
                         TripVerse Secure Card Pay
                       </span>
@@ -763,7 +768,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                         {detectCardBrand(cardNumber).toUpperCase()}
                       </span>
                     </div>
-                    <div className="text-sm sm:text-base font-mono tracking-widest mb-3">
+                    <div className="text-sm sm:text-base font-mono tracking-widest mb-2.5">
                       {cardNumber || '•••• •••• •••• ••••'}
                     </div>
                     <div className="flex justify-between items-center text-[10px] uppercase tracking-wider text-slate-300">
@@ -779,44 +784,44 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   </div>
 
                   {/* Card Form */}
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <div>
-                      <label className="text-[11px] font-bold text-slate-600 block mb-1">Card Number</label>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-1">Card Number</label>
                       <input
                         type="text"
                         value={cardNumber}
                         onChange={e => setCardNumber(formatCardNumber(e.target.value))}
                         placeholder="4532 8920 1823 4821"
                         maxLength={19}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-bold text-slate-600 block mb-1">Name on Card</label>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-1">Name on Card</label>
                       <input
                         type="text"
                         value={cardHolder}
                         onChange={e => setCardHolder(e.target.value)}
                         placeholder="e.g. Alex Sharma"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2.5">
                       <div>
-                        <label className="text-[11px] font-bold text-slate-600 block mb-1">Expiry Date</label>
+                        <label className="text-[10px] font-bold text-slate-600 block mb-1">Expiry Date</label>
                         <input
                           type="text"
                           value={cardExpiry}
                           onChange={e => setCardExpiry(formatCardExpiry(e.target.value))}
                           placeholder="MM/YY"
                           maxLength={5}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-bold text-slate-600 flex items-center justify-between mb-1">
                           <span>CVV / CVC</span>
                           <span className="text-[9px] text-slate-400 font-normal">3-4 digits</span>
                         </label>
@@ -826,19 +831,19 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                           onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
                           placeholder="•••"
                           maxLength={4}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                         />
                       </div>
                     </div>
 
-                    <label className="flex items-center gap-2 pt-1 cursor-pointer">
+                    <label className="flex items-center gap-2 pt-0.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={saveCard}
                         onChange={e => setSaveCard(e.target.checked)}
                         className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-600"
                       />
-                      <span className="text-[11px] text-slate-600 font-medium">
+                      <span className="text-[10px] text-slate-600 font-medium">
                         Securely save card as per RBI Tokenization guidelines
                       </span>
                     </label>
@@ -846,7 +851,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                     <button
                       type="button"
                       onClick={() => initiatePayment(`Card (•••• ${cardNumber.slice(-4) || '4242'})`)}
-                      className="w-full mt-2 py-3.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full mt-1 py-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Lock className="w-3.5 h-3.5" />
                       <span>Pay {formatCurrency(finalPayableINR, currency)}</span>
@@ -1015,29 +1020,29 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
             {/* ------------------------------------------------------------ */}
             {/* RIGHT COLUMN: ORDER SUMMARY & COUPONS (5 cols)               */}
             {/* ------------------------------------------------------------ */}
-            <div className="lg:col-span-5 flex flex-col justify-between p-4 sm:p-6 bg-white space-y-4">
+            <div className="lg:col-span-5 flex flex-col justify-between p-3.5 sm:p-5 bg-white space-y-3">
               
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
                   Trip Order Summary
                 </span>
 
                 {/* Destination & Dates Card */}
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 mb-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 mb-2.5">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="text-sm font-black text-slate-900">
+                      <h4 className="text-xs sm:text-sm font-black text-slate-900">
                         {packageType === 'pro_subscription' ? 'TripVerse Pro VIP Tier' : destination}
                       </h4>
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-[10px] sm:text-[11px] text-slate-500">
                         {packageType === 'pro_subscription' ? 'Unlimited AI Engine & 30h Co-Pilot' : `${origin} → ${destination}`}
                       </p>
                     </div>
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800">
                       {packageType === 'pro_subscription' ? 'VIP Access' : `${durationDays}D / ${Math.max(1, durationDays - 1)}N`}
                     </span>
                   </div>
-                  <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-600">
+                  <div className="mt-1.5 pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-600">
                     <span>{packageType === 'pro_subscription' ? 'Plan Tier:' : 'Travelers:'}</span>
                     <strong className="text-slate-900">
                       {packageType === 'pro_subscription' ? 'All-Access Pass' : `${travelers} Pax`}
@@ -1046,22 +1051,22 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 </div>
 
                 {/* Promo Coupon Box */}
-                <div className="space-y-2 mb-4">
-                  <label className="text-[11px] font-bold text-slate-700 block">
+                <div className="space-y-1.5 mb-2.5">
+                  <label className="text-[10px] font-bold text-slate-700 block">
                     Have a Promo Code?
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     <input
                       type="text"
                       value={couponInput}
                       onChange={e => setCouponInput(e.target.value.toUpperCase())}
                       placeholder="e.g. TRIPVERSE500"
-                      className="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                      className="flex-1 px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-600"
                     />
                     <button
                       type="button"
                       onClick={() => handleApplyCoupon()}
-                      className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
                     >
                       Apply
                     </button>
@@ -1069,7 +1074,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                   {/* Feedback Message */}
                   {couponMessage && (
-                    <div className={`p-2 rounded-lg text-[11px] font-semibold flex items-center justify-between ${
+                    <div className={`p-1.5 rounded-lg text-[10px] font-semibold flex items-center justify-between ${
                       couponMessage.isError ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-800'
                     }`}>
                       <span>{couponMessage.text}</span>
@@ -1087,15 +1092,15 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                   {/* Clickable Recommended Coupons */}
                   {!appliedCoupon && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
+                    <div className="flex flex-wrap gap-1 pt-0.5">
                       {AVAILABLE_COUPONS.slice(0, 2).map(c => (
                         <button
                           key={c.code}
                           type="button"
                           onClick={() => handleApplyCoupon(c.code)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-dashed border-emerald-400 bg-emerald-50/50 text-[10px] font-bold text-emerald-900 hover:bg-emerald-100 transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-dashed border-emerald-400 bg-emerald-50/50 text-[9px] font-bold text-emerald-900 hover:bg-emerald-100 transition-colors cursor-pointer"
                         >
-                          <BadgePercent className="w-3 h-3 text-emerald-700" />
+                          <BadgePercent className="w-2.5 h-2.5 text-emerald-700" />
                           <span>{c.code} ({c.label})</span>
                         </button>
                       ))}
@@ -1104,7 +1109,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 </div>
 
                 {/* Price Itemization Breakdown */}
-                <div className="space-y-2 rounded-2xl bg-slate-50/80 p-3.5 border border-slate-200/80 text-xs text-slate-600">
+                <div className="space-y-1.5 rounded-2xl bg-slate-50/80 p-2.5 sm:p-3 border border-slate-200/80 text-[11px] text-slate-600">
                   <div className="flex justify-between items-center">
                     <span>Base Package Fare:</span>
                     <span className="font-semibold text-slate-800">{formatCurrency(initialBaseAmount, currency)}</span>
@@ -1136,9 +1141,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                     <span className="font-semibold text-slate-800">{formatCurrency(gstAmount, currency)}</span>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
+                  <div className="pt-1.5 border-t border-slate-200 flex justify-between items-baseline">
                     <span className="text-xs font-black text-slate-900 uppercase">Total Amount:</span>
-                    <span className="text-xl font-black text-emerald-800">
+                    <span className="text-lg font-black text-emerald-800">
                       {formatCurrency(finalPayableINR, currency)}
                     </span>
                   </div>
@@ -1146,7 +1151,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
               </div>
 
               {/* Trust & Guarantee Banner */}
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 text-[11px] text-emerald-900 space-y-1">
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-2.5 text-[10px] text-emerald-900 space-y-0.5">
                 <div className="flex items-center gap-1.5 font-bold">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>100% Guaranteed Protection</span>
@@ -1377,6 +1382,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
             </div>
           </div>
         )}
+        </div>
 
         {/* Declarative hidden anchor for invoice file download */}
         <a ref={downloadAnchorRef} className="hidden" aria-hidden="true" tabIndex={-1} />
