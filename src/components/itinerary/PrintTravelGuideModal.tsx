@@ -60,7 +60,25 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
 
   const routeMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(trip.origin)}&destination=${encodeURIComponent(trip.destination)}`;
 
-  const mandatoryDocuments = [
+  const isFlight = trip.transportMode === 'flight';
+  const isTrain = trip.transportMode === 'train';
+  const country = (trip.destinationDetails?.country || '').toLowerCase();
+  const isIntl = Boolean(country && country !== 'india' && country !== 'worldwide') ||
+    ['tokyo', 'japan', 'paris', 'london', 'bali', 'maldives', 'singapore', 'dubai', 'bangkok'].some(k => trip.destination.toLowerCase().includes(k));
+
+  const mandatoryDocuments = (isFlight || isIntl) ? [
+    { label: 'International Passport', desc: 'Original Passport with at least 6 months remaining validity from entry date', checked: true },
+    { label: 'Visa / Entry Clearance', desc: 'Approved eVisa / Visa Sticker or Tourist Declaration QR (e.g. Visit Japan Web)', checked: true },
+    { label: 'Confirmed Flight Tickets', desc: 'Round-trip airline e-tickets & digital boarding pass references saved offline', checked: true },
+    { label: 'Travel Medical Insurance', desc: 'Comprehensive international policy covering emergency medical care & flight disruption', checked: true },
+    { label: 'Forex Card & Local Currency', desc: 'Zero-markup international travel card with primary local currency cash reserve', checked: true },
+  ] : isTrain ? [
+    { label: 'Government Photo ID', desc: 'Original Aadhaar / Voter ID / Passport (Mandatory for IRCTC ticket inspection by TTE)', checked: true },
+    { label: 'IRCTC Train E-Ticket', desc: 'Confirmed digital reservation SMS or printout with valid PNR and coach number', checked: true },
+    { label: 'Luggage Chain & Padlock', desc: 'Sturdy wire chain for securing heavy baggage to under-berth clamps', checked: true },
+    { label: 'Station Cash Buffer', desc: 'Cash in small denominations (₹100/₹200) for station porters and pantry orders', checked: true },
+    { label: 'Medical Essentials', desc: 'First aid, motion sickness tablets, personal prescriptions & sanitizing wipes', checked: true },
+  ] : [
     { label: 'Govt Photo ID', desc: 'Original Aadhaar / Driving License (Mandatory for Hotel Check-ins & Highway Verification)', checked: true },
     { label: 'Vehicle Documentation', desc: 'Original Vehicle RC, Valid Insurance Policy & Pollution (PUC) Certificate', checked: true },
     { label: 'Highway FASTag', desc: 'Pre-activated FASTag with min ₹500 balance for automatic toll plaza clearance', checked: true },

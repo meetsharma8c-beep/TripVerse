@@ -92,7 +92,37 @@ export function getReplanOptions(trip: Trip, _reason: DisruptionType): {
   const normDest = cleanDest.toLowerCase();
   let alternativeCandidates: Array<{ name: string; state: string; days: number; costFactor: number; reason: string; image: string; highlights: string[] }> = [];
 
-  if (normDest.includes('udaipur') || normDest.includes('rajasthan') || normDest.includes('jaipur')) {
+  if (normDest.includes('tokyo') || normDest.includes('japan') || normDest.includes('kyoto') || normDest.includes('osaka')) {
+    alternativeCandidates = [
+      {
+        name: 'Kyoto',
+        state: 'Japan',
+        days: trip.durationDays,
+        costFactor: 0.95,
+        reason: 'Cultural heart of Japan with Fushimi Inari, Arashiyama Bamboo Grove, and historic geisha quarters.',
+        image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80',
+        highlights: ['Fushimi Inari-taisha Torii gates', 'Kinkaku-ji Golden Pavilion', 'Traditional matcha tea ceremonies']
+      },
+      {
+        name: 'Osaka',
+        state: 'Japan',
+        days: trip.durationDays,
+        costFactor: 0.90,
+        reason: 'Japan’s premier culinary capital with bustling Dotonbori neon canals and Osaka Castle.',
+        image: 'https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=800&q=80',
+        highlights: ['Dotonbori street food market', 'Osaka Castle Park', 'Universal Studios Japan']
+      },
+      {
+        name: 'Singapore',
+        state: 'Singapore',
+        days: trip.durationDays,
+        costFactor: 1.05,
+        reason: 'Futuristic garden metropolis with world-class public transit, vibrant street hawker centers, and Marina Bay.',
+        image: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=80',
+        highlights: ['Gardens by the Bay Supertrees', 'Marina Bay Sands SkyPark', 'Chinatown & Little India food trails']
+      }
+    ];
+  } else if (normDest.includes('udaipur') || normDest.includes('rajasthan') || normDest.includes('jaipur')) {
     alternativeCandidates = [
       {
         name: 'Goa',

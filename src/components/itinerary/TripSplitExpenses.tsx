@@ -35,7 +35,9 @@ import {
   Ticket,
   ShoppingBag,
   Receipt,
-  Bike
+  Bike,
+  Plane,
+  Train
 } from 'lucide-react';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { UpiPaymentModal } from './UpiPaymentModal';
@@ -113,6 +115,32 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
   // Compute split summary
   const summary = computeExpenseSplitSummary(expenses, travelers, trip.totalBudget);
   const fuelResult = calculateFuelAndTolls(tripDistanceKm, vehicleType, travelers.length, customMileage);
+
+  // Flight & Train Mode Economics
+  const isFlight = trip.transportMode === 'flight';
+  const isTrain = trip.transportMode === 'train';
+  const isInternational = /tokyo|japan|paris|france|london|uk|bali|indonesia|singapore|dubai|uae|maldives|bangkok|thailand|new york|usa|switzerland/i.test(trip.destination);
+
+  // Flight Splitter State
+  const [flightClass, setFlightClass] = useState<'economy' | 'premium' | 'business'>('economy');
+  const [airfarePerPerson, setAirfarePerPerson] = useState<number>(isInternational ? 38000 : 6500);
+  const [hasBaggageAddon, setHasBaggageAddon] = useState<boolean>(isInternational);
+  const [airportTransferTotal, setAirportTransferTotal] = useState<number>(isInternational ? 3500 : 1500);
+
+  // Train Splitter State
+  const [trainClass, setTrainClass] = useState<'sleeper' | 'ac3' | 'ac2' | 'ac1'>('ac3');
+  const [trainFarePerPerson, setTrainFarePerPerson] = useState<number>(1450);
+  const [stationTransferTotal, setStationTransferTotal] = useState<number>(600);
+
+  // Computed transit splits
+  const baggageCostPerPerson = hasBaggageAddon ? (isInternational ? 3200 : 1200) : 0;
+  const flightTransferPerPerson = Math.round(airportTransferTotal / Math.max(1, travelers.length));
+  const flightTotalPerPerson = airfarePerPerson + baggageCostPerPerson + flightTransferPerPerson;
+  const flightTotalGroup = flightTotalPerPerson * travelers.length;
+
+  const trainTransferPerPerson = Math.round(stationTransferTotal / Math.max(1, travelers.length));
+  const trainTotalPerPerson = trainFarePerPerson + trainTransferPerPerson;
+  const trainTotalGroup = trainTotalPerPerson * travelers.length;
 
   const handleAddExpense = (e: React.FormEvent) => {
     e.preventDefault();
@@ -559,7 +587,286 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
 
       </div>
 
-      {/* 3. HIGHWAY FUEL & TOLL CALCULATOR */}
+      {/* 3. TRANSIT ECONOMICS: MODE-ADAPTIVE CALCULATOR */}
+      {isFlight ? (
+        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="badge-caps text-[#2D5A3D]">Aviation Transit Engine</span>
+                <span className="text-xs font-bold text-slate-400">•</span>
+                <span className="text-xs font-semibold text-slate-500">Live Airfare & Baggage Splitter</span>
+              </div>
+              <h3 className="text-xl font-bold font-display text-[#152A1C] mt-0.5">
+                Flight Fare & Baggage Cost Splitter
+              </h3>
+            </div>
+
+            <span className="text-xs font-bold text-sky-800 bg-sky-50 px-3 py-1.5 rounded-full border border-sky-200 self-start sm:self-auto font-display flex items-center gap-1.5">
+              <Plane className="w-3.5 h-3.5" />
+              {isInternational ? 'International Flight Corridor' : 'Domestic Air Corridor'}
+            </span>
+          </div>
+
+          {/* Cabin Class Selection Chips */}
+          <div className="mt-5">
+            <label className="block text-xs font-bold text-[#152A1C] mb-2">Select Cabin Class:</label>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { id: 'economy', label: 'Economy', mult: 1, desc: 'Standard carry-on' },
+                { id: 'premium', label: 'Premium Economy', mult: 1.45, desc: 'Extra legroom + bag' },
+                { id: 'business', label: 'Business Class', mult: 2.8, desc: 'Priority + lounge' }
+              ].map(c => {
+                const isSelected = flightClass === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      setFlightClass(c.id as any);
+                      const base = isInternational ? 38000 : 6500;
+                      setAirfarePerPerson(Math.round(base * c.mult));
+                      triggerHaptic('light');
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#2D5A3D] text-white border-[#2D5A3D] shadow-md scale-[1.02]'
+                        : 'bg-[#F4F6F2] text-[#152A1C] border-[#E2EBE1] hover:bg-[#EAF0E9]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <Plane className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-bold opacity-80">{c.id.toUpperCase()}</span>
+                    </div>
+                    <div className="text-xs font-bold mt-2 truncate">{c.label}</div>
+                    <div className="text-[11px] opacity-70 mt-0.5">{c.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Airfare & Airport Transfer Sliders */}
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <div className="flex items-center justify-between text-xs font-bold text-[#152A1C] mb-1">
+                <span>Base Airfare per Passenger</span>
+                <span className="text-[#2D5A3D] font-display">{formatCurrency(airfarePerPerson, currency)}</span>
+              </div>
+              <input
+                type="range"
+                min={isInternational ? 15000 : 2500}
+                max={isInternational ? 120000 : 25000}
+                step={isInternational ? 1000 : 250}
+                value={airfarePerPerson}
+                onChange={e => setAirfarePerPerson(parseInt(e.target.value))}
+                className="w-full accent-[#2D5A3D] cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between text-xs font-bold text-[#152A1C] mb-1">
+                <span>Airport Express / Cab Transfer (Group Pool)</span>
+                <span className="text-[#2D5A3D] font-display">{formatCurrency(airportTransferTotal, currency)}</span>
+              </div>
+              <input
+                type="range"
+                min="500"
+                max={isInternational ? 10000 : 4000}
+                step="250"
+                value={airportTransferTotal}
+                onChange={e => setAirportTransferTotal(parseInt(e.target.value))}
+                className="w-full accent-[#2D5A3D] cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Baggage Check-in Add-on */}
+          <div className="mt-4 flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <div className="flex items-center gap-2.5">
+              <ShoppingBag className="w-4 h-4 text-slate-600" />
+              <div>
+                <div className="text-xs font-bold text-[#152A1C]">Checked Baggage Allowance (23kg standard)</div>
+                <div className="text-[11px] text-slate-500">Includes airline standard check-in pieces</div>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setHasBaggageAddon(!hasBaggageAddon);
+                triggerHaptic('light');
+              }}
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                hasBaggageAddon
+                  ? 'bg-[#2D5A3D] text-white shadow-xs'
+                  : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              {hasBaggageAddon ? `Included (+${formatCurrency(isInternational ? 3200 : 1200, currency)}/pax)` : 'Add Baggage'}
+            </button>
+          </div>
+
+          {/* Flight Output Strip */}
+          <div className="mt-6 p-4 rounded-2xl bg-sky-50/60 border border-sky-200 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            <div>
+              <div className="text-[10px] uppercase font-bold text-[#3B6680]">Airfare Subtotal</div>
+              <div className="text-lg font-black text-[#152A1C] mt-0.5 font-display">
+                {formatCurrency(airfarePerPerson * travelers.length, currency)}
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5">for {travelers.length} tickets</div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase font-bold text-[#3B6680]">Baggage & Addons</div>
+              <div className="text-lg font-black text-[#152A1C] mt-0.5 font-display">
+                {formatCurrency(baggageCostPerPerson * travelers.length, currency)}
+              </div>
+              <div className="text-[10px] text-sky-700 font-semibold mt-0.5">{hasBaggageAddon ? 'Full Baggage' : 'Cabin Only'}</div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase font-bold text-[#3B6680]">Airport Express Pool</div>
+              <div className="text-lg font-black text-[#152A1C] mt-0.5 font-display">
+                {formatCurrency(airportTransferTotal, currency)}
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5">Roundtrip city link</div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase font-bold text-[#2D5A3D]">Split Per Traveler</div>
+              <div className="text-lg font-black text-[#2D5A3D] mt-0.5 font-display">
+                {formatCurrency(flightTotalPerPerson, currency)}
+              </div>
+              <div className="text-[10px] text-slate-500 mt-0.5">for {travelers.length} companions</div>
+            </div>
+          </div>
+        </div>
+      ) : isTrain ? (
+        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="badge-caps text-[#2D5A3D]">Rail Transit Engine</span>
+                <span className="text-xs font-bold text-slate-400">•</span>
+                <span className="text-xs font-semibold text-slate-500">Live Railway & Transfer Estimates</span>
+              </div>
+              <h3 className="text-xl font-bold font-display text-[#152A1C] mt-0.5">
+                Rail Fare & Station Transit Splitter
+              </h3>
+            </div>
+
+            <span className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200 self-start sm:self-auto font-display flex items-center gap-1.5">
+              <Train className="w-3.5 h-3.5" />
+              Railway Network
+            </span>
+          </div>
+
+          {/* Coach Class Selection */}
+          <div className="mt-5">
+            <label className="block text-xs font-bold text-[#152A1C] mb-2">Select Coach Class:</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { id: 'sleeper', label: 'Sleeper Class (SL)', fare: 520 },
+                { id: 'ac3', label: '3rd AC (3A)', fare: 1450 },
+                { id: 'ac2', label: '2nd AC (2A)', fare: 2150 },
+                { id: 'ac1', label: '1st AC / Vande Bharat', fare: 3100 }
+              ].map(c => {
+                const isSelected = trainClass === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      setTrainClass(c.id as any);
+                      setTrainFarePerPerson(c.fare);
+                      triggerHaptic('light');
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#2D5A3D] text-white border-[#2D5A3D] shadow-md scale-[1.02]'
+                        : 'bg-[#F4F6F2] text-[#152A1C] border-[#E2EBE1] hover:bg-[#EAF0E9]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <Train className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-bold opacity-80">{c.id.toUpperCase()}</span>
+                    </div>
+                    <div className="text-xs font-bold mt-2 truncate">{c.label}</div>
+                    <div className="text-[11px] opacity-70 mt-0.5">~{formatCurrency(c.fare, currency)}/seat</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Rail Fare & Station Transfer Sliders */}
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <div className="flex items-center justify-between text-xs font-bold text-[#152A1C] mb-1">
+                <span>Rail Ticket per Passenger</span>
+                <span className="text-[#2D5A3D] font-display">{formatCurrency(trainFarePerPerson, currency)}</span>
+              </div>
+              <input
+                type="range"
+                min="300"
+                max="6000"
+                step="50"
+                value={trainFarePerPerson}
+                onChange={e => setTrainFarePerPerson(parseInt(e.target.value))}
+                className="w-full accent-[#2D5A3D] cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between text-xs font-bold text-[#152A1C] mb-1">
+                <span>Station Auto / Cab Connectivity Pool</span>
+                <span className="text-[#2D5A3D] font-display">{formatCurrency(stationTransferTotal, currency)}</span>
+              </div>
+              <input
+                type="range"
+                min="200"
+                max="2500"
+                step="50"
+                value={stationTransferTotal}
+                onChange={e => setStationTransferTotal(parseInt(e.target.value))}
+                className="w-full accent-[#2D5A3D] cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Train Output Strip */}
+          <div className="mt-6 p-4 rounded-2xl bg-amber-50/60 border border-amber-200 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            <div>
+              <div className="text-[10px] uppercase font-bold text-[#7A6129]">Train Fares Subtotal</div>
+              <div className="text-lg font-black text-[#152A1C] mt-0.5 font-display">
+                {formatCurrency(trainFarePerPerson * travelers.length, currency)}
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5">for {travelers.length} tickets</div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase font-bold text-[#7A6129]">Reservation Fees</div>
+              <div className="text-lg font-black text-[#152A1C] mt-0.5 font-display">
+                {formatCurrency(60 * travelers.length, currency)}
+              </div>
+              <div className="text-[10px] text-amber-700 font-semibold mt-0.5">IRCTC / Portal Fee</div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase font-bold text-[#7A6129]">Station Cab Pool</div>
+              <div className="text-lg font-black text-[#152A1C] mt-0.5 font-display">
+                {formatCurrency(stationTransferTotal, currency)}
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5">Both ends combined</div>
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase font-bold text-[#2D5A3D]">Split Per Traveler</div>
+              <div className="text-lg font-black text-[#2D5A3D] mt-0.5 font-display">
+                {formatCurrency(trainTotalPerPerson, currency)}
+              </div>
+              <div className="text-[10px] text-slate-500 mt-0.5">for {travelers.length} companions</div>
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm">
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -692,6 +999,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
         </div>
 
       </div>
+      )}
 
       {/* Verified UPI Settlement Gateway */}
       {upiModalData && (
