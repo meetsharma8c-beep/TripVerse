@@ -4,6 +4,7 @@ import { resolveTransitContext } from './transportFeasibilityEngine';
 import { getStoredConcodeConfig } from './concodeBrainService';
 import { CONCODE_MASTER_PROMPT } from './concodeMasterPrompt';
 import { getActiveCurrency, CURRENCIES } from './currencyService';
+import { getActiveLanguage, LANGUAGES } from './languageService';
 import { enrichTripWithOriginalPhotos } from './originalPhotoService';
 import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
 import { getDestinationHighlights } from './landmarkAtlasService';
@@ -15,6 +16,8 @@ export function buildPrompt(input: PlannerInput, baseline: Trip): string {
     const transitContext = resolveTransitContext(baseline.destination);
     const activeCurrency = baseline.currency || input.currency || getActiveCurrency();
     const currencyConfig = CURRENCIES[activeCurrency] || CURRENCIES.USD;
+    const activeLanguage = getActiveLanguage();
+    const languageConfig = LANGUAGES[activeLanguage] || LANGUAGES.en;
 
     const travelerContext = {
         origin: baseline.origin,
@@ -29,6 +32,7 @@ export function buildPrompt(input: PlannerInput, baseline: Trip): string {
         totalBudget: baseline.totalBudget,
         budgetMode: input.budgetMode || 'total',
         currency: activeCurrency,
+        language: activeLanguage,
         interests: baseline.preferences,
         specialRequests: (input.specialRequests || '').slice(0, 500),
         transportMode: baseline.transportMode,
@@ -58,6 +62,7 @@ CONCODE Principles:
 - TIME WINDOWS: Day 1 local activities must be scheduled from 2:00 PM onwards (after arrival/check-in), middle days from 9:00 AM to 9:00 PM, and the final day (Day ${baseline.durationDays}) between 8:30 AM and 2:00 PM (before return departure).
 - DIETARY STRICTNESS: Strictly honor foodPreference="${baseline.foodPreference}".
 - FAMOUS LANDMARKS MANDATE: Every scheduled attraction, viewpoint, and cultural experience MUST be a verified, iconic, real-world landmark, historic site, sacred shrine/temple, museum, or famous district specific to "${baseline.destination}" (such as the provided known destination highlights). NEVER generate generic placeholder titles like "${baseline.destination} Tour", "${baseline.destination} Landmark", "${baseline.destination} Cultural Center", or "${baseline.destination} Promenade".
+- LANGUAGE LOCALIZATION: The traveler's active language is ${languageConfig.name} (${languageConfig.nativeName}, code: "${languageConfig.code}"). Provide activity descriptions, daytime themes, and dining recommendations in natural, fluent ${languageConfig.name} while preserving iconic local landmark proper nouns.
 
 Traveler details (JSON):
 ${JSON.stringify(travelerContext, null, 2)}

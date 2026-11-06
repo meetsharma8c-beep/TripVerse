@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Sparkles, MapPin, ShieldCheck, Wallet, ArrowRight, Check, X, Navigation } from 'lucide-react';
+import { Sparkles, MapPin, ShieldCheck, Wallet, ArrowRight, Check, X, Navigation, Globe, Languages } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { setOnboardingCompleted } from '../../services/storageService';
+import { LanguageCode, CurrencyCode } from '../../types/trip';
+import { getActiveLanguage, setActiveLanguage, LANGUAGES, t } from '../../services/languageService';
+import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -74,6 +77,23 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   onStartPlanning
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [selectedLang, setSelectedLang] = useState<LanguageCode>(getActiveLanguage());
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(getActiveCurrency());
+
+  const handleSelectLanguage = (lang: LanguageCode) => {
+    setSelectedLang(lang);
+    setActiveLanguage(lang);
+    const defCurr = LANGUAGES[lang]?.defaultCurrency;
+    if (defCurr) {
+      setSelectedCurrency(defCurr);
+      setActiveCurrency(defCurr);
+    }
+  };
+
+  const handleSelectCurrency = (curr: CurrencyCode) => {
+    setSelectedCurrency(curr);
+    setActiveCurrency(curr);
+  };
 
   if (!isOpen) return null;
 
@@ -167,8 +187,76 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
           </div>
         </div>
 
+        {/* Global Language & Currency Opening Switcher Bar */}
+        <div className="shrink-0 px-4 sm:px-6 py-2 bg-[#F4F8F3] border-y border-[#E2EBE1] flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-1.5 text-slate-700 font-semibold truncate">
+            <Languages className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
+            <span className="hidden sm:inline">{t('common.language', selectedLang)}:</span>
+            <select
+              value={selectedLang}
+              onChange={(e) => handleSelectLanguage(e.target.value as LanguageCode)}
+              className="bg-white border border-[#DCE7DB] rounded-lg px-2 py-0.5 font-bold text-slate-800 cursor-pointer focus:outline-none"
+              aria-label="Select Opening Language"
+            >
+              {Object.values(LANGUAGES).map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.flag} {l.nativeName} ({l.name})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-slate-700 font-semibold shrink-0">
+            <span className="hidden sm:inline text-slate-500">{t('common.currency', selectedLang)}:</span>
+            <select
+              value={selectedCurrency}
+              onChange={(e) => handleSelectCurrency(e.target.value as CurrencyCode)}
+              className="bg-white border border-[#DCE7DB] rounded-lg px-2 py-0.5 font-bold text-slate-800 cursor-pointer focus:outline-none"
+              aria-label="Select Opening Currency"
+            >
+              {Object.keys(CURRENCIES).map((c) => (
+                <option key={c} value={c}>
+                  {CURRENCIES[c as CurrencyCode].symbol} {c}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Slide Visual Presentation */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-8 space-y-4 sm:space-y-6">
+          {/* First Step Quick Language Selection Grid */}
+          {currentStepIndex === 0 && (
+            <div className="p-3.5 rounded-2xl bg-[#EAF0E9] border border-[#C4D9C3] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#152A1C] flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-[#2D5A3D]" />
+                  {t('welcome.chooseLanguage', selectedLang)}
+                </span>
+                <span className="text-[10px] font-bold text-[#2D5A3D] bg-white px-2 py-0.5 rounded-full border border-[#C4D9C3]">
+                  {LANGUAGES[selectedLang]?.nativeName} ({LANGUAGES[selectedLang]?.flag})
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
+                {Object.values(LANGUAGES).map((l) => (
+                  <button
+                    key={l.code}
+                    type="button"
+                    onClick={() => handleSelectLanguage(l.code)}
+                    className={`px-2 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                      selectedLang === l.code
+                        ? 'bg-[#2D5A3D] text-white shadow-xs scale-102 ring-2 ring-[#2D5A3D]/20'
+                        : 'bg-white text-slate-700 hover:bg-slate-100 border border-[#DCE7DB]'
+                    }`}
+                  >
+                    <span>{l.flag}</span>
+                    <span className="truncate">{l.nativeName}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Animated Hero Badge & Icon */}
           <div className="flex items-center gap-3 sm:gap-4">
             <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl ${currentStep.illustrationBg} flex items-center justify-center shadow-inner border border-white/80 shrink-0`}>
@@ -293,7 +381,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
               onClick={handleNext}
               className="flex min-h-11 items-center gap-2 px-5 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
             >
-              <span>{isLastStep ? 'Start Planning' : 'Continue'}</span>
+              <span>{isLastStep ? t('welcome.getStarted', selectedLang) : t('welcome.continue', selectedLang)}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

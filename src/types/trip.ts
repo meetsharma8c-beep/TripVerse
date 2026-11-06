@@ -281,6 +281,7 @@ export interface Destination {
 
 
 export type CurrencyCode = 'INR' | 'USD' | 'EUR' | 'GBP' | 'AED' | 'JPY' | 'CAD' | 'AUD' | 'SGD' | 'CHF' | 'NZD' | 'THB';
+export type LanguageCode = 'en' | 'es' | 'fr' | 'de' | 'ja' | 'hi' | 'zh' | 'ar' | 'it' | 'pt';
 
 export interface UserProfile {
   name: string;
@@ -299,6 +300,7 @@ export interface UserProfile {
   tripsCount: number;
   twoFactorEnabled?: boolean;
   preferredCurrency?: CurrencyCode;
+  preferredLanguage?: LanguageCode;
 }
 
 export interface StructuredItineraryDay {
