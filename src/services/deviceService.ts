@@ -35,22 +35,85 @@ export function isStandalone(): boolean {
   );
 }
 
+export type OperatingSystem = 'ios' | 'android' | 'macos' | 'windows' | 'linux' | 'chromeos' | 'unknown';
+export type DeviceType = 'mobile' | 'tablet' | 'desktop';
+
 export interface DeviceInfo {
   platform: 'ios' | 'android' | 'web';
+  os: OperatingSystem;
+  deviceType: DeviceType;
   isNative: boolean;
   isStandalone: boolean;
   isMobile: boolean;
   isTablet: boolean;
+  isDesktop: boolean;
+  isTouch: boolean;
+  isRetina: boolean;
+  hasNotch: boolean;
+  hasHaptics: boolean;
+  prefersReducedMotion: boolean;
+  keyboardShortcutModifier: '⌘' | 'Ctrl';
+}
+
+export function detectOS(): OperatingSystem {
+  if (typeof window === 'undefined') return 'unknown';
+  const ua = window.navigator.userAgent || '';
+  const platform = (window.navigator as any).userAgentData?.platform || window.navigator.platform || '';
+
+  if (/iPad|iPhone|iPod/.test(ua) || (platform === 'MacIntel' && window.navigator.maxTouchPoints > 1)) {
+    return 'ios';
+  }
+  if (/Android/.test(ua)) {
+    return 'android';
+  }
+  if (/Mac|Macintosh|MacIntel/.test(platform) || /Macintosh/.test(ua)) {
+    return 'macos';
+  }
+  if (/Win|Windows/.test(platform) || /Windows/.test(ua)) {
+    return 'windows';
+  }
+  if (/CrOS/.test(ua)) {
+    return 'chromeos';
+  }
+  if (/Linux/.test(platform) || /Linux/.test(ua)) {
+    return 'linux';
+  }
+  return 'unknown';
 }
 
 export function getDeviceInfo(): DeviceInfo {
+  const nav = typeof window !== 'undefined' ? window.navigator : (typeof navigator !== 'undefined' ? navigator : null);
+  const ua = nav?.userAgent || '';
   const isIosDevice = isIos();
-  const isAndroid = typeof navigator !== 'undefined' ? /Android/.test(navigator.userAgent) : false;
+  const isAndroid = /Android/.test(ua);
   const isNative = Capacitor.isNativePlatform();
   const standalone = isStandalone();
+  const os = detectOS();
 
-  const isMobile = isIosDevice || isAndroid || (typeof window !== 'undefined' && window.innerWidth < 768);
-  const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
+  const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const isMobile = isIosDevice || isAndroid || width < 768;
+  const isTablet = !isIosDevice && !isAndroid && width >= 768 && width < 1024;
+  const isDesktop = !isMobile && !isTablet;
+
+  const deviceType: DeviceType = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop';
+
+  const isTouch = typeof window !== 'undefined' ? (
+    window.matchMedia('(pointer: coarse)').matches || ((nav?.maxTouchPoints || 0) > 0)
+  ) : false;
+
+  const isRetina = typeof window !== 'undefined' ? (window.devicePixelRatio >= 2) : false;
+
+  const hasNotch = typeof window !== 'undefined' ? (
+    isIosDevice || (window.screen?.height >= 812 && isTouch)
+  ) : false;
+
+  const hasHaptics = !!nav && 'vibrate' in nav;
+
+  const prefersReducedMotion = typeof window !== 'undefined' ? (
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) : false;
+
+  const keyboardShortcutModifier: '⌘' | 'Ctrl' = (os === 'macos' || os === 'ios') ? '⌘' : 'Ctrl';
 
   let platform: 'ios' | 'android' | 'web' = 'web';
   if (Capacitor.getPlatform() === 'ios' || isIosDevice) {
@@ -61,11 +124,47 @@ export function getDeviceInfo(): DeviceInfo {
 
   return {
     platform,
+    os,
+    deviceType,
     isNative,
     isStandalone: standalone,
     isMobile,
-    isTablet
+    isTablet,
+    isDesktop,
+    isTouch,
+    isRetina,
+    hasNotch,
+    hasHaptics,
+    prefersReducedMotion,
+    keyboardShortcutModifier
   };
+}
+
+export function applyDeviceClassesToDom(): void {
+  if (typeof document === 'undefined' || !document.documentElement) return;
+  const info = getDeviceInfo();
+  const root = document.documentElement;
+
+  // OS Classes
+  root.classList.remove('os-ios', 'os-android', 'os-macos', 'os-windows', 'os-linux', 'os-chromeos', 'os-unknown');
+  root.classList.add(`os-${info.os}`);
+
+  // Device Form Factor Classes
+  root.classList.remove('device-mobile', 'device-tablet', 'device-desktop');
+  root.classList.add(`device-${info.deviceType}`);
+
+  // Touch vs Mouse
+  root.classList.toggle('touch-device', info.isTouch);
+  root.classList.toggle('mouse-device', !info.isTouch);
+
+  // Standalone / PWA
+  root.classList.toggle('is-standalone', info.isStandalone);
+
+  // Retina / High-DPI
+  root.classList.toggle('is-retina', info.isRetina);
+
+  // Notch / Safe Area
+  root.classList.toggle('has-notch', info.hasNotch);
 }
 
 export function openExternalUrl(url: string): void {
@@ -87,6 +186,13 @@ export function openExternalUrl(url: string): void {
 }
 
 export function initDeviceServices(onBackPress?: () => boolean) {
+  // 0. Synchronize responsive & OS capability classes on document
+  applyDeviceClassesToDom();
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', applyDeviceClassesToDom, { passive: true });
+    window.addEventListener('orientationchange', applyDeviceClassesToDom, { passive: true });
+  }
+
   // 1. Native Capacitor initialization
   if (Capacitor.isNativePlatform()) {
     document.addEventListener('click', (event: MouseEvent) => {

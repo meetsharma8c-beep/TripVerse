@@ -83,6 +83,64 @@ html {
   min-height: 100%;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scrollbar-gutter: stable;
+}
+
+/* Universal Cross-OS Smooth Scrollbar (Windows, Linux, macOS) */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(142, 167, 141, 0.4);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(45, 90, 61, 0.6);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.25);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(52, 211, 153, 0.5);
+}
+
+/* Touch Target Optimization for Touch Devices (iOS / Android / Hybrid Tablets) */
+.touch-device button, 
+.touch-device a, 
+.touch-device input, 
+.touch-device select {
+  min-height: 38px;
+}
+
+/* Crisp rendering on Retina & High-DPI screens (macOS, iPad, 4K Windows) */
+.is-retina img,
+.is-retina svg {
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* Cross-Platform Safe Area Utilities (iOS Notch, Dynamic Island, Android Gesture Bar) */
+.pt-safe {
+  padding-top: max(0.25rem, env(safe-area-inset-top, 0px));
+}
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+.pl-safe {
+  padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+}
+.pr-safe {
+  padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
 }
 
 @media (prefers-reduced-motion: no-preference) {
