@@ -25,12 +25,6 @@ import { AuthUser } from '../../types/auth';
 import { 
   signInWithEmail, 
   sendPasswordResetCode,
-  signInWithGooglePopup, 
-  signInWithGoogleRedirect,
-  signInWithGoogleCredential,
-  shouldPreferGoogleRedirect,
-  isFirebaseConfigured,
-  isMobileDevice,
   ensureGoogleIdentityServices,
   createAccountWithSupabase, 
   signInAnonymouslyWithSupabase,
@@ -43,9 +37,7 @@ import {
   verifyEmailCredentialsOnly,
   finalizeTwoFactorLogin,
   clearActiveSession,
-  parseGoogleUserFromCredential,
-  signOutFirebase,
-  signOut
+  parseGoogleUserFromCredential
 } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 
@@ -138,8 +130,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Status & Feedback
   const [isLoading, setIsLoading] = useState(false);
-  const [isAutoRedirecting, setIsAutoRedirecting] = useState(false);
-  const [autoRedirectStatus, setAutoRedirectStatus] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const activeRequestIdRef = useRef(0);
@@ -150,8 +140,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const switchAuthTab = useCallback((nextMethod: 'google' | 'email' | 'guest', nextEmailSubMode?: 'login' | 'signup') => {
     activeRequestIdRef.current += 1;
     setIsLoading(false);
-    setIsAutoRedirecting(false);
-    setAutoRedirectStatus(null);
     setErrorMsg(null);
     setSuccessMsg(null);
     setIsGisRendered(false);
@@ -169,16 +157,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       successTimeoutRef.current = null;
     }
     setIsLoading(false);
-    setIsAutoRedirecting(false);
-    setAutoRedirectStatus(null);
     clearPhoneAuthSession();
 
     // Only abort/clear active session if the modal was closed/aborted WITHOUT completing authentication
     if (!isAuthCompletedRef.current && is2FaStep) {
-      if (pending2FaType === 'google') {
-        signOutFirebase().catch(() => {});
-        signOut().catch(() => {});
-      }
       clearActiveSession();
     }
 
@@ -192,16 +174,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsGisRendered(false);
     isAuthCompletedRef.current = false;
     onClose();
-  }, [onClose, is2FaStep, pending2FaType]);
+  }, [onClose, is2FaStep]);
 
   useModalBehavior(isOpen, handleModalClose);
 
   // 2FA Helper: Cancel and return safely to factor 1 credentials form
   const handleCancel2Fa = useCallback(() => {
-    if (pending2FaType === 'google') {
-      signOutFirebase().catch(() => {});
-      signOut().catch(() => {});
-    }
     clearActiveSession();
     setIs2FaStep(false);
     setPending2FaUser(null);
@@ -211,7 +189,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setOtpDigits(['', '', '', '', '', '']);
     setErrorMsg(null);
     setSuccessMsg(null);
-  }, [pending2FaType]);
+  }, []);
 
   // 2FA Helper: Resend OTP code
   const handleResend2FaOtp = useCallback(async () => {
@@ -386,16 +364,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     return () => clearInterval(timer);
   }, [twoFactorCountdown]);
 
-  // Initialize and render official Google Identity Services (GIS) widget for 1-tap zero-blocker auth
+  // Initialize and render official Google Identity Services (GIS) widget for direct Vercel OAuth 2.0 with 2FA
   useEffect(() => {
     if (!isOpen || authMethod !== 'google') return;
 
     let isMounted = true;
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '288425355548-ogv0f7ata5ssv9s5o37m711kp9g9461r.apps.googleusercontent.com';
 
-    ensureGoogleIdentityServices().then(() => {
-      if (!isMounted) return;
-      if (typeof window !== 'undefined' && (window as any).google?.accounts?.id && googleBtnContainerRef.current) {
+    const renderGis = () => {
+      if (!isMounted || !googleBtnContainerRef.current) return;
+      if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
         try {
           (window as any).google.accounts.id.initialize({
             client_id: clientId,
@@ -436,7 +414,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           console.warn('[GIS Render Notice]', e);
         }
       }
-    });
+    };
+
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      renderGis();
+    } else {
+      ensureGoogleIdentityServices().then(() => {
+        if (isMounted) renderGis();
+      });
+    }
 
     return () => {
       isMounted = false;
@@ -458,8 +444,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       isAuthCompletedRef.current = false;
       activeRequestIdRef.current += 1;
       setIsLoading(false);
-      setIsAutoRedirecting(false);
-      setAutoRedirectStatus(null);
       setErrorMsg(null);
       setSuccessMsg(null);
       ensureGoogleIdentityServices().catch(() => {});
@@ -477,85 +461,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   if (!isOpen) return null;
 
   // ----------------------------------------------------------------------
-  // 1. Google Sign-In & Sign-Up via Firebase OAuth2 Popup / Redirect
-  // Fully automated zero-DOM fallback when popups are blocked
-  // ----------------------------------------------------------------------
-  const handleTriggerGoogleAuth = async (forceRedirect: boolean = false) => {
-    const reqId = ++activeRequestIdRef.current;
-    setIsLoading(true);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    // Pre-flight check: automatically engage redirect on iOS, WebViews, Brave, PWAs, or mobile screens
-    const preferRedirect = forceRedirect || shouldPreferGoogleRedirect();
-
-    try {
-      if (preferRedirect && isFirebaseConfigured()) {
-        setIsAutoRedirecting(true);
-        setAutoRedirectStatus('Connecting to Google via secure redirect...');
-        await signInWithGoogleRedirect();
-        return; // Page will redirect to Google
-      }
-
-      const user = await signInWithGooglePopup();
-      if (activeRequestIdRef.current !== reqId) return;
-      await startGoogle2Fa(user);
-    } catch (err: any) {
-      if (activeRequestIdRef.current !== reqId) return;
-      const msg = err?.message || '';
-      const code = err?.code || '';
-
-      // AUTOMATED POPUP BLOCKER RECOVERY (ZERO DOM INTERACTION):
-      const isPopupBlocked =
-        code === 'auth/popup-blocked' ||
-        code === 'auth/cancelled-popup-request' ||
-        msg.toLowerCase().includes('popup-blocked') ||
-        msg.toLowerCase().includes('popup was blocked') ||
-        msg.toLowerCase().includes('popup has been blocked') ||
-        msg.toLowerCase().includes('popup_failed_to_open') ||
-        msg.toLowerCase().includes('failed to open popup') ||
-        msg.toLowerCase().includes('blocked by your browser');
-
-      if (isPopupBlocked && isFirebaseConfigured()) {
-        console.warn('[TripVerse Auth] Popup blocker detected in AuthModal. Automatically engaging zero-DOM redirect...');
-        setIsAutoRedirecting(true);
-        setAutoRedirectStatus('Popup blocked by browser. Automatically redirecting to Google...');
-        try {
-          await signInWithGoogleRedirect();
-          return;
-        } catch (redirectErr: any) {
-          setIsAutoRedirecting(false);
-          setAutoRedirectStatus(null);
-          setErrorMsg(redirectErr?.message || 'Failed to redirect to Google.');
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      if (
-        err.code === 'auth/popup-closed-by-user' ||
-        msg.toLowerCase().includes('popup-closed') ||
-        msg.toLowerCase().includes('cancelled') ||
-        msg.toLowerCase().includes('closed')
-      ) {
-        setIsLoading(false);
-        setIsAutoRedirecting(false);
-        return;
-      }
-      console.error('Google Auth error:', err);
-      setErrorMsg(
-        err.message || 'Google sign-in could not complete.'
-      );
-      // NOTE: Never switch tab away from google! Keep user on Google tab.
-    } finally {
-      if (activeRequestIdRef.current === reqId && !isAutoRedirecting) {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  // ----------------------------------------------------------------------
-  // 2. Genuine Instant Guest Explorer Sign-In (Supabase Verified Session)
+  // 1. Genuine Instant Guest Explorer Sign-In (Supabase Verified Session)
   // ----------------------------------------------------------------------
   const handleInstantGuestSignIn = async () => {
     const reqId = ++activeRequestIdRef.current;
@@ -1037,10 +943,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {authMethod === 'google' ? (
                   <button
                     type="button"
-                    onClick={() => handleTriggerGoogleAuth(true)}
+                    onClick={() => switchAuthTab('email', 'login')}
                     className="inline-flex items-center gap-1 font-bold text-rose-800 underline hover:text-rose-950 cursor-pointer pt-0.5"
                   >
-                    <span>Try Direct Redirect Sign-In</span>
+                    <span>Prefer email & password? Switch to Email Sign In</span>
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 ) : (
@@ -1092,73 +998,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </p>
               </div>
 
-              {/* Official Google Identity Services 1-Tap Widget & Instant Button */}
+              {/* Official Google Identity Services 1-Tap Widget (Direct Vercel OAuth 2.0 with 2FA) */}
               <div className="flex flex-col items-center justify-center w-full min-h-[48px] py-1 gap-2.5">
-                {/* Mount Google Official Native Widget (Zero popup blockers) */}
-                <div ref={googleBtnContainerRef} className="flex justify-center min-h-[44px] w-full empty:hidden" />
+                {/* Mount Google Official Native Widget (Zero popup blockers, direct tripverse-pied.vercel.app) */}
+                <div 
+                  ref={googleBtnContainerRef} 
+                  className="flex justify-center min-h-[44px] w-full"
+                  style={{ minHeight: '44px' }}
+                />
 
-                {/* Only render fallback button if the official Google Identity Services widget has not mounted */}
                 {!isGisRendered && (
-                  <button
-                    type="button"
-                    onClick={() => handleTriggerGoogleAuth(false)}
-                    disabled={isLoading || isAutoRedirecting}
-                    className="w-full py-3.5 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-98 disabled:opacity-50"
-                  >
-                    {isAutoRedirecting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-[#2D5A3D]" />
-                        <span>{autoRedirectStatus || 'Redirecting to Google...'}</span>
-                      </>
-                    ) : isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-[#2D5A3D]" />
-                        <span>Connecting to Google...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                        </svg>
-                        <span>Continue with Google</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="w-[320px] max-w-full h-[44px] rounded-md border border-slate-300 bg-white flex items-center justify-center gap-2.5 text-slate-600 font-medium text-xs shadow-2xs">
+                    <Loader2 className="w-4 h-4 animate-spin text-[#2D5A3D]" />
+                    <span>Connecting to Google...</span>
+                  </div>
                 )}
 
-                {/* Automated popup protection guarantee */}
-                <div className="flex items-center justify-between w-full px-1 text-[11px] text-slate-500 pt-0.5">
-                  <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Popup-blocker auto-bypass active</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleTriggerGoogleAuth(true)}
-                    disabled={isLoading || isAutoRedirecting}
-                    className="text-slate-400 hover:text-slate-700 underline cursor-pointer"
-                    title="Direct Redirect navigates to Google directly without opening a popup window"
-                  >
-                    Direct redirect
-                  </button>
-                </div>
-
-                {(isLoading || isAutoRedirecting) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsLoading(false);
-                      setIsAutoRedirecting(false);
-                      setAutoRedirectStatus(null);
-                      switchAuthTab('google');
-                    }}
-                    className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 underline cursor-pointer mt-1"
-                  >
-                    Taking long? Tap to reset
-                  </button>
+                {isLoading && (
+                  <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#2D5A3D] pt-1">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2D5A3D]" />
+                    <span>Preparing 2FA security code...</span>
+                  </div>
                 )}
               </div>
 
