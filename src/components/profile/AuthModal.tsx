@@ -144,6 +144,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const activeRequestIdRef = useRef(0);
   const googleBtnContainerRef = useRef<HTMLDivElement>(null);
+  const isAuthCompletedRef = useRef(false);
+  const successTimeoutRef = useRef<any>(null);
 
   const switchAuthTab = useCallback((nextMethod: 'google' | 'email' | 'guest', nextEmailSubMode?: 'login' | 'signup') => {
     activeRequestIdRef.current += 1;
@@ -162,17 +164,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // Clean up auth session when modal closes or resets
   const handleModalClose = useCallback(() => {
     activeRequestIdRef.current += 1;
+    if (successTimeoutRef.current) {
+      clearTimeout(successTimeoutRef.current);
+      successTimeoutRef.current = null;
+    }
     setIsLoading(false);
     setIsAutoRedirecting(false);
     setAutoRedirectStatus(null);
     clearPhoneAuthSession();
-    if (is2FaStep) {
+
+    // Only abort/clear active session if the modal was closed/aborted WITHOUT completing authentication
+    if (!isAuthCompletedRef.current && is2FaStep) {
       if (pending2FaType === 'google') {
         signOutFirebase().catch(() => {});
         signOut().catch(() => {});
       }
       clearActiveSession();
     }
+
     setIs2FaStep(false);
     setPending2FaUser(null);
     setPendingRegistration(null);
@@ -181,6 +190,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMsg(null);
     setSuccessMsg(null);
     setIsGisRendered(false);
+    isAuthCompletedRef.current = false;
     onClose();
   }, [onClose, is2FaStep, pending2FaType]);
 
@@ -260,14 +270,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           location: pendingRegistration.location
         });
         newUser.emailVerified = true;
+        isAuthCompletedRef.current = true;
+        setIs2FaStep(false);
         finalizeTwoFactorLogin(newUser);
         try {
           confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
         } catch {}
         setSuccessMsg(`Welcome to TripVerse, ${newUser.displayName}! Account created and verified.`);
-        setTimeout(() => {
+        successTimeoutRef.current = setTimeout(() => {
           onSuccess(toUserProfile(newUser));
-          handleModalClose();
+          onClose();
         }, 500);
         return;
       }
@@ -275,15 +287,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       // If Google login or Email login flow:
       if (pending2FaUser) {
         pending2FaUser.emailVerified = true;
+        isAuthCompletedRef.current = true;
+        setIs2FaStep(false);
         finalizeTwoFactorLogin(pending2FaUser, pendingPasswordHash);
         try {
           confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
         } catch {}
         const loginTypeLabel = pending2FaType === 'google' ? 'Google' : 'Email';
         setSuccessMsg(`Identity verified! Welcome back, ${pending2FaUser.displayName} (${loginTypeLabel} 2FA).`);
-        setTimeout(() => {
+        successTimeoutRef.current = setTimeout(() => {
           onSuccess(toUserProfile(pending2FaUser));
-          handleModalClose();
+          onClose();
         }, 500);
         return;
       }
@@ -431,7 +445,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   }, [isOpen, authMethod, startGoogle2Fa]);
 
   useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+        successTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (isOpen) {
+      isAuthCompletedRef.current = false;
       activeRequestIdRef.current += 1;
       setIsLoading(false);
       setIsAutoRedirecting(false);
@@ -549,9 +573,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
       } catch {}
       setSuccessMsg(`Welcome, ${user.displayName}! Verified explorer session activated.`);
-      setTimeout(() => {
+      isAuthCompletedRef.current = true;
+      successTimeoutRef.current = setTimeout(() => {
         onSuccess(toUserProfile(user));
-        handleModalClose();
+        onClose();
       }, 500);
     } catch (err: any) {
       if (activeRequestIdRef.current !== reqId) return;
@@ -699,9 +724,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
       } catch {}
       setSuccessMsg(`Email confirmed! Welcome to TripVerse, ${verifiedUser.displayName}.`);
-      setTimeout(() => {
+      isAuthCompletedRef.current = true;
+      successTimeoutRef.current = setTimeout(() => {
         onSuccess(toUserProfile(verifiedUser));
-        handleModalClose();
+        onClose();
       }, 600);
     } catch (err: any) {
       console.error('Email confirmation error:', err);

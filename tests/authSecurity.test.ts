@@ -35,6 +35,7 @@ import {
   verifyEmailCredentialsOnly,
   finalizeTwoFactorLogin,
   clearActiveSession,
+  getCurrentUser,
   parseGoogleUserFromCredential,
   sendTwoFactorOtp,
   verifyTwoFactorOtp
@@ -553,6 +554,33 @@ describe('Auth Security & Verification Tests', () => {
       } finally {
         global.fetch = originalFetch;
       }
+    });
+
+    it('finalizeTwoFactorLogin persists authenticated session and user remains logged in', () => {
+      const googleUser: AuthUser = {
+        uid: 'google-uid-12345',
+        email: 'ms.concode@gmail.com',
+        displayName: 'Meet Sharma',
+        photoURL: 'https://example.com/avatar.jpg',
+        travelerStyle: 'Budget explorer',
+        travelStyleTag: 'Verified Explorer',
+        location: 'India',
+        occupation: 'Explorer',
+        age: 25,
+        emailVerified: true,
+        provider: 'google',
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+        savedPlaceIds: []
+      };
+
+      const finalized = finalizeTwoFactorLogin(googleUser, 'oauth_google_gis_verified');
+      expect(finalized.email).toBe('ms.concode@gmail.com');
+
+      const activeUser = getCurrentUser();
+      expect(activeUser).not.toBeNull();
+      expect(activeUser?.email).toBe('ms.concode@gmail.com');
+      expect(activeUser?.provider).toBe('google');
     });
   });
 });
