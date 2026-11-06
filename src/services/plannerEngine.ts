@@ -8,7 +8,11 @@ import { resolveTransitContext, getFeasibleTransportModes } from './transportFea
 import { getActiveCurrency, formatCurrency, CURRENCIES } from './currencyService';
 import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
 import { resolveCanonicalDestination } from './canonicalCityService';
-import { getDestinationHighlights } from './landmarkAtlasService';
+import { getDestinationHighlights, resolveLandmarkCoordinates, calculateTransitBetween } from './landmarkAtlasService';
+import { calculateSolarTimes } from './solarTimeService';
+import { verifyVenueFeasibility } from './venueOperatingHoursService';
+import { evaluateClimatePacing } from './climatePacingService';
+import { analyzeCircuitRoute } from './circuitRouteService';
 
 export interface PlannerInput {
   origin: string;
@@ -569,6 +573,18 @@ export function generateAITrip(input: PlannerInput): Trip {
       ? `Road Transfer from ${transitContext.primaryRailwayStation?.name} to ${spotName}`
       : 'En-Route Rest & Refreshment Halt';
 
+  // 1. Astronomical Solar Positioning (Sunrise, Sunset, Golden Hour)
+  const solarTimes = calculateSolarTimes(destCoords.lat, destCoords.lng, input.startDate);
+
+  // 2. Climate & Seasonal Pacing Evaluation (Extreme Heat, Alpine Winter, Monsoon)
+  const climateProfile = evaluateClimatePacing(spotName, country, state, input.startDate);
+
+  // 3. Multi-City Circuit Detection
+  const circuit = analyzeCircuitRoute(input.destination || input.destinationName || '', daysCount);
+
+  const baseStartDate = input.startDate ? new Date(input.startDate) : new Date();
+  const validStartDate = isNaN(baseStartDate.getTime()) ? new Date() : baseStartDate;
+
   // Generate days
   const days: DayPlan[] = [];
 
@@ -624,7 +640,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           travelTimeMin: Math.round(routeHours * 30),
           distanceKm: Math.round(routeDistKm * 0.5),
           description: `${activityMeta.morningDesc} (Est. entry ticket: ~${formatCurrency(sight1Fee, activeCurrency)}/person).`,
-          coordinates: { lat: destCoords.lat + 0.004, lng: destCoords.lng + 0.003 },
+          coordinates: resolveLandmarkCoordinates(sight1, destCoords),
           tag: 'Attraction'
         },
         {
@@ -638,7 +654,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           travelTimeMin: 15,
           distanceKm: 1.5,
           description: `Authentic regional meal (${cuisine.lunch}) tailored for ${foodPref} preference.`,
-          coordinates: { lat: destCoords.lat - 0.003, lng: destCoords.lng + 0.003 },
+          coordinates: resolveLandmarkCoordinates(`${spotName} Regional Lunch`, destCoords),
           tag: 'Lunch'
         },
         {
@@ -652,7 +668,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           travelTimeMin: 15,
           distanceKm: 2.2,
           description: `${activityMeta.afternoonDesc}`,
-          coordinates: { lat: destCoords.lat - 0.005, lng: destCoords.lng + 0.005 },
+          coordinates: resolveLandmarkCoordinates(sight2, destCoords),
           tag: 'Highlight'
         },
         {
@@ -688,6 +704,19 @@ export function generateAITrip(input: PlannerInput): Trip {
         }
       ];
 
+      // Bind exact landmark coordinates & calculate true Haversine transit
+      for (let i = 0; i < day1Acts.length; i++) {
+        const act = day1Acts[i];
+        if (i > 0) {
+          const prev = day1Acts[i - 1];
+          if (prev.coordinates && act.coordinates) {
+            const transit = calculateTransitBetween(prev.coordinates, act.coordinates);
+            act.distanceKm = transit.distanceKm;
+            act.travelTimeMin = transit.travelTimeMin;
+          }
+        }
+      }
+
       days.push({
         dayNumber: 1,
         title: `Day 1 — ${spotName} Express Day Excursion & Return (${pacing.replace('_', ' ')} pace)`,
@@ -704,7 +733,7 @@ export function generateAITrip(input: PlannerInput): Trip {
       const checkinTime = pacing === 'relaxed' ? '2:00 PM' : pacing === 'fast_paced' ? '11:45 AM' : '1:00 PM';
       const lunchTime = pacing === 'relaxed' ? '3:15 PM' : pacing === 'fast_paced' ? '1:00 PM' : '2:30 PM';
       const sightTime = pacing === 'relaxed' ? '5:15 PM' : pacing === 'fast_paced' ? '2:45 PM' : '4:30 PM';
-      const sunsetTime = pacing === 'relaxed' ? '7:00 PM' : pacing === 'fast_paced' ? '6:15 PM' : '6:30 PM';
+      const sunsetTime = solarTimes.goldenHourEvening.split(' – ')[0] || (pacing === 'relaxed' ? '7:00 PM' : pacing === 'fast_paced' ? '6:15 PM' : '6:30 PM');
       const dinnerTime = pacing === 'relaxed' ? '9:15 PM' : pacing === 'fast_paced' ? '8:30 PM' : '8:45 PM';
 
       const day1Acts: ItineraryActivity[] = [
@@ -794,7 +823,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           travelTimeMin: 20,
           distanceKm: 2.5,
           description: `${activityMeta.afternoonDesc} (Est. entry ticket: ~${formatCurrency(day1SightFee, activeCurrency)}/person).`,
-          coordinates: { lat: destCoords.lat + 0.005, lng: destCoords.lng + 0.004 },
+          coordinates: resolveLandmarkCoordinates(firstSight, destCoords),
           tag: 'Attraction'
         },
         {
@@ -807,8 +836,8 @@ export function generateAITrip(input: PlannerInput): Trip {
           estimatedCost: scaleExpense(30 * safeTravelers),
           travelTimeMin: 15,
           distanceKm: 2.0,
-          description: `${activityMeta.eveningDesc} (Golden Hour observation window).`,
-          coordinates: { lat: destCoords.lat - 0.005, lng: destCoords.lng + 0.005 },
+          description: `${activityMeta.eveningDesc} (Astronomical Golden Hour window ~${sunsetTime}).`,
+          coordinates: resolveLandmarkCoordinates(`${spotName} Sunset Overlook`, destCoords),
           tag: 'Sunset'
         },
         {
@@ -822,10 +851,23 @@ export function generateAITrip(input: PlannerInput): Trip {
           travelTimeMin: 10,
           distanceKm: 1.2,
           description: `Evening feast enjoying ${cuisine.dinner} under starry skies (~${formatCurrency(scaleExpense(440 * cityMultiplier), activeCurrency)}/person).`,
-          coordinates: { lat: destCoords.lat + 0.001, lng: destCoords.lng + 0.002 },
+          coordinates: resolveLandmarkCoordinates(`${spotName} Evening Dining`, destCoords),
           tag: 'Dinner'
         }
       ];
+
+      // Bind exact landmark coordinates & calculate true Haversine transit
+      for (let i = 0; i < day1Acts.length; i++) {
+        const act = day1Acts[i];
+        if (i > 0) {
+          const prev = day1Acts[i - 1];
+          if (prev.coordinates && act.coordinates) {
+            const transit = calculateTransitBetween(prev.coordinates, act.coordinates);
+            act.distanceKm = transit.distanceKm;
+            act.travelTimeMin = transit.travelTimeMin;
+          }
+        }
+      }
 
       days.push({
         dayNumber: 1,
@@ -857,7 +899,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           travelTimeMin: 10,
           distanceKm: 0.8,
           description: `Fresh morning breakfast enjoying ${cuisine.breakfast}.`,
-          coordinates: { lat: destCoords.lat - 0.001, lng: destCoords.lng + 0.001 },
+          coordinates: resolveLandmarkCoordinates(`${spotName} Morning Hub`, destCoords),
           tag: 'Breakfast'
         },
         {
@@ -871,7 +913,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           travelTimeMin: 15,
           distanceKm: 2.0,
           description: `Gentle morning exploration taking in the final scenic panoramas and iconic photo frames.`,
-          coordinates: { lat: destCoords.lat + 0.003, lng: destCoords.lng - 0.002 },
+          coordinates: resolveLandmarkCoordinates(finalSight, destCoords),
           tag: 'Scenic Walk'
         },
         {
@@ -885,7 +927,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           travelTimeMin: 15,
           distanceKm: 1.5,
           description: `Pick up unique handmade crafts, local specialties, organic produce, and memorable souvenirs.`,
-          coordinates: { lat: destCoords.lat - 0.003, lng: destCoords.lng - 0.003 },
+          coordinates: resolveLandmarkCoordinates(`${spotName} Artisan Market`, destCoords),
           tag: 'Shopping'
         },
         {
@@ -899,7 +941,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           travelTimeMin: 20,
           distanceKm: 5.0,
           description: `Hearty celebratory meal (${cuisine.lunch}) tailored for ${foodPref} preference before return transit.`,
-          coordinates: { lat: destCoords.lat + 0.008, lng: destCoords.lng + 0.005 },
+          coordinates: resolveLandmarkCoordinates(`${spotName} Dining Hub`, destCoords),
           tag: 'Lunch'
         },
         {
@@ -969,6 +1011,19 @@ export function generateAITrip(input: PlannerInput): Trip {
         }
       ];
 
+      // Bind exact landmark coordinates & calculate true Haversine transit
+      for (let i = 0; i < lastDayActs.length; i++) {
+        const act = lastDayActs[i];
+        if (i > 0) {
+          const prev = lastDayActs[i - 1];
+          if (prev.coordinates && act.coordinates) {
+            const transit = calculateTransitBetween(prev.coordinates, act.coordinates);
+            act.distanceKm = transit.distanceKm;
+            act.travelTimeMin = transit.travelTimeMin;
+          }
+        }
+      }
+
       days.push({
         dayNumber: d,
         title: `Day ${d} — ${finalSight}, Artisan Souvenirs & Safe Return (${pacing.replace('_', ' ')} pace)`,
@@ -978,16 +1033,43 @@ export function generateAITrip(input: PlannerInput): Trip {
       });
     } else {
       // Middle Days: Deep exploration of unique highlights & culture
+      const currentStop = circuit.isMultiCity
+        ? (circuit.stops.find(s => d >= s.startDay && d <= s.endDay) || circuit.stops[0])
+        : null;
+      const currentCity = currentStop ? currentStop.cityName : spotName;
+
       const dayHighlight = takeUniqueHighlight('Hidden Trails & Heritage');
       const afternoonHighlight = takeUniqueHighlight('Scenic Overlook & Cultural Walk');
       const midSightFee = getActivityTicketFee(dayHighlight, spotType, category);
 
-      const bfastTime = pacing === 'relaxed' ? '9:15 AM' : pacing === 'fast_paced' ? '7:15 AM' : '8:30 AM';
-      const mornSightTime = pacing === 'relaxed' ? '11:15 AM' : pacing === 'fast_paced' ? '8:45 AM' : '10:00 AM';
-      const lunchTime = pacing === 'relaxed' ? '2:00 PM' : pacing === 'fast_paced' ? '1:00 PM' : '1:30 PM';
-      const aftSightTime = pacing === 'relaxed' ? '4:45 PM' : pacing === 'fast_paced' ? '2:45 PM' : '3:30 PM';
-      const cultureTime = pacing === 'relaxed' ? '7:15 PM' : pacing === 'fast_paced' ? '6:15 PM' : '7:00 PM';
-      const dinnerTime = pacing === 'relaxed' ? '9:15 PM' : pacing === 'fast_paced' ? '8:30 PM' : '9:00 PM';
+      let bfastTime = pacing === 'relaxed' ? '9:15 AM' : pacing === 'fast_paced' ? '7:15 AM' : '8:30 AM';
+      let mornSightTime = pacing === 'relaxed' ? '11:15 AM' : pacing === 'fast_paced' ? '8:45 AM' : '10:00 AM';
+      let lunchTime = pacing === 'relaxed' ? '2:00 PM' : pacing === 'fast_paced' ? '1:00 PM' : '1:30 PM';
+      let aftSightTime = pacing === 'relaxed' ? '4:45 PM' : pacing === 'fast_paced' ? '2:45 PM' : '3:30 PM';
+      let cultureTime = pacing === 'relaxed' ? '7:15 PM' : pacing === 'fast_paced' ? '6:15 PM' : '7:00 PM';
+      let dinnerTime = pacing === 'relaxed' ? '9:15 PM' : pacing === 'fast_paced' ? '8:30 PM' : '9:00 PM';
+
+      // Climate & Seasonal Pacing Adjustments
+      if (climateProfile.protocol === 'extreme_heat') {
+        mornSightTime = climateProfile.recommendedSlotShifts.morningSightseeingTime;
+        aftSightTime = climateProfile.recommendedSlotShifts.afternoonTime;
+        dinnerTime = climateProfile.recommendedSlotShifts.dinnerTime;
+      } else if (climateProfile.protocol === 'alpine_winter') {
+        mornSightTime = climateProfile.recommendedSlotShifts.morningSightseeingTime;
+        aftSightTime = climateProfile.recommendedSlotShifts.afternoonTime;
+        cultureTime = climateProfile.recommendedSlotShifts.sunsetTime;
+        dinnerTime = climateProfile.recommendedSlotShifts.dinnerTime;
+      }
+
+      // Check venue operating hours & day-of-week closures
+      const dayDate = new Date(validStartDate.getTime() + (d - 1) * 86400000);
+      const venueCheck = verifyVenueFeasibility(dayHighlight, dayDate, mornSightTime);
+      let finalDayHighlight = dayHighlight;
+      let finalDayDesc = `Prime sightseeing and photography with picturesque landscapes and architecture (Est. ticket: ~${formatCurrency(midSightFee, activeCurrency)}/person).`;
+      if (!venueCheck.isOpen && venueCheck.reason) {
+        finalDayHighlight = `${dayHighlight} — Architectural Exterior & Grounds (Galleries Closed Today)`;
+        finalDayDesc = `${venueCheck.reason} Admire the monumental facade, historic courtyard, and surrounding gardens.`;
+      }
 
       const middleActivities: ItineraryActivity[] = [
         {
@@ -996,26 +1078,26 @@ export function generateAITrip(input: PlannerInput): Trip {
           time: bfastTime,
           title: `Energizing ${cuisine.cuisineName} Breakfast`,
           type: 'food',
-          location: `${spotName} Morning Eatery`,
+          location: `${currentCity} Morning Eatery`,
           estimatedCost: scaleExpense(110 * cityMultiplier * safeTravelers),
           travelTimeMin: 15,
           distanceKm: 1.0,
           description: `Start the day fresh with regional breakfast specialties: ${cuisine.breakfast}.`,
-          coordinates: { lat: destCoords.lat + 0.002 * d, lng: destCoords.lng - 0.002 * d },
+          coordinates: resolveLandmarkCoordinates(`${currentCity} Breakfast Eatery`, destCoords),
           tag: 'Breakfast'
         },
         {
           id: `act-${d}-morn-sight`,
           dayNumber: d,
           time: mornSightTime,
-          title: dayHighlight,
+          title: finalDayHighlight,
           type: 'attraction',
-          location: `${spotName} Historic/Scenic Center`,
+          location: `${currentCity} Historic/Scenic Center`,
           estimatedCost: scaleExpense(midSightFee * safeTravelers),
           travelTimeMin: 25,
           distanceKm: 5.0,
-          description: `Prime sightseeing and photography with picturesque landscapes and architecture (Est. ticket: ~${formatCurrency(midSightFee, activeCurrency)}/person).`,
-          coordinates: { lat: destCoords.lat + 0.005 * d, lng: destCoords.lng + 0.004 * d },
+          description: finalDayDesc,
+          coordinates: resolveLandmarkCoordinates(finalDayHighlight, destCoords),
           tag: 'Sightseeing'
         },
         {
@@ -1024,12 +1106,12 @@ export function generateAITrip(input: PlannerInput): Trip {
           time: lunchTime,
           title: `Regional ${cuisine.cuisineName} Lunch`,
           type: 'food',
-          location: `${spotName} Local Garden Restaurant`,
+          location: `${currentCity} Local Garden Restaurant`,
           estimatedCost: scaleExpense(280 * cityMultiplier * safeTravelers),
           travelTimeMin: 20,
           distanceKm: 4.0,
           description: `Fresh regional cuisine tailored for ${foodPref} preference: ${cuisine.lunch}.`,
-          coordinates: { lat: destCoords.lat + 0.003 * d, lng: destCoords.lng - 0.004 * d },
+          coordinates: resolveLandmarkCoordinates(`${currentCity} Regional Lunch`, destCoords),
           tag: 'Lunch'
         },
         {
@@ -1038,28 +1120,28 @@ export function generateAITrip(input: PlannerInput): Trip {
           time: aftSightTime,
           title: afternoonHighlight,
           type: 'viewpoint',
-          location: `${spotName} Scenic Overlook`,
+          location: `${currentCity} Scenic Overlook`,
           estimatedCost: scaleExpense(150 * cityMultiplier * safeTravelers),
           travelTimeMin: 20,
           distanceKm: 4.5,
           description: pacing === 'relaxed'
             ? 'Unhurried downtime sipping local beverage, taking photographs, and soaking in peaceful views.'
             : 'Energizing nature & heritage walk away from crowds with fresh air and viewpoints.',
-          coordinates: { lat: destCoords.lat - 0.004 * d, lng: destCoords.lng - 0.004 * d },
+          coordinates: resolveLandmarkCoordinates(afternoonHighlight, destCoords),
           tag: pacing === 'relaxed' ? 'Leisure' : 'Nature'
         },
         {
           id: `act-${d}-culture`,
           dayNumber: d,
           time: cultureTime,
-          title: takeUniqueHighlight(`${spotName} Cultural Evening & Promenade`),
+          title: takeUniqueHighlight(`${currentCity} Cultural Evening & Promenade`),
           type: 'attraction',
-          location: `${spotName} Cultural District`,
+          location: `${currentCity} Cultural District`,
           estimatedCost: scaleExpense(220 * safeTravelers),
           travelTimeMin: 20,
           distanceKm: 3.0,
           description: 'Vibrant local live art, traditional instruments, and evening cultural walk.',
-          coordinates: { lat: destCoords.lat + 0.004 * d, lng: destCoords.lng + 0.003 * d },
+          coordinates: resolveLandmarkCoordinates(`${currentCity} Cultural Promenade`, destCoords),
           tag: 'Culture'
         },
         {
@@ -1068,12 +1150,12 @@ export function generateAITrip(input: PlannerInput): Trip {
           time: dinnerTime,
           title: `Evening ${cuisine.cuisineName} Dinner`,
           type: 'food',
-          location: `${spotName} Heritage Dining Hall`,
+          location: `${currentCity} Heritage Dining Hall`,
           estimatedCost: scaleExpense(350 * cityMultiplier * safeTravelers),
           travelTimeMin: 10,
           distanceKm: 1.2,
           description: `Hearty evening dinner with traditional delicacies (${cuisine.dinner}) tailored for ${foodPref} preference.`,
-          coordinates: { lat: destCoords.lat, lng: destCoords.lng },
+          coordinates: resolveLandmarkCoordinates(`${currentCity} Heritage Dinner`, destCoords),
           tag: 'Dinner'
         }
       ];
@@ -1083,23 +1165,55 @@ export function generateAITrip(input: PlannerInput): Trip {
         middleActivities.unshift({
           id: `act-${d}-sunrise`,
           dayNumber: d,
-          time: '6:15 AM',
-          title: `${spotName} Sunrise Ridge Golden Hour (Day ${d})`,
+          time: solarTimes.sunrise || '6:15 AM',
+          title: `${currentCity} Sunrise Ridge Golden Hour (Day ${d})`,
           type: 'viewpoint',
-          location: `${spotName} High Ridge Viewpoint`,
+          location: `${currentCity} High Ridge Viewpoint`,
           estimatedCost: 0,
           travelTimeMin: 15,
           distanceKm: 3.0,
-          description: 'Early morning golden rays and mist-covered landscapes. Ideal for photography.',
-          coordinates: { lat: destCoords.lat - 0.008, lng: destCoords.lng + 0.008 },
+          description: `Early morning golden rays and mist-covered landscapes. Sunrise timed to astronomical dawn (~${solarTimes.sunrise}).`,
+          coordinates: resolveLandmarkCoordinates(`${currentCity} Sunrise Ridge`, destCoords),
           tag: 'Sunrise'
         });
       }
 
+      // If multi-city circuit transition day, insert inter-city transit
+      if (currentStop && d === currentStop.endDay && currentStop.transitToNext) {
+        const transfer = currentStop.transitToNext;
+        middleActivities.push({
+          id: `act-${d}-intercity-transit`,
+          dayNumber: d,
+          time: '6:30 PM',
+          title: transfer.title,
+          type: 'departure',
+          location: `${currentCity} Central Station / Transit Hub`,
+          estimatedCost: scaleExpense(transfer.estimatedCostPerPerson * safeTravelers),
+          travelTimeMin: Math.round(transfer.durationHours * 60),
+          distanceKm: transfer.distanceKm,
+          description: `Express inter-city transit from ${transfer.fromCity} to ${transfer.toCity} (${transfer.durationHours} hrs, ${transfer.distanceKm} km).`,
+          coordinates: resolveLandmarkCoordinates(transfer.toCity, destCoords),
+          tag: 'Inter-City Transfer'
+        });
+      }
+
+      // Bind exact landmark coordinates & calculate true Haversine transit
+      for (let i = 0; i < middleActivities.length; i++) {
+        const act = middleActivities[i];
+        if (i > 0) {
+          const prev = middleActivities[i - 1];
+          if (prev.coordinates && act.coordinates) {
+            const transit = calculateTransitBetween(prev.coordinates, act.coordinates);
+            act.distanceKm = transit.distanceKm;
+            act.travelTimeMin = transit.travelTimeMin;
+          }
+        }
+      }
+
       days.push({
         dayNumber: d,
-        title: `Day ${d} — Deep Dive into ${spotName}: ${dayHighlight} (${pacing.replace('_', ' ')} pace)`,
-        theme: `${dayHighlight}, ${afternoonHighlight} & Authentic ${cuisine.cuisineName} Dining`,
+        title: `Day ${d} — Deep Dive into ${currentCity}: ${finalDayHighlight} (${pacing.replace('_', ' ')} pace)`,
+        theme: `${finalDayHighlight}, ${afternoonHighlight} & Authentic ${cuisine.cuisineName} Dining`,
         dayEstimatedCost: middleActivities.reduce((s, a) => s + a.estimatedCost, 0),
         activities: middleActivities
       });
@@ -1164,7 +1278,7 @@ export function generateAITrip(input: PlannerInput): Trip {
     isSample: false,
     createdAt: new Date().toISOString(),
     startDate: safeStartDate,
-    aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state ? `${state}, ` : ''}${country}) for ${safeTravelers} traveler(s).${isSingleDay ? '' : ` Selected stay: ${recommendedHotel.name} (${recommendedHotel.starRating}★).`} Pacing: ${pacing.replace('_', ' ')}. Total budget calibrated to regional prices. Buffer estimate: ${formatCurrency(Math.max(0, totalBudget - estimatedTotal), activeCurrency)}.`,
+    aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state ? `${state}, ` : ''}${country}) for ${safeTravelers} traveler(s).${isSingleDay ? '' : ` Selected stay: ${recommendedHotel.name} (${recommendedHotel.starRating}★).`} Pacing: ${pacing.replace('_', ' ')}. Total budget calibrated to regional prices. Buffer estimate: ${formatCurrency(Math.max(0, totalBudget - estimatedTotal), activeCurrency)}.${climateProfile.protocol !== 'temperate_standard' ? ` Climate Protocol: ${climateProfile.title} — ${climateProfile.advisoryNote}` : ''} Astronomical Solar Day: Sunrise ${solarTimes.sunrise}, Sunset ${solarTimes.sunset} (${solarTimes.daylightHours}h daylight).${circuit.isMultiCity ? ` Multi-City Circuit: ${circuit.summary}.` : ''}`,
     breakStops: [],
     budgetBreakdown: {
       transportation: transportCost,

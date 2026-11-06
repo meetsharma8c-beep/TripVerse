@@ -11,6 +11,7 @@
 import { Coordinates, Destination } from '../types/trip';
 import { resolveCanonicalDestination } from './canonicalCityService';
 import { getFamousLandmarksForDestination, LandmarkSpot } from '../data/landmarkAtlas';
+import { GLOBAL_LANDMARK_COORDS } from './landmarkAtlasService';
 
 export interface ResolvedGlobalLocation {
   name: string;
@@ -217,9 +218,17 @@ export async function resolveGlobalDestination(rawInput: string): Promise<Resolv
     const geoRes = await fetch(geoUrl, { headers });
     if (geoRes.ok) {
       const geoData = await geoRes.json();
-      const rawTitles: string[] = (geoData?.query?.geosearch || []).map((s: any) => s.title);
+      const geosearchItems = geoData?.query?.geosearch || [];
+      const rawTitles: string[] = geosearchItems.map((s: any) => s.title);
       const cleaned = cleanGeosearchTitles(rawTitles, cityName);
       discoveredHighlights.push(...cleaned);
+
+      // Cache real-world landmark coordinates for exact street-level routing
+      for (const item of geosearchItems) {
+        if (item.title && typeof item.lat === 'number' && typeof item.lon === 'number') {
+          GLOBAL_LANDMARK_COORDS.set(item.title.toLowerCase().trim(), { lat: item.lat, lng: item.lon });
+        }
+      }
     }
   } catch {
     // Geosearch offline
