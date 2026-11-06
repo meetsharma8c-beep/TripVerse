@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { resolveGlobalDestination } from '../src/services/globalLocationResolver';
 import { generatePersonalizedTrip } from '../src/services/aiTripPlanner';
+import { selectHotelForTrip } from '../src/services/hotelService';
+import { generateTransportDeals } from '../src/services/dealService';
+import { getLocalGems } from '../src/services/localGemsService';
 
 describe('Worldwide Dynamic Location & Live Attractions Intelligence', () => {
   it('resolves genuine coordinates and live attractions for arbitrary global destinations without mocks', async () => {
@@ -70,4 +73,42 @@ describe('Worldwide Dynamic Location & Live Attractions Intelligence', () => {
     const croatiaActivities = tripCroatia.itinerary.flatMap(d => d.activities).map(a => a.title);
     expect(croatiaActivities.some(t => t.includes('Temple') || t.includes('Baori') || t.includes('Havelis'))).toBe(false);
   }, 20000);
+
+  it('guarantees genuine, culturally accurate hotels, deals, and local gems worldwide without domestic templates', () => {
+    // 1. Hotel for Reykjavik, Iceland
+    const { recommendedHotel } = selectHotelForTrip({
+      destination: 'Reykjavik, Iceland',
+      accommodationType: 'boutique',
+      totalBudget: 4000,
+      durationDays: 4,
+      travelersCount: 2
+    });
+    expect(recommendedHotel.name).not.toContain('Zostel');
+    expect(recommendedHotel.name).not.toContain('Green Leaf');
+    expect(recommendedHotel.name).toContain('Reykjavik');
+
+    // 2. Flight and Rail deals for Tokyo, Japan
+    const flightDeals = generateTransportDeals({
+      mode: 'flight',
+      origin: 'Seoul Incheon',
+      destination: 'Tokyo',
+      travelersCount: 2
+    });
+    expect(flightDeals.allDeals.some((d: any) => d.provider.includes('IndiGo'))).toBe(false);
+    expect(flightDeals.allDeals.some((d: any) => d.provider.includes('JAL') || d.provider.includes('Peach') || d.provider.includes('ANA'))).toBe(true);
+
+    const railDeals = generateTransportDeals({
+      mode: 'train',
+      origin: 'Osaka',
+      destination: 'Tokyo',
+      travelersCount: 2
+    });
+    expect(railDeals.allDeals.some((d: any) => d.provider.includes('IRCTC'))).toBe(false);
+    expect(railDeals.allDeals.some((d: any) => d.provider.includes('Shinkansen'))).toBe(true);
+
+    // 3. Local Gems for Reykjavik, Iceland
+    const gems = getLocalGems('Reykjavik');
+    expect(gems.foodGems[0].dish).not.toContain("Signature Reykjavik Chef's Local Specialty");
+    expect(gems.foodGems[0].dish).toContain('Langoustine');
+  });
 });

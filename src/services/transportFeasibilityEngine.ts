@@ -388,13 +388,18 @@ const DESTINATION_PROFILES: Record<string, DestinationTransitProfile> = {
       name: 'Tokyo Haneda (HND) / Narita (NRT)',
       code: 'HND / NRT',
       distanceKm: 20,
-      transferNotes: 'International gateway served by non-stop and 1-stop flights from Delhi, Mumbai, Bengaluru.'
+      transferNotes: 'International gateway served by non-stop and 1-stop flights from worldwide hubs.'
     },
-    hasDirectTrain: false,
-    primaryRailwayStation: null,
+    hasDirectTrain: true,
+    primaryRailwayStation: {
+      name: 'Tokyo Station (Tokaido / Tohoku Shinkansen Terminal)',
+      code: 'TYO',
+      distanceKm: 1,
+      transferNotes: 'Centrally located JR hub with high-speed Shinkansen bullet trains connecting Osaka, Kyoto, Nagoya, and Sendai.'
+    },
     roadConnectivity: {
-      status: 'island_no_bridge',
-      notes: 'Overseas island country separated by oceans. Overland road, bus, and rail transit are unavailable.'
+      status: 'expressway',
+      notes: 'Metropolitan Expressway and Tomei Expressway networks.'
     },
     requiresMultiModal: false,
     isOverseas: true,

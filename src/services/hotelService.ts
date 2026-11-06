@@ -453,8 +453,12 @@ const VERIFIED_HOTELS_DB: Record<string, Hotel[]> = {
   ]
 };
 
+import { resolveCanonicalDestination } from './canonicalCityService';
+import { getActiveCurrency } from './currencyService';
+import { CurrencyCode } from '../types/trip';
+
 /**
- * Intelligent synthesis for any destination outside the hardcoded list
+ * Intelligent synthesis for any destination worldwide with authentic regional hospitality styling
  */
 function synthesizeHotelForDestination(
   destination: string,
@@ -464,24 +468,57 @@ function synthesizeHotelForDestination(
   checkOut: string,
   travelersCount: number
 ): Hotel {
-  const cleanDest = destination.split(',')[0].trim();
+  const canonical = resolveCanonicalDestination(destination);
+  const cleanDest = canonical.canonicalName || destination.split(',')[0].trim();
+  const country = (canonical.country || '').toLowerCase();
+  const activeCurrency: CurrencyCode = getActiveCurrency();
   const deepLinks = buildHotelBookingUrl(cleanDest, `${cleanDest} Stay`, checkIn, checkOut, travelersCount);
 
+  // Regional profile detection
+  const isJapan = country.includes('japan');
+  const isNordicOrEurope = country.includes('iceland') || country.includes('norway') || country.includes('sweden') ||
+    country.includes('finland') || country.includes('france') || country.includes('italy') || country.includes('germany') ||
+    country.includes('switzerland') || country.includes('united kingdom') || country.includes('spain') || country.includes('croatia');
+  const isLatinAmerica = country.includes('peru') || country.includes('mexico') || country.includes('colombia') ||
+    country.includes('argentina') || country.includes('chile') || country.includes('brazil');
+  const isOceania = country.includes('new zealand') || country.includes('australia');
+  const isSoutheastAsia = country.includes('thailand') || country.includes('cambodia') || country.includes('vietnam') || country.includes('indonesia');
+
   if (tier === 'luxury') {
+    const hotelName = isJapan
+      ? `Grand Prince & Traditional Ryokan Spa, ${cleanDest}`
+      : isNordicOrEurope
+        ? `Grand Alpine & Heritage Palace Hotel, ${cleanDest}`
+        : isLatinAmerica
+          ? `Palacio Colonial & Spa Retreat, ${cleanDest}`
+          : isOceania
+            ? `Eichardt-Style Waterfront Luxury Lodge, ${cleanDest}`
+            : isSoutheastAsia
+              ? `Boutique Sanctuary Resort & Water Spa, ${cleanDest}`
+              : `Grand Heritage Palace & Spa Resort, ${cleanDest}`;
+
+    const amenities = isJapan
+      ? ['Natural Thermal Onsen', 'Authentic Kaiseki Dining', 'Zen Courtyard Garden', 'Concierge Service']
+      : isNordicOrEurope
+        ? ['Heated Panoramic Pool & Spa', 'Michelin-Caliber Dining', 'Cocktail Terrace', 'Valet & Concierge']
+        : isLatinAmerica
+          ? ['Colonial Fountain Courtyard', 'Andean/Regional Gastronomy', 'Oxygenation Support', 'Spa & Heated Pool']
+          : ['Infinity Pool', 'Holistic Wellness Spa', 'Multi-Cuisine Fine Dining', 'Valet & Concierge Service'];
+
     return {
       id: `hotel-lux-${Date.now()}`,
-      name: `Grand Heritage Palace & Spa Resort, ${cleanDest}`,
+      name: hotelName,
       destination,
       tier: 'luxury',
       starRating: 5,
       userRating: 4.8,
       reviewCount: 1850,
       nightlyRate: Math.max(9500, Math.round(nightlyTargetRate)),
-      currency: 'INR',
+      currency: activeCurrency,
       image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-      address: `Palace Road, Central ${cleanDest}`,
+      address: `Historic Central Boulevard, ${cleanDest}`,
       neighborhood: 'Prime Scenic District',
-      amenities: ['Infinity Pool', 'Ayurvedic Wellness Spa', 'Multi-Cuisine Fine Dining', 'Complimentary Valet & Wi-Fi'],
+      amenities,
       roomType: 'Royal Grand Suite with Panoramic Vista',
       bookingUrl: deepLinks.bookingDotCom,
       googleHotelsUrl: deepLinks.googleHotels,
@@ -493,21 +530,33 @@ function synthesizeHotelForDestination(
   }
 
   if (tier === 'boutique' || tier === 'mid_range') {
+    const hotelName = isJapan
+      ? `Modern Machiya Boutique Hotel, ${cleanDest}`
+      : isNordicOrEurope
+        ? `Old Town Historic Boutique Inn, ${cleanDest}`
+        : isLatinAmerica
+          ? `Posada Colonial Boutique Inn, ${cleanDest}`
+          : isOceania
+            ? `Alpine Heritage Boutique Lodge, ${cleanDest}`
+            : isSoutheastAsia
+              ? `Tropical Garden Boutique Hotel, ${cleanDest}`
+              : `${cleanDest} Boutique Retreat & Courtyard`;
+
     return {
       id: `hotel-btq-${Date.now()}`,
-      name: `${cleanDest} Boutique Retreat & Courtyard`,
+      name: hotelName,
       destination,
       tier: tier,
       starRating: tier === 'boutique' ? 4 : 3,
       userRating: 4.6,
       reviewCount: 1120,
       nightlyRate: Math.max(3200, Math.round(nightlyTargetRate)),
-      currency: 'INR',
+      currency: activeCurrency,
       image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-      address: `Scenic Ridge Road, ${cleanDest}`,
+      address: `Scenic Center Road, ${cleanDest}`,
       neighborhood: 'Cultural Heritage Zone',
       amenities: ['Courtyard Breakfast', 'Rooftop Lounge', 'High-Speed Wi-Fi', 'Travel Concierge'],
-      roomType: 'Deluxe Air-Conditioned Heritage Room',
+      roomType: 'Deluxe Heritage Double Room',
       bookingUrl: deepLinks.bookingDotCom,
       googleHotelsUrl: deepLinks.googleHotels,
       agodaUrl: deepLinks.agoda,
@@ -518,43 +567,63 @@ function synthesizeHotelForDestination(
   }
 
   if (tier === 'hostel') {
+    const hostelName = isJapan
+      ? `Capsule & Social Backpacker Hub, ${cleanDest}`
+      : isNordicOrEurope
+        ? `Urban Backpacker & Social Hub, ${cleanDest}`
+        : isLatinAmerica
+          ? `Pariwana / Selina Backpacker Hub, ${cleanDest}`
+          : isOceania
+            ? `Nomads Scenic Backpacker Hub, ${cleanDest}`
+            : isSoutheastAsia
+              ? `Mad Monkey / Lub d Social Hub, ${cleanDest}`
+              : `Traveler Backpacker Hub, ${cleanDest}`;
+
     return {
       id: `hotel-hstl-${Date.now()}`,
-      name: `Zostel / Backpacker Hub, ${cleanDest}`,
+      name: hostelName,
       destination,
       tier: 'hostel',
       starRating: 2,
       userRating: 4.7,
       reviewCount: 2900,
       nightlyRate: Math.max(750, Math.round(nightlyTargetRate * 0.45)),
-      currency: 'INR',
+      currency: activeCurrency,
       image: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=1200&q=80',
       address: `Old Town Waterfront / Main Market, ${cleanDest}`,
       neighborhood: 'Traveler Backpacker Quarter',
-      amenities: ['Co-working Cafe', 'Community Bonfire & Lounge', 'Baggage Lockers', 'Fast Wi-Fi'],
-      roomType: 'Air-Conditioned Dorm Bunk / Private Capsule',
-      bookingUrl: `https://www.zostel.com/search/?q=${encodeURIComponent(cleanDest)}`,
+      amenities: ['Co-working Cafe', 'Community Social Lounge', 'Baggage Lockers', 'Fast Wi-Fi'],
+      roomType: 'Air-Conditioned Dorm Bunk / Private Pod',
+      bookingUrl: deepLinks.bookingDotCom,
       googleHotelsUrl: deepLinks.googleHotels,
       agodaUrl: deepLinks.agoda,
-      bookingPartner: 'Direct',
+      bookingPartner: 'Booking.com',
       cancellationPolicy: 'Free cancellation up to 48 hours prior',
-      highlights: ['Vibrant social atmosphere for solo and social travelers', 'Regular guided walking tours and local discovery sessions']
+      highlights: ['Vibrant social atmosphere for solo and social travelers', 'Regular walking tours and local discovery sessions']
     };
   }
 
   // Budget Tier Default
+  const budgetName = isNordicOrEurope
+    ? `Scandic City Comfort Hotel, ${cleanDest}`
+    : isJapan
+      ? `Comfort Inn & Suites, ${cleanDest}`
+      : isLatinAmerica
+        ? `Posada del Sol Comfort Stay, ${cleanDest}`
+        : `${cleanDest} City Center Comfort Hotel`;
+
   return {
     id: `hotel-bdgt-${Date.now()}`,
-    name: `Green Leaf Comfort Hotel, ${cleanDest}`,
+    name: budgetName,
     destination,
     tier: 'budget',
     starRating: 3,
     userRating: 4.4,
     reviewCount: 840,
     nightlyRate: Math.max(1800, Math.round(nightlyTargetRate)),
-    currency: 'INR',
+    currency: activeCurrency,
     image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80',
-    address: `Station Corridor / Central Area, ${cleanDest}`,
+    address: `Central Transit District, ${cleanDest}`,
     neighborhood: 'Convenient City Center',
     amenities: ['Complimentary Hot Breakfast', '24/7 Front Desk', 'Free Wi-Fi', 'Clean Sanitized Linen'],
     roomType: 'Comfort Double Executive Room',

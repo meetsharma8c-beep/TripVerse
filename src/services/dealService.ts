@@ -16,6 +16,8 @@ export interface DealQueryParams {
  * Builds realistic, pre-filled flight search deep links for Google Flights and Skyscanner.
  * Truthfully targets the actual operational gateway airport.
  */
+import { resolveCanonicalDestination } from './canonicalCityService';
+
 export function buildFlightBookingUrl(origin: string, destination: string, departureDate?: string): {
   googleFlights: string;
   skyscanner: string;
@@ -32,36 +34,62 @@ export function buildFlightBookingUrl(origin: string, destination: string, depar
 }
 
 /**
- * Builds direct search deep links for Indian Railways (IRCTC).
- * Never targets a non-existent station. Targets the actual operational railhead.
+ * Builds direct search deep links for Rail networks worldwide.
+ * In India: IRCTC. In Europe: Trainline. In Japan: JR SmartEX. In US: Amtrak.
  */
 export function buildTrainBookingUrl(origin: string, destination: string, departureDate?: string): string {
+  const canonical = resolveCanonicalDestination(destination);
+  const country = (canonical.country || '').toLowerCase();
   const transit = resolveTransitContext(destination);
   const targetStation = transit.primaryRailwayStation?.name || destination.split(',')[0].trim();
   const cleanOrigin = origin.split(',')[0].trim();
+
+  if (country.includes('france') || country.includes('italy') || country.includes('germany') || country.includes('united kingdom') || country.includes('spain') || country.includes('switzerland')) {
+    return `https://www.thetrainline.com/book/results?origin=${encodeURIComponent(cleanOrigin)}&destination=${encodeURIComponent(targetStation)}`;
+  }
+  if (country.includes('japan')) {
+    return `https://smart-ex.jp/en/`;
+  }
+  if (country.includes('united states')) {
+    return `https://www.amtrak.com/`;
+  }
   return `https://www.irctc.co.in/nget/train-search?origin=${encodeURIComponent(cleanOrigin)}&destination=${encodeURIComponent(targetStation)}&date=${departureDate || ''}`;
 }
 
 /**
- * Builds direct bus booking links on redBus.
+ * Builds direct bus booking links (redBus in India, FlixBus in Europe/Americas).
  */
 export function buildBusBookingUrl(origin: string, destination: string): string {
+  const canonical = resolveCanonicalDestination(destination);
+  const country = (canonical.country || '').toLowerCase();
   const cleanOrigin = origin.split(',')[0].trim();
   const cleanDest = destination.split(',')[0].trim();
+
+  if (country.includes('france') || country.includes('germany') || country.includes('italy') || country.includes('united states') || country.includes('spain')) {
+    return `https://www.flixbus.com/`;
+  }
   return `https://www.redbus.in/bus-tickets/${encodeURIComponent(cleanOrigin.toLowerCase())}-to-${encodeURIComponent(cleanDest.toLowerCase())}`;
 }
 
 /**
- * Builds direct self-drive and cab booking links on Zoomcar and MakeMyTrip.
+ * Builds direct self-drive and cab booking links.
  */
 export function buildCabBookingUrl(origin: string, destination: string): {
   zoomcar: string;
   makemytripCabs: string;
 } {
+  const canonical = resolveCanonicalDestination(destination);
+  const country = (canonical.country || '').toLowerCase();
   const cleanDest = destination.split(',')[0].trim();
+  const isIntl = country && !country.includes('india');
+
   return {
-    zoomcar: `https://www.zoomcar.com/${encodeURIComponent(cleanDest.toLowerCase())}/car-rental`,
-    makemytripCabs: `https://www.makemytrip.com/cabs/`
+    zoomcar: isIntl
+      ? `https://www.rentalcars.com/search-results?location=${encodeURIComponent(cleanDest)}`
+      : `https://www.zoomcar.com/${encodeURIComponent(cleanDest.toLowerCase())}/car-rental`,
+    makemytripCabs: isIntl
+      ? `https://www.kayak.com/cars/${encodeURIComponent(cleanDest)}`
+      : `https://www.makemytrip.com/cabs/`
   };
 }
 
@@ -86,6 +114,48 @@ export function generateTransportDeals(params: DealQueryParams): {
     ? params.startDate.split('T')[0]
     : new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
 
+  // Region and international routing detection
+  const canonical = resolveCanonicalDestination(rawDest);
+  const country = (canonical.country || '').toLowerCase();
+  const isJapan = country.includes('japan');
+  const isEurope = country.includes('france') || country.includes('italy') || country.includes('germany') ||
+    country.includes('spain') || country.includes('united kingdom') || country.includes('switzerland') ||
+    country.includes('iceland') || country.includes('croatia') || country.includes('norway');
+  const isUS = country.includes('united states') || country.includes('canada');
+  const isOceania = country.includes('new zealand') || country.includes('australia');
+  const isLatinAmerica = country.includes('peru') || country.includes('mexico') || country.includes('colombia') || country.includes('argentina');
+  const isIndia = country.includes('india') || (!isJapan && !isEurope && !isUS && !isOceania && !isLatinAmerica && !canonical.matchedDestination?.country);
+
+  const budgetAirline = isJapan ? 'Peach / Jetstar Japan'
+    : isEurope ? 'EasyJet / Ryanair'
+    : isUS ? 'Southwest / JetBlue'
+    : isOceania ? 'Jetstar Airways'
+    : isLatinAmerica ? 'Sky Airline'
+    : isIndia ? 'IndiGo Airlines'
+    : 'Star Alliance Express';
+
+  const fullServiceAirline = isJapan ? 'Japan Airlines (JAL) / ANA'
+    : isEurope ? 'Air France / Lufthansa / British Airways'
+    : isUS ? 'Delta / United Airlines'
+    : isOceania ? 'Air New Zealand / Qantas'
+    : isLatinAmerica ? 'LATAM Airlines / Avianca'
+    : isIndia ? 'Air India / Vistara'
+    : 'National Flag Carrier';
+
+  const railProviderFast = isJapan ? 'JR Shinkansen High-Speed Bullet Train'
+    : isEurope ? 'Eurostar / TGV / Trenitalia High-Speed'
+    : isUS ? 'Amtrak Acela / Regional Express'
+    : isOceania ? 'KiwiRail TranzAlpine / Coastal Scenic Rail'
+    : isLatinAmerica ? 'Inca Rail 360° Panoramic'
+    : 'Indian Railways — Vande Bharat Express';
+
+  const railProviderOvernight = isJapan ? 'Sunrise Express Nightliner'
+    : isEurope ? 'Nightjet / European Sleeper'
+    : isUS ? 'Amtrak Superliner Sleeper'
+    : isOceania ? 'KiwiRail Regional Express'
+    : isLatinAmerica ? 'Belmond Andean Rail'
+    : 'Indian Railways — AC Superfast Express';
+
   const deals: TransportDeal[] = [];
 
   // =========================================================================
@@ -97,9 +167,9 @@ export function generateTransportDeals(params: DealQueryParams): {
     const isMultiModalAir = !transit.hasDirectAirport && transit.primaryAirport !== null;
 
     deals.push({
-      id: `deal-fl-indigo-${Date.now()}`,
+      id: `deal-fl-budget-${Date.now()}`,
       mode: 'flight',
-      provider: 'IndiGo Airlines',
+      provider: budgetAirline,
       providerLogo: 'flight',
       title: isMultiModalAir 
         ? `${cleanOrigin} → ${airportName} (${cleanDest} Air Gateway)` 
@@ -140,9 +210,9 @@ export function generateTransportDeals(params: DealQueryParams): {
     });
 
     deals.push({
-      id: `deal-fl-airindia-${Date.now()}`,
+      id: `deal-fl-fullservice-${Date.now()}`,
       mode: 'flight',
-      provider: 'Air India / Vistara',
+      provider: fullServiceAirline,
       providerLogo: 'flight',
       title: isMultiModalAir
         ? `${cleanOrigin} → ${airportName} Full-Service Flight`
@@ -181,18 +251,18 @@ export function generateTransportDeals(params: DealQueryParams): {
   // TRAIN DEALS (Destination != Station & Real Railhead Resolution)
   // =========================================================================
   if ((mode === 'train' || mode === 'any') && transit.primaryRailwayStation !== null) {
-    const irctcUrl = buildTrainBookingUrl(cleanOrigin, rawDest, travelDate);
+    const trainUrl = buildTrainBookingUrl(cleanOrigin, rawDest, travelDate);
     const stationName = transit.primaryRailwayStation?.name || `${cleanDest} Railway Station`;
     const isMultiModalRail = !transit.hasDirectTrain && transit.primaryRailwayStation !== null;
 
     deals.push({
-      id: `deal-tr-vandebharat-${Date.now()}`,
+      id: `deal-tr-express-${Date.now()}`,
       mode: 'train',
-      provider: 'Indian Railways — Vande Bharat Express',
+      provider: railProviderFast,
       providerLogo: 'train',
       title: isMultiModalRail
         ? `${cleanOrigin} → ${stationName} (${cleanDest} Railhead)`
-        : `${cleanOrigin} → ${cleanDest} Vande Bharat Superfast`,
+        : `${cleanOrigin} → ${cleanDest} High-Speed / Superfast`,
       subtitle: isMultiModalRail
         ? `Rail terminates at ${stationName} • ~${transit.primaryRailwayStation?.distanceKm || 50} km road transfer to ${cleanDest}`
         : 'Executive Semi-High Speed • Breakfast Included • 160 km/h',
@@ -204,7 +274,7 @@ export function generateTransportDeals(params: DealQueryParams): {
         departureTime: '06:10 AM',
         arrivalTime: '11:45 AM',
         duration: isMultiModalRail ? '5h 35m + Road Transfer' : '5h 35m',
-        stopsText: isMultiModalRail ? `Alight at ${stationName} for road connection` : '3 halts only'
+        stopsText: isMultiModalRail ? `Alight at ${stationName} for road connection` : 'Express halts only'
       },
       originalPrice: 1650,
       dealPrice: 1380,
@@ -215,26 +285,26 @@ export function generateTransportDeals(params: DealQueryParams): {
       reviewCount: 18200,
       features: [
         'Rotating Plush Ergonomic Seats', 
-        'On-board Hot Breakfast & Tea', 
+        'On-board Refreshments & Wi-Fi', 
         isMultiModalRail ? `Railhead: ${stationName} (~${transit.primaryRailwayStation?.distanceKm} km from ${cleanDest})` : 'Direct Rail Arrival',
-        'Official IRCTC Booking Portal Link'
+        'Official Rail Booking Portal Link'
       ],
       couponCode: 'RAILSMART',
-      bookingUrl: irctcUrl,
+      bookingUrl: trainUrl,
       partnerVerified: true,
       termsAndConditions: isMultiModalRail
-        ? `IRCTC link searches trains to ${stationName} (the actual operational railhead). Onwards transfer to ${cleanDest} by bus/cab is required.`
-        : 'Direct booking on IRCTC Portal. Senior citizen and child quotas applicable.'
+        ? `Rail link searches trains to ${stationName} (the actual operational railhead). Onwards transfer to ${cleanDest} by bus/cab is required.`
+        : 'Direct booking on official national rail portal.'
     });
 
     deals.push({
-      id: `deal-tr-superfast-${Date.now()}`,
+      id: `deal-tr-overnight-${Date.now()}`,
       mode: 'train',
-      provider: 'Indian Railways — AC Superfast Express',
+      provider: railProviderOvernight,
       providerLogo: 'train',
       title: isMultiModalRail
-        ? `${cleanOrigin} → ${stationName} 3-Tier AC Overnight`
-        : `${cleanOrigin} → ${cleanDest} 3-Tier AC Overnight Sleeper`,
+        ? `${cleanOrigin} → ${stationName} Overnight Sleeper`
+        : `${cleanOrigin} → ${cleanDest} Overnight Sleeper`,
       subtitle: isMultiModalRail
         ? `Overnight train to ${stationName} • Continue by road to ${cleanDest}`
         : 'Overnight Journey • Clean Bedroll • Zero Hotel Night Cost',
@@ -260,7 +330,7 @@ export function generateTransportDeals(params: DealQueryParams): {
         'Charging Sockets at Every Berth', 
         isMultiModalRail ? `Nearest Railhead: ${stationName}` : 'Direct Station Drop'
       ],
-      bookingUrl: irctcUrl,
+      bookingUrl: trainUrl,
       partnerVerified: true
     });
   }

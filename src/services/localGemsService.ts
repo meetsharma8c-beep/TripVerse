@@ -1,5 +1,6 @@
 import { LocalFoodGem, HiddenGem, Coordinates } from '../types/trip';
 import { getStoredConcodeConfig } from './concodeBrainService';
+import { resolveCanonicalDestination } from './canonicalCityService';
 
 export interface DestinationGems {
   destination: string;
@@ -462,52 +463,225 @@ function synthesizeAuthenticGemsForDestination(destination: string): Destination
   }
 
   // 5. Default Genuine Regional Engine for any other global destination
+  const canonical = resolveCanonicalDestination(destination);
+  const cleanDest = canonical.canonicalName || destination.split(',')[0].trim();
+  const country = (canonical.country || '').toLowerCase();
+
+  const isJapan = country.includes('japan') || norm.includes('japan') || norm.includes('tokyo') || norm.includes('kyoto') || norm.includes('osaka');
+  const isNordic = country.includes('iceland') || country.includes('norway') || country.includes('sweden') || country.includes('finland') || norm.includes('reykjavik') || norm.includes('iceland') || norm.includes('oslo') || norm.includes('stockholm') || norm.includes('helsinki');
+  const isItaly = country.includes('italy') || norm.includes('rome') || norm.includes('florence') || norm.includes('venice') || norm.includes('milan') || norm.includes('italy');
+  const isFrance = country.includes('france') || norm.includes('paris') || norm.includes('nice') || norm.includes('lyon') || norm.includes('france');
+  const isLatinAmerica = country.includes('peru') || country.includes('mexico') || country.includes('colombia') || country.includes('argentina') || norm.includes('cusco') || norm.includes('lima') || norm.includes('peru') || norm.includes('mexico');
+  const isSoutheastAsia = country.includes('thailand') || country.includes('cambodia') || country.includes('vietnam') || country.includes('indonesia') || norm.includes('bangkok') || norm.includes('siem reap') || norm.includes('bali') || norm.includes('vietnam') || norm.includes('cambodia');
+
+  if (isNordic) {
+    return {
+      destination,
+      isLiveGenerated: false,
+      foodGems: [
+        {
+          id: `food-${norm}-1`,
+          name: `${cleanDest} Old Harbor Fish & Bakery`,
+          dish: 'Fresh Arctic Langoustine Soup & Stone-Baked Rye Bread',
+          category: 'street_food',
+          location: `Old Harbor Wharfs, ${cleanDest}`,
+          pricePerPerson: 450,
+          rating: 4.8,
+          isVegetarian: false,
+          image: getRandomImage('street_food', 0),
+          bestTimeToVisit: '12:00 PM - 2:00 PM',
+          whySpecial: 'Steaming broth made daily from the morning catch, served with dense seeded sourdough and local butter.',
+          mustTry: 'Smoked arctic fish skewers with dill remoulade'
+        },
+        {
+          id: `food-${norm}-2`,
+          name: `${cleanDest} Artisan Roastery & Kaffihús`,
+          dish: 'Warm Cardamom Knot & Single-Origin Pour Over',
+          category: 'rooftop_cafe',
+          location: `Heritage Center, ${cleanDest}`,
+          pricePerPerson: 220,
+          rating: 4.7,
+          isVegetarian: true,
+          image: getRandomImage('rooftop_cafe', 1),
+          bestTimeToVisit: '9:30 AM - 11:30 AM',
+          whySpecial: 'Locally roasted Nordic beans paired with freshly baked Scandinavian cardamom pastries.',
+          mustTry: 'Freshly pulled cinnamon-cardamom swirl knot'
+        }
+      ],
+      hiddenGems: [
+        {
+          id: `gem-${norm}-1`,
+          title: `${cleanDest} Geothermal Shallows & Coastal Basalt Trail`,
+          category: 'nature_walk',
+          location: `Coastal Edge, ${cleanDest}`,
+          rating: 4.9,
+          crowdLevel: 'peaceful',
+          image: getRandomImage('nature_walk', 0),
+          bestTimeOfDay: '4:00 PM - 6:00 PM',
+          description: 'Secluded shoreline trail where natural geothermal warm springs emerge between volcanic basalt columns.',
+          insiderTip: 'Visit during late afternoon when the low Arctic sun illuminates the coastal mist.'
+        }
+      ]
+    };
+  }
+
+  if (isJapan) {
+    return {
+      destination,
+      isLiveGenerated: false,
+      foodGems: [
+        {
+          id: `food-${norm}-1`,
+          name: `${cleanDest} Machiya Soba & Tempura House`,
+          dish: 'Handmade Buckwheat Soba & Crispy Mountain Vegetable Tempura',
+          category: 'street_food',
+          location: `Historic Machiya District, ${cleanDest}`,
+          pricePerPerson: 380,
+          rating: 4.8,
+          isVegetarian: true,
+          image: getRandomImage('street_food', 0),
+          bestTimeToVisit: '12:30 PM - 2:00 PM',
+          whySpecial: 'Stone-milled buckwheat noodles kneaded and hand-cut fresh every morning in a century-old wooden house.',
+          mustTry: 'Cold dipping zaru soba with freshly grated wasabi root'
+        },
+        {
+          id: `food-${norm}-2`,
+          name: `${cleanDest} Hidden Alley Wagashi & Tea Salon`,
+          dish: 'Ceremonial Uji Matcha & Seasonal Ichigo Mochi',
+          category: 'sweet_shop',
+          location: `Quiet Garden Quarter, ${cleanDest}`,
+          pricePerPerson: 240,
+          rating: 4.9,
+          isVegetarian: true,
+          image: getRandomImage('sweet_shop', 0),
+          bestTimeToVisit: '3:00 PM - 5:00 PM',
+          whySpecial: 'Artisanal confections reflecting the current season, served alongside whisked single-estate green tea.',
+          mustTry: 'Handcrafted seasonal mochi with green tea pairing'
+        }
+      ],
+      hiddenGems: [
+        {
+          id: `gem-${norm}-1`,
+          title: `${cleanDest} Moss Garden & Quiet Stone Lantern Trail`,
+          category: 'secret_viewpoint',
+          location: `Eastern Foothills, ${cleanDest}`,
+          rating: 4.9,
+          crowdLevel: 'very_low',
+          image: getRandomImage('secret_viewpoint', 0),
+          bestTimeOfDay: '7:30 AM - 9:30 AM',
+          description: 'A serene centuries-old hillside path lined with moss-carpeted stone lanterns and ancient cedar trees away from tour buses.',
+          insiderTip: 'Early morning visits offer peaceful meditation and magical filtered morning sunlight.'
+        }
+      ]
+    };
+  }
+
+  if (isItaly) {
+    return {
+      destination,
+      isLiveGenerated: false,
+      foodGems: [
+        {
+          id: `food-${norm}-1`,
+          name: `${cleanDest} Wood-Fired Trattoria del Centro`,
+          dish: 'Handmade Fresh Tagliolini with Seasonal Truffle & Pecorino',
+          category: 'street_food',
+          location: `Old Town Piazza, ${cleanDest}`,
+          pricePerPerson: 550,
+          rating: 4.8,
+          isVegetarian: true,
+          image: getRandomImage('street_food', 0),
+          bestTimeToVisit: '1:00 PM - 2:30 PM',
+          whySpecial: 'Family-run kitchen serving pasta rolled fresh by hand each morning with locally pressed extra virgin olive oil.',
+          mustTry: 'Warm ricotta cannolo & freshly roasted espresso'
+        },
+        {
+          id: `food-${norm}-2`,
+          name: `${cleanDest} Artisanal Gelateria Naturale`,
+          dish: 'Pure Bronte Pistachio & Dark Chocolate Gelato',
+          category: 'sweet_shop',
+          location: `Via Storica, ${cleanDest}`,
+          pricePerPerson: 160,
+          rating: 4.9,
+          isVegetarian: true,
+          image: getRandomImage('sweet_shop', 0),
+          bestTimeToVisit: '4:30 PM - 7:00 PM',
+          whySpecial: '100% natural gelato crafted without artificial thickeners using mountain milk and stone-ground nuts.',
+          mustTry: 'Salted pistachio cone topped with fresh whipped panna'
+        }
+      ],
+      hiddenGems: [
+        {
+          id: `gem-${norm}-1`,
+          title: `${cleanDest} Cloister Terrace & Bell Tower Panoramic Vista`,
+          category: 'secret_viewpoint',
+          location: `Upper Citadel, ${cleanDest}`,
+          rating: 4.8,
+          crowdLevel: 'peaceful',
+          image: getRandomImage('secret_viewpoint', 0),
+          bestTimeOfDay: '6:00 PM - 7:30 PM',
+          description: 'Quiet medieval arched courtyard leading to an elevated terrace with 360-degree views over terracotta rooftops.',
+          insiderTip: 'Arrive before sunset when church bells resonate across the valley.'
+        }
+      ]
+    };
+  }
+
+  // Universal Authentic Regional Profile
   return {
     destination,
     isLiveGenerated: false,
     foodGems: [
       {
         id: `food-${norm}-1`,
-        name: `${destination} Historic Market Eatery`,
-        dish: `Signature ${destination} Chef's Local Specialty`,
+        name: `${cleanDest} Central Artisan Kitchen`,
+        dish: `Traditional ${cleanDest} Wood-Fired Regional Specialties`,
         category: 'street_food',
-        location: `Old Town Quarter, ${destination}`,
-        pricePerPerson: 250,
+        location: `Historic Old Town Quarter, ${cleanDest}`,
+        pricePerPerson: 320,
         rating: 4.8,
         isVegetarian: true,
         image: getRandomImage('street_food', 0),
         bestTimeToVisit: '12:30 PM - 2:30 PM',
-        whySpecial: `Time-honored family recipe using farm-to-table local ingredients native to ${destination}.`,
-        mustTry: `Local specialty platter with traditional regional beverage`
+        whySpecial: `Family-owned eatery preparing authentic recipes with farm-to-table ingredients native to ${cleanDest}.`,
+        mustTry: 'Signature freshly baked regional bread with local herb dips'
       },
       {
         id: `food-${norm}-2`,
-        name: `${destination} Heritage Street Cafe`,
-        dish: `Freshly Roasted Regional Brew & Pastries`,
+        name: `${cleanDest} Heritage Terrace Cafe`,
+        dish: `Locally Roasted Coffee & Handcrafted Sweet Confections`,
         category: 'rooftop_cafe',
-        location: `Central Promenade, ${destination}`,
-        pricePerPerson: 180,
+        location: `Scenic Plaza, ${cleanDest}`,
+        pricePerPerson: 190,
         rating: 4.7,
         isVegetarian: true,
         image: getRandomImage('rooftop_cafe', 1),
         bestTimeToVisit: '4:30 PM - 6:30 PM',
-        whySpecial: `Popular neighborhood gathering spot with scenic views and authentic local flavor.`,
-        mustTry: `House roasted coffee and signature local snack`
+        whySpecial: `Beloved neighborhood gathering spot offering scenic vistas over ${cleanDest}'s historic skyline.`,
+        mustTry: 'House roasted brew paired with warm pastry of the day'
       }
     ],
     hiddenGems: [
       {
         id: `gem-${norm}-1`,
-        title: `${destination} Sunset Vista Point`,
+        title: `${cleanDest} Horizon Viewpoint & Nature Trail`,
         category: 'secret_viewpoint',
-        location: `Scenic Overlook Trail, ${destination}`,
+        location: `Panoramic Crest, ${cleanDest}`,
         rating: 4.8,
         crowdLevel: 'peaceful',
         image: getRandomImage('secret_viewpoint', 0),
         bestTimeOfDay: '5:30 PM - 6:45 PM',
-        description: `Breathtaking natural vantage point overlooking ${destination} as twilight paints the horizon.`,
-        insiderTip: `Arrive 20 minutes before golden hour for stunning photography.`
+        description: `Peaceful natural vantage point overlooking ${cleanDest} with panoramic golden hour illumination.`,
+        insiderTip: 'Pack light layers as the breeze picks up during sunset.'
       }
     ]
   };
 }
+
+/**
+ * Synchronous local gems resolver for destination cards, tests, and instant preview.
+ */
+export function getLocalGems(destination: string): DestinationGems {
+  return synthesizeAuthenticGemsForDestination(destination);
+}
+
