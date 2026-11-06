@@ -274,6 +274,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       // If Google login or Email login flow:
       if (pending2FaUser) {
+        pending2FaUser.emailVerified = true;
         finalizeTwoFactorLogin(pending2FaUser, pendingPasswordHash);
         try {
           confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
