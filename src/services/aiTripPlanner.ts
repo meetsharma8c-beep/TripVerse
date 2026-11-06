@@ -7,6 +7,7 @@ import { getActiveCurrency, CURRENCIES } from './currencyService';
 import { enrichTripWithOriginalPhotos } from './originalPhotoService';
 import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
 import { getDestinationHighlights } from './landmarkAtlasService';
+import { resolveGlobalDestination, ResolvedGlobalLocation } from './globalLocationResolver';
 
 const ACTIVITY_TYPES = new Set(['food', 'attraction', 'viewpoint', 'nightlife', 'rest']);
 
@@ -106,6 +107,9 @@ async function requestPersonalizedItinerary(prompt: string, trip: Trip, input: P
     const timerId = setTimeout(() => controller.abort(), 60_000);
     try {
         const customConfig = getStoredConcodeConfig();
+        if (!customConfig?.url && typeof window === 'undefined') {
+            return null;
+        }
         const targetUrl = customConfig?.url ? `${customConfig.url}/api/v1/travel` : '/api/chat';
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -324,9 +328,37 @@ export function applyItinerary(days: any[], input: PlannerInput, trip: Trip): Tr
 }
 
 export async function generatePersonalizedTrip(input: PlannerInput): Promise<Trip> {
-    const fallback = generateAITrip(input);
-    const itinerary = await requestPersonalizedItinerary(buildPrompt(input, fallback), fallback, input);
-    const rawTrip: Trip = (itinerary ? applyItinerary(itinerary, input, fallback) : null) || {
+    const rawDest = input.destination || input.destinationName || 'Scenic Getaway';
+    let resolvedGlobal: ResolvedGlobalLocation | null = null;
+    try {
+        resolvedGlobal = await resolveGlobalDestination(rawDest);
+    } catch (err) {
+        console.warn('[TripVerse] Global location resolver warning:', err);
+    }
+
+    const effectiveInput: PlannerInput = {
+        ...input,
+        destination: resolvedGlobal?.name || input.destination,
+        destinationName: resolvedGlobal?.name || input.destinationName,
+        destinationCoords: resolvedGlobal?.coordinates || input.destinationCoords,
+        preciseLocation: resolvedGlobal ? {
+            id: `geo-${resolvedGlobal.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+            name: resolvedGlobal.name,
+            fullName: resolvedGlobal.fullName,
+            state: resolvedGlobal.state,
+            country: resolvedGlobal.country,
+            coordinates: resolvedGlobal.coordinates,
+            category: (input.preciseLocation?.category || 'heritage') as any,
+            spotType: 'city',
+            highlights: resolvedGlobal.highlights,
+            tagline: resolvedGlobal.description.slice(0, 100),
+            image: resolvedGlobal.image
+        } : input.preciseLocation
+    };
+
+    const fallback = generateAITrip(effectiveInput);
+    const itinerary = await requestPersonalizedItinerary(buildPrompt(effectiveInput, fallback), fallback, effectiveInput);
+    const rawTrip: Trip = (itinerary ? applyItinerary(itinerary, effectiveInput, fallback) : null) || {
         ...fallback,
         aiRationale: fallback.aiRationale
     };
@@ -336,7 +368,7 @@ export async function generatePersonalizedTrip(input: PlannerInput): Promise<Tri
 
     // Enrich the trip with genuine, original photography during the loading state
     try {
-        const enriched = await enrichTripWithOriginalPhotos(smartTrip, input.destination || input.destinationName);
+        const enriched = await enrichTripWithOriginalPhotos(smartTrip, effectiveInput.destination || effectiveInput.destinationName);
         return enriched;
     } catch {
         return smartTrip;

@@ -408,8 +408,16 @@ export function generateAITrip(input: PlannerInput): Trip {
 
   // Exact display name for spot (e.g. "Tokyo", "Paris", "Mansarovar, Jaipur", "Chopta", "Polo Forest")
   const spotName = (input.preciseLocation ? input.preciseLocation.name : canonical.canonicalName) || preciseLoc.name || matchedDest.name || rawDestName;
-  const state = canonical.state || preciseLoc.state || matchedDest.state || 'Destination';
-  const country = canonical.country || preciseLoc.country || matchedDest.country || 'Worldwide';
+  const state = (preciseLoc.state && preciseLoc.state !== 'Region' && preciseLoc.state !== 'Destination')
+    ? preciseLoc.state
+    : (canonical.state && canonical.state !== 'Region')
+      ? canonical.state
+      : matchedDest.state || 'Destination';
+  const country = (preciseLoc.country && preciseLoc.country !== 'Worldwide')
+    ? preciseLoc.country
+    : (canonical.country && canonical.country !== 'Worldwide')
+      ? canonical.country
+      : matchedDest.country || 'Worldwide';
   const spotType = preciseLoc.spotType || 'nature';
   const category = preciseLoc.category || matchedDest.category || 'roadtrip';
   const transitContext = resolveTransitContext(spotName);
@@ -459,21 +467,70 @@ export function generateAITrip(input: PlannerInput): Trip {
   const cuisine = getRegionalCuisine(state, country, foodPref);
   const activityMeta = getActivityTypeMeta(spotType, category);
 
-  // Compile full deduplicated highlights list with genuine famous spots from the Landmark Atlas
+  // Compile full deduplicated highlights list: prioritize live discovered genuine highlights from preciseLoc
   const atlasHighlights = getDestinationHighlights(spotName, 25);
   const rawHighlights = Array.from(new Set([
+    ...(preciseLoc?.highlights && preciseLoc.highlights.length > 0 ? preciseLoc.highlights : []),
     ...atlasHighlights,
-    ...(matchedDest.popularActivities || []),
-    ...(preciseLoc.highlights || [])
+    ...(matchedDest.popularActivities || [])
   ].filter(Boolean)));
   const highlights = rawHighlights;
   let nextHighlightCursor = 0;
+  const usedTitles = new Set<string>();
+
   const takeUniqueHighlight = (fallbackLabel: string): string => {
-    if (nextHighlightCursor < highlights.length) {
-      return highlights[nextHighlightCursor++];
+    // 1. Try unused highlights first
+    while (nextHighlightCursor < highlights.length) {
+      const candidate = highlights[nextHighlightCursor++];
+      if (!usedTitles.has(candidate)) {
+        usedTitles.add(candidate);
+        return candidate;
+      }
     }
+
+    // 2. If exhausted, generate distinct thematic explorations anchored to base sights or destination
     const cycleIdx = nextHighlightCursor++;
-    return `${spotName} ${fallbackLabel} (Zone ${cycleIdx - highlights.length + 2})`;
+    const themes = [
+      'Scenic Nature & Forest Canopy Trail',
+      'Heritage Quarter & Architectural Promenade',
+      'Panoramic Golden Hour Viewpoint',
+      'Artisan Crafts & Local Workshop Tour',
+      'Historic Sacred Environs & Temple Grounds',
+      'Botanical Gardens & Royal Walkways',
+      'Waterfront & Canal Cruise Experience',
+      'Traditional Spices & Local Culinary Trail',
+      'Old Town Alleys & Hidden Corners Photography',
+      'Elevated Ridge & Horizon Overlook',
+      'Folk Art & Cultural Center Experience',
+      'Countryside Foothills & Serene Meadow Trail',
+      'Ancient Citadel & Historic Ramparts',
+      'Twilight Lanterns & Evening Piazza Stroll',
+      'Monastery & Contemplative Grounds Walk',
+      'Centuries-Old Clock Towers & Civic Squares',
+      'Echo Point & Valley Vista Overlook',
+      'Cobblestone Wayfarers Heritage Walk',
+      'Lakeside Pier & Reflection Shallows',
+      'Water Architecture & Heritage Stepwell Walk',
+      'Boutique Pottery & Master Craftsmen Studios',
+      'Secret Garden & Citadel Bastions',
+      'Starry Night Skyview & Heritage Terrace'
+    ];
+    const baseSight = highlights.length > 0 ? highlights[cycleIdx % highlights.length] : spotName;
+    const themeIdx = cycleIdx - highlights.length;
+    let candidate = '';
+    if (themeIdx < themes.length) {
+      candidate = `${baseSight} — ${themes[themeIdx]}`;
+    } else {
+      const round = Math.floor((themeIdx - themes.length) / themes.length) + 2;
+      const subTheme = themes[(themeIdx - themes.length) % themes.length];
+      candidate = `${baseSight} — ${subTheme} (Phase ${round})`;
+    }
+
+    if (usedTitles.has(candidate)) {
+      candidate = `${candidate} (${cycleIdx + 1})`;
+    }
+    usedTitles.add(candidate);
+    return candidate;
   };
 
   // Determine pacing preference and city cost multiplier

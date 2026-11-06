@@ -65,12 +65,69 @@ export function getDestinationLandmarkSpots(destinationName: string): LandmarkSp
 }
 
 /**
- * Generates culturally authentic highlights for unlisted destinations, avoiding Indian stepwells in Europe or East Asia.
+ * Generates culturally authentic highlights for unlisted destinations, avoiding Indian stepwells in Europe, the Americas, or East Asia.
  */
 function getAuthenticRegionalFallbackHighlights(city: string, country: string, state: string): string[] {
-  const normCountry = (country + ' ' + state).toLowerCase();
+  const normCountry = (country + ' ' + state + ' ' + city).toLowerCase();
 
-  if (normCountry.includes('japan') || normCountry.includes('korea') || normCountry.includes('asia')) {
+  // Nordic / Arctic / Iceland
+  if (normCountry.includes('iceland') || normCountry.includes('norway') || normCountry.includes('sweden') || normCountry.includes('finland')) {
+    return [
+      `${city} Historic Old Harbor & Marina`,
+      `${city} Geothermal Lagoon & Hot Springs`,
+      `${city} Panoramic Fjord Observation Crest`,
+      `${city} Modern Architectural Concert Hall`,
+      `${city} National Maritime & Saga Museum`,
+      `${city} Northern Lights & Star Overlook`,
+      `${city} Waterfront Sculpture Walk`,
+      `${city} Artisan Wool & Nordic Bakery Quarter`
+    ];
+  }
+
+  // Latin America (Peru, Mexico, Colombia, etc.)
+  if (normCountry.includes('peru') || normCountry.includes('mexico') || normCountry.includes('colombia') || normCountry.includes('argentina') || normCountry.includes('chile') || normCountry.includes('brazil')) {
+    return [
+      `${city} Historic Plaza Mayor / Zócalo`,
+      `${city} Pre-Columbian Archaeological Ruins`,
+      `${city} Colonial Baroque Cathedral & Cloister`,
+      `${city} Traditional Mercado & Artisan Textile Stalls`,
+      `${city} Panoramic Mirador Sunset Viewpoint`,
+      `${city} Regional Gastronomy & Street Food Alley`,
+      `${city} Ancient Inca / Indigenous Heritage Trail`,
+      `${city} Cultural Arts Center & Courtyards`
+    ];
+  }
+
+  // Oceania / New Zealand / Australia
+  if (normCountry.includes('new zealand') || normCountry.includes('australia') || normCountry.includes('oceania')) {
+    return [
+      `${city} Waterfront Esplanade & Harbor Marina`,
+      `${city} Skyline Gondola & Alpine Overlook`,
+      `${city} Scenic Lake / Bay Coastal Trail`,
+      `${city} Botanical Gardens & Native Reserve`,
+      `${city} Heritage Mining & Pioneer Village`,
+      `${city} Outdoor Adventure & Canyon Vista`,
+      `${city} Regional Vineyard & Artisan Farmers Market`,
+      `${city} Sunset Beach / Wharf Promenade`
+    ];
+  }
+
+  // Southeast Asia (Cambodia, Vietnam, Thailand, Indonesia, Philippines)
+  if (normCountry.includes('cambodia') || normCountry.includes('vietnam') || normCountry.includes('thailand') || normCountry.includes('indonesia') || normCountry.includes('philippines')) {
+    return [
+      `${city} Ancient Sacred Temple & Pagoda`,
+      `${city} Traditional Night Market & Street Food`,
+      `${city} Riverfront Promenade & Boat Cruise`,
+      `${city} Royal Palace / Historic Citadel`,
+      `${city} Heritage Silk & Artisan Handloom Village`,
+      `${city} Scenic Mountain / Waterway Viewpoint`,
+      `${city} National Cultural Museum & Artifacts`,
+      `${city} Floating Market & Canal Stroll`
+    ];
+  }
+
+  // East Asia (Japan, Korea, Taiwan)
+  if (normCountry.includes('japan') || normCountry.includes('korea') || normCountry.includes('taiwan')) {
     return [
       `${city} Historic Shrine & Torii Path`,
       `${city} Old Town Machiya Architecture Walk`,
@@ -83,7 +140,8 @@ function getAuthenticRegionalFallbackHighlights(city: string, country: string, s
     ];
   }
 
-  if (normCountry.includes('france') || normCountry.includes('italy') || normCountry.includes('spain') || normCountry.includes('europe') || normCountry.includes('united kingdom') || normCountry.includes('germany')) {
+  // Europe (France, Italy, Spain, UK, Germany, Croatia, Switzerland, Austria, Greece)
+  if (normCountry.includes('france') || normCountry.includes('italy') || normCountry.includes('spain') || normCountry.includes('europe') || normCountry.includes('united kingdom') || normCountry.includes('germany') || normCountry.includes('croatia') || normCountry.includes('switzerland') || normCountry.includes('austria') || normCountry.includes('greece')) {
     return [
       `${city} Old Town Medieval Square & Bell Tower`,
       `${city} Historic Cathedral & Cloister`,
@@ -96,7 +154,8 @@ function getAuthenticRegionalFallbackHighlights(city: string, country: string, s
     ];
   }
 
-  if (normCountry.includes('united states') || normCountry.includes('canada') || normCountry.includes('australia')) {
+  // North America (USA, Canada)
+  if (normCountry.includes('united states') || normCountry.includes('canada')) {
     return [
       `${city} Historic Downtown & Civic Center`,
       `${city} Waterfront Boardwalk & Marina`,
