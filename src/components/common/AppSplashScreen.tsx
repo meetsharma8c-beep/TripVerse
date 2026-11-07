@@ -251,8 +251,8 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
         {/* Brand Name Typography with Staggered Reveal - Protected global trademark */}
         <div className="mb-3 tv-stagger-1 flex items-center justify-center">
           <img
-            src="/tripverse-title-dark.png?v=8"
-            srcSet="/tripverse-title-dark.png?v=8 1x, /tripverse-title-dark@2x.png?v=8 2x"
+            src="/tripverse-title-dark.png?v=9"
+            srcSet="/tripverse-title-dark.png?v=9 1x, /tripverse-title-dark@2x.png?v=9 2x"
             alt="TripVerse"
             className="h-7 min-[380px]:h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)] notranslate select-none pointer-events-none"
             loading="eager"

@@ -35,7 +35,7 @@ import { triggerHaptic } from '../../services/deviceService';
 import { queryConcodeBrain } from '../../services/concodeBrainService';
 import { useLanguage } from '../../services/languageService';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
-import { HighwayConnector } from '../common/Logo';
+import { HighwayConnector, BrandIconMark } from '../common/Logo';
 
 interface InteractivePhoneDeviceProps {
   currency: SupportedCurrency;
@@ -561,22 +561,17 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                     onClick={() => setActiveScreen('home')}
                     className="flex items-center gap-1.5 cursor-pointer notranslate"
                   >
+                    <BrandIconMark className="w-5 h-5 shrink-0" idPrefix="phone-header" />
                     <img
-                      src="/tripverse-mark.png?v=8"
-                      alt="TripVerse Logo Mark"
-                      className="w-5 h-5 object-contain notranslate"
+                      src="/tripverse-title.png?v=9"
+                      alt="TripVerse"
+                      className="h-3.5 w-auto object-contain dark:hidden notranslate select-none pointer-events-none"
                       loading="eager"
                     />
                     <img
-                      src="/tripverse-title.png?v=8"
+                      src="/tripverse-title-dark.png?v=9"
                       alt="TripVerse"
-                      className="h-3.5 w-auto object-contain dark:hidden notranslate"
-                      loading="eager"
-                    />
-                    <img
-                      src="/tripverse-title-dark.png?v=8"
-                      alt="TripVerse"
-                      className="h-3.5 w-auto object-contain hidden dark:block notranslate"
+                      className="h-3.5 w-auto object-contain hidden dark:block notranslate select-none pointer-events-none"
                       loading="eager"
                     />
                   </div>

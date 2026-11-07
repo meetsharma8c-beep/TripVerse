@@ -1,12 +1,15 @@
-const CACHE_NAME = 'tripverse-cache-v49';
+const CACHE_NAME = 'tripverse-cache-v50';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/tripverse-mark-cropped.png',
-  '/tripverse-mark-cropped@2x.png',
-  '/tripverse-mark-vibrant.png',
   '/tripverse-mark.svg',
+  '/tripverse-mark.png',
+  '/tripverse-mark@2x.png',
+  '/tripverse-title.png',
+  '/tripverse-title@2x.png',
+  '/tripverse-title-dark.png',
+  '/tripverse-title-dark@2x.png',
   '/favicon.svg',
   '/favicon-32x32.png',
   '/apple-splash-screen.png',

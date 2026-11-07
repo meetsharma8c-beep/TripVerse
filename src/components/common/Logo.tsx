@@ -15,7 +15,6 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   className = 'w-auto h-full', 
   idPrefix 
 }) => {
-  const [imgFailed, setImgFailed] = React.useState(false);
   const generatedId = useId();
   const safeId = (idPrefix || generatedId).replace(/[^a-zA-Z0-9]/g, '');
 
@@ -25,26 +24,6 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   const pMid = `pMid-${safeId}`;
   const pBot = `pBot-${safeId}`;
 
-  if (!imgFailed) {
-    return (
-      <img
-        src="/tripverse-mark.png?v=8"
-        srcSet="/tripverse-mark.png?v=8 1x, /tripverse-mark@2x.png?v=8 2x"
-        alt="TripVerse Logo"
-        onError={() => setImgFailed(true)}
-        style={{
-          imageRendering: '-webkit-optimize-contrast',
-          transform: 'translateZ(0)',
-          backfaceVisibility: 'hidden'
-        }}
-        className={`select-none pointer-events-none object-contain drop-shadow-2xs inline-block ${className}`}
-        draggable={false}
-        loading="eager"
-        decoding="async"
-      />
-    );
-  }
-
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -52,12 +31,7 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
       preserveAspectRatio="xMidYMid meet"
       shapeRendering="geometricPrecision"
       textRendering="geometricPrecision"
-      style={{
-        imageRendering: 'crisp-edges',
-        transform: 'translateZ(0)',
-        backfaceVisibility: 'hidden'
-      }}
-      className={`select-none pointer-events-none transform-gpu drop-shadow-2xs ${className}`}
+      className={`select-none pointer-events-none drop-shadow-2xs inline-block ${className}`}
       aria-hidden="true"
     >
       <defs>
@@ -262,19 +236,14 @@ export const Logo: React.FC<LogoProps> = ({
       >
         {!titleImgFailed ? (
           <img
-            src={isLight ? "/tripverse-title-dark.png?v=8" : "/tripverse-title.png?v=8"}
+            src={isLight ? "/tripverse-title-dark.png?v=9" : "/tripverse-title.png?v=9"}
             srcSet={
               isLight 
-                ? "/tripverse-title-dark.png?v=8 1x, /tripverse-title-dark@2x.png?v=8 2x" 
-                : "/tripverse-title.png?v=8 1x, /tripverse-title@2x.png?v=8 2x"
+                ? "/tripverse-title-dark.png?v=9 1x, /tripverse-title-dark@2x.png?v=9 2x" 
+                : "/tripverse-title.png?v=9 1x, /tripverse-title@2x.png?v=9 2x"
             }
             alt="TripVerse"
             onError={() => setTitleImgFailed(true)}
-            style={{
-              imageRendering: '-webkit-optimize-contrast',
-              transform: 'translateZ(0)',
-              backfaceVisibility: 'hidden'
-            }}
             className={`select-none pointer-events-none object-contain drop-shadow-2xs transition-transform duration-300 group-hover:scale-[1.02] ${current.titleHeight} w-auto`}
             draggable={false}
             loading="eager"
