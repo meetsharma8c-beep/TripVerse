@@ -166,7 +166,7 @@ export async function fetchOriginalPhoto(
       const res = await fetch(endpoint, {
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'TripVerse-Client/1.0 (travel@tripverse.concode.com)'
+          'User-Agent': 'TripVerse-Client/1.0 (travel@trip-verse.com)'
         },
         signal: controller.signal
       });

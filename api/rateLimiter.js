@@ -78,6 +78,8 @@ export function getClientIp(req) {
  */
 export function applyCorsHeaders(req, res, allowedMethods = 'GET, POST, OPTIONS') {
   const allowedOrigins = [
+    'https://trip-verse.com',
+    'https://www.trip-verse.com',
     'https://tripverse-pied.vercel.app',
     'https://tripverse.concode.com',
     'https://www.tripverse.concode.com',
@@ -112,4 +114,10 @@ export function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+export default function handler(req, res) {
+  applyCorsHeaders(req, res, 'GET, OPTIONS');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  return res.status(200).json({ ok: true, service: 'rateLimiter' });
 }

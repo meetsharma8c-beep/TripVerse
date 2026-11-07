@@ -148,7 +148,7 @@ export async function resolveGlobalDestination(rawInput: string): Promise<Resolv
   // 2. Query Live Wikipedia REST API for genuine coordinates & encyclopedia data
   const headers = {
     'Accept': 'application/json',
-    'User-Agent': 'TripVerse-Client/1.0 (travel@tripverse.concode.com)'
+    'User-Agent': 'TripVerse-Client/1.0 (travel@trip-verse.com)'
   };
 
   const queriesToTry = [

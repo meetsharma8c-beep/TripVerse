@@ -572,3 +572,8 @@ Provide the recommendation with the appropriate evidence, route details, and act
 
 CONCODE must behave like a reliable travel decision engine, NOT like a text generator that fills gaps with plausible-sounding information.
 `;
+
+export default function handler(req, res) {
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  return res.status(200).json({ ok: true, version: '1.0.0', length: CONCODE_MASTER_PROMPT.length });
+}
