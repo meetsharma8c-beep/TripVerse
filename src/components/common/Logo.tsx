@@ -15,6 +15,7 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   className = 'w-auto h-full', 
   idPrefix 
 }) => {
+  const [imgFailed, setImgFailed] = React.useState(false);
   const generatedId = useId();
   const safeId = (idPrefix || generatedId).replace(/[^a-zA-Z0-9]/g, '');
 
@@ -24,6 +25,21 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   const pMid = `pMid-${safeId}`;
   const pBot = `pBot-${safeId}`;
 
+  if (!imgFailed) {
+    return (
+      <img
+        src="/tripverse-mark.png?v=10"
+        srcSet="/tripverse-mark.png?v=10 1x, /tripverse-mark@2x.png?v=10 2x, /tripverse-mark@3x.png?v=10 3x"
+        alt="TripVerse Logo"
+        onError={() => setImgFailed(true)}
+        className={`select-none pointer-events-none object-contain inline-block ${className}`}
+        draggable={false}
+        loading="eager"
+        decoding="async"
+      />
+    );
+  }
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -31,7 +47,7 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
       preserveAspectRatio="xMidYMid meet"
       shapeRendering="geometricPrecision"
       textRendering="geometricPrecision"
-      className={`select-none pointer-events-none drop-shadow-2xs inline-block ${className}`}
+      className={`select-none pointer-events-none inline-block ${className}`}
       aria-hidden="true"
     >
       <defs>
@@ -236,11 +252,11 @@ export const Logo: React.FC<LogoProps> = ({
       >
         {!titleImgFailed ? (
           <img
-            src={isLight ? "/tripverse-title-dark.png?v=9" : "/tripverse-title.png?v=9"}
+            src={isLight ? "/tripverse-title-dark.png?v=10" : "/tripverse-title.png?v=10"}
             srcSet={
               isLight 
-                ? "/tripverse-title-dark.png?v=9 1x, /tripverse-title-dark@2x.png?v=9 2x" 
-                : "/tripverse-title.png?v=9 1x, /tripverse-title@2x.png?v=9 2x"
+                ? "/tripverse-title-dark.png?v=10 1x, /tripverse-title-dark@2x.png?v=10 2x" 
+                : "/tripverse-title.png?v=10 1x, /tripverse-title@2x.png?v=10 2x"
             }
             alt="TripVerse"
             onError={() => setTitleImgFailed(true)}
