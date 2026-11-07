@@ -60,6 +60,7 @@ interface PlannerWizardProps {
   initialDuration?: number;
   initialTravelers?: number;
   initialBudget?: number;
+  initialBudgetMode?: 'per_person' | 'total';
   onClose: () => void;
   onTripGenerated: (tripInput: PlannerInput) => void;
   onOpenProModal?: () => void;
@@ -71,6 +72,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   initialDuration = 3,
   initialTravelers = 3,
   initialBudget = 8000,
+  initialBudgetMode = 'total',
   onClose,
   onTripGenerated,
   onOpenProModal,
@@ -197,7 +199,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   const [travelersCount, setTravelersCount] = useState<number>(initialTravelers);
 
   // Step 4: Budget
-  const [budgetMode, setBudgetMode] = useState<'per_person' | 'total'>('total');
+  const [budgetMode, setBudgetMode] = useState<'per_person' | 'total'>(initialBudgetMode);
   const [budgetAmount, setBudgetAmount] = useState<number>(initialBudget);
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
 

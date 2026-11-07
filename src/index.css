@@ -116,8 +116,8 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 }
 
 /* Touch Target Optimization for Touch Devices (iOS / Android / Hybrid Tablets) */
-.touch-device button, 
-.touch-device a, 
+.touch-device button:not(.min-h-0):not([data-indicator]):not(.no-min-h), 
+.touch-device a:not(.min-h-0):not(.no-min-h), 
 .touch-device input, 
 .touch-device select {
   min-height: 38px;

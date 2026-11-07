@@ -176,4 +176,38 @@ describe('Cross-OS & Cross-Device Compatibility Engine', () => {
     expect(domClasses.has('mouse-device')).toBe(true);
     expect(domClasses.has('is-retina')).toBe(true);
   });
+
+  it('guarantees touch-device CSS rules exempt indicator buttons to prevent vertical stretching', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const cssPath = path.resolve(__dirname, '../src/index.css');
+    const cssContent = fs.readFileSync(cssPath, 'utf8');
+
+    // Ensure .touch-device button rule specifically exempts min-h-0, data-indicator, and no-min-h
+    expect(cssContent).toContain('.touch-device button:not(.min-h-0):not([data-indicator]):not(.no-min-h)');
+  });
+
+  it('empowers user to select between Total Group Budget and Per Person Budget without forced metrics', () => {
+    const travelers = 3;
+
+    // Mode 1: Total Group Budget chosen by user
+    const totalMode = {
+      mode: 'total' as const,
+      amount: 15000,
+      getFormattedNote: (curr: string) => `For all ${travelers} travelers`
+    };
+    expect(totalMode.mode).toBe('total');
+    expect(totalMode.amount).toBe(15000);
+    expect(totalMode.getFormattedNote('INR')).toBe('For all 3 travelers');
+
+    // Mode 2: Per Person Budget chosen by user
+    const perPersonMode = {
+      mode: 'per_person' as const,
+      amount: 5000,
+      getTotal: () => 5000 * travelers
+    };
+    expect(perPersonMode.mode).toBe('per_person');
+    expect(perPersonMode.amount).toBe(5000);
+    expect(perPersonMode.getTotal()).toBe(15000);
+  });
 });

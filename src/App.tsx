@@ -51,6 +51,7 @@ import { FeaturePillars } from './components/home/FeaturePillars';
 import { PopularDestinations } from './components/home/PopularDestinations';
 import { PublicLaunchSpotlight } from './components/home/PublicLaunchSpotlight';
 import { AIGenerationSkeleton } from './components/common/AIGenerationSkeleton';
+import { POPULAR_DESTINATIONS } from './data/destinations';
 
 // Itinerary Components
 import { TripHeader } from './components/itinerary/TripHeader';
@@ -193,11 +194,13 @@ export function App() {
     duration: number;
     travelers: number;
     budget: number;
+    budgetMode: 'per_person' | 'total';
   }>({
     destination: '',
     duration: 3,
     travelers: 3,
-    budget: 8000
+    budget: 8000,
+    budgetMode: 'total'
   });
 
   // Quick 1-Click AI Trip Generator State (Reconciling "Plan in 30 Seconds" with stepped feedback)
@@ -976,6 +979,7 @@ export function App() {
     duration?: number;
     travelers?: number;
     budget?: number;
+    budgetMode?: 'per_person' | 'total';
   }) => {
     if (params) {
       setPlannerPrefill(prev => ({
@@ -983,6 +987,7 @@ export function App() {
         duration: params.duration ?? prev.duration,
         travelers: params.travelers ?? prev.travelers,
         budget: params.budget ?? prev.budget,
+        budgetMode: params.budgetMode ?? prev.budgetMode ?? 'total'
       }));
     }
     if (isGuestUser(currentUser)) {
@@ -1003,13 +1008,15 @@ export function App() {
     duration?: number;
     travelers?: number;
     budget?: number;
+    budgetMode?: 'per_person' | 'total';
   }) => {
     if (isGuestUser(currentUser)) {
       setPlannerPrefill({
         destination: params.destination?.trim() || 'Udaipur',
         duration: params.duration || 3,
         travelers: params.travelers || 2,
-        budget: params.budget || 8000
+        budget: params.budget || 8000,
+        budgetMode: params.budgetMode || 'total'
       });
       setIsGuestPlannerRestrictedOpen(true);
       return;
@@ -1634,7 +1641,7 @@ export function App() {
               <HeroSection
                 activeTrip={activeTrip}
                 onQuickPlan={(params) => {
-                  handleQuickPlanDirect(params);
+                  handleOpenPlannerWithPrefill(params);
                 }}
                 onExplore={() => setCurrentTab('explore')}
                 onOpenPlanner={() => handleOpenPlannerWithPrefill()}
@@ -1658,11 +1665,13 @@ export function App() {
                   setSelectedDestinationForDetails(dest);
                 }}
                 onPlanTripForDestination={(destName) => {
-                  handleQuickPlanDirect({
+                  const matchedDest = POPULAR_DESTINATIONS.find(d => d.name.toLowerCase() === destName.toLowerCase());
+                  handleOpenPlannerWithPrefill({
                     destination: destName,
                     duration: 3,
                     travelers: 2,
-                    budget: 8500
+                    budget: matchedDest?.startBudget || 8500,
+                    budgetMode: 'total'
                   });
                 }}
                 savedItemIds={savedItemIds}
@@ -2307,6 +2316,7 @@ export function App() {
             initialDuration={plannerPrefill.duration}
             initialTravelers={plannerPrefill.travelers}
             initialBudget={plannerPrefill.budget}
+            initialBudgetMode={plannerPrefill.budgetMode}
             onClose={() => setIsPlannerOpen(false)}
             onTripGenerated={handleTripGenerated}
             onOpenProModal={() => {

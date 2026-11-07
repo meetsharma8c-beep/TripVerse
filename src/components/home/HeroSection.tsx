@@ -34,6 +34,7 @@ interface HeroSectionProps {
     duration: number;
     travelers: number;
     budget: number;
+    budgetMode?: 'total' | 'per_person';
   }) => void;
   onExplore: () => void;
   onOpenPlanner?: () => void;
@@ -51,6 +52,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const [destination, setDestination] = useState('');
   const [duration, setDuration] = useState(3);
   const [travelers, setTravelers] = useState(3);
+  const [budgetMode, setBudgetMode] = useState<'total' | 'per_person'>('total');
   const [budget, setBudget] = useState(8000);
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
   const [heroVideoError, setHeroVideoError] = useState(false);
@@ -220,6 +222,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       duration,
       travelers,
       budget,
+      budgetMode,
     });
   };
 
@@ -474,20 +477,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               ))}
             </div>
 
-            {/* Pagination Dots (Matching Reference Image Screen 1) */}
-            <div className="flex items-center justify-center gap-1.5 mt-2.5">
+            {/* Pagination Dots (Guaranteed Crisp & Horizontal across all Mobile / Touch OS) */}
+            <div className="flex items-center justify-center gap-1 mt-2.5">
               {featuredDestinations.map((_, idx) => (
                 <button
                   key={idx}
                   type="button"
+                  data-indicator="true"
                   onClick={() => scrollCarouselToIndex(idx)}
-                  className={`h-1.5 rounded-full transition-all ${
-                    carouselActiveIndex === idx
-                      ? 'w-4 bg-[#2D5A3D]'
-                      : 'w-1.5 bg-[#CBD5E1]'
-                  }`}
+                  className="p-2 min-h-0 min-w-0 border-0 bg-transparent flex items-center justify-center cursor-pointer focus:outline-none"
                   aria-label={`Go to slide ${idx + 1}`}
-                />
+                  aria-current={carouselActiveIndex === idx ? 'true' : 'false'}
+                >
+                  <span
+                    className={`block h-1.5 rounded-full transition-all duration-300 pointer-events-none ${
+                      carouselActiveIndex === idx
+                        ? 'w-6 bg-[#2D5A3D]'
+                        : 'w-2 bg-[#CBD5E1] hover:bg-slate-400'
+                    }`}
+                  />
+                </button>
               ))}
             </div>
           </div>
@@ -522,7 +531,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     destination: destination.trim() || 'Udaipur',
                     duration,
                     travelers,
-                    budget
+                    budget,
+                    budgetMode
                   });
                 }}
                 className="card-elevate flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-center"
@@ -802,56 +812,112 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
               </div>
 
-              {/* Field 4: Budget with Slider AND Exact Number Input */}
-              <div className="space-y-2">
+              {/* Field 4: Budget with Choice (Total Group vs Per Person) */}
+              <div className="space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <label 
-                    htmlFor="hero-budget-slider"
-                    className="text-xs font-bold uppercase tracking-wider text-[#152A1C] flex items-center gap-1.5"
-                  >
+                  <div className="flex items-center gap-1.5">
                     <Wallet className="w-3.5 h-3.5 text-[#2D5A3D]" />
-                    <span>{t('hero.totalBudget')}</span>
-                  </label>
-                  
-                  {/* Direct Exact Budget Input */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-[#57685D]">Exact:</span>
-                    <div className="relative flex items-center">
-                      <input
-                        type="number"
-                        id="hero-exact-budget"
-                        min={1000}
-                        max={100000}
-                        step={500}
-                        value={budget}
-                        onChange={(e) => setBudget(Math.max(1000, Number(e.target.value)))}
-                        aria-label="Type exact total budget"
-                        className="w-28 px-3 py-1 text-right font-extrabold text-[#2D5A3D] bg-[#E8EFE7] border border-[#DCE7DB] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D5A3D]"
-                      />
-                    </div>
-                    <span className="text-xs font-medium text-[#57685D]">
-                      (~{formatCurrency(Math.round(budget / Math.max(1, travelers)), currency)}/p)
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#152A1C]">
+                      {budgetMode === 'total' ? t('planner.budgetModeTotal') : t('planner.budgetModePerPerson')}
                     </span>
+                  </div>
+
+                  {/* Mode Selector Toggle: User's Choice Between Total vs Per Person */}
+                  <div className="inline-flex items-center bg-[#E8EFE7] p-0.5 rounded-xl border border-[#DCE7DB]">
+                    <button
+                      type="button"
+                      data-indicator="true"
+                      onClick={() => {
+                        if (budgetMode !== 'total') {
+                          setBudgetMode('total');
+                          setBudget(prev => Math.max(2000, prev * travelers));
+                        }
+                      }}
+                      className={`px-3 py-1 text-xs font-bold rounded-lg transition-all min-h-0 ${
+                        budgetMode === 'total'
+                          ? 'bg-white text-[#2D5A3D] shadow-2xs border border-[#DCE7DB]'
+                          : 'text-[#57685D] hover:text-[#152A1C]'
+                      }`}
+                    >
+                      {t('planner.budgetModeTotal')}
+                    </button>
+                    <button
+                      type="button"
+                      data-indicator="true"
+                      onClick={() => {
+                        if (budgetMode !== 'per_person') {
+                          setBudgetMode('per_person');
+                          setBudget(prev => Math.max(1000, Math.round(prev / Math.max(1, travelers))));
+                        }
+                      }}
+                      className={`px-3 py-1 text-xs font-bold rounded-lg transition-all min-h-0 ${
+                        budgetMode === 'per_person'
+                          ? 'bg-white text-[#2D5A3D] shadow-2xs border border-[#DCE7DB]'
+                          : 'text-[#57685D] hover:text-[#152A1C]'
+                      }`}
+                    >
+                      {t('planner.budgetModePerPerson')}
+                    </button>
                   </div>
                 </div>
 
-                <input
-                  id="hero-budget-slider"
-                  type="range"
-                  min={2000}
-                  max={50000}
-                  step={500}
-                  value={budget}
-                  onChange={(e) => setBudget(Number(e.target.value))}
-                  aria-label="Total Group Budget Slider"
-                  className="w-full h-2.5 bg-[#DCE7DB] rounded-lg appearance-none cursor-pointer accent-[#2D5A3D]"
-                />
+                {/* Slider + Exact Value Control */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-xs font-medium text-[#57685D]">
+                      {budgetMode === 'total'
+                        ? `For all ${travelers} travelers`
+                        : `Total: ${formatCurrency(budget * travelers, currency)} for ${travelers} travelers`}
+                    </span>
 
-                <div className="flex justify-between text-xs sm:text-sm font-bold text-[#57685D] pt-0.5 gap-1">
-                  <span>{formatCurrency(2000, currency)} (Budget)</span>
-                  <span className="hidden xs:inline">{formatCurrency(10000, currency)}</span>
-                  <span className="hidden sm:inline">{formatCurrency(25000, currency)}</span>
-                  <span>{formatCurrency(50000, currency)}+ (Comfort)</span>
+                    {/* Direct Exact Budget Input */}
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="hero-exact-budget" className="text-xs font-semibold text-[#57685D]">
+                        Exact:
+                      </label>
+                      <input
+                        type="number"
+                        id="hero-exact-budget"
+                        min={budgetMode === 'total' ? 2000 : 1000}
+                        max={budgetMode === 'total' ? 100000 : 50000}
+                        step={budgetMode === 'total' ? 500 : 250}
+                        value={budget}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setBudget(Math.max(budgetMode === 'total' ? 1000 : 500, val));
+                        }}
+                        aria-label={budgetMode === 'total' ? 'Type exact total group budget' : 'Type exact budget per person'}
+                        className="w-28 px-3 py-1 text-right font-extrabold text-[#2D5A3D] bg-[#E8EFE7] border border-[#DCE7DB] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D5A3D]"
+                      />
+                    </div>
+                  </div>
+
+                  <input
+                    id="hero-budget-slider"
+                    type="range"
+                    min={budgetMode === 'total' ? 2000 : 1000}
+                    max={budgetMode === 'total' ? 60000 : 25000}
+                    step={budgetMode === 'total' ? 500 : 250}
+                    value={budget}
+                    onChange={(e) => setBudget(Number(e.target.value))}
+                    aria-label={budgetMode === 'total' ? 'Total Group Budget Slider' : 'Budget Per Person Slider'}
+                    className="w-full h-2.5 bg-[#DCE7DB] rounded-lg appearance-none cursor-pointer accent-[#2D5A3D]"
+                  />
+
+                  <div className="flex justify-between text-xs sm:text-sm font-bold text-[#57685D] pt-0.5 gap-1">
+                    <span>
+                      {formatCurrency(budgetMode === 'total' ? 2000 : 1000, currency)} {budgetMode === 'per_person' ? '/p' : ''} (Budget)
+                    </span>
+                    <span className="hidden xs:inline">
+                      {formatCurrency(budgetMode === 'total' ? 15000 : 7000, currency)} {budgetMode === 'per_person' ? '/p' : ''}
+                    </span>
+                    <span className="hidden sm:inline">
+                      {formatCurrency(budgetMode === 'total' ? 30000 : 15000, currency)} {budgetMode === 'per_person' ? '/p' : ''}
+                    </span>
+                    <span>
+                      {formatCurrency(budgetMode === 'total' ? 60000 : 25000, currency)}+ {budgetMode === 'per_person' ? '/p' : ''} (Comfort)
+                    </span>
+                  </div>
                 </div>
               </div>
 

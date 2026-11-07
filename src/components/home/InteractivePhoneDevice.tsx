@@ -13,6 +13,7 @@ interface InteractivePhoneDeviceProps {
     duration: number;
     travelers: number;
     budget: number;
+    budgetMode?: 'total' | 'per_person';
   }) => void;
 }
 
@@ -371,7 +372,8 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                           destination: activeTrip?.destination || 'Udaipur',
                           duration: activeTrip?.durationDays || 3,
                           travelers: activeTrip?.travelersCount || 2,
-                          budget: activeTrip?.totalBudget || 8000
+                          budget: activeTrip?.totalBudget || 8000,
+                          budgetMode: 'total'
                         })}
                         className="w-full py-3.5 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-display font-extrabold text-sm shadow-md hover:shadow-lg hover:shadow-emerald-500/25 text-center active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
