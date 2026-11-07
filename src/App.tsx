@@ -1094,7 +1094,6 @@ export function App() {
 
         setCurrentTab('trip-detail');
         setTripSubTab('itinerary');
-        setIsBestDealModalOpen(true);
         triggerHaptic('success');
 
         try {
@@ -1138,7 +1137,6 @@ export function App() {
       setIsPlannerOpen(false);
       setCurrentTab('trip-detail');
       setTripSubTab('itinerary');
-      setIsBestDealModalOpen(true);
     } finally {
       setIsGeneratingTrip(false);
     }
