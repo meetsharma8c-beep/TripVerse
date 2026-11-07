@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { Destination } from '../../types/trip';
-import { Star, ArrowRight, Sparkles, Compass, Bookmark } from 'lucide-react';
+import { Star, ArrowRight, Sparkles, Compass, Bookmark, Calendar } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { ScrollReveal } from '../common/ScrollReveal';
@@ -181,19 +181,28 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                     {dest.description}
                   </p>
 
-                  <div className="flex items-center justify-between py-2.5 px-3 rounded-2xl bg-[#F4F6F2] border border-[#E2EBE1] text-xs mb-4 gap-2">
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[10px] uppercase font-bold text-[#57685D] block tracking-wider">
-                        Est. Budget (Stays + Route)
-                      </span>
-                      <span className="font-extrabold text-[#152A1C] text-sm font-display truncate block">
-                        {formatCurrency(dest.startBudget, currency)}
-                        <span className="text-[11px] font-normal text-[#57685D] ml-0.5 font-sans">/person</span>
-                      </span>
+                  <div className="py-2.5 px-3 rounded-2xl bg-[#F4F6F2] border border-[#E2EBE1] text-xs mb-4 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] uppercase font-bold text-[#57685D] block tracking-wider">
+                          Typical Ground Cost
+                        </span>
+                        <span className="font-extrabold text-[#152A1C] text-sm font-display truncate block">
+                          From ~{formatCurrency(dest.startBudget, currency)}
+                          <span className="text-[11px] font-normal text-[#57685D] ml-0.5 font-sans">/person</span>
+                        </span>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] uppercase font-bold text-[#57685D] block tracking-wider">Ideal Window</span>
+                        <span className="font-bold text-[#2D5A3D] text-xs flex items-center justify-end gap-1">
+                          <Calendar className="w-3 h-3 text-[#2D5A3D] shrink-0" />
+                          <span>{dest.bestTime || dest.recommendedDuration}</span>
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-[10px] uppercase font-bold text-[#57685D] block tracking-wider">Duration</span>
-                      <span className="font-bold text-[#152A1C] text-xs">{dest.recommendedDuration}</span>
+                    <div className="flex items-center justify-between text-[10px] font-medium text-[#57685D] pt-1.5 border-t border-[#E2EBE1]/80">
+                      <span>Suggested {dest.recommendedDuration}</span>
+                      <span className="text-[#2D5A3D] font-bold">100% Customizable in Planner</span>
                     </div>
                   </div>
                 </div>

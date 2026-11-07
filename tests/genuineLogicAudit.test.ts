@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { generateSmartPackingList } from '../src/services/packingService';
 import { getReplanOptions } from '../src/services/replanningService';
 import { Trip } from '../src/types/trip';
+import { POPULAR_DESTINATIONS, parseDurationDays } from '../src/data/destinations';
 
 describe('Genuine Travel Domain Logic Verification', () => {
   const mockTokyoTrip: Trip = {
@@ -71,5 +72,28 @@ describe('Genuine Travel Domain Logic Verification', () => {
     expect(joined).toContain('kyoto');
     expect(joined).not.toContain('udaipur');
     expect(joined).not.toContain('gokarna');
+  });
+
+  it('guarantees realistic economic budgets for international tier-1 and domestic destinations without inadequate pre-filled numbers', () => {
+    // Paris, New York, Tokyo, London, Swiss Alps must have realistic ground cost budgets (>= ₹50,000)
+    const paris = POPULAR_DESTINATIONS.find((d: any) => d.id === 'paris');
+    const tokyo = POPULAR_DESTINATIONS.find((d: any) => d.id === 'tokyo');
+    const nyc = POPULAR_DESTINATIONS.find((d: any) => d.id === 'new-york');
+    const swiss = POPULAR_DESTINATIONS.find((d: any) => d.id === 'swiss-alps');
+
+    expect(paris.startBudget).toBeGreaterThanOrEqual(50000);
+    expect(tokyo.startBudget).toBeGreaterThanOrEqual(50000);
+    expect(nyc.startBudget).toBeGreaterThanOrEqual(50000);
+    expect(swiss.startBudget).toBeGreaterThanOrEqual(50000);
+
+    // Domestic destinations must have realistic ground budgets (>= ₹10,000)
+    const goa = POPULAR_DESTINATIONS.find((d: any) => d.id === 'goa');
+    const ladakh = POPULAR_DESTINATIONS.find((d: any) => d.id === 'ladakh');
+    expect(goa.startBudget).toBeGreaterThanOrEqual(10000);
+    expect(ladakh.startBudget).toBeGreaterThanOrEqual(25000);
+
+    // Duration parser must extract clean numbers for planning wizard
+    expect(parseDurationDays('5 Days')).toBe(5);
+    expect(parseDurationDays('3 - 4 Days')).toBe(3);
   });
 });

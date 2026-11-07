@@ -355,16 +355,43 @@ function getActivityTypeMeta(spotType: string, category: string) {
  */
 function getCityCostMultiplier(state: string, destination: string): number {
   const norm = (state + ' ' + destination).toLowerCase();
-  if (norm.includes('mumbai') || norm.includes('delhi') || norm.includes('bangalore') || norm.includes('bengaluru') || norm.includes('dubai') || norm.includes('singapore') || norm.includes('paris')) {
-    return 1.45;
+  // Tier 1 High-Cost International Metros & European/Western capitals
+  if (
+    norm.includes('paris') || 
+    norm.includes('new york') || 
+    norm.includes('london') || 
+    norm.includes('zurich') || 
+    norm.includes('swiss') || 
+    norm.includes('tokyo') || 
+    norm.includes('sydney') || 
+    norm.includes('rome') || 
+    norm.includes('amsterdam') ||
+    norm.includes('barcelona') ||
+    norm.includes('santorini')
+  ) {
+    return 3.5;
   }
-  if (norm.includes('goa') || norm.includes('manali') || norm.includes('leh') || norm.includes('ladakh') || norm.includes('andaman') || norm.includes('munnar') || norm.includes('kashmir')) {
-    return 1.25;
+  // Tier 2 International hubs
+  if (norm.includes('dubai') || norm.includes('singapore') || norm.includes('kyoto')) {
+    return 2.4;
   }
-  if (norm.includes('jaipur') || norm.includes('udaipur') || norm.includes('varanasi') || norm.includes('agra') || norm.includes('amritsar') || norm.includes('pune') || norm.includes('hyderabad')) {
-    return 1.05;
+  // Regional International
+  if (norm.includes('bali') || norm.includes('bangkok') || norm.includes('thailand') || norm.includes('indonesia')) {
+    return 1.6;
   }
-  return 0.85;
+  // Domestic India Remote / Premium
+  if (norm.includes('leh') || norm.includes('ladakh') || norm.includes('spiti') || norm.includes('andaman') || norm.includes('kashmir')) {
+    return 1.5;
+  }
+  // Domestic India Metros & Major Tourist
+  if (norm.includes('mumbai') || norm.includes('delhi') || norm.includes('bangalore') || norm.includes('bengaluru') || norm.includes('goa') || norm.includes('manali') || norm.includes('munnar') || norm.includes('kerala')) {
+    return 1.3;
+  }
+  // Domestic India Standard Tourist
+  if (norm.includes('jaipur') || norm.includes('udaipur') || norm.includes('varanasi') || norm.includes('agra') || norm.includes('amritsar') || norm.includes('pune') || norm.includes('hyderabad') || norm.includes('jodhpur') || norm.includes('pondicherry') || norm.includes('coorg') || norm.includes('ooty') || norm.includes('darjeeling') || norm.includes('sikkim') || norm.includes('meghalaya') || norm.includes('jaisalmer')) {
+    return 1.1;
+  }
+  return 0.95;
 }
 
 /**

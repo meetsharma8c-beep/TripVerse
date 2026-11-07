@@ -219,19 +219,19 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
           {/* Key Facts Metric Strip */}
           <div className="grid grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/90 text-center">
             <div className="min-w-0">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Starting Budget</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Typical Cost</span>
               <span className="text-sm sm:text-base font-black text-[#2D5A3D] font-display truncate block">
                 {formatCurrency(destination.startBudget, currency)}
               </span>
-              <span className="text-[10px] text-slate-500">per traveler</span>
+              <span className="text-[10px] text-slate-500">per person (ground)</span>
             </div>
 
             <div className="min-w-0 border-x border-slate-200 px-2">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Ideal Duration</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Suggested Time</span>
               <span className="text-sm sm:text-base font-extrabold text-slate-800 font-display truncate block">
                 {destination.recommendedDuration}
               </span>
-              <span className="text-[10px] text-slate-500">recommended</span>
+              <span className="text-[10px] text-[#2D5A3D] font-semibold">customizable</span>
             </div>
 
             <div className="min-w-0">

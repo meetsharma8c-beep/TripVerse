@@ -183,7 +183,21 @@ export function synthesizeDestination(
   let category: Destination['category'] = customCategory || resolved.category || 'roadtrip';
   let state = customState || resolved.state || 'India';
   let tagline = resolved.tagline || 'Scenic Getaway • Road Trip • Authentic Culture';
-  let startBudget = 3500;
+  const isInternational = resolved.country && resolved.country !== 'India' && resolved.country !== 'Worldwide';
+  const isHighCostInternational = isInternational && (
+    resolved.country === 'France' ||
+    resolved.country === 'United States' ||
+    resolved.country === 'United Kingdom' ||
+    resolved.country === 'Japan' ||
+    resolved.country === 'Switzerland' ||
+    resolved.country === 'Italy' ||
+    resolved.country === 'Australia' ||
+    resolved.country === 'Spain' ||
+    resolved.country === 'Germany' ||
+    resolved.country === 'Netherlands'
+  );
+
+  let startBudget = 8500;
   let recommendedDuration = '2 - 3 Days';
   let popularActivities = resolved.highlights && resolved.highlights.length > 0 
     ? [...resolved.highlights]
@@ -194,17 +208,23 @@ export function synthesizeDestination(
         'Evening Leisure Stroll'
       ];
 
-  if (category === 'mountain') {
-    startBudget = 4500;
-    recommendedDuration = '3 - 4 Days';
+  if (isHighCostInternational) {
+    startBudget = 75000;
+    recommendedDuration = '5 - 6 Days';
+  } else if (isInternational) {
+    startBudget = 38000;
+    recommendedDuration = '4 - 5 Days';
+  } else if (category === 'mountain') {
+    startBudget = 14000;
+    recommendedDuration = '4 - 5 Days';
   } else if (category === 'beach') {
-    startBudget = 4800;
-    recommendedDuration = '3 - 4 Days';
+    startBudget = 15000;
+    recommendedDuration = '3 - 5 Days';
   } else if (category === 'spiritual') {
-    startBudget = 2800;
+    startBudget = 7000;
     recommendedDuration = '2 - 3 Days';
   } else if (category === 'heritage') {
-    startBudget = 3200;
+    startBudget = 9000;
     recommendedDuration = '2 - 3 Days';
   }
 

@@ -42,8 +42,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       let scoreA = 0;
       let scoreB = 0;
       if (style.includes('budget') || style.includes('backpacker')) {
-        if (a.startBudget <= 3500) scoreA += 3;
-        if (b.startBudget <= 3500) scoreB += 3;
+        if (a.startBudget <= 10000) scoreA += 3;
+        if (b.startBudget <= 10000) scoreB += 3;
       } else if (style.includes('luxury')) {
         if (a.category === 'heritage' || a.category === 'beach') scoreA += 3;
         if (b.category === 'heritage' || b.category === 'beach') scoreB += 3;
@@ -80,7 +80,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
     if (selectedTag === 'all') return true;
     if (selectedTag === 'trending') return dest.rating >= 4.8;
-    if (selectedTag === 'budget') return dest.startBudget <= 4000;
+    if (selectedTag === 'budget') return dest.startBudget <= 10000;
     if (selectedTag === 'weekend') return dest.recommendedDuration.includes('2 - 3') || dest.recommendedDuration.includes('3') || dest.category === 'weekend';
     if (selectedTag === 'roadtrip') return dest.category === 'roadtrip' || dest.category === 'heritage';
     if (selectedTag === 'heritage') return dest.category === 'heritage';
@@ -300,7 +300,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                 <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between text-xs py-2 px-3 rounded-xl bg-[#F4F6F2] border border-[#E2EBE1] gap-2">
                     <div className="min-w-0 flex-1">
-                      <span className="badge-caps text-[#5A7362] block">Est. Budget</span>
+                      <span className="badge-caps text-[#5A7362] block">Typical Cost</span>
                       <span className="font-bold text-[#152A1C] text-xs font-display truncate block">
                         From {formatCurrency(dest.startBudget, currency)}
                       </span>

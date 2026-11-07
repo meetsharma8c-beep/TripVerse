@@ -51,7 +51,7 @@ import { FeaturePillars } from './components/home/FeaturePillars';
 import { PopularDestinations } from './components/home/PopularDestinations';
 import { PublicLaunchSpotlight } from './components/home/PublicLaunchSpotlight';
 import { AIGenerationSkeleton } from './components/common/AIGenerationSkeleton';
-import { POPULAR_DESTINATIONS } from './data/destinations';
+import { POPULAR_DESTINATIONS, parseDurationDays } from './data/destinations';
 
 // Itinerary Components
 import { TripHeader } from './components/itinerary/TripHeader';
@@ -1668,10 +1668,10 @@ export function App() {
                   const matchedDest = POPULAR_DESTINATIONS.find(d => d.name.toLowerCase() === destName.toLowerCase());
                   handleOpenPlannerWithPrefill({
                     destination: destName,
-                    duration: 3,
+                    duration: matchedDest ? parseDurationDays(matchedDest.recommendedDuration) : 3,
                     travelers: 2,
-                    budget: matchedDest?.startBudget || 8500,
-                    budgetMode: 'total'
+                    budget: matchedDest?.startBudget || 15000,
+                    budgetMode: 'per_person'
                   });
                 }}
                 savedItemIds={savedItemIds}
