@@ -854,17 +854,19 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
                 const errType = errObj?.type || '';
                 if (errType === 'popup_closed') {
                   finishReject(new Error('Google sign-in was cancelled.'));
-                } else if (errType === 'popup_failed_to_open') {
-                  if (isFirebaseConfigured()) {
-                    console.warn('[GIS Auth] Popup failed to open. Automatically switching to Google redirect flow...');
-                    try {
-                      await signInWithGoogleRedirect();
-                      return;
-                    } catch (rErr: any) {
-                      finishReject(rErr);
-                      return;
-                    }
+                  return;
+                }
+                if (isFirebaseConfigured()) {
+                  console.warn('[GIS Auth] Error encountered, auto-recovering with Firebase Google Auth:', errObj);
+                  try {
+                    const fbUser = await signInWithFirebaseGoogleAuth();
+                    finishResolve(fbUser);
+                    return;
+                  } catch (fbErr: any) {
+                    console.warn('[Firebase Google Auth fallback notice]:', fbErr);
                   }
+                }
+                if (errType === 'popup_failed_to_open') {
                   finishReject(new Error('Google popup was blocked by your browser. Please allow popups to proceed.'));
                 } else {
                   finishReject(new Error(errObj?.message || 'Google Sign-In could not complete.'));
@@ -874,9 +876,19 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
                 if (tokenResponse.error) {
                   if (tokenResponse.error === 'access_denied') {
                     finishReject(new Error('Google sign-in was cancelled.'));
-                  } else {
-                    finishReject(new Error(tokenResponse.error_description || tokenResponse.error || 'Google Sign-In failed.'));
+                    return;
                   }
+                  if (isFirebaseConfigured()) {
+                    console.warn('[GIS Token] Error received, auto-recovering with Firebase Google Auth:', tokenResponse.error);
+                    try {
+                      const fbUser = await signInWithFirebaseGoogleAuth();
+                      finishResolve(fbUser);
+                      return;
+                    } catch (fbErr: any) {
+                      console.warn('[Firebase Google Auth fallback notice]:', fbErr);
+                    }
+                  }
+                  finishReject(new Error(tokenResponse.error_description || tokenResponse.error || 'Google Sign-In failed.'));
                   return;
                 }
                 try {
