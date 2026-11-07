@@ -306,9 +306,6 @@ export function saveSession(session: AuthSession | null): void {
   try {
     if (session) {
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-      if (session.user?.uid) {
-        notifyAuthActivity(session.user).catch(() => {});
-      }
     } else {
       localStorage.removeItem(SESSION_STORAGE_KEY);
     }
@@ -1795,7 +1792,6 @@ export function onAuthStateChanged(callback: (user: AuthUser | null) => void): (
       if (!sessionStorage.getItem(reportKey)) {
         sessionStorage.setItem(reportKey, '1');
         saveProfileToSupabase(activeUser.uid, toUserProfile(activeUser)).catch(() => {});
-        notifyAuthActivity(activeUser, 'signin').catch(() => {});
       }
     }
   } catch {}

@@ -19,7 +19,7 @@ const recentlyAlerted = new Map();
  * cold starts or multi-instance routing never lose a single sign-in event.
  */
 async function loadPersistentCloudActivities() {
-  if (!RESEND_API_KEY) return [];
+  if (process.env.ENABLE_AUTH_ACTIVITY_EMAILS !== 'true' || !RESEND_API_KEY) return [];
   try {
     const res = await fetch('https://api.resend.com/emails', {
       headers: { Authorization: `Bearer ${RESEND_API_KEY}` }
@@ -188,51 +188,55 @@ export default async function handler(req, res) {
       activityLog.pop();
     }
 
+    let supabaseProfileId = null;
+
+    // 1. Server-side guarantee: ensure user sign-in is also recorded in Supabase public.profiles & auth.users
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      try {
+        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false }
+        });
+        const { data: anonData } = await sb.auth.signInAnonymously({
+          options: {
+            data: {
+              full_name: activityRecord.displayName,
+              user_email: activityRecord.email || null,
+              auth_provider: activityRecord.provider,
+              external_uid: activityRecord.uid,
+              location: locationStr,
+              ip: clientIp,
+              last_sign_in_at: activityRecord.timestamp
+            }
+          }
+        });
+        if (anonData?.user?.id) {
+          supabaseProfileId = anonData.user.id;
+          await sb.from('profiles').upsert({
+            id: anonData.user.id,
+            email: activityRecord.email || null,
+            display_name: activityRecord.displayName,
+            traveler_style: user.travelerStyle || 'Smart Roadtripper',
+            travel_style_tag: `${activityRecord.travelStyleTag} • ${String(activityRecord.provider).toUpperCase()}`,
+            location: locationStr,
+            updated_at: activityRecord.timestamp
+          });
+        }
+      } catch (sbErr) {
+        console.warn('[Auth Activity Supabase Sync Notice]', sbErr);
+      }
+    }
+
     const alertKey = `${user.uid}:${activityRecord.provider}`;
     const lastAlertTime = recentlyAlerted.get(alertKey) || 0;
-    const shouldDispatchEmail = (Date.now() - lastAlertTime > 2 * 60 * 1000) && Boolean(RESEND_API_KEY);
+    // CRITICAL: Prevent wasting Resend quota! Sign-in activity emails are strictly disabled
+    // unless explicitly requested via ENABLE_AUTH_ACTIVITY_EMAILS='true'.
+    // This preserves 100% of the Resend email quota for user-facing 2FA & OTP verification.
+    const shouldDispatchEmail = process.env.ENABLE_AUTH_ACTIVITY_EMAILS === 'true' && Boolean(RESEND_API_KEY) && (Date.now() - lastAlertTime > 2 * 60 * 1000);
 
     let emailDispatchId = null;
-    let supabaseProfileId = null;
 
     if (shouldDispatchEmail) {
       recentlyAlerted.set(alertKey, Date.now());
-
-      // 1. Server-side guarantee: ensure user sign-in is also recorded in Supabase public.profiles & auth.users
-      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-        try {
-          const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: { persistSession: false, autoRefreshToken: false }
-          });
-          const { data: anonData } = await sb.auth.signInAnonymously({
-            options: {
-              data: {
-                full_name: activityRecord.displayName,
-                user_email: activityRecord.email || null,
-                auth_provider: activityRecord.provider,
-                external_uid: activityRecord.uid,
-                location: locationStr,
-                ip: clientIp,
-                last_sign_in_at: activityRecord.timestamp
-              }
-            }
-          });
-          if (anonData?.user?.id) {
-            supabaseProfileId = anonData.user.id;
-            await sb.from('profiles').upsert({
-              id: anonData.user.id,
-              email: activityRecord.email || null,
-              display_name: activityRecord.displayName,
-              traveler_style: user.travelerStyle || 'Smart Roadtripper',
-              travel_style_tag: `${activityRecord.travelStyleTag} • ${String(activityRecord.provider).toUpperCase()}`,
-              location: locationStr,
-              updated_at: activityRecord.timestamp
-            });
-          }
-        } catch (sbErr) {
-          console.warn('[Auth Activity Supabase Sync Notice]', sbErr);
-        }
-      }
 
       const providerLabel = String(activityRecord.provider).toUpperCase();
       const userIdent = activityRecord.displayName || activityRecord.email || `Guest (${activityRecord.uid.slice(0, 8)})`;
