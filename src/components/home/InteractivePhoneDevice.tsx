@@ -266,40 +266,34 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
   return (
     <div className="relative w-full max-w-[360px] sm:max-w-[380px] mx-auto select-none transition-all duration-300">
       
-      {/* Ambient Radial Floor Glow */}
+      {/* Ambient Radial Floor Glow (Symmetrical & Non-Rotated) */}
       <div 
-        className={`absolute -inset-6 bg-gradient-to-tr ${finishStyles.accentGlow} rounded-[64px] blur-3xl -z-10 opacity-70 transform rotate-1 transition-all duration-500`}
+        className={`absolute -inset-4 bg-gradient-to-tr ${finishStyles.accentGlow} rounded-[56px] blur-2xl -z-10 opacity-60 transition-all duration-500 pointer-events-none`}
       />
 
       {/* ============================================================== */}
-      {/* PHYSICAL TITANIUM CHASSIS                                      */}
+      {/* PHYSICAL TITANIUM CHASSIS (Concentric 50px Continuous Curvature) */}
       {/* ============================================================== */}
-      <div className={`relative bg-gradient-to-b ${finishStyles.outerBand} p-[5px] rounded-[52px] shadow-[0_35px_80px_-15px_rgba(0,0,0,0.75),0_0_0_1px_rgba(255,255,255,0.14),0_12px_24px_rgba(0,0,0,0.6)] border-[2px] ${finishStyles.rimBorder} ${finishStyles.specularRing}`}>
-
-        {/* --- Antenna Lines --- */}
-        <div className="absolute -left-[2px] top-12 w-[2px] h-[3px] bg-slate-700/80 rounded-xs pointer-events-none" />
-        <div className="absolute -left-[2px] bottom-16 w-[2px] h-[3px] bg-slate-700/80 rounded-xs pointer-events-none" />
-        <div className="absolute -right-[2px] top-12 w-[2px] h-[3px] bg-slate-700/80 rounded-xs pointer-events-none" />
-        <div className="absolute -right-[2px] bottom-16 w-[2px] h-[3px] bg-slate-700/80 rounded-xs pointer-events-none" />
+      <div className={`relative bg-gradient-to-b ${finishStyles.outerBand} p-[4px] rounded-[50px] shadow-[0_30px_70px_-15px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.12),0_10px_20px_rgba(0,0,0,0.5)] border-[2px] ${finishStyles.rimBorder} ${finishStyles.specularRing}`}>
 
         {/* --- Physical Buttons: Left Side --- */}
         {/* Action Button */}
         <button
           onClick={handleActionButton}
           title="Action Button: Toggle Silent Mode"
-          className={`absolute -left-[6.5px] top-[90px] w-[4.5px] h-7 bg-gradient-to-r ${finishStyles.buttonBg} hover:brightness-125 active:scale-95 rounded-l-xs border-y border-l transition-all cursor-pointer shadow-xs`}
+          className={`absolute -left-[5px] top-[86px] w-[3.5px] h-7 bg-gradient-to-r ${finishStyles.buttonBg} hover:brightness-125 active:scale-95 rounded-l-xs border-y border-l transition-all cursor-pointer shadow-xs`}
         />
         {/* Volume Up */}
         <button
           onClick={handleVolumeUp}
           title="Volume Up"
-          className={`absolute -left-[6.5px] top-[134px] w-[4.5px] h-12 bg-gradient-to-r ${finishStyles.buttonBg} hover:brightness-125 active:scale-95 rounded-l-xs border-y border-l transition-all cursor-pointer shadow-xs`}
+          className={`absolute -left-[5px] top-[128px] w-[3.5px] h-12 bg-gradient-to-r ${finishStyles.buttonBg} hover:brightness-125 active:scale-95 rounded-l-xs border-y border-l transition-all cursor-pointer shadow-xs`}
         />
         {/* Volume Down */}
         <button
           onClick={handleVolumeDown}
           title="Volume Down"
-          className={`absolute -left-[6.5px] top-[196px] w-[4.5px] h-12 bg-gradient-to-r ${finishStyles.buttonBg} hover:brightness-125 active:scale-95 rounded-l-xs border-y border-l transition-all cursor-pointer shadow-xs`}
+          className={`absolute -left-[5px] top-[188px] w-[3.5px] h-12 bg-gradient-to-r ${finishStyles.buttonBg} hover:brightness-125 active:scale-95 rounded-l-xs border-y border-l transition-all cursor-pointer shadow-xs`}
         />
 
         {/* --- Physical Buttons: Right Side --- */}
@@ -307,26 +301,29 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
         <button
           onClick={handlePowerButton}
           title="Power Button: Lock/Unlock"
-          className={`absolute -right-[6.5px] top-[138px] w-[4.5px] h-16 bg-gradient-to-l ${finishStyles.buttonBg} hover:brightness-125 active:scale-95 rounded-r-xs border-y border-r transition-all cursor-pointer shadow-xs`}
+          className={`absolute -right-[5px] top-[132px] w-[3.5px] h-16 bg-gradient-to-l ${finishStyles.buttonBg} hover:brightness-125 active:scale-95 rounded-r-xs border-y border-r transition-all cursor-pointer shadow-xs`}
         />
 
         {/* Camera Control Button (Lower Right) */}
         <button
           onClick={handleCameraControlButton}
           title="Camera Control: Tactile Sapphire Sensor"
-          className={`absolute -right-[5.5px] bottom-[115px] w-[3.5px] h-14 bg-gradient-to-l from-slate-900 to-slate-800 hover:brightness-125 active:scale-95 rounded-r-xs border-y border-r ${finishStyles.cameraControlBorder} transition-all cursor-pointer shadow-xs`}
+          className={`absolute -right-[4.5px] bottom-[110px] w-[3px] h-14 bg-gradient-to-l from-slate-900 to-slate-800 hover:brightness-125 active:scale-95 rounded-r-xs border-y border-r ${finishStyles.cameraControlBorder} transition-all cursor-pointer shadow-xs`}
         />
 
         {/* Top Micro-slit Earpiece Speaker */}
-        <div className="absolute top-[3px] left-1/2 -translate-x-1/2 w-14 h-[2px] bg-[#0c0d10] rounded-full z-40 shadow-[inset_0_1px_1px_rgba(0,0,0,0.9)]" />
+        <div className="absolute top-[2.5px] left-1/2 -translate-x-1/2 w-14 h-[2px] bg-[#0c0d10] rounded-full z-40 shadow-[inset_0_1px_1px_rgba(0,0,0,0.9)]" />
 
         {/* ============================================================== */}
-        {/* ULTRA-THIN 1.15mm OLED DISPLAY                                 */}
+        {/* ULTRA-THIN 1.15mm OLED DISPLAY (Concentric 46px Curvature)    */}
         {/* ============================================================== */}
-        <div className="relative rounded-[48px] overflow-hidden bg-white dark:bg-slate-950 border-[2.5px] border-black shadow-[inset_0_0_4px_rgba(0,0,0,0.9)]">
+        <div 
+          className="relative rounded-[46px] overflow-hidden bg-white dark:bg-slate-950 border-[2px] border-black shadow-[inset_0_0_4px_rgba(0,0,0,0.9)] isolate"
+          style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
+        >
 
           {/* Glass Edge Sheen */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.08] z-30 rounded-[46px]" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.08] z-30 rounded-[44px]" />
 
           {/* Flashlight Active Beam Simulation */}
           {flashlightOn && isLocked && (
