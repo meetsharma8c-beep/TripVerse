@@ -250,12 +250,12 @@ export async function sendFirebasePhoneOtp(
 
   if (restRes.ok && restData.sessionInfo) {
     activeRestSessionInfo = restData.sessionInfo;
-    const confirmationMock: ConfirmationResult = {
+    const confirmationResult: ConfirmationResult = {
       verificationId: restData.sessionInfo,
       confirm: async (code: string) => await confirmFirebasePhoneOtp(code)
     };
-    activeConfirmationResult = confirmationMock;
-    return confirmationMock;
+    activeConfirmationResult = confirmationResult;
+    return confirmationResult;
   }
 
   const errMsg = restData?.error?.message || '';

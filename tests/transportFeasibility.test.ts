@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getFeasibleTransportModes } from '../src/services/transportFeasibilityEngine';
 import { generateAITrip, PlannerInput } from '../src/services/plannerEngine';
+import { generateTransportDeals } from '../src/services/dealService';
 
 describe('Transport Feasibility Engine — Geographic & Route Validation', () => {
 
@@ -125,5 +126,37 @@ describe('Transport Feasibility Engine — Geographic & Route Validation', () =>
     const trip = await generateAITrip(input);
     expect(trip.transportMode).not.toBe('train');
     expect(['car', 'bus', 'flight', 'bike', 'any']).toContain(trip.transportMode);
+  });
+
+  it('calculates genuine dynamic distance and fares for deals instead of static constants', () => {
+    // Short route (~300 km: Delhi to Jaipur)
+    const shortDeals = generateTransportDeals({
+      origin: 'Delhi',
+      destination: 'Jaipur, Rajasthan',
+      mode: 'car',
+      travelersCount: 2,
+      durationDays: 3,
+      totalBudget: 20000
+    });
+
+    // Long route (~1400 km: Delhi to Mumbai)
+    const longDeals = generateTransportDeals({
+      origin: 'Delhi',
+      destination: 'Mumbai, Maharashtra',
+      mode: 'car',
+      travelersCount: 2,
+      durationDays: 3,
+      totalBudget: 40000
+    });
+
+    const shortCab = shortDeals.allDeals.find((d: any) => d.mode === 'car');
+    const longCab = longDeals.allDeals.find((d: any) => d.mode === 'car');
+
+    expect(shortCab).toBeDefined();
+    expect(longCab).toBeDefined();
+    // Longer route cab must cost more than shorter route cab
+    expect(longCab.dealPrice).toBeGreaterThan(shortCab.dealPrice);
+    // Calculated durations must reflect distance
+    expect(shortCab.route.duration).not.toBe(longCab.route.duration);
   });
 });

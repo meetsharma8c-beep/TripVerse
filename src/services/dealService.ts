@@ -1,5 +1,6 @@
 import { TransportDeal, TransportMode, Priority } from '../types/trip';
 import { resolveTransitContext } from './transportFeasibilityEngine';
+import { resolvePreciseLocationSync } from './locationService';
 
 export interface DealQueryParams {
   mode: TransportMode;
@@ -10,6 +11,59 @@ export interface DealQueryParams {
   totalBudget: number;
   priorities?: Priority[];
   startDate?: string;
+}
+
+/**
+ * Calculates genuine straight-line distance in km between two locations using Haversine formula.
+ */
+function calculateRouteDistanceKm(origin: string, destination: string): number {
+  const oLoc = resolvePreciseLocationSync(origin);
+  const dLoc = resolvePreciseLocationSync(destination);
+  const c1 = oLoc?.coordinates;
+  const c2 = dLoc?.coordinates;
+  if (!c1 || !c2 || !c1.lat || !c2.lat) return 450;
+  
+  const R = 6371;
+  const dLat = ((c2.lat - c1.lat) * Math.PI) / 180;
+  const dLng = ((c2.lng - c1.lng) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((c1.lat * Math.PI) / 180) *
+    Math.cos((c2.lat * Math.PI) / 180) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.max(20, Math.round(R * c));
+}
+
+function formatMinutesToHours(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+function addMinutesToClockTime(startClock: string, minutesToAdd: number): string {
+  const match = startClock.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return '02:00 PM';
+  let hours = parseInt(match[1], 10);
+  const mins = parseInt(match[2], 10);
+  const isPM = match[3].toUpperCase() === 'PM';
+  if (isPM && hours < 12) hours += 12;
+  if (!isPM && hours === 12) hours = 0;
+
+  const totalMins = hours * 60 + mins + minutesToAdd;
+  const newDays = Math.floor(totalMins / 1440);
+  const remMins = totalMins % 1440;
+  let endH = Math.floor(remMins / 60);
+  const endM = remMins % 60;
+  const period = endH >= 12 ? 'PM' : 'AM';
+  endH = endH % 12 || 12;
+  const paddedM = endM.toString().padStart(2, '0');
+  const paddedH = endH.toString().padStart(2, '0');
+  const nextDayStr = newDays === 1 ? ' (Next Day)' : newDays > 1 ? ` (+${newDays} Days)` : '';
+  return `${paddedH}:${paddedM} ${period}${nextDayStr}`;
 }
 
 /**
@@ -114,6 +168,12 @@ export function generateTransportDeals(params: DealQueryParams): {
     ? params.startDate.split('T')[0]
     : new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
 
+  // Genuine route distance calculation across all modalities
+  const straightDistKm = calculateRouteDistanceKm(params.origin, params.destination);
+  const airDistKm = straightDistKm;
+  const roadDistKm = Math.round(straightDistKm * 1.28);
+  const railDistKm = Math.round(straightDistKm * 1.18);
+
   // Region and international routing detection
   const canonical = resolveCanonicalDestination(rawDest);
   const country = (canonical.country || '').toLowerCase();
@@ -166,6 +226,26 @@ export function generateTransportDeals(params: DealQueryParams): {
     const airportName = transit.primaryAirport?.name || `${cleanDest} Airport`;
     const isMultiModalAir = !transit.hasDirectAirport && transit.primaryAirport !== null;
 
+    const flightAirMinutes = Math.max(50, Math.round((airDistKm / 720) * 60) + 40);
+    const flightDepTime = '07:15 AM';
+    const flightArrTime = addMinutesToClockTime(flightDepTime, flightAirMinutes);
+    const flightDurationStr = isMultiModalAir 
+      ? `${formatMinutesToHours(flightAirMinutes)} + Road Transfer` 
+      : formatMinutesToHours(flightAirMinutes);
+
+    const baseAirFare = airDistKm < 1500 
+      ? Math.round(1800 + airDistKm * 3.4)
+      : Math.round(3500 + airDistKm * 5.2);
+    const budgetFlightDealPrice = Math.max(2200, baseAirFare);
+    const budgetFlightOrigPrice = Math.round(budgetFlightDealPrice * 1.22);
+    const budgetSavings = budgetFlightOrigPrice - budgetFlightDealPrice;
+
+    const fullServiceDealPrice = Math.round(budgetFlightDealPrice * 1.32);
+    const fullServiceOrigPrice = Math.round(fullServiceDealPrice * 1.2);
+    const fullServiceSavings = fullServiceOrigPrice - fullServiceDealPrice;
+    const fullServiceDepTime = '11:30 AM';
+    const fullServiceArrTime = addMinutesToClockTime(fullServiceDepTime, flightAirMinutes + 10);
+
     deals.push({
       id: `deal-fl-budget-${Date.now()}`,
       mode: 'flight',
@@ -182,15 +262,15 @@ export function generateTransportDeals(params: DealQueryParams): {
       route: {
         from: `${cleanOrigin} Airport`,
         to: airportName,
-        departureTime: '07:15 AM',
-        arrivalTime: '08:50 AM',
-        duration: isMultiModalAir ? '1h 35m + Road Transfer' : '1h 35m',
+        departureTime: flightDepTime,
+        arrivalTime: flightArrTime,
+        duration: flightDurationStr,
         stopsText: isMultiModalAir ? `Alight at ${airportName} for transfer` : 'Non-stop'
       },
-      originalPrice: 4800,
-      dealPrice: 3890,
-      discountPercent: 19,
-      savingsAmount: 910 * travelers,
+      originalPrice: budgetFlightOrigPrice,
+      dealPrice: budgetFlightDealPrice,
+      discountPercent: 18,
+      savingsAmount: budgetSavings * travelers,
       priceUnit: 'per_person',
       rating: 4.6,
       reviewCount: 12400,
@@ -225,15 +305,15 @@ export function generateTransportDeals(params: DealQueryParams): {
       route: {
         from: `${cleanOrigin} Airport`,
         to: airportName,
-        departureTime: '11:30 AM',
-        arrivalTime: '01:10 PM',
-        duration: '1h 40m',
+        departureTime: fullServiceDepTime,
+        arrivalTime: fullServiceArrTime,
+        duration: flightDurationStr,
         stopsText: isMultiModalAir ? `Road connection to ${cleanDest}` : 'Non-stop'
       },
-      originalPrice: 6200,
-      dealPrice: 5150,
+      originalPrice: fullServiceOrigPrice,
+      dealPrice: fullServiceDealPrice,
       discountPercent: 17,
-      savingsAmount: 1050 * travelers,
+      savingsAmount: fullServiceSavings * travelers,
       priceUnit: 'per_person',
       rating: 4.7,
       reviewCount: 9100,
@@ -255,6 +335,28 @@ export function generateTransportDeals(params: DealQueryParams): {
     const stationName = transit.primaryRailwayStation?.name || `${cleanDest} Railway Station`;
     const isMultiModalRail = !transit.hasDirectTrain && transit.primaryRailwayStation !== null;
 
+    const trainMinutes = Math.max(45, Math.round((railDistKm / 115) * 60) + 20);
+    const trainDepTime = '06:10 AM';
+    const trainArrTime = addMinutesToClockTime(trainDepTime, trainMinutes);
+    const trainDurationStr = isMultiModalRail 
+      ? `${formatMinutesToHours(trainMinutes)} + Road Transfer` 
+      : formatMinutesToHours(trainMinutes);
+
+    const trainDealPrice = Math.max(380, Math.round(railDistKm * 1.85));
+    const trainOrigPrice = Math.round(trainDealPrice * 1.2);
+    const trainSavings = (trainOrigPrice - trainDealPrice) * travelers;
+
+    const sleeperMinutes = Math.max(120, Math.round((railDistKm / 68) * 60) + 25);
+    const sleeperDepTime = '09:45 PM';
+    const sleeperArrTime = addMinutesToClockTime(sleeperDepTime, sleeperMinutes);
+    const sleeperDurationStr = isMultiModalRail 
+      ? `${formatMinutesToHours(sleeperMinutes)} + Road Transfer` 
+      : formatMinutesToHours(sleeperMinutes);
+
+    const sleeperDealPrice = Math.max(280, Math.round(railDistKm * 1.22));
+    const sleeperOrigPrice = Math.round(sleeperDealPrice * 1.25);
+    const sleeperSavings = (sleeperOrigPrice - sleeperDealPrice) * travelers;
+
     deals.push({
       id: `deal-tr-express-${Date.now()}`,
       mode: 'train',
@@ -271,15 +373,15 @@ export function generateTransportDeals(params: DealQueryParams): {
       route: {
         from: `${cleanOrigin} Junction`,
         to: stationName,
-        departureTime: '06:10 AM',
-        arrivalTime: '11:45 AM',
-        duration: isMultiModalRail ? '5h 35m + Road Transfer' : '5h 35m',
+        departureTime: trainDepTime,
+        arrivalTime: trainArrTime,
+        duration: trainDurationStr,
         stopsText: isMultiModalRail ? `Alight at ${stationName} for road connection` : 'Express halts only'
       },
-      originalPrice: 1650,
-      dealPrice: 1380,
-      discountPercent: 16,
-      savingsAmount: 270 * travelers,
+      originalPrice: trainOrigPrice,
+      dealPrice: trainDealPrice,
+      discountPercent: 17,
+      savingsAmount: trainSavings,
       priceUnit: 'per_person',
       rating: 4.8,
       reviewCount: 18200,
@@ -313,15 +415,15 @@ export function generateTransportDeals(params: DealQueryParams): {
       route: {
         from: `${cleanOrigin} Railway Junction`,
         to: stationName,
-        departureTime: '09:45 PM',
-        arrivalTime: '06:30 AM (Next Day)',
-        duration: '8h 45m',
+        departureTime: sleeperDepTime,
+        arrivalTime: sleeperArrTime,
+        duration: sleeperDurationStr,
         stopsText: isMultiModalRail ? `Alight at ${stationName}` : 'Overnight Direct'
       },
-      originalPrice: 1100,
-      dealPrice: 890,
+      originalPrice: sleeperOrigPrice,
+      dealPrice: sleeperDealPrice,
       discountPercent: 19,
-      savingsAmount: 210 * travelers,
+      savingsAmount: sleeperSavings,
       priceUnit: 'per_person',
       rating: 4.4,
       reviewCount: 14500,
@@ -342,8 +444,19 @@ export function generateTransportDeals(params: DealQueryParams): {
     const cabUrls = buildCabBookingUrl(cleanOrigin, cleanDest);
     const needsSuvOrVan = travelers > 4;
     const vehiclesNeeded = Math.max(1, Math.ceil(travelers / (needsSuvOrVan ? 6 : 4)));
-    const baseCabPrice = needsSuvOrVan ? 7800 : 5400;
-    const baseOrigPrice = needsSuvOrVan ? 9200 : 6500;
+
+    const cabMinutes = Math.max(30, Math.round((roadDistKm / 62) * 60) + 30);
+    const cabDepTime = '07:00 AM (Your Choice)';
+    const cabArrTime = addMinutesToClockTime('07:00 AM', cabMinutes);
+    const cabDurationStr = formatMinutesToHours(cabMinutes);
+
+    const baseSedanPerKm = 14.5;
+    const baseSuvPerKm = 20.5;
+    const baseCabPrice = Math.max(
+      needsSuvOrVan ? 2800 : 1800,
+      Math.round(roadDistKm * (needsSuvOrVan ? baseSuvPerKm : baseSedanPerKm) * 1.05)
+    );
+    const baseOrigPrice = Math.round(baseCabPrice * 1.2);
 
     deals.push({
       id: `deal-car-sedan-${Date.now()}`,
@@ -359,9 +472,9 @@ export function generateTransportDeals(params: DealQueryParams): {
       route: {
         from: `${cleanOrigin} (Home Pickup)`,
         to: `${cleanDest} (Hotel Drop-off)`,
-        departureTime: '07:00 AM (Your Choice)',
-        arrivalTime: '01:30 PM',
-        duration: '6h 30m',
+        departureTime: cabDepTime,
+        arrivalTime: cabArrTime,
+        duration: cabDurationStr,
         stopsText: 'Unlimited en-route rest breaks'
       },
       originalPrice: baseOrigPrice * vehiclesNeeded,
@@ -472,6 +585,15 @@ export function generateTransportDeals(params: DealQueryParams): {
   if (mode === 'bus' || mode === 'any') {
     const busUrl = buildBusBookingUrl(cleanOrigin, cleanDest);
 
+    const busMinutes = Math.max(45, Math.round((roadDistKm / 48) * 60) + 40);
+    const busDepTime = '10:15 PM';
+    const busArrTime = addMinutesToClockTime(busDepTime, busMinutes);
+    const busDurationStr = formatMinutesToHours(busMinutes);
+
+    const busDealPrice = Math.max(250, Math.round(roadDistKm * 1.35));
+    const busOrigPrice = Math.round(busDealPrice * 1.25);
+    const busSavings = (busOrigPrice - busDealPrice) * travelers;
+
     deals.push({
       id: `deal-bus-volvo-${Date.now()}`,
       mode: 'bus',
@@ -484,15 +606,15 @@ export function generateTransportDeals(params: DealQueryParams): {
       route: {
         from: `${cleanOrigin} Main Bus Port`,
         to: `${cleanDest} City Terminal`,
-        departureTime: '10:15 PM',
-        arrivalTime: '06:00 AM (Next Day)',
-        duration: '7h 45m',
+        departureTime: busDepTime,
+        arrivalTime: busArrTime,
+        duration: busDurationStr,
         stopsText: 'Direct with 1 highway dhaba halt'
       },
-      originalPrice: 1250,
-      dealPrice: 980,
-      discountPercent: 21,
-      savingsAmount: 270 * travelers,
+      originalPrice: busOrigPrice,
+      dealPrice: busDealPrice,
+      discountPercent: 20,
+      savingsAmount: busSavings,
       priceUnit: 'per_person',
       rating: 4.6,
       reviewCount: 9600,
