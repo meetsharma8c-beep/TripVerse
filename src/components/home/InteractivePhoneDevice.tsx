@@ -555,17 +555,23 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
               {/* ============================================================ */}
               {activeScreen !== 'camera' && (
                 <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 pt-4 pb-2.5 border-b border-[#E2EBE1] dark:border-slate-800 flex items-center justify-between shrink-0 shadow-2xs z-10">
-                  {/* TripVerse Actual Brand Logo */}
+                  {/* TripVerse Official Brand Logo */}
                   <div 
                     onClick={() => setActiveScreen('home')}
-                    className="flex items-center gap-1.5 cursor-pointer notranslate"
+                    className="flex items-center cursor-pointer notranslate"
                   >
-                    <div className="w-5 h-5 rounded-lg bg-[#2D5A3D] flex items-center justify-center text-white shadow-2xs">
-                      <Compass className="w-3 h-3 text-emerald-300" />
-                    </div>
-                    <span className="font-display font-black text-sm tracking-tight text-[#152A1C] dark:text-white">
-                      Trip<span className="text-[#2D5A3D] dark:text-emerald-400">Verse</span>
-                    </span>
+                    <img
+                      src="/tripverse-official-logo.png"
+                      alt="TripVerse Logo"
+                      className="h-6 w-auto object-contain dark:hidden notranslate"
+                      loading="eager"
+                    />
+                    <img
+                      src="/tripverse-official-logo-dark.png"
+                      alt="TripVerse Logo"
+                      className="h-6 w-auto object-contain hidden dark:block notranslate"
+                      loading="eager"
+                    />
                   </div>
 
                   {/* Header Actions: Currency & Notifications */}

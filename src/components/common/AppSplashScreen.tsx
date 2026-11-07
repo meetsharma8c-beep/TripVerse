@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Compass } from 'lucide-react';
 import { triggerHaptic, hideNativeSplashScreen } from '../../services/deviceService';
-import { BrandIconMark } from './Logo';
+import { BrandIconMark, HighwayConnector } from './Logo';
 import { t } from '../../services/languageService';
 
 interface AppSplashScreenProps {
@@ -252,10 +252,11 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
         <h1 
           data-no-translate="true"
           translate="no"
-          className="text-3xl sm:text-4xl lg:text-5xl font-display font-black tracking-tight text-white mb-2 drop-shadow-md tv-stagger-1 notranslate"
+          className="text-3xl sm:text-4xl lg:text-5xl font-display font-black tracking-tight text-white mb-2 drop-shadow-md tv-stagger-1 notranslate flex items-center justify-center gap-1"
         >
-          <span data-no-translate="true" translate="no" className="notranslate">Trip</span>
-          <span data-no-translate="true" translate="no" className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-200 notranslate">Verse</span>
+          <span data-no-translate="true" translate="no" className="notranslate text-white">Trip</span>
+          <HighwayConnector isLight={true} className="h-6 w-10 sm:h-7 sm:w-12 mx-1" />
+          <span data-no-translate="true" translate="no" className="text-emerald-400 notranslate">Verse</span>
         </h1>
 
         {/* Tagline */}
