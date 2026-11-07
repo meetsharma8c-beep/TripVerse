@@ -1408,17 +1408,22 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                       {(isProSub
                         ? AVAILABLE_COUPONS.filter(c => c.minAmount <= initialBaseAmount)
                         : AVAILABLE_COUPONS.filter(c => !['PRO50', 'EARLYBIRD'].includes(c.code))
-                      ).slice(0, 3).map(c => (
-                        <button
-                          key={c.code}
-                          type="button"
-                          onClick={() => handleApplyCoupon(c.code)}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-dashed border-emerald-400 bg-emerald-50/50 text-[9px] font-bold text-emerald-900 hover:bg-emerald-100 transition-colors cursor-pointer"
-                        >
-                          <BadgePercent className="w-2.5 h-2.5 text-emerald-700" />
-                          <span>{c.code} ({c.label})</span>
-                        </button>
-                      ))}
+                      ).slice(0, 3).map(c => {
+                        const couponLabel = c.discountType === 'flat' 
+                          ? `${formatCurrency(c.discountValue, currency)} OFF` 
+                          : `${c.discountValue}% OFF`;
+                        return (
+                          <button
+                            key={c.code}
+                            type="button"
+                            onClick={() => handleApplyCoupon(c.code)}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-dashed border-emerald-400 bg-emerald-50/50 text-[9px] font-bold text-emerald-900 hover:bg-emerald-100 transition-colors cursor-pointer"
+                          >
+                            <BadgePercent className="w-2.5 h-2.5 text-emerald-700" />
+                            <span>{c.code} ({couponLabel})</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
