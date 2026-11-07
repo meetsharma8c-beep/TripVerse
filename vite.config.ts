@@ -261,10 +261,28 @@ function emailOtpDevPlugin(resendKey?: string): Plugin {
             }
 
             if (action === 'send') {
+              const isSimulatedTestDomain = 
+                emailNorm.startsWith('ci_') ||
+                emailNorm.startsWith('test_') ||
+                emailNorm.endsWith('@tripverse.app') ||
+                emailNorm.endsWith('@example.com') ||
+                emailNorm.endsWith('@test.com') ||
+                emailNorm.endsWith('@invalid');
+
               const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
               const expiresAt = Date.now() + 10 * 60 * 1000;
               const signature = signOtp(emailNorm, otpCode, expiresAt);
               const verificationToken = `${expiresAt}.${signature}`;
+
+              if (isSimulatedTestDomain) {
+                res.statusCode = 200;
+                return res.end(JSON.stringify({
+                  success: true,
+                  token: verificationToken,
+                  expiresAt,
+                  message: 'Security verification code generated for test domain.'
+                }));
+              }
 
               const htmlContent = `
                 <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;background:#fff;border-radius:16px;border:1px solid #e2e8f0;">

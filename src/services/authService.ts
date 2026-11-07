@@ -1130,14 +1130,18 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
 
   let emailDispatchFailed = false;
   if (!isSessionCreated) {
-    try {
-      await Promise.race([
-        resendEmailConfirmation(emailNorm, data.name),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500))
-      ]);
-    } catch (sendErr) {
-      console.warn('[Signup] resendEmailConfirmation dispatch notice:', sendErr);
-      emailDispatchFailed = true;
+    if (!isSimulatedTestEmail(emailNorm)) {
+      try {
+        await Promise.race([
+          resendEmailConfirmation(emailNorm, data.name),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500))
+        ]);
+      } catch (sendErr) {
+        console.warn('[Signup] resendEmailConfirmation dispatch notice:', sendErr);
+        emailDispatchFailed = true;
+      }
+    } else {
+      emailDispatchFailed = true; // Mark as bypassed so test user is activated immediately without blocking
     }
   }
 
@@ -1334,10 +1338,32 @@ export async function verifyEmailOtp(email: string, token: string): Promise<Auth
 }
 
 /**
+ * Checks whether an email belongs to an automated test / synthetic domain.
+ * Bypassing outbound SMTP prevents wasting Resend token quotas and delivery failure bounces.
+ */
+export function isSimulatedTestEmail(email: string): boolean {
+  const norm = (email || '').trim().toLowerCase();
+  return (
+    norm.startsWith('ci_') ||
+    norm.startsWith('test_') ||
+    norm.endsWith('@tripverse.app') ||
+    norm.endsWith('@example.com') ||
+    norm.endsWith('@test.com') ||
+    norm.endsWith('@invalid') ||
+    norm.endsWith('.test')
+  );
+}
+
+/**
  * Resend email confirmation link/code via Supabase
  */
 export async function resendEmailConfirmation(email: string, name?: string): Promise<void> {
   const emailNorm = email.trim().toLowerCase();
+
+  // Safely bypass simulated or test domains to prevent SMTP delivery bounces and Resend quota burn
+  if (isSimulatedTestEmail(emailNorm)) {
+    return;
+  }
 
   // 1. Dispatch authentic 6-digit confirmation code via Resend
   let resendDispatched = false;

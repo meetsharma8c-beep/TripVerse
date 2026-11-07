@@ -231,7 +231,15 @@ export default async function handler(req, res) {
     // CRITICAL: Prevent wasting Resend quota! Sign-in activity emails are strictly disabled
     // unless explicitly requested via ENABLE_AUTH_ACTIVITY_EMAILS='true'.
     // This preserves 100% of the Resend email quota for user-facing 2FA & OTP verification.
-    const shouldDispatchEmail = process.env.ENABLE_AUTH_ACTIVITY_EMAILS === 'true' && Boolean(RESEND_API_KEY) && (Date.now() - lastAlertTime > 2 * 60 * 1000);
+    const isTestEmail = 
+      activityRecord.email?.startsWith('ci_') ||
+      activityRecord.email?.startsWith('test_') ||
+      activityRecord.email?.endsWith('@tripverse.app') ||
+      activityRecord.email?.endsWith('@example.com') ||
+      activityRecord.email?.endsWith('@test.com') ||
+      activityRecord.email?.endsWith('@invalid');
+
+    const shouldDispatchEmail = process.env.ENABLE_AUTH_ACTIVITY_EMAILS === 'true' && !isTestEmail && Boolean(RESEND_API_KEY) && (Date.now() - lastAlertTime > 2 * 60 * 1000);
 
     let emailDispatchId = null;
 

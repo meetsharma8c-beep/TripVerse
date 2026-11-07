@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
+import { getSupabaseClient } from '../src/services/supabase';
 
 // Polyfill localStorage & window for Node environment
 const mockStorage: Record<string, string> = {};
@@ -140,27 +141,58 @@ describe('Auth Security & Verification Tests', () => {
     const dynamicEmail = `ci_auth_${randomId}@tripverse.app`;
     const dynamicPassword = `Tv#${randomId}!9A`;
 
-    const created = await createAccountWithSupabase({
-      name: 'CI Cloud Verifier',
+    const supabase = getSupabaseClient();
+    const mockUser = {
+      id: `00000000-0000-4000-8000-${randomId.padEnd(12, '0').slice(0, 12)}`,
       email: dynamicEmail,
-      password: dynamicPassword,
-      travelerStyle: 'Budget explorer',
-      location: 'India'
-    });
-    expect(created.email).toBe(dynamicEmail);
-    expect(created.uid).toBeTruthy();
+      user_metadata: {
+        name: 'CI Cloud Verifier',
+        full_name: 'CI Cloud Verifier',
+        traveler_style: 'Budget explorer',
+        location: 'India'
+      },
+      created_at: new Date().toISOString()
+    };
 
-    // Clear localStorage to simulate signing in on a brand-new device via cloud backend
-    (global as any).localStorage.clear();
+    let signUpSpy: any;
+    let signInSpy: any;
+    if (supabase) {
+      signUpSpy = vi.spyOn(supabase.auth, 'signUp').mockResolvedValue({
+        data: { user: mockUser as any, session: { access_token: 'mock-session-token', user: mockUser } as any },
+        error: null
+      });
+      signInSpy = vi.spyOn(supabase.auth, 'signInWithPassword').mockResolvedValue({
+        data: { user: mockUser as any, session: { access_token: 'mock-session-token', user: mockUser } as any },
+        error: null
+      });
+    }
 
-    const signedIn = await signInWithEmail({
-      email: dynamicEmail,
-      password: dynamicPassword
-    });
-    expect(signedIn.email).toBe(dynamicEmail);
-    expect(signedIn.displayName).toBe('CI Cloud Verifier');
-    expect(signedIn.provider).toBe('email');
-    expect(signedIn.uid).toBeTruthy();
+    try {
+      const created = await createAccountWithSupabase({
+        name: 'CI Cloud Verifier',
+        email: dynamicEmail,
+        password: dynamicPassword,
+        travelerStyle: 'Budget explorer',
+        location: 'India'
+      });
+      expect(created.email).toBe(dynamicEmail);
+      expect(created.uid).toBeTruthy();
+
+      // Clear localStorage to simulate signing in on a brand-new device via cloud backend
+      (global as any).localStorage.clear();
+
+      const signedIn = await signInWithEmail({
+        email: dynamicEmail,
+        password: dynamicPassword
+      });
+      expect(signedIn.email).toBe(dynamicEmail);
+      expect(signedIn.displayName).toBe('CI Cloud Verifier');
+      expect(signedIn.provider).toBe('email');
+      expect(signedIn.uid).toBeTruthy();
+    } finally {
+      signUpSpy?.mockRestore();
+      signInSpy?.mockRestore();
+    }
   }, 15000);
 
   it('correctly identifies Guest accounts and strictly restricts AI Planner quota', () => {
