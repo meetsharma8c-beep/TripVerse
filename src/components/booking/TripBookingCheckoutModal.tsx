@@ -196,12 +196,12 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     }`}
                   >
                     <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-300' : 'text-slate-500'}`} />
-                    <span>{tab.label}</span>
+                    <span>{t(tab.label)}</span>
                     {tab.count && (
                       <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${
                         isActive ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-200 text-slate-600'
                       }`}>
-                        {tab.count}
+                        {t(tab.count)}
                       </span>
                     )}
                   </button>
@@ -227,7 +227,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-200/80 px-2 py-0.5 rounded-md">
-                              Booking Confirmed & Paid
+                              {t('Booking Confirmed & Paid')}
                             </span>
                             <span className="text-xs text-slate-600 font-mono font-bold">PNR: {existingBooking.pnr}</span>
                           </div>
@@ -247,7 +247,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                           className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-900 hover:bg-emerald-50 transition-colors cursor-pointer shadow-2xs"
                         >
                           <Download className="w-3.5 h-3.5 text-emerald-700" />
-                          <span>Tax Invoice</span>
+                          <span>{t('Tax Invoice')}</span>
                         </button>
                         {onNavigateToPasses && (
                           <button

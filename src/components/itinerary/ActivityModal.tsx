@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ItineraryActivity } from '../../types/trip';
 import { triggerHaptic } from '../../services/deviceService';
 import { getStoredCurrency, Currency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 import { Clock, MapPin, Check, Coins, X } from 'lucide-react';
 
 interface ActivityModalProps {
@@ -20,6 +21,7 @@ export function ActivityModal({
   existingActivity,
   onSave
 }: ActivityModalProps) {
+  const { t } = useLanguage();
   const [currency, setCurrency] = useState<Currency>(getStoredCurrency());
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('11:00 AM');
@@ -91,16 +93,17 @@ export function ActivityModal({
         <div className="p-5 sm:p-6 bg-gradient-to-r from-[#152A1C] to-[#1E3E2B] text-white flex items-center justify-between shrink-0">
           <div>
             <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-300">
-              Itinerary Customization
+              {t('Itinerary Customization')}
             </span>
             <h3 className="text-lg font-bold font-display mt-0.5">
-              {existingActivity ? 'Edit Activity' : `Add Activity to Day ${dayNumber}`}
+              {existingActivity ? t('Edit Activity') : `${t('Add Activity')} (${t('Day')} ${dayNumber})`}
             </h3>
           </div>
 
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer"
+            aria-label={t('Close')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -110,7 +113,7 @@ export function ActivityModal({
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1 overscroll-contain">
           
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Activity Title *</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">{t('Activity Title')} *</label>
             <input
               type="text"
               required
@@ -123,7 +126,7 @@ export function ActivityModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Time</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">{t('Time')}</label>
               <div className="relative">
                 <input
                   type="text"
@@ -137,26 +140,26 @@ export function ActivityModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Activity Category</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">{t('Activity Category')}</label>
               <select
                 value={type}
                 onChange={e => setType(e.target.value as any)}
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-medium text-slate-700 focus:outline-none"
               >
-                <option value="attraction">Attraction / Fort</option>
-                <option value="food">Food & Dining</option>
-                <option value="viewpoint">Scenic Viewpoint</option>
-                <option value="breakstop">Highway Breakstop</option>
-                <option value="hotel">Hotel Check-in</option>
-                <option value="nightlife">Evening / Nightlife</option>
-                <option value="rest">Rest & Relaxation</option>
+                <option value="attraction">{t('Attraction / Fort')}</option>
+                <option value="food">{t('Food & Dining')}</option>
+                <option value="viewpoint">{t('Scenic Viewpoint')}</option>
+                <option value="breakstop">{t('Highway Breakstop')}</option>
+                <option value="hotel">{t('Hotel Check-in')}</option>
+                <option value="nightlife">{t('Evening / Nightlife')}</option>
+                <option value="rest">{t('Rest & Relaxation')}</option>
               </select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Location / Landmark *</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">{t('Location / Landmark')} *</label>
               <div className="relative">
                 <input
                   type="text"
@@ -171,7 +174,7 @@ export function ActivityModal({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Estimated Cost ({currency})</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">{t('Estimated Cost')} ({currency})</label>
               <div className="relative">
                 <input
                   type="number"
@@ -186,27 +189,27 @@ export function ActivityModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Highlight Tag</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">{t('Highlight Tag')}</label>
             <div className="flex items-center gap-2 flex-wrap">
-              {['Culture', 'Sightseeing', 'Food', 'Sunset', 'Adventure', 'Shopping', 'Heritage'].map(t => (
+              {['Culture', 'Sightseeing', 'Food', 'Sunset', 'Adventure', 'Shopping', 'Heritage'].map(tagItem => (
                 <button
-                  key={t}
+                  key={tagItem}
                   type="button"
-                  onClick={() => setTag(t)}
+                  onClick={() => setTag(tagItem)}
                   className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                    tag === t
+                    tag === tagItem
                       ? 'bg-[#2D5A3D] text-white shadow-xs'
                       : 'bg-[#F4F6F2] text-[#5A7362] border border-[#E2EBE1] hover:bg-[#EAF0E9]'
                   }`}
                 >
-                  {t}
+                  {t(tagItem)}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Notes & Description</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">{t('Notes & Description')}</label>
             <textarea
               rows={2}
               placeholder="Key tips: carry ID card, evening entry starts 6:30 PM, parking available..."
@@ -220,9 +223,9 @@ export function ActivityModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
             >
-              Cancel
+              {t('Cancel')}
             </button>
 
             <button
@@ -230,7 +233,7 @@ export function ActivityModal({
               className="px-5 py-2.5 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
             >
               <Check className="w-4 h-4" />
-              <span>{existingActivity ? 'Update Activity' : 'Add to Schedule'}</span>
+              <span>{existingActivity ? t('Update Activity') : t('Add to Schedule')}</span>
             </button>
           </div>
 

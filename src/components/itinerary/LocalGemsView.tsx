@@ -176,7 +176,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
             }`}
           >
             <Utensils className="w-3.5 h-3.5" />
-            <span>Legendary Food & Dhabas ({gemsData.foodGems.length})</span>
+            <span>{t('Legendary Food & Dhabas')} ({gemsData.foodGems.length})</span>
           </button>
 
           <button
@@ -191,7 +191,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
             }`}
           >
             <Compass className="w-3.5 h-3.5" />
-            <span>Hidden Viewpoints & Secret Gems ({gemsData.hiddenGems.length})</span>
+            <span>{t('Hidden Viewpoints & Secret Gems')} ({gemsData.hiddenGems.length})</span>
           </button>
 
           {activeTab === 'food' && (
@@ -207,7 +207,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
               }`}
             >
               <Leaf className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>100% Pure Vegetarian</span>
+              <span>{t('100% Pure Vegetarian')}</span>
             </button>
           )}
         </div>

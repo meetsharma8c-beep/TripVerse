@@ -327,10 +327,10 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
           <div className="p-3.5 rounded-2xl bg-[#F4F6F2] border border-[#E2EBE1] flex items-center justify-between gap-3">
             <div>
               <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">
-                Packing Readiness
+                {t('Packing Readiness')}
               </span>
               <p className="text-2xl font-black font-display text-[#2D5A3D] mt-0.5">{progressPercent}%</p>
-              <p className="text-[11px] text-[#5A7362]">{packedCount} of {packingItems.length} items packed</p>
+              <p className="text-[11px] text-[#5A7362]">{packedCount} {t('of')} {packingItems.length} {t('items packed')}</p>
             </div>
             <div className="relative w-12 h-12 flex items-center justify-center">
               <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
@@ -449,7 +449,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
               }`}
             >
               <ModeIcon className="h-4 w-4" />
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>

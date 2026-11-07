@@ -15,6 +15,7 @@ import { ConcodeBrainConfigModal } from './ConcodeBrainConfigModal';
 import { getUserSubscriptionQuota, consumeAssistantMinute } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import { formatCurrency, getActiveCurrency, CURRENCIES } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 
 interface AIChatDrawerProps {
   trip: Trip;
@@ -330,6 +331,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     ];
   };
 
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>(getInitialMessages);
   const [inputQuery, setInputQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -627,7 +629,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <h3 className="font-bold text-sm">TripVerse AI Co-Pilot</h3>
+                <h3 className="font-bold text-sm">{t('TripVerse AI Co-Pilot')}</h3>
                 <span className="text-[9px] font-black uppercase tracking-wider bg-white/10 text-emerald-300 px-1.5 py-0.5 rounded border border-white/10 flex items-center gap-1">
                   CONCODE
                 </span>
@@ -636,7 +638,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                     type="button"
                     onClick={onOpenProModal}
                     className="text-[9px] font-black uppercase tracking-wider bg-amber-400/25 hover:bg-amber-400/35 text-amber-300 px-1.5 py-0.5 rounded border border-amber-300/30 flex items-center gap-0.5 cursor-pointer transition-colors"
-                    title="TripVerse Pro Active (30 Hours/Week Full ConCode Facility)"
+                    title={t('TripVerse Pro Active (30 Hours/Week Full ConCode Facility)')}
                   >
                     <Crown className="w-2.5 h-2.5 fill-amber-300" />
                     <span>{quota.weeklyQuotaHoursFormatted} / 30h Pro</span>
@@ -646,19 +648,19 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                     type="button"
                     onClick={onOpenProModal}
                     className="text-[9px] font-bold uppercase tracking-wider bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-400/30 cursor-pointer transition-colors flex items-center gap-1"
-                    title="Free Explorer Tier • Upgrade to Pro for 30h/week Facility"
+                    title={t('Free Explorer Tier • Upgrade to Pro for 30h/week Facility')}
                   >
                     <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-                    <span>{quota.weeklyAssistantMinutesRemaining}m Free • Upgrade</span>
+                    <span>{quota.weeklyAssistantMinutesRemaining}m {t('Free • Upgrade')}</span>
                   </button>
                 )}
               </div>
               <p className="text-[11px] text-slate-300 font-medium flex items-center gap-1">
-                <span>Travel Intelligence Layer</span>
+                <span>{t('Travel Intelligence Layer')}</span>
                 <span>•</span>
                 <span className="text-emerald-400 font-semibold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Context-Aware
+                  {t('Context-Aware')}
                 </span>
               </p>
             </div>
@@ -668,7 +670,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             <button
               onClick={() => setIsConfigModalOpen(true)}
               className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-              title="Configure Kaggle GPU Brain Endpoint"
+              title={t('Configure Kaggle GPU Brain Endpoint')}
             >
               <Settings className="w-3.5 h-3.5" />
             </button>
@@ -676,7 +678,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             <button
               onClick={handleClearChat}
               className="p-1.5 rounded-lg text-slate-300 hover:text-red-300 hover:bg-white/10 transition-colors cursor-pointer"
-              title="Clear Conversation History"
+              title={t('Clear Conversation History')}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -685,7 +687,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               onClick={refreshBrainHealth}
               disabled={isCheckingBrain}
               className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-              title="Refresh AI Status"
+              title={t('Refresh AI Status')}
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isCheckingBrain ? 'animate-spin text-emerald-400' : ''}`} />
             </button>
@@ -990,7 +992,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         <div className="p-3 sm:p-3.5 pb-safe bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
           <input
             type="text"
-            placeholder="Ask anything (e.g. Plan a 5-day trip to Dubai)..."
+            placeholder={t('Ask anything (e.g. Plan a 5-day trip to Dubai)...')}
             value={inputQuery}
             onChange={(e) => setInputQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -1005,7 +1007,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             onClick={() => handleSendMessage()}
             disabled={!inputQuery.trim() || isProcessing}
             className="w-10 h-10 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white flex items-center justify-center shadow-xs transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer shrink-0"
-            aria-label="Send Message"
+            aria-label={t('Send Message')}
           >
             <Send className="w-4 h-4" />
           </button>

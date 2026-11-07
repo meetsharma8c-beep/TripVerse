@@ -2,6 +2,7 @@ import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
 import { Trip, TripPhotoMemory } from '../../types/trip';
 import { loadTripPhotos, saveTripPhoto, deleteTripPhoto } from '../../services/storageService';
+import { useLanguage } from '../../services/languageService';
 import { 
   Camera, 
   X, 
@@ -64,6 +65,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
   onClose,
   onUpdateTrip
 }) => {
+  const { t } = useLanguage();
   const [photos, setPhotos] = useState<TripPhotoMemory[]>([]);
   const [selectedDayFilter, setSelectedDayFilter] = useState<number | 'all'>('all');
   const [isAddingPhoto, setIsAddingPhoto] = useState(false);
@@ -197,14 +199,14 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  Photo Journal
+                  {t('Photo Journal')}
                 </span>
                 <span className="text-xs text-slate-500 font-medium truncate">
                   {trip.name}
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold font-display text-[#0B2545] tracking-tight truncate">
-                Trip Memories & Photo Scrapbook
+                {t('Trip Memories & Photo Scrapbook')}
               </h2>
             </div>
           </div>
@@ -215,7 +217,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition-all cursor-pointer"
             >
               {isAddingPhoto ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-              <span>{isAddingPhoto ? 'Cancel' : 'Add Memory'}</span>
+              <span>{isAddingPhoto ? t('Cancel') : t('Add Memory')}</span>
             </button>
             <button
               onClick={onClose}

@@ -285,27 +285,27 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
                 {weather.isLive ? (
                   <>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Live Weather Forecast ({weather.lastUpdated || 'recently updated'})</span>
+                    <span>{t('Live Weather Forecast')} ({weather.lastUpdated || t('recently updated')})</span>
                   </>
                 ) : (
                   <>
                     <Compass className="w-3.5 h-3.5 text-sky-300" />
-                    <span>Seasonal Estimate · Not Live</span>
+                    <span>{t('Seasonal Estimate · Not Live')}</span>
                   </>
                 )}
               </span>
               <span className="text-xs text-slate-300/80 font-normal">
-                {trip.destination} • {trip.durationDays} Days Travel Radar
+                {trip.destination} • {trip.durationDays} {t('Days')} {t('Travel Radar')}
               </span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-display font-semibold mt-2 tracking-tight text-white flex items-center gap-2 flex-wrap">
-              <span>The Skies Over</span>
+              <span>{t('The Skies Over')}</span>
               <span className="font-serif italic font-normal text-amber-200">
                 {trip.destination}
               </span>
             </h2>
             <p className="text-xs text-slate-300 mt-1 max-w-xl font-normal leading-relaxed">
-              Real-time atmospheric readings, temperature gradients, and tailored wardrobe suggestions for every day of your itinerary.
+              {t('Real-time atmospheric readings, temperature gradients, and tailored wardrobe suggestions for every day of your itinerary.')}
             </p>
           </div>
 
@@ -329,10 +329,10 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
         <div className="relative z-10 mt-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
             <span className="text-[11px] font-medium uppercase tracking-wider text-slate-300">
-              Select Day for Climate Details:
+              {t('Select Day for Climate Details:')}
             </span>
             <span className="text-[11px] font-serif italic text-emerald-300">
-              Tap day to check attire & photography timing
+              {t('Tap day to check attire & photography timing')}
             </span>
           </div>
           <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none pb-2">
@@ -353,21 +353,21 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
                 >
                   <div className="flex items-center justify-between">
                     <span className={`text-[10px] uppercase font-semibold tracking-wider ${isSelected ? 'text-emerald-300' : 'text-slate-400'}`}>
-                      Day {day.dayNumber}
+                      {t('Day')} {day.dayNumber}
                     </span>
                     {day.rainProbPercent > 30 && (
                       <CloudRain className="w-3.5 h-3.5 text-cyan-300" />
                     )}
                   </div>
                   <div className="text-xs font-medium text-white mt-1 truncate">
-                    {day.condition}
+                    {t(day.condition)}
                   </div>
                   <div className="text-sm font-semibold text-emerald-300 mt-1 tracking-tight">
                     {day.maxTempC}° <span className="text-slate-300/80 font-normal text-xs">/ {day.minTempC}°</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] text-slate-300 mt-2 font-medium">
                     <Droplets className="w-3 h-3 text-cyan-300 shrink-0" />
-                    <span>{day.rainProbPercent}% Precip.</span>
+                    <span>{day.rainProbPercent}% {t('Precip.')}</span>
                   </div>
                 </button>
               );
@@ -673,7 +673,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {cat.label}
+              {cat.id === 'all' ? `${t('All Items')} (${totalCount})` : t(cat.label)}
             </button>
           ))}
         </div>

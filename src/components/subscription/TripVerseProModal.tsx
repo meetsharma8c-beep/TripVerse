@@ -182,16 +182,16 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
             {/* VIP Pass Gold Pill */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400/20 to-emerald-400/20 border border-amber-300/30 text-amber-200 text-[11px] font-bold tracking-wide shadow-xs">
               <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-              <span>{isPro ? 'VIP PASS ACTIVE' : 'TRIPVERSE VIP PASS'}</span>
+              <span>{isPro ? t('VIP PASS ACTIVE') : t('TRIPVERSE VIP PASS')}</span>
             </div>
 
             {/* Editorial Headline */}
             <h2 className="text-2xl sm:text-[26px] font-display font-extrabold tracking-tight text-white leading-tight">
-              {title} <span className="font-serif italic font-normal text-emerald-300">TripVerse Pro</span>
+              {t(title)} <span className="font-serif italic font-normal text-emerald-300">TripVerse Pro</span>
             </h2>
 
             <p className="text-emerald-100/80 text-xs leading-relaxed max-w-[390px]">
-              {subtitle}
+              {t(subtitle)}
             </p>
           </div>
         </div>
@@ -203,7 +203,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
           {successMessage && (
             <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs font-bold flex items-center gap-2.5 shadow-2xs animate-in zoom-in-95">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>{successMessage}</span>
+              <span>{t(successMessage)}</span>
             </div>
           )}
 
@@ -213,10 +213,10 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
               <span className={`w-2 h-2 rounded-full shrink-0 ${quota.freeTripsRemaining === 0 && !isPro ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
               <span className="font-medium text-[#152A1C] dark:text-slate-200 truncate text-[11px]">
                 {isPro 
-                  ? 'Unlimited Trips & 30h AI Co-Pilot Active' 
+                  ? t('Unlimited Trips & 30h AI Co-Pilot Active') 
                   : quota.freeTripsRemaining === 0
-                    ? '3 of 3 Free Explorer Trips Used • Pro Required to Plan More'
-                    : `${quota.freeTripsRemaining} of 3 Free Explorer Trips Available`}
+                    ? t('3 of 3 Free Explorer Trips Used • Pro Required to Plan More')
+                    : `${quota.freeTripsRemaining} ${t('of 3 Free Explorer Trips Available')}`}
               </span>
             </div>
             <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold tracking-wider uppercase shrink-0 ${
@@ -226,7 +226,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                   ? 'bg-amber-100 text-amber-900 border border-amber-300'
                   : 'bg-[#E8EFE7] text-[#2D5A3D] dark:bg-emerald-950 dark:text-emerald-300'
             }`}>
-              {isPro ? 'ACTIVE' : quota.freeTripsRemaining === 0 ? 'LIMIT REACHED' : 'TRIAL'}
+              {isPro ? t('ACTIVE') : quota.freeTripsRemaining === 0 ? t('LIMIT REACHED') : t('TRIAL')}
             </span>
           </div>
 
@@ -249,7 +249,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                 {/* Popular / Best Value Badge */}
                 <div className="flex items-center justify-between gap-1 mb-2">
                   <span className="px-2 py-0.5 rounded-full bg-[#2D5A3D] text-white text-[9px] font-extrabold uppercase tracking-wide">
-                    Save 33%
+                    {t('Save 33%')}
                   </span>
                   {billingCycle === 'annual' && (
                     <div className="w-4 h-4 rounded-full bg-[#2D5A3D] text-white flex items-center justify-center shrink-0">
@@ -260,16 +260,16 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
 
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-[#5A7362] dark:text-slate-400">
-                    Annual Pass
+                    {t('Annual Pass')}
                   </div>
                   <div className="flex items-baseline gap-0.5 mt-0.5">
                     <span className="text-2xl font-display font-black text-[#152A1C] dark:text-white">
                       {formattedAnnualPerMonth}
                     </span>
-                    <span className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium">/ mo</span>
+                    <span className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium">/ {t('mo')}</span>
                   </div>
                   <div className="text-[10px] text-[#2D5A3D] dark:text-emerald-400 font-semibold mt-1">
-                    {formattedAnnual} billed yearly
+                    {formattedAnnual} {t('billed yearly')}
                   </div>
                 </div>
               </button>
@@ -289,7 +289,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
               >
                 <div className="flex items-center justify-between gap-1 mb-2">
                   <span className="px-2 py-0.5 rounded-full bg-[#E8EFE7] text-[#2D5A3D] dark:bg-slate-800 dark:text-emerald-300 text-[9px] font-bold uppercase tracking-wide">
-                    Flexible
+                    {t('Flexible')}
                   </span>
                   {billingCycle === 'monthly' && (
                     <div className="w-4 h-4 rounded-full bg-[#2D5A3D] text-white flex items-center justify-center shrink-0">
@@ -300,16 +300,16 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
 
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-[#5A7362] dark:text-slate-400">
-                    Monthly Pass
+                    {t('Monthly Pass')}
                   </div>
                   <div className="flex items-baseline gap-0.5 mt-0.5">
                     <span className="text-2xl font-display font-black text-[#152A1C] dark:text-white">
                       {formattedMonthly}
                     </span>
-                    <span className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium">/ mo</span>
+                    <span className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium">/ {t('mo')}</span>
                   </div>
                   <div className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium mt-1">
-                    Billed every month
+                    {t('Billed every month')}
                   </div>
                 </div>
               </button>
@@ -319,7 +319,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
           {/* 4 Core VIP Privileges Grid (Compact 2x2) */}
           <div className="space-y-2">
             <div className="text-[10px] font-bold uppercase tracking-wider text-[#5A7362] dark:text-slate-400 px-1">
-              Included with TripVerse Pro
+              {t('Included with TripVerse Pro')}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -335,10 +335,10 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                     </div>
                     <div className="min-w-0">
                       <div className="text-[11px] font-bold text-[#152A1C] dark:text-slate-100 truncate">
-                        {perk.title}
+                        {t(perk.title)}
                       </div>
                       <div className="text-[10px] text-[#5A7362] dark:text-slate-400 leading-tight truncate">
-                        {perk.desc}
+                        {t(perk.desc)}
                       </div>
                     </div>
                   </div>
@@ -352,7 +352,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
             {isPro ? (
               <div className="space-y-2">
                 <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-center text-xs font-bold text-[#2D5A3D] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                  ✓ Your TripVerse Pro membership is active
+                  ✓ {t('Your TripVerse Pro membership is active')}
                 </div>
                 <button
                   type="button"
@@ -360,7 +360,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                   disabled={isProcessing}
                   className="w-full py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
                 >
-                  Switch back to Free Tier (Developer Test)
+                  {t('Switch back to Free Tier (Developer Test)')}
                 </button>
               </div>
             ) : (
@@ -373,8 +373,8 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                 <Crown className="w-4 h-4 text-amber-300 fill-amber-300 shrink-0" />
                 <span className="truncate">
                   {isProcessing 
-                    ? 'Activating Pro Pass...' 
-                    : `Upgrade to Pro — ${billingCycle === 'annual' ? formattedAnnual : formattedMonthly}`}
+                    ? t('Activating Pro Pass...') 
+                    : `${t('Upgrade to Pro')} — ${billingCycle === 'annual' ? formattedAnnual : formattedMonthly}`}
                 </span>
                 <ChevronRight className="w-4 h-4 ml-0.5 shrink-0" />
               </button>
@@ -382,7 +382,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
 
             <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#5A7362] dark:text-slate-400 text-center">
               <Lock className="w-3 h-3 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
-              <span>100% Risk-Free • Instant Access • Cancel Anytime</span>
+              <span>{t('100% Risk-Free • Instant Access • Cancel Anytime')}</span>
             </div>
           </div>
 
@@ -392,14 +392,14 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
         <div className="px-6 py-3 bg-white dark:bg-slate-900 border-t border-[#E2EBE1] dark:border-slate-800 flex items-center justify-between text-xs text-[#5A7362] dark:text-slate-400">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400" />
-            <span className="text-[11px]">Bank-grade 256-bit encryption</span>
+            <span className="text-[11px]">{t('Bank-grade 256-bit encryption')}</span>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="text-[11px] font-bold text-[#152A1C] dark:text-slate-200 hover:text-[#2D5A3D] dark:hover:text-emerald-300 transition-colors cursor-pointer"
           >
-            Continue Browsing
+            {t('Continue Browsing')}
           </button>
         </div>
 

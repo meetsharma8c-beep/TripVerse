@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Server, Cpu, Zap, CheckCircle2, AlertCircle, RefreshCw, Trash2, HelpCircle } from 'lucide-react';
 import { getStoredConcodeConfig, saveConcodeConfig, removeConcodeConfig } from '../../services/concodeBrainService';
 import { triggerHaptic } from '../../services/deviceService';
+import { useLanguage } from '../../services/languageService';
 
 interface ConcodeBrainConfigModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
   onClose,
   onSaved
 }) => {
+  const { t } = useLanguage();
   const [url, setUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [isTesting, setIsTesting] = useState(false);
@@ -140,8 +142,8 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
               <Cpu className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-sm">ConCode AI Brain Gateway</h3>
-              <p className="text-[11px] text-slate-300">Kaggle GPU & Model API Configuration</p>
+              <h3 className="font-bold text-sm">{t('ConCode AI Brain Gateway')}</h3>
+              <p className="text-[11px] text-slate-300">{t('Kaggle GPU & Model API Configuration')}</p>
             </div>
           </div>
           <button
@@ -158,14 +160,14 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
           <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5">
             <Zap className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
             <div className="text-xs text-emerald-950 leading-relaxed">
-              <span className="font-bold text-emerald-800">Genuine End-to-End AI:</span> Connects TripVerse directly to your ConCode reasoning model hosted on Kaggle GPU.
+              <span className="font-bold text-emerald-800">{t('Genuine End-to-End AI:')}</span> {t('Connects TripVerse directly to your ConCode reasoning model hosted on Kaggle GPU.')}
             </div>
           </div>
 
           {/* Endpoint URL Input */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-              <span>Kaggle API URL (Tunnel Endpoint)</span>
+              <span>{t('Kaggle API URL (Tunnel Endpoint)')}</span>
               <span className="text-[10px] text-slate-400 font-normal">Cloudflare / ngrok / localtunnel</span>
             </label>
             <div className="relative">
@@ -179,15 +181,15 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
               <Server className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             </div>
             <p className="text-[11px] text-slate-500">
-              Paste the public HTTPS URL printed by your Kaggle notebook tunnel.
+              {t('Paste the public HTTPS URL printed by your Kaggle notebook tunnel.')}
             </p>
           </div>
 
           {/* API Key (Optional) */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-              <span>API Key / Secret Token (Optional)</span>
-              <span className="text-[10px] text-slate-400 font-normal">Optional</span>
+              <span>{t('API Key / Secret Token (Optional)')}</span>
+              <span className="text-[10px] text-slate-400 font-normal">{t('Optional')}</span>
             </label>
             <input
               type="password"
@@ -228,13 +230,13 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
           <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-1.5 text-xs text-slate-600">
             <div className="flex items-center gap-1.5 font-bold text-slate-700">
               <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
-              <span>How to deploy on Kaggle GPU</span>
+              <span>{t('How to deploy on Kaggle GPU')}</span>
             </div>
             <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-600">
               <li>Open your Kaggle notebook with <strong>GPU T4 x 2</strong> or <strong>P100</strong> enabled.</li>
               <li>Run the ConCode FastAPI server script (located in <code className="bg-slate-200 px-1 rounded text-slate-800">scripts/kaggle_concode_brain.py</code>).</li>
               <li>Copy the public Cloudflare or ngrok tunnel URL output.</li>
-              <li>Paste it into the box above and click <strong>Test Connection</strong>.</li>
+              <li>Paste it into the box above and click <strong>{t('Test Connection')}</strong>.</li>
             </ol>
           </div>
         </div>
@@ -248,7 +250,7 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
             title="Reset to default local proxy"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>Reset</span>
+            <span>{t('Reset')}</span>
           </button>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -259,7 +261,7 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
               className="flex-1 sm:flex-none px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin text-emerald-600' : ''}`} />
-              <span>{isTesting ? 'Testing...' : 'Test Connection'}</span>
+              <span>{isTesting ? t('Testing...') : t('Test Connection')}</span>
             </button>
 
             <button
@@ -267,7 +269,7 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
               onClick={handleSave}
               className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white transition-colors cursor-pointer shadow-xs active:scale-95 text-center"
             >
-              Save & Connect
+              {t('Save & Connect')}
             </button>
           </div>
         </div>

@@ -241,7 +241,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
         {/* Card 1: Total Spent */}
         <div className="bg-white rounded-3xl p-5 border border-[#E2EBE1] shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="badge-caps text-[#5A7362]">Total Spent</span>
+            <span className="badge-caps text-[#5A7362]">{t('Total Spent')}</span>
             <div className="w-8 h-8 rounded-xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center">
               <Wallet className="w-4 h-4" />
             </div>
@@ -251,7 +251,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
               {formatCurrency(summary.totalSpent, currency)}
             </div>
             <div className="text-xs font-semibold text-[#5A7362] mt-1">
-              Planned Budget: {formatCurrency(summary.plannedBudget, currency)}
+              {t('Planned Budget')}: {formatCurrency(summary.plannedBudget, currency)}
             </div>
           </div>
           <div className="mt-3 w-full bg-[#EAF0E9] h-2 rounded-full overflow-hidden">
@@ -267,7 +267,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
         {/* Card 2: Per Person Average */}
         <div className="bg-white rounded-3xl p-5 border border-[#E2EBE1] shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="badge-caps text-[#5A7362]">Cost Per Traveler</span>
+            <span className="badge-caps text-[#5A7362]">{t('Cost Per Traveler')}</span>
             <div className="w-8 h-8 rounded-xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center">
               <Users className="w-4 h-4" />
             </div>
@@ -277,28 +277,28 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
               {formatCurrency(Math.round(summary.totalSpent / travelers.length), currency)}
             </div>
             <div className="text-xs font-semibold text-[#5A7362] mt-1">
-              Split across {travelers.length} companions
+              {t('Split across')} {travelers.length} {t('companions')}
             </div>
           </div>
           <div className="mt-3 text-xs font-bold text-[#5A7362]">
-            {expenses.length} individual bills logged
+            {expenses.length} {t('individual bills logged')}
           </div>
         </div>
 
         {/* Card 3: Settlements Action */}
         <div className="bg-gradient-to-br from-[#152A1C] to-[#1E3E2B] text-white rounded-3xl p-5 border border-[#2D5A3D]/40 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="badge-caps text-[#A8C7A5]">Who Owes Whom</span>
+            <span className="badge-caps text-[#A8C7A5]">{t('Who Owes Whom')}</span>
             <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full">
-              {summary.settlements.length} Settlements
+              {summary.settlements.length} {t('Settlements')}
             </span>
           </div>
           <div className="mt-3">
             <div className="text-2xl sm:text-3xl font-black font-display text-emerald-300">
-              {summary.settlements.length === 0 ? 'All Settled' : `${summary.settlements.length} Pending`}
+              {summary.settlements.length === 0 ? t('All Settled') : `${summary.settlements.length} ${t('Pending')}`}
             </div>
             <div className="text-xs text-slate-300 mt-1">
-              {summary.settlements.length === 0 ? 'Everyone is squared away' : 'Ready to clear balances'}
+              {summary.settlements.length === 0 ? t('Everyone is squared away') : t('Ready to clear balances')}
             </div>
           </div>
           <button
@@ -308,12 +308,12 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
             {copiedWhatsApp ? (
               <>
                 <Check className="w-3.5 h-3.5" />
-                <span>Copied Settlement Report!</span>
+                <span>{t('Copied Settlement Report!')}</span>
               </>
             ) : (
               <>
                 <Share2 className="w-3.5 h-3.5" />
-                <span>Share WhatsApp Summary</span>
+                <span>{t('Share WhatsApp Summary')}</span>
               </>
             )}
           </button>
@@ -328,8 +328,8 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
         <div className="lg:col-span-2 bg-white rounded-3xl p-5 sm:p-7 border border-[#E2EBE1] shadow-xs">
           <div className="flex items-center justify-between gap-4 border-b border-[#E2EBE1] pb-4">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Group Ledger</span>
-              <h3 className="text-xl font-bold text-[#152A1C]">Trip Expenses</h3>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Group Ledger')}</span>
+              <h3 className="text-xl font-bold text-[#152A1C]">{t('Trip Expenses')}</h3>
             </div>
 
             <button
@@ -337,7 +337,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
               className="px-4 py-2 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Add Expense</span>
+              <span>{t('Add Expense')}</span>
             </button>
           </div>
 
@@ -347,13 +347,13 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
               <div className="flex items-center justify-between pb-3 border-b border-[#E2EBE1]">
                 <div className="flex items-center gap-2 font-bold text-[#152A1C]">
                   <Plus className="w-4 h-4 text-[#2D5A3D]" />
-                  <span>Log Group Expense</span>
+                  <span>{t('Log Group Expense')}</span>
                 </div>
                 <button
                   onClick={() => setIsAddExpenseOpen(false)}
                   className="text-xs font-semibold text-slate-400 hover:text-[#152A1C]"
                 >
-                  Cancel
+                  {t('Cancel')}
                 </button>
               </div>
 
@@ -361,7 +361,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Expense Title</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Expense Title')}</label>
                     <input
                       type="text"
                       placeholder="e.g., Highway Dhaba Dinner, Toll Plaza, Jeep Safari"
@@ -373,7 +373,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Amount ({currency})</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Amount')} ({currency})</label>
                     <input
                       type="number"
                       placeholder="e.g., 1450"
@@ -386,24 +386,24 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Category</label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Category')}</label>
                   <select
                     value={category}
                     onChange={e => setCategory(e.target.value as ExpenseCategory)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700"
                   >
-                    <option value="food">Food & Dining</option>
-                    <option value="fuel">Fuel & Charging</option>
-                    <option value="toll">Highway Tolls</option>
-                    <option value="stay">Hotel & Homestay</option>
-                    <option value="activity">Activities & Tickets</option>
-                    <option value="shopping">Shopping & Souvenirs</option>
-                    <option value="other">Other</option>
+                    <option value="food">{t('Food & Dining')}</option>
+                    <option value="fuel">{t('Fuel & Charging')}</option>
+                    <option value="toll">{t('Highway Tolls')}</option>
+                    <option value="stay">{t('Hotel & Homestay')}</option>
+                    <option value="activity">{t('Activities & Tickets')}</option>
+                    <option value="shopping">{t('Shopping & Souvenirs')}</option>
+                    <option value="other">{t('Other')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Paid By</label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Paid By')}</label>
                   <select
                     value={paidBy}
                     onChange={e => setPaidBy(e.target.value)}
@@ -417,7 +417,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
 
                 {/* Split With Checkboxes */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Split Equally Among:</label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Split Equally Among:')}</label>
                   <div className="flex items-center gap-2 flex-wrap">
                     {travelers.map(t => (
                       <button
@@ -442,13 +442,13 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                     onClick={() => setIsAddExpenseOpen(false)}
                     className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200"
                   >
-                    Cancel
+                    {t('Cancel')}
                   </button>
                   <button
                     type="submit"
                     className="px-5 py-2 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white text-xs font-bold"
                   >
-                    Save Expense
+                    {t('Save Expense')}
                   </button>
                 </div>
               </form>
@@ -462,9 +462,9 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                 <Receipt className="w-6 h-6 stroke-[1.8]" />
               </div>
               <div className="space-y-1">
-                <h4 className="text-sm font-bold text-slate-800">No expenses recorded yet</h4>
+                <h4 className="text-sm font-bold text-slate-800">{t('No expenses recorded yet')}</h4>
                 <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                  Add your first real expense to track budget consumption, fuel, dining, and split settlements.
+                  {t('Add your first real expense to track budget consumption, fuel, dining, and split settlements.')}
                 </p>
               </div>
               <button
@@ -473,7 +473,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-trip-gradient text-white font-bold text-xs shadow-xs hover:shadow-md transition-all active:scale-95 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add First Expense</span>
+                <span>{t('Add First Expense')}</span>
               </button>
             </div>
           ) : (
@@ -490,9 +490,9 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                       {exp.title}
                     </h4>
                     <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
-                      <span>Paid by <strong className="text-slate-700">{exp.paidBy}</strong></span>
+                      <span>{t('Paid by')} <strong className="text-slate-700">{exp.paidBy}</strong></span>
                       <span>•</span>
-                      <span>Split with {exp.splitAmong.join(', ')}</span>
+                      <span>{t('Split with')} {exp.splitAmong.join(', ')}</span>
                       <span>•</span>
                       <span className="text-slate-400">{exp.date}</span>
                     </div>
@@ -505,7 +505,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                       {formatCurrency(exp.amount, currency)}
                     </div>
                     <div className="text-[10px] text-slate-400">
-                      {formatCurrency(Math.round(exp.amount / exp.splitAmong.length), currency)} / person
+                      {formatCurrency(Math.round(exp.amount / exp.splitAmong.length), currency)} / {t('person')}
                     </div>
                   </div>
 
@@ -529,8 +529,8 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
           
           {/* Individual Balances */}
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E2EBE1] shadow-xs">
-            <span className="badge-caps text-[#2D5A3D]">Net Balance Sheet</span>
-            <h4 className="text-base font-bold text-[#152A1C] mt-0.5 font-display">Traveler Standing</h4>
+            <span className="badge-caps text-[#2D5A3D]">{t('Net Balance Sheet')}</span>
+            <h4 className="text-base font-bold text-[#152A1C] mt-0.5 font-display">{t('Traveler Standing')}</h4>
 
             <div className="mt-4 space-y-3">
               {Object.entries(summary.perPersonBalances).map(([name, bal]) => (
@@ -539,7 +539,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                   <span className={`text-xs font-black shrink-0 font-display ${
                     bal > 0 ? 'text-[#2D5A3D]' : bal < 0 ? 'text-rose-600' : 'text-slate-400'
                   }`}>
-                    {bal > 0 ? `+${formatCurrency(bal, currency)} (receives)` : bal < 0 ? `-${formatCurrency(Math.abs(bal), currency)} (owes)` : `Settled (${formatCurrency(0, currency)})`}
+                    {bal > 0 ? `+${formatCurrency(bal, currency)} (${t('receives')})` : bal < 0 ? `-${formatCurrency(Math.abs(bal), currency)} (${t('owes')})` : `${t('Settled')} (${formatCurrency(0, currency)})`}
                   </span>
                 </div>
               ))}
@@ -547,11 +547,11 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
 
             {/* Settlement Steps */}
             <div className="mt-5 pt-4 border-t border-slate-100">
-              <span className="text-xs font-bold text-slate-700 block mb-2.5">Suggested Settlements:</span>
+              <span className="text-xs font-bold text-slate-700 block mb-2.5">{t('Suggested Settlements:')}</span>
               {summary.settlements.length === 0 ? (
                 <div className="text-xs font-semibold text-[#2D5A3D] flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Everyone is even!</span>
+                  <span>{t('Everyone is even!')}</span>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -575,7 +575,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
                           className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#2D5A3D] hover:bg-[#244931] text-white font-bold text-[10px] transition-all active:scale-95 cursor-pointer shadow-xs"
                         >
                           <ArrowRight className="w-3 h-3" />
-                          <span>Settlement details</span>
+                          <span>{t('Settlement details')}</span>
                         </button>
                       </div>
                     </div>

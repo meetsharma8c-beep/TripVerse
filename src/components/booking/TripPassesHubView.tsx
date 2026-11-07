@@ -213,7 +213,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black uppercase text-emerald-800 bg-emerald-200/80 px-2 py-0.5 rounded-md">
-                  Confirmed & Paid
+                  {t('Confirmed & Paid')}
                 </span>
                 <span className="text-[11px] font-mono font-bold text-slate-700 truncate">PNR: {booking.pnr}</span>
               </div>
@@ -240,7 +240,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
             }}
             className="shrink-0 px-3 py-1.5 rounded-xl border border-emerald-300 bg-white text-emerald-900 text-xs font-bold hover:bg-emerald-50 transition-colors shadow-2xs cursor-pointer"
           >
-            Invoice
+            {t('Tax Invoice')}
           </button>
         </div>
       )}
@@ -389,7 +389,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
           </div>
           <div className="min-w-0 space-y-0.5">
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Hotel</span>
+              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">{t('Hotel')}</span>
               {booking && (
                 <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
                   Voucher: {booking.hotelVoucher}
@@ -400,7 +400,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
               {hotelName}
             </h3>
             <p className="text-xs text-[#5A7362] font-medium truncate">
-              {formatDateHeader()} • {Math.max(1, trip.durationDays - 1)} Nights
+              {formatDateHeader()} • {Math.max(1, trip.durationDays - 1)} {t('Nights')}
             </p>
           </div>
         </div>
@@ -416,7 +416,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
         {/* Column 1: Live Destination Weather */}
         <div className="rounded-3xl bg-white p-4 sm:p-5 border border-[#E2EBE1] shadow-[0_4px_20px_rgba(45,90,61,0.05)] space-y-2">
           <span className="text-[11px] font-semibold text-[#5A7362] block truncate">
-            Weather in {trip.destination.split(',')[0]}
+            {t('Weather in')} {trip.destination.split(',')[0]}
           </span>
           <div className="flex items-baseline justify-between gap-1">
             <span className="text-3xl sm:text-4xl font-display font-black text-[#152A1C]">
@@ -484,7 +484,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
                 {tripProgressPercent}%
               </span>
               <span className="text-[11px] text-[#8EA78D] font-medium block">
-                Completed
+                {t('Completed')}
               </span>
             </div>
           </div>
@@ -502,10 +502,10 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <h3 className="font-display font-bold text-sm sm:text-base text-[#152A1C]">
-                Packing Checklist
+                {t('Packing Checklist')}
               </h3>
               <span className="text-xs font-semibold text-[#8EA78D]">
-                {packedCount} of {packingItems.length} packed
+                {packedCount} {t('of')} {packingItems.length} {t('packed')}
               </span>
             </div>
           </div>
@@ -555,7 +555,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
             className="flex-1 py-4 px-6 rounded-full bg-emerald-800 hover:bg-emerald-900 text-white font-display font-bold text-sm sm:text-base shadow-[0_8px_30px_rgba(16,62,51,0.25)] flex items-center justify-center gap-2.5 transition-all duration-200 cursor-pointer active:scale-95"
           >
             <CreditCard className="w-4 h-4 text-emerald-300" />
-            <span>Book Trip (Payment Gateway)</span>
+            <span>{t('Book Trip (Payment Gateway)')}</span>
           </button>
         ) : (
           <button
@@ -571,7 +571,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
             className="flex-1 py-4 px-6 rounded-full bg-[#2D5A3D] hover:bg-[#234730] text-white font-display font-bold text-sm sm:text-base shadow-[0_8px_30px_rgba(45,90,61,0.25)] flex items-center justify-center gap-2.5 transition-all duration-200 cursor-pointer active:scale-95"
           >
             <Download className="w-4 h-4 text-emerald-300" />
-            <span>View E-Ticket & Passes</span>
+            <span>{t('View E-Ticket & Passes')}</span>
           </button>
         )}
 

@@ -4,6 +4,7 @@ import { Trip, PackingItem } from '../../types/trip';
 import { loadTripPacking } from '../../services/storageService';
 import { formatCurrency, getActiveCurrency } from '../../services/currencyService';
 import { getBreakStopSection } from '../../services/travelDataService';
+import { useLanguage } from '../../services/languageService';
 import { 
   Printer, 
   Calendar, 
@@ -30,6 +31,7 @@ interface PrintTravelGuideModalProps {
 }
 
 export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuideModalProps) {
+  const { t } = useLanguage();
   useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
@@ -98,13 +100,13 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
         {/* Modal Action Bar (Hidden in Print) */}
         <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-[#E2EBE1] flex items-center justify-between print:hidden no-print">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Official Travel Dossier</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Official Travel Dossier')}</span>
             <span className="text-slate-300">•</span>
-            <span className="text-xs font-semibold text-[#5A7362]">A4 PDF Print-Ready</span>
+            <span className="text-xs font-semibold text-[#5A7362]">{t('A4 PDF Print-Ready')}</span>
             <span className="text-slate-300">•</span>
             <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EAF0E9] text-[#2D5A3D] border border-[#DCE7DB]">
               <ShieldCheck className="w-3 h-3 text-[#2D5A3D]" />
-              100% Genuine Route Pass
+              {t('100% Genuine Route Pass')}
             </span>
           </div>
 
@@ -114,12 +116,13 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
               className="px-4 py-2 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>Print / Save as PDF</span>
+              <span>{t('Print / Save as PDF')}</span>
             </button>
 
             <button
               onClick={onClose}
               className="w-8 h-8 rounded-full bg-[#F4F6F2] hover:bg-[#EAF0E9] flex items-center justify-center text-[#152A1C] text-sm cursor-pointer transition-colors"
+              aria-label={t('Close')}
             >
               <X className="w-4 h-4" />
             </button>

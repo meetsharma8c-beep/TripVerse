@@ -207,11 +207,11 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
           <div className="flex items-center gap-2">
             <TrendingDown className="w-4 h-4 text-[#2D5A3D] shrink-0" />
             <h3 className="text-sm font-bold text-[#0B2545]">
-              AI 1-Click Optimization Suggestions
+              {t('AI 1-Click Optimization Suggestions')}
             </h3>
           </div>
           <span className="text-xs font-bold text-[#2D5A3D] shrink-0">
-            Total Potential Savings: {formatCurrency(suggestions.reduce((acc, s) => acc + s.savings, 0), currency)}
+            {t('Total Potential Savings:')} {formatCurrency(suggestions.reduce((acc, s) => acc + s.savings, 0), currency)}
           </span>
         </div>
 
@@ -227,11 +227,11 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-bold text-[#2D5A3D] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
-                      Save {formatCurrency(tip.savings, currency)}
+                      {t('Save')} {formatCurrency(tip.savings, currency)}
                     </span>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 min-w-0">{tip.title}</h4>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 min-w-0">{t(tip.title)}</h4>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed text-pretty">{tip.desc}</p>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed text-pretty">{t(tip.desc)}</p>
                 </div>
 
                 <button
@@ -246,12 +246,12 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
                   {isApplied ? (
                     <>
                       <Check className="w-3.5 h-3.5 text-emerald-700" />
-                      <span>Applied</span>
+                      <span>{t('Applied')}</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Apply Savings</span>
+                      <span>{t('Apply Savings')}</span>
                     </>
                   )}
                 </button>

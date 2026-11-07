@@ -3,6 +3,7 @@ import { CheckCircle2, Sparkles, Compass } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 import { TransportMode } from '../../types/trip';
+import { useLanguage } from '../../services/languageService';
 
 interface GenerationLoaderProps {
   onComplete: () => void;
@@ -15,34 +16,36 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
   destinationName,
   transportMode = 'car'
 }) => {
+  const { t } = useLanguage();
+
   const getModeStepText = (mode: TransportMode) => {
     switch (mode) {
       case 'flight':
-        return 'Analyzing flight corridors & international transit...';
+        return t('Analyzing flight corridors & international transit...');
       case 'train':
-        return 'Analyzing railway lines & express schedules...';
+        return t('Analyzing railway lines & express schedules...');
       case 'bus':
-        return 'Preparing a bus travel estimate...';
+        return t('Preparing a bus travel estimate...');
       case 'car':
-        return 'Estimating your highway driving itinerary...';
+        return t('Estimating your highway driving itinerary...');
       case 'bike':
-        return 'Preparing a scenic motorcycle rider route...';
+        return t('Preparing a scenic motorcycle rider route...');
       default:
-        return 'Preparing transit estimates...';
+        return t('Preparing transit estimates...');
     }
   };
 
   const steps = useMemo(() => [
-    'Connecting to ConCode AI Brain on GPU...',
-    'Analyzing your traveler choices & constraints...',
+    t('Connecting to ConCode AI Brain on GPU...'),
+    t('Analyzing your traveler choices & constraints...'),
     getModeStepText(transportMode),
-    'Customizing food trails & dining preferences...',
-    'Accessing original destination & landmark photos...',
-    'Curating verified local hotels & stay photography...',
-    'Scheduling day-by-day timing & activities...',
-    'Optimizing budget allocation across your trip...',
-    'Finalizing personalized journey blueprint...'
-  ], [transportMode]);
+    t('Customizing food trails & dining preferences...'),
+    t('Accessing original destination & landmark photos...'),
+    t('Curating verified local hotels & stay photography...'),
+    t('Scheduling day-by-day timing & activities...'),
+    t('Optimizing budget allocation across your trip...'),
+    t('Finalizing personalized journey blueprint...')
+  ], [transportMode, t]);
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
@@ -87,11 +90,11 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
         </div>
 
         <h3 className="text-xl sm:text-2xl font-display font-black text-[#0B2545] tracking-tight">
-          ConCode AI is creating your journey...
+          {t('ConCode AI is creating your journey...')}
         </h3>
         
         <p className="text-xs sm:text-sm text-slate-500 mt-1 mb-6">
-          Tailoring genuine experience for <span className="font-bold text-slate-800">{destinationName}</span>
+          {t('Tailoring genuine experience for')} <span className="font-bold text-slate-800">{destinationName}</span>
         </p>
 
         {/* Progress Bar */}
@@ -134,7 +137,7 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
 
         <div className="flex items-center justify-center gap-2 text-xs font-semibold text-slate-400">
           <Compass className="w-4 h-4 text-emerald-500 animate-spin" />
-          <span>Optimizing routes, pitstops and expenses...</span>
+          <span>{t('Optimizing routes, pitstops and expenses...')}</span>
         </div>
 
       </div>

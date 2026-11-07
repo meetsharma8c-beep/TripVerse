@@ -13,6 +13,7 @@ import {
   applyReplanToTrip 
 } from '../../services/replanningService';
 import { formatCurrency, getActiveCurrency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 import { AlertTriangle, X, ArrowRight, ArrowLeft, CheckCircle2, Home, RotateCcw, Receipt, Bot, MapPin, Calendar, Wallet, Wifi, ChevronRight, Plane, CloudRain, Train, AlertOctagon, Briefcase, UserCheck, Battery, ExternalLink } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -37,6 +38,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
   onOpenChatWithQuery,
   onViewMap
 }) => {
+  const { t } = useLanguage();
   const [currency] = useState<CurrencyCode>(getActiveCurrency());
   const [selectedReason, setSelectedReason] = useState<DisruptionType>(initialReason);
   
@@ -116,10 +118,10 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-[#0B2545] leading-tight">
-                Trip Replanning
+                {t('Trip Replanning')}
               </h2>
               <span className="text-[11px] text-slate-500">
-                Planning tools only · no live disruption monitoring
+                {t('Planning tools only · no live disruption monitoring')}
               </span>
             </div>
           </div>
@@ -144,7 +146,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
             }`}
           >
             <span className="w-4 h-4 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-[9px] font-black">1</span>
-            <span>Scenario</span>
+            <span>{t('Scenario')}</span>
           </button>
           <span className="text-slate-300">›</span>
           <button
@@ -155,7 +157,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
             }`}
           >
             <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-[9px] font-black">2</span>
-            <span>Choose Action</span>
+            <span>{t('Choose Action')}</span>
           </button>
           <span className="text-slate-300">›</span>
           <button
@@ -166,7 +168,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
             }`}
           >
             <span className="w-4 h-4 rounded-full bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center text-[9px] font-black">3</span>
-            <span>Emergency Stay</span>
+            <span>{t('Emergency Stay')}</span>
           </button>
           <span className="text-slate-300">›</span>
           <button
@@ -177,7 +179,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
             }`}
           >
             <span className="w-4 h-4 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[9px] font-black">4</span>
-            <span>Replan Trip</span>
+            <span>{t('Replan Trip')}</span>
           </button>
           <span className="text-slate-300">›</span>
           <button
@@ -188,7 +190,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
             }`}
           >
             <span className="w-4 h-4 rounded-full bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center text-[9px] font-black">5</span>
-            <span>Draft Updated</span>
+            <span>{t('Draft Updated')}</span>
           </button>
         </div>
 

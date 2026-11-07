@@ -4,6 +4,7 @@ import { Trip } from '../../types/trip';
 import { formatCurrency, SupportedCurrency } from '../../services/currencyService';
 import { triggerHaptic } from '../../services/deviceService';
 import { queryConcodeBrain } from '../../services/concodeBrainService';
+import { useLanguage } from '../../services/languageService';
 
 interface InteractivePhoneDeviceProps {
   currency: SupportedCurrency;
@@ -24,6 +25,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
   activeTrip,
   onQuickPlan
 }) => {
+  const { t } = useLanguage();
 
   const [activeScreen, setActiveScreen] = useState<PhoneAppScreen>('overview');
   const [isLocked, setIsLocked] = useState(false);
@@ -190,12 +192,12 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                 <div className="flex items-center justify-between text-[10px]">
                   <div className="flex items-center gap-1.5 font-bold text-emerald-300">
                     <Navigation className="w-3 h-3 animate-spin text-emerald-300" />
-                    <span>Live GPS Guidance</span>
+                    <span>{t('Live GPS Guidance')}</span>
                   </div>
-                  <span className="text-emerald-300 font-semibold">Active</span>
+                  <span className="text-emerald-300 font-semibold">{t('Active')}</span>
                 </div>
                 <p className="text-xs font-bold text-white leading-tight">Ahmedabad → Udaipur Express Route</p>
-                <p className="text-[11px] text-white/80">Tap to open live journey HUD & highway stops</p>
+                <p className="text-[11px] text-white/80">{t('Tap to open live journey HUD & highway stops')}</p>
               </div>
 
               {/* Bottom Quick Actions (Flashlight & Camera) */}
@@ -211,7 +213,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                     }}
                     className="text-[11px] font-semibold text-white/90 hover:text-emerald-300 transition-colors cursor-pointer"
                   >
-                    Swipe up to unlock
+                    {t('Swipe up to unlock')}
                   </button>
                   <div className="w-32 h-1 bg-white/70 rounded-full mx-auto mt-2" />
                 </div>
@@ -299,10 +301,10 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                       <div className="absolute bottom-3 left-4 right-4 text-white">
                         <p className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1">
                           <Sparkles className="w-3 h-3 text-emerald-400" />
-                          <span>AI Journey Planner</span>
+                          <span>{t('AI Journey Planner')}</span>
                         </p>
-                        <h3 className="text-lg font-black leading-tight font-display mt-0.5">Your Next Adventure Awaits</h3>
-                        <p className="text-[11px] text-slate-200 mt-0.5 font-medium">Best stays, food & break stops within budget.</p>
+                        <h3 className="text-lg font-black leading-tight font-display mt-0.5">{t('Your Next Adventure Awaits')}</h3>
+                        <p className="text-[11px] text-slate-200 mt-0.5 font-medium">{t('Best stays, food & break stops within budget.')}</p>
                       </div>
                     </div>
 
@@ -314,7 +316,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                         <div className="p-3.5 bg-white rounded-2xl border border-[#E2EBE1] shadow-xs space-y-1.5 hover:border-[#2D5A3D] transition-colors">
                           <div className="flex items-center justify-between text-xs gap-2">
                             <span className="font-extrabold text-slate-900 text-sm font-display truncate">
-                              {activeTrip ? `${activeTrip.origin.split(',')[0]} → ${activeTrip.destination.split(',')[0]}` : 'Configure Your Journey'}
+                              {activeTrip ? `${activeTrip.origin.split(',')[0]} → ${activeTrip.destination.split(',')[0]}` : t('Configure Your Journey')}
                             </span>
                             {activeTrip ? (
                               <span className="font-black text-[#2D5A3D] bg-[#EAF0E9] px-2.5 py-0.5 rounded-full text-xs font-display shrink-0 border border-[#8EA78D]/40">
@@ -322,21 +324,21 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                               </span>
                             ) : (
                               <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                                Ready
+                                {t('Ready')}
                               </span>
                             )}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
                             {activeTrip ? (
                               <>
-                                <span>{activeTrip.durationDays} Days</span>
+                                <span>{activeTrip.durationDays} {t('Days')}</span>
                                 <span>•</span>
-                                <span>{activeTrip.travelersCount} Travelers</span>
+                                <span>{activeTrip.travelersCount} {t('Travelers')}</span>
                                 <span>•</span>
-                                <span className="text-emerald-700 font-bold bg-emerald-50/60 px-1.5 py-0.2 rounded">Real Stored Plan</span>
+                                <span className="text-emerald-700 font-bold bg-emerald-50/60 px-1.5 py-0.2 rounded">{t('Real Stored Plan')}</span>
                               </>
                             ) : (
-                              <span>Set your destination and budget to activate your HUD</span>
+                              <span>{t('Set your destination and budget to activate your HUD')}</span>
                             )}
                           </div>
                         </div>
@@ -350,17 +352,17 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                             <div className="flex items-center gap-2 min-w-0 flex-1">
                               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping shrink-0" />
                               <span className="font-bold text-slate-800 text-xs truncate">
-                                Stop: {activeTrip.breakStops[0].name}
+                                {t('Stop')}: {activeTrip.breakStops[0].name}
                               </span>
                             </div>
                             <span className="text-[11px] font-extrabold text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-200 shadow-2xs shrink-0">
-                              Listing
+                              {t('Listing')}
                             </span>
                           </div>
                         ) : (
                           <div className="p-3 bg-slate-100/80 rounded-2xl border border-slate-200 flex items-center gap-2 text-slate-600 text-xs">
                             <Compass className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span>Select origin & destination to load verified highway stops</span>
+                            <span>{t('Select origin & destination to load verified highway stops')}</span>
                           </div>
                         )}
 
@@ -377,7 +379,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                         })}
                         className="w-full py-3.5 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-display font-extrabold text-sm shadow-md hover:shadow-lg hover:shadow-emerald-500/25 text-center active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
-                        <span>{activeTrip ? 'View Active Journey Plan' : 'Draft a Trip Plan'}</span>
+                        <span>{activeTrip ? t('View Active Journey Plan') : t('Draft a Trip Plan')}</span>
                         <ArrowRight className="w-4 h-4 shrink-0" />
                       </button>
 
@@ -392,22 +394,22 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                       <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-400">
                         <Navigation className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                        <span>Live Route Navigation</span>
+                        <span>{t('Live Route Navigation')}</span>
                       </div>
-                      <span className="text-[10px] font-mono text-emerald-400 font-semibold">GPS Active</span>
+                      <span className="text-[10px] font-mono text-emerald-400 font-semibold">{t('GPS Active')}</span>
                     </div>
 
                     {/* Speedometer & Compass */}
                     <div className="grid grid-cols-2 gap-2 text-center">
                       <div className="p-3 rounded-2xl bg-slate-800 border border-slate-700">
-                        <span className="text-[10px] text-slate-400 uppercase font-semibold">Speed</span>
+                        <span className="text-[10px] text-slate-400 uppercase font-semibold">{t('Speed')}</span>
                         <p className="text-3xl font-black font-display text-emerald-400">96</p>
                         <span className="text-[10px] text-slate-400 font-mono">km/h</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-slate-800 border border-slate-700">
-                        <span className="text-[10px] text-slate-400 uppercase font-semibold">Next Exit</span>
+                        <span className="text-[10px] text-slate-400 uppercase font-semibold">{t('Next Exit')}</span>
                         <p className="text-3xl font-black font-display text-sky-400">12</p>
-                        <span className="text-[10px] text-slate-400 font-mono">km away</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{t('km away')}</span>
                       </div>
                     </div>
 
@@ -424,7 +426,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                       onClick={() => setActiveScreen('overview')}
                       className="mt-auto py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs text-center cursor-pointer transition-colors"
                     >
-                      ← Back to Journey Card
+                      ← {t('Back to Journey Card')}
                     </button>
                   </div>
                 )}
@@ -467,7 +469,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                       onClick={() => setActiveScreen('overview')}
                       className="mt-auto py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs text-center cursor-pointer transition-colors"
                     >
-                      ← Back to Overview
+                      ← {t('Back to Overview')}
                     </button>
                   </div>
                 )}
@@ -478,9 +480,9 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
                       <div className="flex items-center gap-1.5 font-bold text-xs text-purple-700">
                         <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                        <span>ConCode AI Mini Co-Pilot</span>
+                        <span>{t('ConCode AI Mini Co-Pilot')}</span>
                       </div>
-                      <span className="text-[9px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-bold">Online</span>
+                      <span className="text-[9px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-bold">{t('Online')}</span>
                     </div>
 
                     <div className="flex-1 overflow-y-auto space-y-2 text-xs pr-1">
@@ -501,7 +503,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                     <form onSubmit={handleMiniChatSubmit} className="mt-2 flex items-center gap-1.5 pt-2 border-t border-slate-100">
                       <input
                         type="text"
-                        placeholder="Ask AI inside phone..."
+                        placeholder={t('Ask AI inside phone...')}
                         value={miniChatInput}
                         onChange={e => setMiniChatInput(e.target.value)}
                         className="flex-1 px-3 py-1.5 rounded-xl bg-slate-100 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-purple-300 border border-slate-200"
@@ -532,7 +534,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                   title="Phone Overview App"
                 >
                   <Compass className="w-4 h-4" />
-                  <span className="text-[9px] font-bold">Trip</span>
+                  <span className="text-[9px] font-bold">{t('Trip')}</span>
                 </button>
 
                 <button
@@ -547,7 +549,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                   title="Illustrative directions screen"
                 >
                   <Navigation className="w-4 h-4" />
-                  <span className="text-[9px] font-bold">Directions demo</span>
+                  <span className="text-[9px] font-bold">{t('Directions demo')}</span>
                 </button>
 
                 <button
@@ -562,7 +564,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                   title="Phone Day-Wise Itinerary App"
                 >
                   <Calendar className="w-4 h-4" />
-                  <span className="text-[9px] font-bold">Days</span>
+                  <span className="text-[9px] font-bold">{t('Days')}</span>
                 </button>
 
                 <button
@@ -577,7 +579,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                   title="Phone ConCode AI App"
                 >
                   <Bot className="w-4 h-4" />
-                  <span className="text-[9px] font-bold">AI Chat</span>
+                  <span className="text-[9px] font-bold">{t('AI Chat')}</span>
                 </button>
               </div>
 
@@ -604,14 +606,14 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
       <div className="mt-3 flex items-center justify-center gap-3 text-[11px] font-bold text-slate-500 text-center">
         <span className="flex items-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Tap screen apps or buttons
+          {t('Tap screen apps or buttons')}
         </span>
         <span>•</span>
         <button
           onClick={handlePowerButton}
           className="text-slate-600 hover:text-emerald-700 underline cursor-pointer"
         >
-          {isLocked ? 'Tap to Unlock' : 'Press Side Key to Lock'}
+          {isLocked ? t('Tap to Unlock') : t('Press Side Key to Lock')}
         </button>
       </div>
 

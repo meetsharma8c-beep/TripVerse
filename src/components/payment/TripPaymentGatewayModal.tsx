@@ -47,6 +47,7 @@ import {
   verifyRazorpayPayment,
   loadRazorpayScript
 } from '../../services/paymentGatewayService';
+import { useLanguage } from '../../services/languageService';
 
 interface TripPaymentGatewayModalProps {
   trip?: Trip | null;

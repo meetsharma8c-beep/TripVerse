@@ -4,6 +4,7 @@ import { Trip, Destination } from '../../types/trip';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { triggerHaptic } from '../../services/deviceService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
+import { useLanguage } from '../../services/languageService';
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   onOpenChat,
   onNavigateTab
 }) => {
+  const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -86,8 +88,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   const quickActions = [
     {
       id: 'plan_trip',
-      label: 'Create New Itinerary with AI',
-      desc: 'Smart route, budget allocation & pitstops',
+      label: t('Create New Itinerary with AI'),
+      desc: t('Smart route, budget allocation & pitstops'),
       icon: Sparkles,
       iconColor: 'text-emerald-500',
       action: () => {
@@ -97,8 +99,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     },
     {
       id: 'live_nav',
-      label: 'Get Directions',
-      desc: 'Open your route in an external navigation app',
+      label: t('Get Directions'),
+      desc: t('Open your route in an external navigation app'),
       icon: Navigation,
       iconColor: 'text-cyan-500',
       action: () => {
@@ -108,8 +110,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     },
     {
       id: 'ai_chat',
-      label: 'Chat with AI Travel Assistant',
-      desc: 'Ask about weather, replanning, or vegetarian food',
+      label: t('Chat with AI Travel Assistant'),
+      desc: t('Ask about weather, replanning, or vegetarian food'),
       icon: Sparkles,
       iconColor: 'text-purple-500',
       action: () => {
@@ -119,8 +121,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     },
     {
       id: 'explore_places',
-      label: 'Explore Curated Indian Getaways',
-      desc: 'Royal palaces, hill stations & beaches',
+      label: t('Explore Curated Indian Getaways'),
+      desc: t('Royal palaces, hill stations & beaches'),
       icon: Compass,
       iconColor: 'text-amber-500',
       action: () => {
@@ -154,7 +156,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search trips, destinations, or quick actions (⌘K)..."
+            placeholder={t('Search trips, destinations, or quick actions (⌘K)...')}
             className="flex-1 bg-transparent text-sm sm:text-base font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none"
           />
           {query ? (
@@ -162,7 +164,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               type="button"
               onClick={() => setQuery('')}
               className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-              aria-label="Clear search"
+              aria-label={t('Clear search')}
             >
               <X className="w-4 h-4" />
             </button>
@@ -180,7 +182,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {quickActions.length > 0 && (
             <div className="space-y-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 block">
-                Quick Actions
+                {t('Quick Actions')}
               </span>
               <div className="space-y-1">
                 {quickActions.map(act => {
@@ -217,7 +219,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {matchingDestinations.length > 0 && (
             <div className="space-y-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 block">
-                Destinations
+                {t('Destinations')}
               </span>
               <div className="space-y-1">
                 {matchingDestinations.map(dest => (
@@ -263,7 +265,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {matchingTrips.length > 0 && (
             <div className="space-y-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 block">
-                My Trips
+                {t('My Trips')}
               </span>
               <div className="space-y-1">
                 {matchingTrips.map(trip => (
@@ -285,12 +287,12 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                           {trip.name}
                         </h4>
                         <p className="text-[11px] text-slate-500 truncate">
-                          {trip.origin} → {trip.destination} • {trip.durationDays} Days
+                          {trip.origin} → {trip.destination} • {trip.durationDays} {t('Days')}
                         </p>
                       </div>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
-                      Open
+                      {t('Open')}
                     </span>
                   </button>
                 ))}
@@ -301,16 +303,16 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {/* Empty Search Results */}
           {quickActions.length === 0 && matchingDestinations.length === 0 && matchingTrips.length === 0 && (
             <div className="text-center py-8 space-y-2">
-              <p className="text-sm font-bold text-slate-700">No matching results for "{query}"</p>
-              <p className="text-xs text-slate-400">Try searching for "Goa", "Manali", "GPS", or "Packing"</p>
+              <p className="text-sm font-bold text-slate-700">{t('No matching results for')} "{query}"</p>
+              <p className="text-xs text-slate-400">{t('Try searching for destinations or activities')}</p>
             </div>
           )}
         </div>
 
         {/* Footer Shortcut Helper */}
         <div className="bg-slate-50 px-5 py-2.5 border-t border-slate-200/80 flex items-center justify-between text-[11px] text-slate-400">
-          <span>Search everything across TripVerse</span>
-          <span className="font-mono">Press ESC to exit</span>
+          <span>{t('Search everything across TripVerse')}</span>
+          <span className="font-mono">{t('Press ESC to exit')}</span>
         </div>
       </div>
     </div>

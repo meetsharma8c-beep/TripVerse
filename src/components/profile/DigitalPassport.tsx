@@ -3,6 +3,7 @@ import { Award, Sparkles, Check, Compass, Lock, Globe, Share2, Mountain, Waves, 
 import confetti from 'canvas-confetti';
 import { openExternalUrl, triggerHaptic } from '../../services/deviceService';
 import { loadUserVisitedStates, saveUserVisitedStates } from '../../services/storageService';
+import { useLanguage } from '../../services/languageService';
 
 interface WorldRegion {
   name: string;
@@ -108,6 +109,7 @@ const TOTAL_WORLD_NATIONS = 16;
 const STORAGE_KEY_COUNTRIES = 'tripverse_visited_countries';
 
 export const DigitalPassport: React.FC = () => {
+  const { t } = useLanguage();
   const [passportMode, setPassportMode] = useState<'world' | 'india'>('world');
   const [visitedStates, setVisitedStates] = useState<string[]>(() => loadUserVisitedStates());
   const [visitedCountries, setVisitedCountries] = useState<string[]>(() => {
@@ -328,10 +330,10 @@ export const DigitalPassport: React.FC = () => {
             <span className="text-xs font-medium text-slate-500">Official Explorer Log</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#0B2545] mt-1 tracking-tight">
-            Digital Travel Passport & Stamping Book
+            {t('Digital Travel Passport & Stamping Book')}
           </h2>
           <p className="text-xs text-slate-500 mt-1 font-sans">
-            Tap any destination to stamp your verified explorer passport. Track international trips and domestic circuits.
+            {t('Tap any destination to stamp your verified explorer passport. Track international trips and domestic circuits.')}
           </p>
         </div>
 
@@ -347,7 +349,7 @@ export const DigitalPassport: React.FC = () => {
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span>🌍 World Explorer</span>
+              <span>🌍 {t('World Explorer')}</span>
             </button>
             <button
               type="button"
@@ -358,7 +360,7 @@ export const DigitalPassport: React.FC = () => {
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span>🇮🇳 India Regional</span>
+              <span>🇮🇳 {t('India Regional')}</span>
             </button>
           </div>
 
@@ -367,7 +369,7 @@ export const DigitalPassport: React.FC = () => {
             className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             {copiedShare ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-slate-500" />}
-            <span>{copiedShare ? 'Copied!' : 'Share'}</span>
+            <span>{copiedShare ? t('Copied!') : t('Share')}</span>
           </button>
         </div>
       </div>
@@ -378,16 +380,16 @@ export const DigitalPassport: React.FC = () => {
         {/* Unlocked Territory Stat */}
         <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-200/70 space-y-2">
           <span className="text-[10px] uppercase font-semibold text-emerald-800 tracking-wider block">
-            {passportMode === 'world' ? 'World Nations Stamped' : 'India Territory Unlocked'}
+            {passportMode === 'world' ? t('World Nations Stamped') : t('India Territory Unlocked')}
           </span>
           <div className="text-2xl sm:text-3xl font-serif font-bold text-[#0B2545]">
             {passportMode === 'world' ? (
               <>
-                {visitedCountries.length} <span className="text-sm text-slate-500 font-sans font-normal">/ {TOTAL_WORLD_NATIONS} Nations</span>
+                {visitedCountries.length} <span className="text-sm text-slate-500 font-sans font-normal">/ {TOTAL_WORLD_NATIONS} {t('Nations')}</span>
               </>
             ) : (
               <>
-                {visitedStates.length} <span className="text-sm text-slate-500 font-sans font-normal">/ {TOTAL_STATES_AND_UTS} States</span>
+                {visitedStates.length} <span className="text-sm text-slate-500 font-sans font-normal">/ {TOTAL_STATES_AND_UTS} {t('States')}</span>
               </>
             )}
           </div>

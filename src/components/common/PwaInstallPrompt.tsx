@@ -17,11 +17,13 @@ import {
   isStandalone, 
   triggerHaptic 
 } from '../../services/deviceService';
+import { useLanguage } from '../../services/languageService';
 
 const DISMISS_STORAGE_KEY = 'tripverse_pwa_dismissed_until';
 const SNOOZE_DAYS = 5;
 
 export const PwaInstallPrompt: React.FC = () => {
+  const { t } = useLanguage();
   const [canPrompt, setCanPrompt] = useState<boolean>(false);
   const [isInstalled, setIsInstalled] = useState<boolean>(true);
   const [showBanner, setShowBanner] = useState<boolean>(false);
@@ -161,9 +163,9 @@ export const PwaInstallPrompt: React.FC = () => {
               {/* Text Copy */}
               <div className="flex-1 min-w-0 pr-6">
                 <div className="flex items-center gap-1.5">
-                  <h4 className="text-sm font-bold text-white tracking-tight">Install TripVerse</h4>
+                  <h4 className="text-sm font-bold text-white tracking-tight">{t('Install TripVerse')}</h4>
                   <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#2D5A3D]/30 text-[#A3B8A2] border border-[#2D5A3D]/40">
-                    Free
+                    {t('Free')}
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 mt-0.5 line-clamp-2 leading-relaxed">
@@ -177,7 +179,7 @@ export const PwaInstallPrompt: React.FC = () => {
                   </span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
-                    <WifiOff className="w-3 h-3 text-[#8EA78D]" /> Offline Mode
+                    <WifiOff className="w-3 h-3 text-[#8EA78D]" /> {t('Offline Mode')}
                   </span>
                 </div>
               </div>
@@ -186,7 +188,7 @@ export const PwaInstallPrompt: React.FC = () => {
               <button
                 onClick={handleDismiss}
                 className="absolute top-2 right-2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-                aria-label="Dismiss banner"
+                aria-label={t('Dismiss banner')}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -199,14 +201,14 @@ export const PwaInstallPrompt: React.FC = () => {
                 className="btn-liquid-primary flex-1 flex items-center justify-center gap-2 py-3 px-4 min-h-[44px] rounded-full text-white font-bold text-xs shadow-lg shadow-[#2D5A3D]/30"
               >
                 <Download className="w-4 h-4 stroke-[2.5]" />
-                <span>{isIosDevice ? 'Add to iPhone / iPad' : 'Install Free App'}</span>
+                <span>{isIosDevice ? t('Add to iPhone / iPad') : t('Install Free App')}</span>
               </button>
               
               <button
                 onClick={handleDismiss}
                 className="btn-liquid-glass py-3 px-4 min-h-[44px] rounded-full text-slate-200 bg-white/10 hover:bg-white/20 border-white/20 text-xs font-semibold"
               >
-                Not Now
+                {t('Not Now')}
               </button>
             </div>
 
@@ -301,19 +303,19 @@ export const PwaInstallPrompt: React.FC = () => {
             <div className="mt-4 pt-3 border-t border-slate-200 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
-                <span>Full Screen (No URL bar)</span>
+                <span>{t('Full Screen (No URL bar)')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
-                <span>Works Offline</span>
+                <span>{t('Works Offline')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
-                <span>Lightweight (~10MB)</span>
+                <span>{t('Lightweight (~10MB)')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
-                <span>Automatic Updates</span>
+                <span>{t('Automatic Updates')}</span>
               </div>
             </div>
 
@@ -325,7 +327,7 @@ export const PwaInstallPrompt: React.FC = () => {
               }}
               className="mt-5 w-full py-3 rounded-2xl bg-[#0B2545] text-white font-bold text-xs shadow-md active:scale-98 transition-all cursor-pointer"
             >
-              Got It, I'll Add It!
+              {t('Got it, Thanks!')}
             </button>
 
           </div>

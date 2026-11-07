@@ -5,6 +5,7 @@ import confetti from 'canvas-confetti';
 import { Trip, CollaborationSession, TripCollaborator, GroupSuggestion } from '../../types/trip';
 import { AuthUser } from '../../types/auth';
 import { openExternalUrl } from '../../services/deviceService';
+import { useLanguage } from '../../services/languageService';
 import { 
   getOrInitializeCollaborationSession,
   castActivityVote,
@@ -29,6 +30,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
   onClose,
   onTripUpdated
 }) => {
+  const { t } = useLanguage();
   const [session, setSession] = useState<CollaborationSession>(() => 
     getOrInitializeCollaborationSession(trip, currentUser)
   );
@@ -185,14 +187,14 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-[#0B2545]">Group Collaboration Hub</h3>
+                <h3 className="text-base font-bold text-[#0B2545]">{t('Group Collaboration Hub')}</h3>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {session.collaborators.length} Travelers
+                  {session.collaborators.length} {t('Travelers')}
                 </span>
               </div>
               <p className="text-xs text-slate-500 truncate max-w-sm">
-                Planning: <span className="font-semibold text-slate-700">{trip.name}</span>
+                {t('Planning')}: <span className="font-semibold text-slate-700">{trip.name}</span>
               </p>
             </div>
           </div>
@@ -216,7 +218,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
             }`}
           >
             <Share2 className="w-3.5 h-3.5 text-[#2D5A3D]" />
-            <span>Invite & Friends</span>
+            <span>{t('Invite & Friends')}</span>
           </button>
 
           <button
@@ -228,7 +230,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
             }`}
           >
             <ThumbsUp className="w-3.5 h-3.5 text-[#2D5A3D]" />
-            <span>Activity Polls</span>
+            <span>{t('Activity Polls')}</span>
           </button>
 
           <button
@@ -240,7 +242,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-[#2D5A3D]" />
-            <span>Drop-In Ideas ({session.suggestions.length})</span>
+            <span>{t('Drop-In Ideas')} ({session.suggestions.length})</span>
           </button>
         </div>
 

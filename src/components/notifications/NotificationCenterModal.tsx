@@ -21,6 +21,7 @@ import {
   Sparkles,
   PlaneTakeoff
 } from 'lucide-react';
+import { useLanguage } from '../../services/languageService';
 
 interface NotificationCenterModalProps {
   trips: Trip[];
@@ -37,6 +38,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
   onClose,
   onNavigateToTarget
 }) => {
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState<TripNotification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread' | 'alerts'>('all');
   const [countdown, setCountdown] = useState<TripCountdownInfo | null>(null);
@@ -127,10 +129,10 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
             </div>
             <div>
               <h2 className="text-xl font-bold font-display text-[#152A1C] tracking-tight">
-                Notification & Countdown Hub
+                {t('Notification Center')}
               </h2>
               <p className="text-xs text-[#5A7362] font-medium">
-                Trip countdowns and planning reminders; no live flight or road tracking
+                {t('Trip Alerts & Live Updates')}
               </p>
             </div>
           </div>
@@ -138,7 +140,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
           <button
             onClick={onClose}
             className="p-2 rounded-xl text-slate-400 hover:text-[#152A1C] hover:bg-[#EAF0E9] transition-colors cursor-pointer"
-            aria-label="Close"
+            aria-label={t('Close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -153,7 +155,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
             <div className="flex items-center justify-between gap-2 mb-3">
               <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.8 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1.5">
                 <Clock className="w-3 h-3 text-emerald-400 animate-pulse" />
-                <span>Next Departure Countdown</span>
+                <span>{t('Departure Countdown')}</span>
               </span>
               <span className="text-xs text-slate-300 truncate max-w-[200px]">
                 {activeTrip.destination}
@@ -165,25 +167,25 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                 <span className="block text-2xl sm:text-3xl font-extrabold font-display text-emerald-400">
                   {String(countdown.daysRemaining).padStart(2, '0')}
                 </span>
-                <span className="text-[9px] uppercase tracking-wider text-slate-300 font-bold">Days</span>
+                <span className="text-[9px] uppercase tracking-wider text-slate-300 font-bold">{t('Days')}</span>
               </div>
               <div className="p-2.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10">
                 <span className="block text-2xl sm:text-3xl font-extrabold font-display text-white">
                   {String(countdown.hoursRemaining).padStart(2, '0')}
                 </span>
-                <span className="text-[9px] uppercase tracking-wider text-slate-300 font-bold">Hours</span>
+                <span className="text-[9px] uppercase tracking-wider text-slate-300 font-bold">{t('Hours')}</span>
               </div>
               <div className="p-2.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10">
                 <span className="block text-2xl sm:text-3xl font-extrabold font-display text-white">
                   {String(countdown.minutesRemaining).padStart(2, '0')}
                 </span>
-                <span className="text-[9px] uppercase tracking-wider text-slate-300 font-bold">Mins</span>
+                <span className="text-[9px] uppercase tracking-wider text-slate-300 font-bold">{t('Mins')}</span>
               </div>
               <div className="p-2.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10">
                 <span className="block text-2xl sm:text-3xl font-extrabold font-display text-amber-300 animate-pulse">
                   {String(countdown.secondsRemaining).padStart(2, '0')}
                 </span>
-                <span className="text-[9px] uppercase tracking-wider text-slate-300 font-bold">Secs</span>
+                <span className="text-[9px] uppercase tracking-wider text-slate-300 font-bold">{t('Secs')}</span>
               </div>
             </div>
 
@@ -196,7 +198,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                 }}
                 className="text-emerald-300 hover:text-emerald-200 font-bold underline inline-flex items-center gap-1 cursor-pointer"
               >
-                <span>View Full Itinerary</span>
+                <span>{t('View Full Itinerary')}</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             </p>
@@ -257,7 +259,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
               }`}
             >
-              All ({notifications.length})
+              {t('All')} ({notifications.length})
             </button>
             <button
               onClick={() => setFilter('unread')}
@@ -267,7 +269,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
               }`}
             >
-              Unread ({unreadCount})
+              {t('Unread')} ({unreadCount})
             </button>
             <button
               onClick={() => setFilter('alerts')}
@@ -277,7 +279,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
               }`}
             >
-              Alerts
+              {t('Alerts')}
             </button>
           </div>
 
@@ -287,7 +289,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
               className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-1 cursor-pointer"
             >
               <CheckCheck className="w-3.5 h-3.5" />
-              <span>Mark all read</span>
+              <span>{t('Mark all as read')}</span>
             </button>
           )}
         </div>
@@ -298,7 +300,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
             <div className="text-center py-12 text-slate-400 space-y-2">
               <Bell className="w-8 h-8 mx-auto opacity-40 text-slate-400" />
               <p className="text-xs font-semibold">
-                {notifications.length === 0 ? "No notifications. You're all caught up." : "No notifications in this filter"}
+                {notifications.length === 0 ? t('All caught up! Safe travels on your journey.') : t('No notifications in this filter')}
               </p>
             </div>
           ) : (

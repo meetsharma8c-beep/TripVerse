@@ -199,7 +199,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                         <Sparkles className="w-3 h-3 text-[#2D5A3D]" />
                       </div>
                       <h3 className="font-display font-bold text-base sm:text-lg text-[#152A1C] tracking-tight truncate">
-                        {day.title}
+                        {t(day.title)}
                       </h3>
                       <ChevronDown className={`w-4 h-4 text-[#8EA78D] transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
@@ -210,24 +210,24 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                         topActivities.slice(0, 3).map((act) => (
                           <div key={act.id} className="flex items-center gap-1.5 truncate">
                             <span className="text-[#8EA78D]">•</span>
-                            <span className="truncate">{act.title}</span>
+                            <span className="truncate">{t(act.title)}</span>
                             {act.travelTimeMin > 0 && (
                               <span className="text-[10px] text-slate-400">({act.travelTimeMin}m)</span>
                             )}
                           </div>
                         ))
                       ) : (
-                        <p className="italic text-slate-400">No scheduled activities yet.</p>
+                        <p className="italic text-slate-400">{t('No scheduled activities yet.')}</p>
                       )}
                     </div>
 
                     {/* Cost & Theme footer */}
                     <div className="flex items-center gap-3 pt-1 text-[11px] text-[#5A7362] flex-wrap">
                       <span className="font-semibold text-[#2D5A3D] bg-[#E8EFE7] px-2 py-0.5 rounded-full">
-                        Est. {formatCurrency(Number(day.dayEstimatedCost || 0), currency)}
+                        {t('Est.')} {formatCurrency(Number(day.dayEstimatedCost || 0), currency)}
                       </span>
                       {day.theme && (
-                        <span className="text-slate-400">Theme: {day.theme}</span>
+                        <span className="text-slate-400">{t(`Theme: ${day.theme}`)}</span>
                       )}
                     </div>
 
@@ -385,33 +385,33 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                                 </span>
 
                                 <span className={`text-sm font-bold min-w-0 break-words leading-snug ${act.completed ? 'line-through text-slate-400' : 'text-[#152A1C]'}`}>
-                                  {act.title}
+                                  {t(act.title)}
                                 </span>
 
                                 {act.isCustom && (
                                   <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded-md shrink-0">
-                                    Custom
+                                    {t('Custom')}
                                   </span>
                                 )}
 
                                 {act.queueSlot === 'early_morning_low_crowd' && (
                                   <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-md shrink-0">
-                                    🌅 Low-Queue Slot
+                                    🌅 {t('Low-Queue Slot')}
                                   </span>
                                 )}
                                 {act.queueSlot === 'midday_timed_indoor' && (
                                   <span className="text-[10px] font-bold text-indigo-800 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded-md shrink-0">
-                                    🏛️ Timed Indoor
+                                    🏛️ {t('Timed Indoor')}
                                   </span>
                                 )}
                                 {act.queueSlot === 'evening_vibrant' && (
                                   <span className="text-[10px] font-bold text-purple-800 bg-purple-50 border border-purple-200 px-1.5 py-0.2 rounded-md shrink-0">
-                                    🌃 Nightlife Peak
+                                    🌃 {t('Nightlife Peak')}
                                   </span>
                                 )}
                                 {act.isIndoorSwapped && (
                                   <span className="text-[10px] font-bold text-sky-800 bg-sky-100 border border-sky-300 px-1.5 py-0.2 rounded-md shrink-0">
-                                    🌧️ Indoor Mirror
+                                    🌧️ {t('Indoor Mirror')}
                                   </span>
                                 )}
                               </div>
@@ -419,7 +419,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                               {/* Cost & Inline Reorder / Edit Actions */}
                               <div className="flex items-center gap-2 shrink-0">
                                 <span className="text-xs font-bold text-[#152A1C] bg-[#F8FAF7] px-2.5 py-1 rounded-lg border border-[#E2EBE1]">
-                                  {act.estimatedCost === 0 ? 'Free' : formatCurrency(act.estimatedCost, currency)}
+                                  {act.estimatedCost === 0 ? t('Free') : formatCurrency(act.estimatedCost, currency)}
                                 </span>
 
                                 <div className="flex items-center gap-0.5">
@@ -515,7 +515,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
 
                             {act.description && (
                               <p className="text-xs text-[#5A7362] leading-relaxed">
-                                {act.description}
+                                {t(act.description)}
                               </p>
                             )}
 

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { Trip } from '../../types/trip';
 import { Navigation, Maximize2 } from 'lucide-react';
+import { useLanguage } from '../../services/languageService';
 
 interface SmartRouteMapProps {
   trip: Trip;
@@ -51,6 +52,7 @@ function makePopup(title: string, detail: string): HTMLElement {
 }
 
 export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNav }) => {
+  const { t } = useLanguage();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
@@ -162,12 +164,12 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
     <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Driving route</span>
-          <h2 className="text-xl font-bold text-[#0B2545] mt-0.5">Route and nearby places</h2>
+          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Driving route')}</span>
+          <h2 className="text-xl font-bold text-[#0B2545] mt-0.5">{t('Route and nearby places')}</h2>
           <p className="text-xs text-slate-500 mt-1">
             {hasLiveRoute
-              ? `Geoapify Routing · ${trip.routeDetails?.distanceKm} km · about ${trip.routeDetails?.durationHours} h`
-              : 'Live road route unavailable · no route line shown'}
+              ? `Geoapify Routing · ${trip.routeDetails?.distanceKm} km · ${t('about')} ${trip.routeDetails?.durationHours} h`
+              : t('Live road route unavailable · no route line shown')}
           </p>
         </div>
         {onOpenLiveNav && (
@@ -176,19 +178,19 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-trip-gradient text-white font-bold text-xs shadow-sm"
           >
             <Navigation className="w-3.5 h-3.5" />
-            <span>Get directions</span>
+            <span>{t('Get directions')}</span>
           </button>
         )}
       </div>
 
       {!hasLiveRoute && (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">
-          No live route is available to display. You can still enter the origin and destination in a navigation app to get directions.
+          {t('No live route is available to display. You can still enter the origin and destination in a navigation app to get directions.')}
         </p>
       )}
 
       <div className="flex items-center justify-between text-xs text-slate-600">
-        <span>{hasLiveRoute ? 'Geoapify road geometry' : 'Route map unavailable'}</span>
+        <span>{hasLiveRoute ? t('Geoapify road geometry') : t('Route map unavailable')}</span>
         <button
           type="button"
           onClick={() => {
@@ -203,7 +205,7 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200"
         >
           <Maximize2 className="w-3.5 h-3.5" />
-          Recenter
+          {t('Recenter')}
         </button>
       </div>
 
@@ -211,12 +213,12 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
         <div ref={mapContainerRef} className="w-full h-full" />
         {!hasLiveRoute && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/75 p-6 text-center text-sm font-semibold text-slate-600">
-            A live driving route is needed to draw an accurate map.
+            {t('A live driving route is needed to draw an accurate map.')}
           </div>
         )}
       </div>
       <p className="text-[11px] text-slate-500">
-        Route geometry and nearby place listings are provided through Geoapify using OpenStreetMap data. Listings do not confirm opening hours, facilities, safety, or availability. Map tiles © OpenStreetMap contributors.
+        {t('Route geometry and nearby place listings are provided through Geoapify using OpenStreetMap data. Listings do not confirm opening hours, facilities, safety, or availability. Map tiles © OpenStreetMap contributors.')}
       </p>
     </div>
   );

@@ -3,7 +3,7 @@ import { Logo, BrandIconMark } from './Logo';
 import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, ChevronDown, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut, Bell, Languages } from 'lucide-react';
 import { UserProfile, CurrencyCode, LanguageCode } from '../../types/trip';
 import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
-import { getActiveLanguage, setActiveLanguage, LANGUAGES, t } from '../../services/languageService';
+import { getActiveLanguage, setActiveLanguage, LANGUAGES, useLanguage } from '../../services/languageService';
 import { isStandalone } from '../../services/deviceService';
 import { getUserSubscriptionQuota } from '../../services/authService';
 
@@ -54,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
-  const [language, setLanguage] = useState<LanguageCode>(getActiveLanguage());
+  const { language, setLanguage, t } = useLanguage();
   const [isStandaloneApp] = useState(() => isStandalone());
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try {
@@ -142,17 +142,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener('tripverse_currency_change', handleCurrencyEvent);
   }, []);
 
-  useEffect(() => {
-    const handleLanguageEvent = (e: Event) => {
-      const customEvent = e as CustomEvent<LanguageCode>;
-      if (customEvent.detail) {
-        setLanguage(customEvent.detail);
-      }
-    };
-    window.addEventListener('tripverse_language_change', handleLanguageEvent);
-    return () => window.removeEventListener('tripverse_language_change', handleLanguageEvent);
-  }, []);
-
   const handleCurrencyChange = (newCurrency: CurrencyCode) => {
     setCurrency(newCurrency);
     setActiveCurrency(newCurrency);
@@ -160,20 +149,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const handleLanguageChange = (newLanguage: LanguageCode) => {
     setLanguage(newLanguage);
-    setActiveLanguage(newLanguage);
   };
 
   const desktopNavLinks = [
-    { id: 'home', label: t('nav.home', language), icon: null },
-    { id: 'explore', label: t('nav.destinations', language), icon: Compass },
-    { id: 'trips', label: t('nav.myTrips', language), icon: MapPin },
-    { id: 'planner', label: t('nav.plan', language), icon: Sparkles, badge: 'AI' },
-    { id: 'saved', label: t('nav.saved', language), icon: Bookmark },
+    { id: 'home', label: t('nav.home'), icon: null },
+    { id: 'explore', label: t('nav.destinations'), icon: Compass },
+    { id: 'trips', label: t('nav.myTrips'), icon: MapPin },
+    { id: 'planner', label: t('nav.plan'), icon: Sparkles, badge: 'AI' },
+    { id: 'saved', label: t('nav.saved'), icon: Bookmark },
   ];
 
   const mobileNavLinks = [
     ...desktopNavLinks,
-    { id: 'profile', label: t('nav.profile', language), icon: User },
+    { id: 'profile', label: t('nav.profile'), icon: User },
   ];
 
   const handleLinkClick = (id: string) => {
@@ -192,13 +180,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-2 truncate">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-extrabold uppercase tracking-widest shrink-0">
             <Sparkles className="w-3 h-3 text-[#A8C5AC] animate-pulse shrink-0" />
-            <span>AI Travel Planner</span>
+            <span>{t('AI Travel Planner')}</span>
           </span>
           <span className="hidden md:inline truncate text-[#E2EBE1]">
-            Plan day-by-day itineraries, highway pit stops, and budget-optimized routes.
+            {t('Plan day-by-day itineraries, highway pit stops, and budget-optimized routes.')}
           </span>
           <span className="md:hidden truncate text-[#E2EBE1]">
-            AI-Powered Journeys
+            {t('AI-Powered Journeys')}
           </span>
         </div>
         <button 
@@ -206,7 +194,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={onOpenPlanner}
           className="underline font-bold text-[#C5D9C8] hover:text-white transition-colors cursor-pointer shrink-0 ml-1 text-[11px] sm:text-xs"
         >
-          Plan Free Trip ↗
+          {t('Plan Free Trip ↗')}
         </button>
       </div>
 
@@ -303,7 +291,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 aria-label={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
               >
                 <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="hidden 2xl:inline">Search...</span>
+                <span className="hidden 2xl:inline">{t('Search...')}</span>
                 <kbd className="hidden 2xl:inline text-[10px] font-mono bg-[#F4F6F2] dark:bg-slate-900 px-1 py-0.5 rounded border border-[#DCE7DB] dark:border-slate-700 text-slate-500 dark:text-slate-400 shadow-2xs">
                   {isMac ? '⌘K' : 'Ctrl+K'}
                 </kbd>
@@ -366,7 +354,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="btn-liquid-primary flex items-center gap-1.5 h-8 px-2.5 xl:px-3.5 rounded-full text-white font-bold text-xs whitespace-nowrap group shrink-0"
             >
               <PlaneTakeoff className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              <span>Plan Trip</span>
+              <span>{t('Plan Trip')}</span>
             </button>
 
             {/* User Profile Menu with Integrated Sign Out */}
@@ -378,7 +366,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title="Sign In / Register"
               >
                 <User className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
-                <span>Sign In</span>
+                <span>{t('Sign In')}</span>
               </button>
             ) : (
               <div className="relative shrink-0" ref={profileMenuRef}>
@@ -423,7 +411,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       {quota.isPro && (
                         <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-amber-300/40">
                           <Crown className="w-3 h-3" />
-                          <span>TripVerse Pro Member</span>
+                          <span>{t('TripVerse Pro Member')}</span>
                         </div>
                       )}
                     </div>
@@ -439,7 +427,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9] dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       >
                         <User className="w-4 h-4 text-slate-400" />
-                        <span>Profile & Preferences</span>
+                        <span>{t('Profile & Preferences')}</span>
                       </button>
 
                       <button
@@ -451,7 +439,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9] dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       >
                         <MapPin className="w-4 h-4 text-slate-400" />
-                        <span>My Trips</span>
+                        <span>{t('My Trips')}</span>
                       </button>
 
                       <button
@@ -463,7 +451,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9] dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       >
                         <Bookmark className="w-4 h-4 text-slate-400" />
-                        <span>Saved Spots</span>
+                        <span>{t('Saved Spots')}</span>
                       </button>
                     </div>
 
@@ -481,7 +469,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                         >
                           <LogOut className="w-4 h-4 shrink-0" />
-                          <span>Sign Out</span>
+                          <span>{t('Sign Out')}</span>
                         </button>
                       </div>
                     )}
@@ -524,7 +512,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="h-10 px-3.5 min-h-[40px] rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer active:scale-95"
               >
                 <User className="w-3.5 h-3.5 shrink-0" />
-                <span>Sign In</span>
+                <span>{t('Sign In')}</span>
               </button>
             ) : (
               <div className="flex items-center gap-1.5 shrink-0">
@@ -559,7 +547,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     aria-label="Sign Out"
                   >
                     <LogOut className="w-3.5 h-3.5 shrink-0" />
-                    <span className="hidden sm:inline">Sign Out</span>
+                    <span className="hidden sm:inline">{t('Sign Out')}</span>
                   </button>
                 )}
               </div>
@@ -594,7 +582,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/80 transition-colors"
             >
               <Search className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-              <span>Search destinations & trips</span>
+              <span>{t('Search destinations & trips')}</span>
             </button>
           )}
 
@@ -608,7 +596,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <div className="flex items-center gap-3">
                 <Bell className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-                <span>Notifications</span>
+                <span>{t('Notifications')}</span>
               </div>
               {unreadNotificationCount > 0 && (
                 <span className="bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
@@ -640,12 +628,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className={`text-xs font-bold truncate ${quota.isPro ? 'text-white' : 'text-[#152A1C] dark:text-slate-100'}`}>
-                      {quota.isPro ? 'TripVerse Pro Member' : 'TripVerse Pro'}
+                      {quota.isPro ? t('TripVerse Pro Member') : t('TripVerse Pro')}
                     </p>
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase shrink-0 ${
                       quota.isPro ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' : 'bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-400'
                     }`}>
-                      {quota.isPro ? 'ACTIVE' : 'UPGRADE'}
+                      {quota.isPro ? t('ACTIVE') : t('UPGRADE')}
                     </span>
                   </div>
                   <p className={`text-[11px] truncate mt-0.5 ${quota.isPro ? 'text-emerald-200' : 'text-[#5A7362] dark:text-slate-400'}`}>

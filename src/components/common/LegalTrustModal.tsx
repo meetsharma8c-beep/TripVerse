@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { X, ShieldCheck, FileText, AlertTriangle, MessageSquare, Star, Check, Send, Lock, Compass } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getSupabaseClient } from '../../services/supabase';
+import { useLanguage } from '../../services/languageService';
 
 export type LegalTab = 'privacy' | 'terms' | 'advisory' | 'feedback';
 
@@ -19,6 +20,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
   onClose,
   userEmail = ''
 }) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<LegalTab>(initialTab);
   
   // Feedback Form State
@@ -79,13 +81,14 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-[#152A1C]">TripVerse Trust, Legal & Feedback</h3>
-              <p className="text-[11px] text-[#5A7362] font-medium">Transparent, traveler-first policies & community voice</p>
+              <h3 className="font-bold text-sm text-[#152A1C]">{t('TripVerse Trust, Legal & Feedback')}</h3>
+              <p className="text-[11px] text-[#5A7362] font-medium">{t('Transparent, traveler-first policies & community voice')}</p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-[#EAF0E9] transition-colors"
+            aria-label={t('Close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -102,7 +105,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
             }`}
           >
             <Lock className="w-3.5 h-3.5" />
-            <span>Privacy Policy</span>
+            <span>{t('Privacy Policy')}</span>
           </button>
 
           <button
@@ -114,7 +117,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>Terms of Service</span>
+            <span>{t('Terms of Service')}</span>
           </button>
 
           <button
@@ -126,7 +129,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
             }`}
           >
             <AlertTriangle className="w-3.5 h-3.5" />
-            <span>AI Travel Advisory</span>
+            <span>{t('AI Travel Advisory')}</span>
           </button>
 
           <button
@@ -138,7 +141,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            <span>Send Feedback</span>
+            <span>{t('Send Feedback')}</span>
           </button>
         </div>
 

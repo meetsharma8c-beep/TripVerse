@@ -41,6 +41,7 @@ import {
   parseGoogleAuthResult
 } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
+import { useLanguage } from '../../services/languageService';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -85,6 +86,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   initialSubMode,
   restrictionMessage
 }) => {
+  const { t } = useLanguage();
   // Main Authentication mode
   const [authMethod, setAuthMethod] = useState<'google' | 'email' | 'guest'>(
     initialMethod === 'phone' ? 'email' : (initialMethod || 'email')

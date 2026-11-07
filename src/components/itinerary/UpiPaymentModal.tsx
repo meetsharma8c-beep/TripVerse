@@ -5,6 +5,7 @@ import confetti from 'canvas-confetti';
 import { formatCurrency, SupportedCurrency } from '../../services/currencyService';
 import { triggerHaptic, openExternalUrl } from '../../services/deviceService';
 import { buildUpiPaymentUri, getUpiQrCodeUrl } from '../../services/paymentGatewayService';
+import { useLanguage } from '../../services/languageService';
 
 interface UpiPaymentModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
   currency,
   onSettleCompleted
 }) => {
+  const { t } = useLanguage();
   // 5-Minute (300 seconds) Countdown Timer State
   const INITIAL_TIMER_SECONDS = 300;
   const [secondsRemaining, setSecondsRemaining] = useState<number>(INITIAL_TIMER_SECONDS);
@@ -133,16 +135,16 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
           <div>
             <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
               <Sparkles className="w-3 h-3 text-emerald-600" />
-              <span>Instant UPI Settlement Gateway</span>
+              <span>{t('Instant UPI Settlement Gateway')}</span>
             </div>
             <h2 id="settlement-details-title" className="mt-0.5 text-lg font-bold text-[#152A1C]">
-              Scan to Pay & Settle Balance
+              {t('Scan to Pay & Settle Balance')}
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close settlement details"
+            aria-label={t('Close')}
             className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-[#EAF0E9] hover:text-[#152A1C] transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
@@ -151,7 +153,7 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
 
         {/* Amount & Direction Header */}
         <div className="rounded-2xl bg-gradient-to-br from-emerald-50/60 to-slate-50 p-3.5 text-center border border-[#E2EBE1]">
-          <p className="text-[11px] font-semibold text-[#5A7362] uppercase tracking-wider">Settlement Amount</p>
+          <p className="text-[11px] font-semibold text-[#5A7362] uppercase tracking-wider">{t('Settlement Amount')}</p>
           <p className="text-2xl sm:text-3xl font-black text-[#152A1C] mt-0.5">
             {formatCurrency(amount, currency)}
           </p>
@@ -292,7 +294,7 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
               className="w-full py-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
             >
               <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-              <span>Mark as Paid & Record Settlement</span>
+              <span>{t('Mark as Paid & Record Settlement')}</span>
             </button>
           </div>
         ) : (
@@ -300,9 +302,9 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
             <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 mx-auto flex items-center justify-center">
               <CheckCircle2 className="w-7 h-7" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">Settlement Recorded!</h3>
+            <h3 className="text-base font-bold text-slate-900">{t('Settlement Recorded!')}</h3>
             <p className="text-xs text-slate-500">
-              {fromUser} paid {formatCurrency(amount, currency)} to {toUser}. Balance is updated.
+              {fromUser} {t('paid')} {formatCurrency(amount, currency)} {t('to')} {toUser}. {t('Balance is updated.')}
             </p>
           </div>
         )}

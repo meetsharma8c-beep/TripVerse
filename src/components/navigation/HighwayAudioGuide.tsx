@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, SkipForward, Volume2, VolumeX, Headphones, Sparkles, MapPin, RotateCcw, Radio, ChevronRight, X } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
+import { useLanguage } from '../../services/languageService';
 
 interface AudioStory {
   id: string;
@@ -85,6 +86,7 @@ export const HighwayAudioGuide: React.FC<HighwayAudioGuideProps> = ({
   currentDistanceKm = 35,
   onClose
 }) => {
+  const { t } = useLanguage();
   const [activeStoryIndex, setActiveStoryIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
@@ -206,7 +208,7 @@ export const HighwayAudioGuide: React.FC<HighwayAudioGuideProps> = ({
             }`}
           >
             <Radio className="w-3.5 h-3.5" />
-            <span>{isAutoPlayMode ? 'Auto-Narration ON' : 'Manual Mode'}</span>
+            <span>{isAutoPlayMode ? t('Auto-Narration ON') : t('Manual Mode')}</span>
           </button>
 
           {onClose && (
@@ -276,12 +278,12 @@ export const HighwayAudioGuide: React.FC<HighwayAudioGuideProps> = ({
               {isPlaying ? (
                 <>
                   <Pause className="w-4 h-4 fill-white" />
-                  <span>Pause Audio Story</span>
+                  <span>{t('Pause Audio Story')}</span>
                 </>
               ) : (
                 <>
                   <Play className="w-4 h-4 fill-white" />
-                  <span>Play Voice Guide</span>
+                  <span>{t('Play Voice Guide')}</span>
                 </>
               )}
             </button>

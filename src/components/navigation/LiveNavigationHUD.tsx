@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trip } from '../../types/trip';
 import { ExternalLink, MapPin, Navigation, X } from 'lucide-react';
+import { useLanguage } from '../../services/languageService';
 
 interface LiveNavigationHUDProps {
   trip: Trip;
@@ -9,6 +10,7 @@ interface LiveNavigationHUDProps {
 }
 
 export const LiveNavigationHUD: React.FC<LiveNavigationHUDProps> = ({ trip, isOpen, onClose }) => {
+  const { t } = useLanguage();
   if (!isOpen) return null;
 
   const destination = trip.routeDetails?.destinationCoordinates
@@ -46,7 +48,7 @@ export const LiveNavigationHUD: React.FC<LiveNavigationHUDProps> = ({ trip, isOp
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close navigation"
+          aria-label={t('Close navigation')}
           className="absolute right-4 top-4 rounded-xl p-2 text-slate-500 hover:bg-slate-100"
         >
           <X className="w-5 h-5" />
@@ -54,14 +56,14 @@ export const LiveNavigationHUD: React.FC<LiveNavigationHUDProps> = ({ trip, isOp
         <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#2D5A3D] flex items-center justify-center mb-4">
           <Navigation className="w-6 h-6" />
         </div>
-        <h2 id="live-navigation-title" className="text-xl font-bold text-[#0B2545]">Continue to your destination</h2>
+        <h2 id="live-navigation-title" className="text-xl font-bold text-[#0B2545]">{t('Continue to your destination')}</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Choose a navigation app for turn-by-turn directions and current road conditions. TripVerse does not provide live navigation. Your maps app may choose a different route, so confirm the destination and route before starting.
+          {t('Choose a navigation app for turn-by-turn directions and current road conditions. TripVerse does not provide live navigation. Your maps app may choose a different route, so confirm the destination and route before starting.')}
         </p>
         <div className="mt-5 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-sm">
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 text-[#2D5A3D] mt-0.5 shrink-0" />
-            <span><strong>From:</strong> {trip.origin}<br /><strong>To:</strong> {trip.destination}</span>
+            <span><strong>{t('From')}:</strong> {trip.origin}<br /><strong>{t('To')}:</strong> {trip.destination}</span>
           </div>
         </div>
         <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -71,7 +73,7 @@ export const LiveNavigationHUD: React.FC<LiveNavigationHUDProps> = ({ trip, isOp
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 rounded-xl bg-[#2D5A3D] px-4 py-3 font-bold text-white hover:bg-[#244931]"
           >
-            Open Google Maps
+            {t('Open Google Maps')}
             <ExternalLink className="w-4 h-4" />
           </a>
           <a
@@ -80,7 +82,7 @@ export const LiveNavigationHUD: React.FC<LiveNavigationHUDProps> = ({ trip, isOp
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 font-bold text-slate-800 hover:bg-slate-50"
           >
-            Open Apple Maps
+            {t('Open Apple Maps')}
             <ExternalLink className="w-4 h-4" />
           </a>
         </div>
@@ -89,7 +91,7 @@ export const LiveNavigationHUD: React.FC<LiveNavigationHUDProps> = ({ trip, isOp
           onClick={onClose}
           className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
         >
-          Go back to trip
+          {t('Go back to trip')}
         </button>
       </section>
     </div>
