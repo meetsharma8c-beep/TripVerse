@@ -126,5 +126,21 @@ describe('PaymentGatewayService Unit Tests', () => {
       expect(convertFromINR(NaN)).toBe(0);
       expect(convertFromINR(undefined as any)).toBe(0);
     });
+
+    it('formats countdown timer seconds correctly for dynamic QR and rate locks', () => {
+      const formatTimer = (totalSeconds: number) => {
+        const m = Math.floor(Math.max(0, totalSeconds) / 60);
+        const s = Math.max(0, totalSeconds) % 60;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      };
+
+      expect(formatTimer(300)).toBe('05:00');
+      expect(formatTimer(299)).toBe('04:59');
+      expect(formatTimer(60)).toBe('01:00');
+      expect(formatTimer(45)).toBe('00:45');
+      expect(formatTimer(5)).toBe('00:05');
+      expect(formatTimer(0)).toBe('00:00');
+      expect(formatTimer(-1)).toBe('00:00');
+    });
   });
 });

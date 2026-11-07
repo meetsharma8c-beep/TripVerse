@@ -29,6 +29,7 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
   const { t } = useLanguage();
   // 5-Minute (300 seconds) Countdown Timer State
   const INITIAL_TIMER_SECONDS = 300;
+  const targetExpiryRef = React.useRef<number>(Date.now() + INITIAL_TIMER_SECONDS * 1000);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(INITIAL_TIMER_SECONDS);
   const [isTimerActive, setIsTimerActive] = useState<boolean>(true);
   const [copiedVpa, setCopiedVpa] = useState<boolean>(false);
@@ -42,6 +43,9 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setTransactionRef(`SETTLE${Date.now().toString().slice(-6)}`);
+      targetExpiryRef.current = Date.now() + INITIAL_TIMER_SECONDS * 1000;
+      setSecondsRemaining(INITIAL_TIMER_SECONDS);
+      setIsTimerActive(true);
     }
   }, [isOpen, toUser, fromUser, amount]);
   const upiUri = useMemo(() => buildUpiPaymentUri({
@@ -53,22 +57,35 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
   }), [recipientVpa, toUser, amount, transactionRef, fromUser]);
   const qrCodeUrl = useMemo(() => getUpiQrCodeUrl(upiUri, 240), [upiUri]);
 
-  // Countdown Timer Engine
+  // Countdown Timer Engine (Wall-clock accuracy)
   useEffect(() => {
     if (!isOpen || !isTimerActive || isSettled) return;
 
-    const timer = setInterval(() => {
-      setSecondsRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setIsTimerActive(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((targetExpiryRef.current - Date.now()) / 1000));
+      setSecondsRemaining(remaining);
+      if (remaining <= 0) {
+        setIsTimerActive(false);
+      }
+    };
 
-    return () => clearInterval(timer);
+    tick();
+    const timer = setInterval(tick, 500);
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible' || (typeof document.hasFocus === 'function' && document.hasFocus())) {
+        tick();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+    };
   }, [isOpen, isTimerActive, isSettled]);
 
   useModalBehavior(isOpen, undefined);
@@ -76,6 +93,7 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
 
   const handleRegenerate = () => {
     triggerHaptic('light');
+    targetExpiryRef.current = Date.now() + INITIAL_TIMER_SECONDS * 1000;
     setSecondsRemaining(INITIAL_TIMER_SECONDS);
     setIsTimerActive(true);
   };
@@ -190,9 +208,15 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
                       </svg>
                       <Clock className={`w-3 h-3 absolute ${secondsRemaining > 60 ? 'text-emerald-600' : 'text-rose-500'}`} />
                     </div>
-                    <div className="text-left">
+                    <div className="text-left" translate="no" data-no-translate="true">
                       <span className="text-[9px] uppercase font-bold text-slate-400 block">QR Valid For</span>
-                      <span className="text-xs font-mono font-black text-slate-900">{formatTimer(secondsRemaining)}</span>
+                      <span 
+                        translate="no"
+                        data-no-translate="true"
+                        className="text-xs font-mono font-black text-slate-900 notranslate"
+                      >
+                        {formatTimer(secondsRemaining)}
+                      </span>
                     </div>
                   </div>
 

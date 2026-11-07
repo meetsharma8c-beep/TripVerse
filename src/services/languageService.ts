@@ -21772,6 +21772,12 @@ export function localizeDom(targetLang?: LanguageCode) {
         }
         const val = node.nodeValue?.trim();
         if (!val || val.length < 2 || /^(?:tripverse|tipverse|trip\s+verse)$/i.test(val)) return NodeFilter.FILTER_REJECT;
+
+        // Never touch, cache, or revert countdown timers, clocks, or pure numeric/currency measurements
+        if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(val) || /^[\d\s:.,\p{Sc}\-+/%]+$/u.test(val)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+
         return NodeFilter.FILTER_ACCEPT;
       }
     });
@@ -21818,7 +21824,19 @@ export function initDomLocalizationObserver() {
       if (isLocalizingDom) return;
       let shouldTranslate = false;
       for (const m of mutations) {
-        if ((m.type === 'childList' && m.addedNodes.length > 0) || m.type === 'characterData') {
+        if (m.type === 'childList' && m.addedNodes.length > 0) {
+          shouldTranslate = true;
+          break;
+        }
+        if (m.type === 'characterData') {
+          const val = m.target?.nodeValue?.trim();
+          // Skip timer countdowns, pure numbers, or notranslate nodes
+          if (val && (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(val) || /^[\d\s:.,\p{Sc}\-+/%]+$/u.test(val))) {
+            continue;
+          }
+          if ((m.target as any)?.parentElement?.closest('[data-no-translate], [translate="no"], .notranslate')) {
+            continue;
+          }
           shouldTranslate = true;
           break;
         }

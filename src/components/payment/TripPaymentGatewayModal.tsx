@@ -216,19 +216,29 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   };
 
   // Ensure timer, gateway stage, and errors are freshly initialized every time modal opens or currency changes
+  const prevIsOpenRef = useRef(false);
+  const prevCurrencyRef = useRef(currency);
+
   useEffect(() => {
     if (isOpen) {
-      const defaultTab = currency === 'INR' ? 'upi_qr' : 'card';
-      setActiveTab(defaultTab);
-      const duration = getSessionDuration(defaultTab);
-      targetExpiryRef.current = Date.now() + duration * 1000;
-      setSecondsRemaining(duration);
-      setIsTimerActive(true);
-      setSessionExpired(false);
-      setGatewayStage('checkout');
-      setGatewayErrorMessage('');
-      setCouponMessage(null);
+      const isFreshOpen = !prevIsOpenRef.current;
+      const isCurrencyChanged = prevCurrencyRef.current !== currency;
+
+      if (isFreshOpen || isCurrencyChanged) {
+        prevCurrencyRef.current = currency;
+        const defaultTab = currency === 'INR' ? 'upi_qr' : 'card';
+        setActiveTab(defaultTab);
+        const duration = getSessionDuration(defaultTab);
+        targetExpiryRef.current = Date.now() + duration * 1000;
+        setSecondsRemaining(duration);
+        setIsTimerActive(true);
+        setSessionExpired(false);
+        setGatewayStage('checkout');
+        setGatewayErrorMessage('');
+        setCouponMessage(null);
+      }
     }
+    prevIsOpenRef.current = isOpen;
   }, [isOpen, currency]);
 
   // =========================================================================
@@ -528,8 +538,10 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
             {/* Live Timer Pill in Header */}
             {gatewayStage === 'checkout' && (
               <div 
+                translate="no"
+                data-no-translate="true"
                 title={sessionExpired ? "Session expired. Click to refresh" : "Your price and exchange rate are locked for this duration"}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl backdrop-blur-sm border text-white shadow-xs transition-colors ${
+                className={`notranslate flex items-center gap-1.5 px-2.5 py-1 rounded-xl backdrop-blur-sm border text-white shadow-xs transition-colors ${
                   sessionExpired
                     ? 'bg-rose-950/80 border-rose-500/50'
                     : 'bg-black/30 border-white/15'
@@ -545,7 +557,10 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 <span className="hidden sm:inline text-[9px] uppercase font-bold tracking-wider text-slate-300">
                   {sessionExpired ? 'Session:' : (activeTab === 'upi_qr' ? 'QR Lock:' : 'Rate Lock:')}
                 </span>
-                <span className={`font-mono font-black text-xs sm:text-sm ${
+                <span 
+                  translate="no"
+                  data-no-translate="true"
+                  className={`font-mono font-black text-xs sm:text-sm notranslate ${
                   sessionExpired 
                     ? 'text-rose-300' 
                     : secondsRemaining <= 45 
@@ -709,9 +724,13 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                             </svg>
                             <Clock className={`w-3 h-3 absolute ${getTimerColorClass()}`} />
                           </div>
-                          <div className="text-left">
+                          <div className="text-left" translate="no" data-no-translate="true">
                             <span className="text-[9px] uppercase font-bold text-slate-400 block leading-tight">QR Expires In</span>
-                            <span className={`text-xs sm:text-sm font-black font-mono tracking-tight ${getTimerColorClass()}`}>
+                            <span 
+                              translate="no"
+                              data-no-translate="true"
+                              className={`text-xs sm:text-sm font-black font-mono tracking-tight notranslate ${getTimerColorClass()}`}
+                            >
                               {formatTimerString(secondsRemaining)}
                             </span>
                           </div>
@@ -1093,7 +1112,11 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                       <Lock className="w-3 h-3 text-emerald-600" />
                       <span>Biometric FaceID / TouchID Tokenized</span>
                     </span>
-                    <span className="font-mono text-emerald-700 font-bold">
+                    <span 
+                      translate="no"
+                      data-no-translate="true"
+                      className="font-mono text-emerald-700 font-bold notranslate"
+                    >
                       Rate Lock: {formatTimerString(secondsRemaining)}
                     </span>
                   </div>
@@ -1154,7 +1177,11 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
                     <span>Available in 200+ countries</span>
-                    <span className="font-mono text-emerald-700 font-bold">
+                    <span 
+                      translate="no"
+                      data-no-translate="true"
+                      className="font-mono text-emerald-700 font-bold notranslate"
+                    >
                       Rate Lock: {formatTimerString(secondsRemaining)}
                     </span>
                   </div>
