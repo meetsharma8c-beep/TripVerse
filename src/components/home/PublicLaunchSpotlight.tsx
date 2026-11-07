@@ -26,7 +26,7 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
 }) => {
   const { t } = useLanguage();
   const [copiedLink, setCopiedLink] = useState(false);
-  const launchUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tripverse-pied.vercel.app';
+  const launchUrl = typeof window !== 'undefined' ? window.location.origin : 'https://trip-verse.com';
 
   const shareText = "Plan a trip with TripVerse: create a draft itinerary and budget estimate, with driving routes and map listings when available. Check it out:";
 

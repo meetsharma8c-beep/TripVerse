@@ -31,7 +31,7 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
 
   const shareUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/?tripId=${trip.id}` 
-    : `https://tripverse-pied.vercel.app/?tripId=${trip.id}`;
+    : `https://trip-verse.com/?tripId=${trip.id}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareUrl);

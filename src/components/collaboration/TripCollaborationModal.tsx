@@ -71,7 +71,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
   const currentUserId = currentUser?.uid || 'guest-user';
   const inviteUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/?collab=${session.inviteCode}&trip=${trip.id}`
-    : `https://tripverse-pied.vercel.app/?collab=${session.inviteCode}`;
+    : `https://trip-verse.com/?collab=${session.inviteCode}`;
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(session.inviteCode);

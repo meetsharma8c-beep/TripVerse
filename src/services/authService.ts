@@ -987,7 +987,7 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
   try {
     const redirectUrl = typeof window !== 'undefined'
       ? `${window.location.origin}/?tab=profile`
-      : 'https://tripverse-pied.vercel.app/?tab=profile';
+      : 'https://trip-verse.com/?tab=profile';
 
     const signUpPromise = supabase.auth.signUp({
       email: emailNorm,
@@ -1354,7 +1354,7 @@ export async function resendEmailConfirmation(email: string, name?: string): Pro
   if (supabase) {
     const redirectUrl = typeof window !== 'undefined'
       ? `${window.location.origin}/?tab=profile`
-      : 'https://tripverse-pied.vercel.app/?tab=profile';
+      : 'https://trip-verse.com/?tab=profile';
 
     const { error } = await supabase.auth.resend({
       type: 'signup',

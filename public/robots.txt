@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://tripverse-pied.vercel.app/sitemap.xml
+Sitemap: https://trip-verse.com/sitemap.xml

@@ -35,7 +35,7 @@ interface GeoapifyTravelDataResponse {
 
 export async function fetchGeoapifyTravelData(origin: string | Coordinates, destination: string): Promise<GeoapifyTravelDataResponse> {
   const apiBase = window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:'
-    ? 'https://tripverse-pied.vercel.app'
+    ? 'https://trip-verse.com'
     : '';
   const response = await fetch(`${apiBase}/api/route`, {
     method: 'POST',
