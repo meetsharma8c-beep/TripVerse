@@ -2,10 +2,12 @@ import { CurrencyCode } from '../types/trip';
 import { formatCurrency } from './currencyService';
 
 export type PaymentMethodType = 
+  | 'card'
+  | 'digital_wallets'
+  | 'paypal'
   | 'upi_qr' 
   | 'upi_apps' 
   | 'upi_id' 
-  | 'card' 
   | 'netbanking' 
   | 'wallet' 
   | 'emi';
@@ -290,12 +292,15 @@ export function evaluateCoupon(
 /**
  * Card brand identification regex helper
  */
-export function detectCardBrand(cardNumber: string): 'visa' | 'mastercard' | 'rupay' | 'amex' | 'generic' {
+export function detectCardBrand(cardNumber: string): 'visa' | 'mastercard' | 'rupay' | 'amex' | 'discover' | 'jcb' | 'generic' {
   const clean = cardNumber.replace(/\D/g, '');
   if (/^4/.test(clean)) return 'visa';
   if (/^(5[1-5]|2[2-7])/.test(clean)) return 'mastercard';
-  if (/^(60|65|81|82|508)/.test(clean)) return 'rupay';
   if (/^3[47]/.test(clean)) return 'amex';
+  if (/^6011/.test(clean)) return 'discover';
+  if (/^(60|652[12]|81|82|508)/.test(clean)) return 'rupay';
+  if (/^(65|64[4-9]|622)/.test(clean)) return 'discover';
+  if (/^(352[89]|35[3-8][0-9])/.test(clean)) return 'jcb';
   return 'generic';
 }
 

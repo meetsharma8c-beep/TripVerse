@@ -40,6 +40,12 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
 
   useEffect(() => {
+    if (isOpen) {
+      setCurrency(getActiveCurrency());
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     const handleCurrencyEvent = (e: Event) => {
       const customEvent = e as CustomEvent<CurrencyCode>;
       if (customEvent.detail) {
@@ -59,10 +65,12 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
   const monthlyPriceINR = 149;
   const annualPriceINR = 999;
   const annualPerMonthINR = Math.round(annualPriceINR / 12);
+  const annualSavingsINR = (monthlyPriceINR * 12) - annualPriceINR;
 
   const formattedMonthly = formatCurrency(monthlyPriceINR, currency);
   const formattedAnnual = formatCurrency(annualPriceINR, currency);
   const formattedAnnualPerMonth = formatCurrency(annualPerMonthINR, currency);
+  const formattedSavings = formatCurrency(annualSavingsINR, currency);
 
   const handleUpgrade = () => {
     triggerHaptic('medium');
@@ -141,7 +149,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
     ? `${t('Upgrade to Annual Pro')} — ${formattedAnnual} (${formattedAnnualPerMonth}/mo)`
     : `${t('Upgrade to Monthly Pro')} — ${formattedMonthly} / mo`;
   const ctaSubtext = isAnnual
-    ? t('Includes 12 months full VIP access (Works out to just ₹83/month • Save 44%)')
+    ? `${t('Includes 12 months full VIP access')} (${t('Works out to just')} ${formattedAnnualPerMonth}/${t('month')} • ${t('Save 44%')})`
     : t('Includes 30-day full VIP access • Billed monthly, cancel anytime');
 
   if (!isOpen) return null;
@@ -277,7 +285,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                     <span className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium">/ {t('mo')}</span>
                   </div>
                   <div className="text-[10px] text-[#2D5A3D] dark:text-emerald-400 font-semibold mt-1">
-                    {formattedAnnual} {t('billed yearly (Save ₹789)')}
+                    {formattedAnnual} {t('billed yearly')} ({t('Save')} {formattedSavings})
                   </div>
                 </div>
               </button>

@@ -81,6 +81,12 @@ describe('PaymentGatewayService Unit Tests', () => {
     it('identifies Amex cards', () => {
       expect(detectCardBrand('378282246310005')).toBe('amex');
     });
+
+    it('identifies Discover and JCB worldwide cards', () => {
+      expect(detectCardBrand('6011000000000000')).toBe('discover');
+      expect(detectCardBrand('6500000000000000')).toBe('discover');
+      expect(detectCardBrand('3530000000000000')).toBe('jcb');
+    });
   });
 
   describe('Formatting & Generation', () => {

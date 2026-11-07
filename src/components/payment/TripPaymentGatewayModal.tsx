@@ -21,11 +21,12 @@ import {
   Download, 
   ExternalLink,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  Globe
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Trip, CurrencyCode } from '../../types/trip';
-import { formatCurrency } from '../../services/currencyService';
+import { formatCurrency, CURRENCIES } from '../../services/currencyService';
 import { triggerHaptic } from '../../services/deviceService';
 import { 
   BookingRecord, 
@@ -73,15 +74,22 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   onNavigateToPasses
 }) => {
   const { t } = useLanguage();
+  const isINR = currency === 'INR';
+
   // Navigation / Payment Method Tab
-  const [activeTab, setActiveTab] = useState<PaymentMethodType>('upi_qr');
+  // Intelligently defaults to 'upi_qr' for INR, and 'card' (Global Cards) for all worldwide currencies
+  const [activeTab, setActiveTab] = useState<PaymentMethodType>(() => (isINR ? 'upi_qr' : 'card'));
   const [upiSubTab, setUpiSubTab] = useState<'qr' | 'apps' | 'id'>('qr');
 
-  // Dynamic 5-minute (300 seconds) Countdown Timer State
-  const INITIAL_TIMER_SECONDS = 300;
-  const targetExpiryRef = useRef<number>(Date.now() + INITIAL_TIMER_SECONDS * 1000);
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(INITIAL_TIMER_SECONDS);
+  // Dynamic Session Guarantee Duration
+  // Dynamic UPI QR: 5 minutes (300s); Global checkout (Cards, Apple/Google Pay, PayPal, etc.): 15 minutes (900s)
+  const getSessionDuration = (tab: PaymentMethodType) => (tab === 'upi_qr' ? 300 : 900);
+
+  const initialDuration = getSessionDuration(isINR ? 'upi_qr' : 'card');
+  const targetExpiryRef = useRef<number>(Date.now() + initialDuration * 1000);
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(initialDuration);
   const [isTimerActive, setIsTimerActive] = useState<boolean>(true);
+  const [sessionExpired, setSessionExpired] = useState<boolean>(false);
   const [qrKey, setQrKey] = useState<number>(1); // used to force reload / animate QR
 
   // UPI Form States
@@ -169,20 +177,62 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
     return `${getUpiQrCodeUrl(upiPaymentUri, 280)}&ts=${qrKey}`;
   }, [upiPaymentUri, qrKey]);
 
-  // Ensure timer, gateway stage, and errors are freshly initialized every time modal opens
+  // Live Currency Exchange Rate Metadata
+  const currencyConfig = CURRENCIES[currency] || CURRENCIES.INR;
+  const inrPerUnit = currencyConfig.rateFromINR > 0 ? (1 / currencyConfig.rateFromINR).toFixed(2) : '1.00';
+  const exchangeRateText = !isINR 
+    ? `1 ${currency} ≈ ₹${inrPerUnit} INR • ${t('Guaranteed Zero Forex Surcharge')}` 
+    : `${t('RBI 256-Bit SSL Bank Direct')}`;
+
+  // Adaptive Payment Tabs
+  const paymentTabs = useMemo(() => {
+    if (isINR) {
+      return [
+        { id: 'upi_qr' as PaymentMethodType, label: t('UPI / QR'), icon: QrCode, badge: t('5 Min') },
+        { id: 'card' as PaymentMethodType, label: t('Cards'), icon: CreditCard, badge: t('Debit/Credit') },
+        { id: 'netbanking' as PaymentMethodType, label: t('NetBanking'), icon: Landmark, badge: t('50+ Banks') },
+        { id: 'wallet' as PaymentMethodType, label: t('Wallets'), icon: Wallet, badge: t('Coins/BNPL') },
+        { id: 'emi' as PaymentMethodType, label: t('EMI'), icon: Receipt, badge: t('0% Cost') },
+        { id: 'paypal' as PaymentMethodType, label: t('PayPal'), icon: Globe, badge: t('Global') }
+      ];
+    }
+
+    return [
+      { id: 'card' as PaymentMethodType, label: t('Global Cards'), icon: CreditCard, badge: t('Visa/MC/Amex') },
+      { id: 'digital_wallets' as PaymentMethodType, label: t('Apple / Google Pay'), icon: Smartphone, badge: t('1-Tap Pay') },
+      { id: 'paypal' as PaymentMethodType, label: t('PayPal'), icon: Globe, badge: t('Worldwide') },
+      { id: 'upi_qr' as PaymentMethodType, label: t('UPI & India Pay'), icon: QrCode, badge: t('NRI / India') }
+    ];
+  }, [isINR, t]);
+
+  const handleTabSwitch = (newTab: PaymentMethodType) => {
+    triggerHaptic('light');
+    setActiveTab(newTab);
+    const duration = getSessionDuration(newTab);
+    targetExpiryRef.current = Date.now() + duration * 1000;
+    setSecondsRemaining(duration);
+    setIsTimerActive(true);
+    setSessionExpired(false);
+  };
+
+  // Ensure timer, gateway stage, and errors are freshly initialized every time modal opens or currency changes
   useEffect(() => {
     if (isOpen) {
-      targetExpiryRef.current = Date.now() + INITIAL_TIMER_SECONDS * 1000;
-      setSecondsRemaining(INITIAL_TIMER_SECONDS);
+      const defaultTab = currency === 'INR' ? 'upi_qr' : 'card';
+      setActiveTab(defaultTab);
+      const duration = getSessionDuration(defaultTab);
+      targetExpiryRef.current = Date.now() + duration * 1000;
+      setSecondsRemaining(duration);
       setIsTimerActive(true);
+      setSessionExpired(false);
       setGatewayStage('checkout');
       setGatewayErrorMessage('');
       setCouponMessage(null);
     }
-  }, [isOpen]);
+  }, [isOpen, currency]);
 
   // =========================================================================
-  // 5-MINUTE LIVE COUNTDOWN TIMER ENGINE (Wall-Clock Precision)
+  // PRECISION COUNTDOWN TIMER ENGINE (Wall-Clock with Background Tab Resume)
   // =========================================================================
   useEffect(() => {
     if (!isOpen || !isTimerActive || gatewayStage !== 'checkout') return;
@@ -192,38 +242,64 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
       setSecondsRemaining(remaining);
       if (remaining <= 0) {
         setIsTimerActive(false);
+        setSessionExpired(true);
       }
     };
 
     tick();
-    const timer = setInterval(tick, 1000);
+    // 500ms heartbeat interval guarantees second-by-second accuracy
+    const timer = setInterval(tick, 500);
 
-    return () => clearInterval(timer);
-  }, [isOpen, isTimerActive, gatewayStage, qrKey]);
+    // CRITICAL: Handle browser tab switching / app backgrounding on mobile & desktop!
+    // When returning from UPI app, 2FA SMS, or authenticator, recalculate instantly
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible' || (typeof document.hasFocus === 'function' && document.hasFocus())) {
+        tick();
+      }
+    };
 
-  // Reset timer handler
-  const handleRegenerateQr = () => {
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+    };
+  }, [isOpen, isTimerActive, gatewayStage, activeTab, qrKey]);
+
+  // Refresh / Regenerate Handler
+  const handleRefreshSession = () => {
     triggerHaptic('medium');
-    targetExpiryRef.current = Date.now() + INITIAL_TIMER_SECONDS * 1000;
-    setSecondsRemaining(INITIAL_TIMER_SECONDS);
+    const duration = getSessionDuration(activeTab);
+    targetExpiryRef.current = Date.now() + duration * 1000;
+    setSecondsRemaining(duration);
     setIsTimerActive(true);
+    setSessionExpired(false);
     setQrKey(k => k + 1);
+  };
+
+  const handleRegenerateQr = () => {
+    handleRefreshSession();
   };
 
   // Format MM:SS for countdown timer
   const formatTimerString = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
+    const safe = Math.max(0, Math.floor(secs));
+    const m = Math.floor(safe / 60);
+    const s = safe % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Timer Circle Progress Math (300 seconds total)
+  // Timer Circle Progress Math
+  const totalDuration = getSessionDuration(activeTab);
   const timerRadius = 18;
   const timerCircumference = 2 * Math.PI * timerRadius;
-  const timerStrokeDashoffset = timerCircumference - (secondsRemaining / INITIAL_TIMER_SECONDS) * timerCircumference;
+  const timerStrokeDashoffset = timerCircumference - (secondsRemaining / totalDuration) * timerCircumference;
 
   // Color dynamics based on time remaining
   const getTimerColorClass = () => {
+    if (sessionExpired) return 'text-rose-500 stroke-rose-500';
     if (secondsRemaining > 120) return 'text-emerald-500 stroke-emerald-500';
     if (secondsRemaining > 45) return 'text-amber-500 stroke-amber-500';
     return 'text-rose-500 stroke-rose-500 animate-pulse';
@@ -449,17 +525,46 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Live 5-Minute Timer Pill in Header */}
+            {/* Live Timer Pill in Header */}
             {gatewayStage === 'checkout' && (
               <div 
-                title="Your price and session are locked for this duration"
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/30 backdrop-blur-sm border border-white/15 text-white shadow-xs"
+                title={sessionExpired ? "Session expired. Click to refresh" : "Your price and exchange rate are locked for this duration"}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl backdrop-blur-sm border text-white shadow-xs transition-colors ${
+                  sessionExpired
+                    ? 'bg-rose-950/80 border-rose-500/50'
+                    : 'bg-black/30 border-white/15'
+                }`}
               >
-                <Clock className={`w-3.5 h-3.5 ${secondsRemaining <= 45 ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}`} />
-                <span className="hidden sm:inline text-[9px] uppercase font-bold tracking-wider text-slate-300">Locked:</span>
-                <span className={`font-mono font-black text-xs sm:text-sm ${secondsRemaining <= 45 ? 'text-rose-400 animate-pulse' : 'text-emerald-300'}`}>
+                <Clock className={`w-3.5 h-3.5 ${
+                  sessionExpired 
+                    ? 'text-rose-400' 
+                    : secondsRemaining <= 45 
+                      ? 'text-rose-400 animate-pulse' 
+                      : 'text-emerald-400'
+                }`} />
+                <span className="hidden sm:inline text-[9px] uppercase font-bold tracking-wider text-slate-300">
+                  {sessionExpired ? 'Session:' : (activeTab === 'upi_qr' ? 'QR Lock:' : 'Rate Lock:')}
+                </span>
+                <span className={`font-mono font-black text-xs sm:text-sm ${
+                  sessionExpired 
+                    ? 'text-rose-300' 
+                    : secondsRemaining <= 45 
+                      ? 'text-rose-400 animate-pulse' 
+                      : 'text-emerald-300'
+                }`}>
                   {formatTimerString(secondsRemaining)}
                 </span>
+                {sessionExpired && (
+                  <button
+                    type="button"
+                    onClick={handleRefreshSession}
+                    title="Refresh Rate Lock Session"
+                    className="ml-1 inline-flex items-center gap-1 rounded-md bg-rose-600 hover:bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className="w-2.5 h-2.5" />
+                    <span>Refresh</span>
+                  </button>
+                )}
               </div>
             )}
 
@@ -501,24 +606,19 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   Select Payment Method
                 </span>
 
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 p-1 bg-slate-200/70 rounded-2xl">
-                  {[
-                    { id: 'upi_qr', label: 'UPI / QR', icon: QrCode, badge: '5 Min' },
-                    { id: 'card', label: 'Cards', icon: CreditCard, badge: 'Debit/Credit' },
-                    { id: 'netbanking', label: 'NetBanking', icon: Landmark, badge: '50+ Banks' },
-                    { id: 'wallet', label: 'Wallets', icon: Wallet, badge: 'Coins/BNPL' },
-                    { id: 'emi', label: 'EMI', icon: Receipt, badge: '0% Cost' }
-                  ].map(tab => {
+                <div className={`grid gap-1.5 p-1 bg-slate-200/70 rounded-2xl ${
+                  isINR 
+                    ? 'grid-cols-3 sm:grid-cols-6' 
+                    : 'grid-cols-2 sm:grid-cols-4'
+                }`}>
+                  {paymentTabs.map(tab => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
                     return (
                       <button
                         key={tab.id}
                         type="button"
-                        onClick={() => {
-                          triggerHaptic('light');
-                          setActiveTab(tab.id as PaymentMethodType);
-                        }}
+                        onClick={() => handleTabSwitch(tab.id as PaymentMethodType)}
                         className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-center transition-all cursor-pointer ${
                           isActive
                             ? 'bg-white text-emerald-950 font-bold shadow-sm border border-slate-200/80 scale-[1.02]'
@@ -825,6 +925,38 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                     </div>
                   </div>
 
+                  {/* Accepted Worldwide Cards Row */}
+                  <div className="flex items-center justify-between px-1 text-[10px] text-slate-500 font-medium">
+                    <span>Accepted Worldwide:</span>
+                    <div className="flex items-center gap-1 font-bold text-[9px] uppercase tracking-wider">
+                      <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Visa</span>
+                      <span className="px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">Mastercard</span>
+                      <span className="px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">Amex</span>
+                      <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">Discover</span>
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">JCB</span>
+                      <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">RuPay</span>
+                    </div>
+                  </div>
+
+                  {sessionExpired && (
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 text-xs">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span className="text-[11px] font-semibold">
+                          Rate lock expired. Refresh to guarantee current exchange rate.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRefreshSession}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] shrink-0 transition-colors cursor-pointer"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Refresh</span>
+                      </button>
+                    </div>
+                  )}
+
                   {/* Card Form */}
                   <div className="space-y-2.5">
                     <div>
@@ -886,7 +1018,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                         className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-600"
                       />
                       <span className="text-[10px] text-slate-600 font-medium">
-                        Securely save card as per RBI Tokenization guidelines
+                        {isINR
+                          ? 'Securely save card as per RBI Tokenization guidelines'
+                          : 'Save card securely with PCI-DSS Level 1 & 256-bit AES Tokenization'}
                       </span>
                     </label>
 
@@ -898,6 +1032,131 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                       <Lock className="w-3.5 h-3.5" />
                       <span>Pay {formatCurrency(finalPayableINR, currency)}</span>
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB CONTENT: DIGITAL WALLETS (APPLE PAY & GOOGLE PAY) */}
+              {activeTab === 'digital_wallets' && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-xs">
+                  <div className="space-y-1">
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
+                      <Smartphone className="w-4 h-4 text-emerald-700" />
+                      <span>1-Tap Digital Wallets</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                      Instant, biometric-verified payment with your device. Zero form filling or manual card number entry.
+                    </p>
+                  </div>
+
+                  {sessionExpired && (
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 text-xs">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span className="text-[11px] font-semibold">
+                          Session expired. Refresh to guarantee current exchange rate.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRefreshSession}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] shrink-0 transition-colors cursor-pointer"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Refresh</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* 1-Tap Apple Pay Button */}
+                  <button
+                    type="button"
+                    onClick={() => initiatePayment(`Apple Pay (${currency})`)}
+                    className="w-full py-3.5 px-4 rounded-xl bg-black hover:bg-slate-900 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
+                  >
+                    <span className="text-base font-serif font-black leading-none">Pay</span>
+                    <span>• Pay {formatCurrency(finalPayableINR, currency)}</span>
+                  </button>
+
+                  {/* 1-Tap Google Pay Button */}
+                  <button
+                    type="button"
+                    onClick={() => initiatePayment(`Google Pay (${currency})`)}
+                    className="w-full py-3.5 px-4 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs sm:text-sm shadow-xs transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
+                  >
+                    <span className="font-black text-sm tracking-tight text-blue-600">G<span className="text-red-500">o</span><span className="text-amber-500">o</span><span className="text-blue-500">g</span><span className="text-emerald-500">l</span><span className="text-red-500">e</span> Pay</span>
+                    <span>• Pay {formatCurrency(finalPayableINR, currency)}</span>
+                  </button>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
+                    <span className="flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-emerald-600" />
+                      <span>Biometric FaceID / TouchID Tokenized</span>
+                    </span>
+                    <span className="font-mono text-emerald-700 font-bold">
+                      Rate Lock: {formatTimerString(secondsRemaining)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB CONTENT: PAYPAL WORLDWIDE */}
+              {activeTab === 'paypal' && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-xs">
+                  <div className="space-y-1">
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-[#003087]" />
+                      <span>PayPal Worldwide Checkout</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                      Pay safely in {currency} or your local currency using your PayPal balance, linked bank, or international card.
+                    </p>
+                  </div>
+
+                  {sessionExpired && (
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 text-xs">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span className="text-[11px] font-semibold">
+                          Session expired. Refresh to guarantee current exchange rate.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRefreshSession}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] shrink-0 transition-colors cursor-pointer"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Refresh</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* PayPal Primary Checkout Button */}
+                  <button
+                    type="button"
+                    onClick={() => initiatePayment(`PayPal (${currency})`)}
+                    className="w-full py-3.5 px-4 rounded-xl bg-[#0070BA] hover:bg-[#003087] text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                  >
+                    <span className="font-black italic text-base">Pay<span className="text-[#00CFBE]">Pal</span></span>
+                    <span>Checkout • {formatCurrency(finalPayableINR, currency)}</span>
+                  </button>
+
+                  <div className="rounded-xl bg-sky-50/70 border border-sky-100 p-3 text-[10px] text-sky-900 space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <ShieldCheck className="w-3.5 h-3.5 text-sky-700" />
+                      <span>PayPal Buyer Protection</span>
+                    </div>
+                    <p className="text-sky-800/80 leading-relaxed">
+                      Includes 180 days buyer protection and zero liability for unauthorized international transactions.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
+                    <span>Available in 200+ countries</span>
+                    <span className="font-mono text-emerald-700 font-bold">
+                      Rate Lock: {formatTimerString(secondsRemaining)}
+                    </span>
                   </div>
                 </div>
               )}
@@ -1069,6 +1328,17 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   Trip Order Summary
                 </span>
 
+                {/* Worldwide Live Forex Guarantee Badge */}
+                {!isINR && (
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-emerald-50/80 border border-emerald-200/90 text-[10px] text-emerald-900 font-medium mb-2.5">
+                    <Globe className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                    <div className="truncate">
+                      <span className="font-bold">Guaranteed Forex Rate: </span>
+                      <span>1 {currency} ≈ ₹{inrPerUnit} INR • 0% Forex Surcharge</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Destination & Dates Card */}
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 mb-2.5">
                   <div className="flex justify-between items-start">
@@ -1177,7 +1447,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   <div className="flex justify-between items-center">
                     <span>Platform Convenience Fee:</span>
                     <span className="text-emerald-700 font-bold">
-                      <span className="line-through text-slate-400 font-normal mr-1">₹199</span> FREE
+                      <span className="line-through text-slate-400 font-normal mr-1">{formatCurrency(199, currency)}</span> FREE
                     </span>
                   </div>
 
@@ -1284,7 +1554,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   }}
                   className="w-full py-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs transition-colors cursor-pointer"
                 >
-                  Activate Complimentary Pro Preview (₹0)
+                  Activate Complimentary Pro Preview ({formatCurrency(0, currency)})
                 </button>
               </div>
             ) : (
