@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ExternalLink, PhoneCall, ShieldCheck, AlertTriangle, CheckCircle2, Info, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
+import { useLanguage } from '../../services/languageService';
 
 interface SafetyEmergencyProps {
   destination?: string;
@@ -332,7 +333,8 @@ function getDestinationSafety(destinationName: string = ''): DestinationSafetyDa
 }
 
 export const SafetyEmergency: React.FC<SafetyEmergencyProps> = ({ destination }) => {
-  const cleanDest = destination ? destination.split(',')[0].trim() : 'Your Destination';
+  const { t } = useLanguage();
+  const cleanDest = destination ? destination.split(',')[0].trim() : t('Your Destination');
   const data = getDestinationSafety(cleanDest);
   const [expandedScam, setExpandedScam] = useState<number | null>(0);
 
@@ -344,19 +346,19 @@ export const SafetyEmergency: React.FC<SafetyEmergencyProps> = ({ destination })
         <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>CONCODE Security Sentinel</span>
+            <span>{t('CONCODE Security Sentinel')}</span>
           </div>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold flex items-center gap-1">
             <Lock className="w-2.5 h-2.5" />
-            Guild: security 🛡️
+            <span>{t('Guild: security')} 🛡️</span>
           </span>
         </div>
 
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h2 className="text-xl font-bold text-[#0B2545]">{cleanDest} Safety & Scam Radar</h2>
+            <h2 className="text-xl font-bold text-[#0B2545]">{cleanDest} {t('Safety & Scam Radar')}</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Real-time local intelligence, emergency hotlines, and tourist trap warnings verified for your journey.
+              {t('Real-time local intelligence, emergency hotlines, and tourist trap warnings verified for your journey.')}
             </p>
           </div>
 
@@ -366,7 +368,7 @@ export const SafetyEmergency: React.FC<SafetyEmergencyProps> = ({ destination })
               : 'bg-amber-50 text-amber-800 border-amber-200'
           }`}>
             <span className={`w-2 h-2 rounded-full ${data.advisoryLevel === 'Safe' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
-            <span>Advisory: {data.advisoryLevel}</span>
+            <span>{t('Advisory')}: {t(data.advisoryLevel)}</span>
           </div>
         </div>
       </div>
@@ -375,7 +377,7 @@ export const SafetyEmergency: React.FC<SafetyEmergencyProps> = ({ destination })
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
           <PhoneCall className="w-4 h-4 text-[#2D5A3D]" />
-          <span>Verified Local Emergency Numbers</span>
+          <span>{t('Verified Local Emergency Numbers')}</span>
         </h3>
         
         <div className="grid gap-2.5 sm:grid-cols-2">
@@ -387,7 +389,7 @@ export const SafetyEmergency: React.FC<SafetyEmergencyProps> = ({ destination })
               className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 hover:border-emerald-400 hover:bg-emerald-50/40 transition-all group"
             >
               <div className="min-w-0">
-                <span className="block text-xs text-slate-500 font-medium truncate">{item.label}</span>
+                <span className="block text-xs text-slate-500 font-medium truncate">{t(item.label)}</span>
                 <strong className="block text-base font-bold text-slate-900 tracking-wide font-mono mt-0.5">{item.number}</strong>
               </div>
               <span className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-[#2D5A3D] group-hover:bg-[#2D5A3D] group-hover:text-white flex items-center justify-center transition-all shrink-0 shadow-2xs">
@@ -403,9 +405,9 @@ export const SafetyEmergency: React.FC<SafetyEmergencyProps> = ({ destination })
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <span>Tourist Trap & Scam Radar for {cleanDest}</span>
+            <span>{t('Tourist Trap & Scam Radar for {cleanDest}', { cleanDest })}</span>
           </h3>
-          <span className="text-[11px] text-slate-500">Know before you go</span>
+          <span className="text-[11px] text-slate-500">{t('Know before you go')}</span>
         </div>
 
         <div className="space-y-2.5">
@@ -428,7 +430,7 @@ export const SafetyEmergency: React.FC<SafetyEmergencyProps> = ({ destination })
                     <span className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 font-bold text-xs">
                       !
                     </span>
-                    <span className="font-bold text-xs text-slate-900 truncate">{scam.title}</span>
+                    <span className="font-bold text-xs text-slate-900 truncate">{t(scam.title)}</span>
                   </div>
                   {isExpanded ? (
                     <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
@@ -439,12 +441,12 @@ export const SafetyEmergency: React.FC<SafetyEmergencyProps> = ({ destination })
 
                 {isExpanded && (
                   <div className="p-3.5 pt-0 text-xs text-slate-600 border-t border-slate-100 bg-slate-50/50 space-y-2">
-                    <p className="leading-relaxed">{scam.description}</p>
+                    <p className="leading-relaxed">{t(scam.description)}</p>
                     <div className="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/80 text-emerald-900 flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <div>
-                        <strong className="block text-[11px] font-bold text-emerald-900">How to Protect Yourself:</strong>
-                        <span className="text-[11px] leading-relaxed">{scam.howToAvoid}</span>
+                        <strong className="block text-[11px] font-bold text-emerald-900">{t('How to Protect Yourself:')}</strong>
+                        <span className="text-[11px] leading-relaxed">{t(scam.howToAvoid)}</span>
                       </div>
                     </div>
                   </div>

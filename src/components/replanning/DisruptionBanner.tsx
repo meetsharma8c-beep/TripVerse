@@ -1,6 +1,7 @@
 import React from 'react';
 import { DisruptionAlert } from '../../types/replanning';
 import { AlertTriangle, RotateCcw, ArrowRight, X } from 'lucide-react';
+import { useLanguage } from '../../services/languageService';
 
 interface DisruptionBannerProps {
   disruption: DisruptionAlert;
@@ -13,6 +14,8 @@ export const DisruptionBanner: React.FC<DisruptionBannerProps> = ({
   onOpenReplanning,
   onDismiss
 }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 p-4 sm:p-5 text-white shadow-xl shadow-red-500/20 border border-red-400/40 mb-6 animate-in slide-in-from-top duration-300">
       {/* Background ambient glow */}
@@ -28,19 +31,19 @@ export const DisruptionBanner: React.FC<DisruptionBannerProps> = ({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white">
-                Trip Disruption Detected
+                {t('Trip Disruption Detected')}
               </span>
               <span className="text-[11px] font-semibold text-rose-100">
-                {disruption.carrierOrSource || 'Travel Network'} • {disruption.timestamp}
+                {disruption.carrierOrSource || t('Travel Network')} • {disruption.timestamp}
               </span>
             </div>
 
             <h3 className="text-base sm:text-lg font-bold text-white mt-1 leading-snug">
-              {disruption.title}
+              {t(disruption.title)}
             </h3>
 
             <p className="text-xs text-rose-100 mt-0.5 line-clamp-1 sm:line-clamp-2">
-              {disruption.details}
+              {t(disruption.details)}
             </p>
           </div>
         </div>
@@ -53,7 +56,7 @@ export const DisruptionBanner: React.FC<DisruptionBannerProps> = ({
             className="px-5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-rose-700 font-extrabold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
           >
             <RotateCcw className="w-4 h-4 text-rose-600" />
-            <span>Review & Replan Trip</span>
+            <span>{t('Review & Replan Trip')}</span>
             <ArrowRight className="w-3.5 h-3.5 text-rose-600" />
           </button>
 
@@ -61,7 +64,7 @@ export const DisruptionBanner: React.FC<DisruptionBannerProps> = ({
             <button
               type="button"
               onClick={onDismiss}
-              aria-label="Dismiss banner"
+              aria-label={t('Dismiss banner')}
               className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer"
             >
               <X className="w-4 h-4" />

@@ -9,6 +9,7 @@ import {
   Check
 } from 'lucide-react';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
+import { useLanguage } from '../../services/languageService';
 
 interface GuestPlannerRestrictedModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
   prefilledDestination
 }) => {
   useModalBehavior(isOpen, onClose);
+  const { t } = useLanguage();
 
   if (!isOpen) return null;
 
@@ -85,18 +87,18 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
             </div>
 
             <h3 id="guest-restricted-title" className="text-xl sm:text-2xl font-black text-[#0B2545] dark:text-white">
-              Sign Up to Use the AI Trip Planner
+              {t('Sign Up to Use the AI Trip Planner')}
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
               {prefilledDestination ? (
                 <>
-                  Ready to plan your trip to <strong className="text-slate-800 dark:text-slate-200">{prefilledDestination}</strong>?
-                  Guest Mode is explore-only. Create your free account in seconds to generate and customize your AI itinerary!
+                  {t('Ready to plan your trip to')} <strong className="text-slate-800 dark:text-slate-200">{prefilledDestination}</strong>?{' '}
+                  {t('Guest Mode is explore-only. Create your free account in seconds to generate and customize your AI itinerary!')}
                 </>
               ) : (
                 <>
-                  You are currently exploring TripVerse in <strong className="text-slate-800 dark:text-slate-200">Guest Mode</strong>.
-                  AI Day-by-Day smart itinerary planning requires a free registered account.
+                  {t('You are currently exploring TripVerse in')} <strong className="text-slate-800 dark:text-slate-200">{t('Guest Mode')}</strong>.{' '}
+                  {t('AI Day-by-Day smart itinerary planning requires a free registered account.')}
                 </>
               )}
             </p>
@@ -106,20 +108,20 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
           <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 p-4 space-y-3">
             <div className="space-y-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
-                What you can do in Guest Mode:
+                {t('What you can do in Guest Mode:')}
               </span>
               <div className="grid grid-cols-1 gap-1.5 text-xs text-slate-600 dark:text-slate-300">
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Explore all destinations, attractions, and road trips</span>
+                  <span>{t('Explore all destinations, attractions, and road trips')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>View highway amenities, food stops & EV stations</span>
+                  <span>{t('View highway amenities, food stops & EV stations')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Browse live flight, hotel, and transport deals</span>
+                  <span>{t('Browse live flight, hotel, and transport deals')}</span>
                 </div>
               </div>
             </div>
@@ -127,20 +129,20 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
             <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 block flex items-center gap-1">
                 <Lock className="w-3 h-3" />
-                <span>Unlocked with Free Registered Account:</span>
+                <span>{t('Unlocked with Free Registered Account:')}</span>
               </span>
               <div className="grid grid-cols-1 gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-200">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
-                  <span>1-Click AI Day-by-Day Smart Itinerary Generation</span>
+                  <span>{t('1-Click AI Day-by-Day Smart Itinerary Generation')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
-                  <span>Personalized Budget, Travel Style & Route Optimization</span>
+                  <span>{t('Personalized Budget, Travel Style & Route Optimization')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
-                  <span>Permanent Cloud Sync across phone and computer</span>
+                  <span>{t('Permanent Cloud Sync across phone and computer')}</span>
                 </div>
               </div>
             </div>
@@ -154,19 +156,19 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
               className="w-full py-3.5 px-4 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-[#A8C5AC]" />
-              <span>Sign Up to Unlock AI Planner (Free)</span>
+              <span>{t('Sign Up to Unlock AI Planner (Free)')}</span>
               <ArrowRight className="w-4 h-4 ml-1" />
             </button>
 
             <div className="text-center pt-0.5">
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Already have an account?{' '}
+                {t('Already have an account?')}{' '}
                 <button
                   type="button"
                   onClick={handleTriggerSignIn}
                   className="text-[#2D5A3D] dark:text-[#68B684] font-bold hover:underline cursor-pointer ml-1"
                 >
-                  Sign In
+                  {t('Sign In')}
                 </button>
               </p>
             </div>
@@ -176,14 +178,14 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
               onClick={onClose}
               className="w-full py-2 px-4 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs transition-colors cursor-pointer text-center"
             >
-              Continue Exploring App as Guest
+              {t('Continue Exploring App as Guest')}
             </button>
           </div>
 
           {/* Trust footer */}
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 text-center">
             <ShieldCheck className="w-3.5 h-3.5 text-[#2D5A3D]" />
-            <span>100% Free • Sign up with Google or Email • Instant Access</span>
+            <span>{t('100% Free • Sign up with Google or Email • Instant Access')}</span>
           </div>
         </div>
       </div>

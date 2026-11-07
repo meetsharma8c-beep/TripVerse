@@ -1,5 +1,6 @@
 import React from 'react';
 import { BreakStop } from '../../types/trip';
+import { useLanguage } from '../../services/languageService';
 import { 
   MapPin, 
   Check,
@@ -26,29 +27,30 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
   isAdded,
   onToggleAdd
 }) => {
+  const { t } = useLanguage();
   const amenitiesItems = [
-    { label: 'Food & Dining', available: breakStop.foodAvailable, icon: Utensils },
-    { label: 'Washroom', available: breakStop.washroomAvailable, icon: Check },
-    { label: 'Parking', available: breakStop.parkingAvailable, icon: Car },
-    { label: 'Rest Area', available: breakStop.restAreaAvailable, icon: Check },
+    { label: t('Food & Dining'), available: breakStop.foodAvailable, icon: Utensils },
+    { label: t('Washroom'), available: breakStop.washroomAvailable, icon: Check },
+    { label: t('Parking'), available: breakStop.parkingAvailable, icon: Car },
+    { label: t('Rest Area'), available: breakStop.restAreaAvailable, icon: Check },
   ];
   const section = breakStop.section ||
     (breakStop.evChargingAvailable ? 'ev_charging' : breakStop.fuelStationAvailable ? 'fuel' : breakStop.medicalFacilityAvailable ? 'medical' : 'amenities');
   const facilityItems = section === 'fuel'
-    ? [{ label: 'Fuel Station', available: breakStop.fuelStationAvailable, icon: Fuel }]
+    ? [{ label: t('Fuel Station'), available: breakStop.fuelStationAvailable, icon: Fuel }]
     : section === 'ev_charging'
-      ? [{ label: 'EV Charging', available: breakStop.evChargingAvailable, icon: Zap }]
+      ? [{ label: t('EV Charging'), available: breakStop.evChargingAvailable, icon: Zap }]
       : section === 'medical'
-        ? [{ label: 'Medical Facility', available: breakStop.medicalFacilityAvailable, icon: ShieldCheck }]
+        ? [{ label: t('Medical Facility'), available: breakStop.medicalFacilityAvailable, icon: ShieldCheck }]
         : amenitiesItems;
   const isGeoapifyListing = breakStop.source === 'geoapify_places';
   const sectionLabel = section === 'fuel'
-    ? 'Fuel Station'
+    ? t('Fuel Station')
     : section === 'ev_charging'
-      ? 'EV Charging'
+      ? t('EV Charging')
       : section === 'medical'
-        ? 'Medical Facility'
-        : 'Food, Washroom, Parking & Rest Area';
+        ? t('Medical Facility')
+        : t('Food, Washroom, Parking & Rest Area');
 
   return (
     <div className={`rounded-3xl border overflow-hidden transition-all duration-300 ${
@@ -65,7 +67,7 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
         </div>
 
         <span className="text-[10px] text-[#5A7362] shrink-0 font-medium">
-          {isGeoapifyListing ? 'Geoapify / OpenStreetMap' : 'Verified stop'}
+          {isGeoapifyListing ? 'Geoapify / OpenStreetMap' : t('Verified stop')}
         </span>
       </div>
 
@@ -80,11 +82,11 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
 
           <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto bg-[#F8FAF7] sm:bg-transparent px-3 py-1.5 sm:px-0 sm:py-0 rounded-xl sm:rounded-none border sm:border-0 border-[#E2EBE1]">
             <div className="text-left sm:text-right">
-              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Off route</span>
+              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">{t('Off route')}</span>
               <span className="text-xs font-bold text-[#152A1C] font-display">{breakStop.detourDistanceKm} km</span>
             </div>
             <div className="text-left sm:text-right border-l border-[#E2EBE1] pl-3">
-              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">Suggested Stop</span>
+              <span className="text-[10px] uppercase font-bold text-[#8EA78D] block">{t('Suggested Stop')}</span>
               <span className="text-xs font-bold text-[#2D5A3D] font-display">{breakStop.estimatedStopMinutes} mins</span>
             </div>
           </div>
@@ -93,7 +95,7 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
         {/* Facilities Grid */}
         <div>
           <span className="text-[10px] uppercase font-bold text-[#8EA78D] block mb-2">
-            {isGeoapifyListing ? 'Categories listed by map provider · verify on site' : 'Verified route facilities'}
+            {isGeoapifyListing ? t('Categories listed by map provider · verify on site') : t('Verified route facilities')}
           </span>
 
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -107,7 +109,7 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
                 }`}
               >
                 {(isGeoapifyListing && f.available) ? <Check className="w-3 h-3 text-[#2D5A3D] shrink-0" /> : <X className="w-3 h-3 text-slate-400 shrink-0" />}
-                <span>{isGeoapifyListing && f.available ? f.label : `${f.label} · Unverified`}</span>
+                <span>{isGeoapifyListing && f.available ? f.label : `${f.label} · ${t('Unverified')}`}</span>
               </span>
             ))}
           </div>
@@ -115,7 +117,7 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
 
         {/* AI Recommendation Reason */}
         <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE1] border-l-4 border-l-[#2D5A3D] text-xs sm:text-sm text-[#5A7362] leading-relaxed text-pretty">
-          <strong className="text-[#152A1C] font-bold block sm:inline mr-1">Pitstop details:</strong>
+          <strong className="text-[#152A1C] font-bold block sm:inline mr-1">{t('Pitstop details:')}</strong>
           <span>{breakStop.recommendationReason}</span>
         </div>
 
@@ -123,7 +125,7 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
         <div className="flex items-center justify-between pt-2 border-t border-[#E2EBE1] gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-[#5A7362]">
-              {isGeoapifyListing ? `${breakStop.rating ? `${breakStop.rating.toFixed(1)}/5${breakStop.reviewCount ? ` (${breakStop.reviewCount} reviews)` : ''} · ` : ''}${breakStop.openingHours}` : 'Highway route facility'}
+              {isGeoapifyListing ? `${breakStop.rating ? `${breakStop.rating.toFixed(1)}/5${breakStop.reviewCount ? ` (${breakStop.reviewCount} reviews)` : ''} · ` : ''}${breakStop.openingHours}` : t('Highway route facility')}
             </span>
           </div>
 
@@ -137,7 +139,7 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
               title="Open turn-by-turn navigation in Google Maps"
             >
               <MapPin className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
-              <span>Navigate</span>
+              <span>{t('Directions')}</span>
               <ExternalLink className="w-3 h-3 text-[#8EA78D]" />
             </a>
 
@@ -152,12 +154,12 @@ export const BreakStopCard: React.FC<BreakStopCardProps> = ({
               {isAdded ? (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#2D5A3D]" />
-                  <span>Added</span>
+                  <span>{t('In Itinerary')}</span>
                 </>
               ) : (
                 <>
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Add Stop</span>
+                  <span>{t('Add Stop')}</span>
                 </>
               )}
             </button>

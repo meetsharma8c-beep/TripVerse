@@ -1844,7 +1844,7 @@ export function App() {
                                 : 'text-[#57685D] hover:text-[#152A1C]'
                             }`}
                           >
-                            {tab.label}
+                            {t(tab.label)}
                           </button>
                         );
                       })}
@@ -1870,7 +1870,7 @@ export function App() {
                                 }`}
                             >
                               <GroupIcon className={`w-4 h-4 ${isGroupActive ? 'text-white' : 'text-[#8EA78D]'}`} />
-                              <span>{group.label}</span>
+                              <span>{t(group.label)}</span>
                             </button>
                           );
                         })}
@@ -1896,7 +1896,7 @@ export function App() {
                                   }`}
                               >
                                 <SubIcon className="w-3.5 h-3.5" />
-                                <span>{sub.label}</span>
+                                <span>{t(sub.label)}</span>
                               </button>
                             );
                           })}
@@ -2048,8 +2048,8 @@ export function App() {
                         <details key={section.id} className="group mt-3 first:mt-0 rounded-2xl border border-slate-200 bg-white open:border-emerald-200 open:bg-emerald-50/20">
                           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-4 outline-none transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-emerald-500 [&::-webkit-details-marker]:hidden">
                             <span className="min-w-0">
-                              <span className="block text-sm font-bold text-[#0B2545]">{section.title}</span>
-                              <span className="mt-1 block text-xs text-slate-500">{section.detail}</span>
+                              <span className="block text-sm font-bold text-[#0B2545]">{t(section.title)}</span>
+                              <span className="mt-1 block text-xs text-slate-500">{t(section.detail)}</span>
                             </span>
                             <span className="flex shrink-0 items-center gap-2">
                               <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 group-open:bg-emerald-100 group-open:text-emerald-800">
@@ -2109,9 +2109,9 @@ export function App() {
               <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-5 text-slate-400 border border-slate-200 shadow-sm">
                 <Compass className="w-8 h-8 text-[#2D5A3D]" />
               </div>
-              <h2 className="text-xl font-bold text-slate-800 mb-2">No Trip Selected</h2>
+              <h2 className="text-xl font-bold text-slate-800 mb-2">{t('No Trip Selected')}</h2>
               <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-                No itinerary is currently active. Create your first journey with our AI Trip Planner or select an existing trip from your trips library.
+                {t('No itinerary is currently active. Create your first journey with our AI Trip Planner or select an existing trip from your trips library.')}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
@@ -2119,13 +2119,13 @@ export function App() {
                   className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold bg-[#2D5A3D] text-white hover:bg-[#244931] transition-colors flex items-center justify-center gap-2 text-sm shadow-md shadow-[#2D5A3D]/20"
                 >
                   <Sparkles className="w-4 h-4" />
-                  Create New Trip
+                  {t('Create New Trip')}
                 </button>
                 <button
                   onClick={() => setCurrentTab('trips')}
                   className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-sm"
                 >
-                  View My Trips
+                  {t('View My Trips')}
                 </button>
               </div>
             </div>
@@ -2145,7 +2145,7 @@ export function App() {
                           : 'text-[#5A7362] hover:text-[#152A1C] hover:bg-[#F8FAF7]'
                       }`}
                     >
-                      Digital Pass & Hub
+                      {t('Digital Pass & Hub')}
                     </button>
                     <button
                       onClick={() => setTripsViewMode('portfolio')}
@@ -2155,7 +2155,7 @@ export function App() {
                           : 'text-[#5A7362] hover:text-[#152A1C] hover:bg-[#F8FAF7]'
                       }`}
                     >
-                      All Saved Trips ({trips.length})
+                      {t('All Saved Trips')} ({trips.length})
                     </button>
                   </div>
                 </div>
@@ -2259,20 +2259,20 @@ export function App() {
               <Logo size="adaptive" showTagline={false} />
               <span className="hidden sm:inline text-[#DCE7DB]">|</span>
               <span className="text-xs font-semibold text-[#5A7362]">
-                "TripVerse plans the journey, not just the destination."
+                {t('"TripVerse plans the journey, not just the destination."')}
               </span>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-[#5A7362]">
-              <button onClick={() => setIsOnboardingOpen(true)} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">Interactive Tour</button>
-              <button onClick={() => setCurrentTab('explore')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">Destinations</button>
-              <button onClick={() => handleOpenPlannerWithPrefill()} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">AI Engine</button>
-              <button onClick={() => setCurrentTab('trips')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">My Routes</button>
+              <button onClick={() => setIsOnboardingOpen(true)} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Interactive Tour')}</button>
+              <button onClick={() => setCurrentTab('explore')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Destinations')}</button>
+              <button onClick={() => handleOpenPlannerWithPrefill()} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('AI Engine')}</button>
+              <button onClick={() => setCurrentTab('trips')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('My Routes')}</button>
               <span className="text-[#DCE7DB]">|</span>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'privacy' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">Privacy</button>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'terms' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">Terms</button>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'advisory' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">Advisory</button>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'feedback' })} className="text-[#2D5A3D] hover:text-[#1E3E2B] bg-[#EAF0E9] px-3 py-1 rounded-full border border-[#DCE7DB] transition-colors cursor-pointer font-bold">Feedback</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'privacy' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Privacy')}</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'terms' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Terms')}</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'advisory' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Advisory')}</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'feedback' })} className="text-[#2D5A3D] hover:text-[#1E3E2B] bg-[#EAF0E9] px-3 py-1 rounded-full border border-[#DCE7DB] transition-colors cursor-pointer font-bold">{t('Feedback')}</button>
               <span className="text-[#7A9382]">© 2026 TripVerse</span>
             </div>
           </div>

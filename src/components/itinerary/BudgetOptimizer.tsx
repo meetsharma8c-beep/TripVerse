@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trip, BudgetBreakdown, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 import { TrendingDown, Sparkles, Check, Car, Bed, Utensils, Ticket, Shield } from 'lucide-react';
 
 interface BudgetOptimizerProps {
@@ -12,6 +13,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
   trip,
   onApplySavings
 }) => {
+  const { t } = useLanguage();
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
 
   useEffect(() => {
@@ -83,11 +85,11 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
   };
 
   const categories = [
-    { key: 'transportation' as keyof BudgetBreakdown, label: 'Transportation', amount: Number(breakdown.transportation) || 0, icon: Car, color: '#0284C7' },
-    { key: 'accommodation' as keyof BudgetBreakdown, label: 'Stay & Hotels', amount: Number(breakdown.accommodation) || 0, icon: Bed, color: '#8B5CF6' },
-    { key: 'food' as keyof BudgetBreakdown, label: 'Food & Dining', amount: Number(breakdown.food) || 0, icon: Utensils, color: '#2D5A3D' },
-    { key: 'activities' as keyof BudgetBreakdown, label: 'Attractions & Sightseeing', amount: Number(breakdown.activities) || 0, icon: Ticket, color: '#F59E0B' },
-    { key: 'miscellaneous' as keyof BudgetBreakdown, label: 'Buffer & Emergency', amount: Number(breakdown.miscellaneous) || 0, icon: Shield, color: '#64748B' },
+    { key: 'transportation' as keyof BudgetBreakdown, label: t('Transportation'), amount: Number(breakdown.transportation) || 0, icon: Car, color: '#0284C7' },
+    { key: 'accommodation' as keyof BudgetBreakdown, label: t('Stay & Hotels'), amount: Number(breakdown.accommodation) || 0, icon: Bed, color: '#8B5CF6' },
+    { key: 'food' as keyof BudgetBreakdown, label: t('Food & Dining'), amount: Number(breakdown.food) || 0, icon: Utensils, color: '#2D5A3D' },
+    { key: 'activities' as keyof BudgetBreakdown, label: t('Attractions & Sightseeing'), amount: Number(breakdown.activities) || 0, icon: Ticket, color: '#F59E0B' },
+    { key: 'miscellaneous' as keyof BudgetBreakdown, label: t('Buffer & Emergency'), amount: Number(breakdown.miscellaneous) || 0, icon: Shield, color: '#64748B' },
   ];
 
   return (
@@ -98,11 +100,11 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
         <div>
           <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#2D5A3D] mb-1">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Cost Intelligence • CONCODE DB Guild</span>
+            <span>{t('AI Cost Intelligence')}</span>
           </div>
-          <h2 className="text-xl font-bold text-[#0B2545]">Budget Optimizer</h2>
+          <h2 className="text-xl font-bold text-[#0B2545]">{t('Budget Optimizer')}</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time constraint reasoning that balances route costs, stays, and dining in {currency}.
+            {t('Real-time constraint reasoning that balances route costs, stays, and dining in')} {currency}.
           </p>
         </div>
 
@@ -112,7 +114,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
               ? 'bg-rose-50 text-rose-700 border-rose-200' 
               : 'bg-emerald-50 text-emerald-800 border-emerald-200/80'
           }`}>
-            {isOverBudget ? 'Budget Exceeded' : 'Under Budget'}
+            {isOverBudget ? t('Budget Exceeded') : t('Under Budget')}
           </span>
         </div>
       </div>
@@ -121,22 +123,22 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 min-w-0">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">Total Budget</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">{t('Total Budget')}</span>
           <div className="text-2xl font-black text-slate-900 mt-1 font-display truncate">
             {formatCurrency(trip.totalBudget, currency)}
           </div>
           <span className="text-[11px] text-slate-500 truncate block">
-            {formatCurrency(Math.round(trip.totalBudget / Math.max(1, trip.travelersCount)), currency)} per traveler
+            {formatCurrency(Math.round(trip.totalBudget / Math.max(1, trip.travelersCount)), currency)} {t('/person')}
           </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 min-w-0">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">Estimated Expenses</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">{t('Estimated Expenses')}</span>
           <div className="text-2xl font-black text-slate-900 mt-1 font-display truncate">
             {formatCurrency(trip.estimatedTotal, currency)}
           </div>
           <span className="text-[11px] text-slate-500 truncate block">
-            Across {trip.durationDays} days & {trip.travelersCount} travelers
+            {trip.durationDays} {t('Days')} • {trip.travelersCount} {t('Travelers')}
           </span>
         </div>
 
@@ -146,13 +148,13 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
             : 'bg-emerald-50 border-emerald-200 text-emerald-900'
         }`}>
           <span className="text-xs font-bold uppercase tracking-wider block opacity-75">
-            {isOverBudget ? 'Budget Deficit' : 'Remaining Savings'}
+            {isOverBudget ? t('Budget Deficit') : t('Remaining Savings')}
           </span>
           <div className={`text-2xl font-black mt-1 font-display truncate ${isOverBudget ? 'text-rose-600' : 'text-[#2D5A3D]'}`}>
             {isOverBudget ? `-${formatCurrency(Math.abs(buffer), currency)}` : `+${formatCurrency(buffer, currency)}`}
           </div>
           <span className="text-[11px] font-semibold opacity-80 truncate block">
-            {isOverBudget ? 'Action required: Apply 1-click savings below' : 'Healthy buffer preserved'}
+            {isOverBudget ? t('Action required: Apply 1-click savings below') : t('Healthy buffer preserved')}
           </span>
         </div>
 
@@ -161,7 +163,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
       {/* Category Expense Breakdown */}
       <div>
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-          Itemized Category Breakdown
+          {t('Itemized Category Breakdown')}
         </h3>
 
         <div className="space-y-3">

@@ -740,17 +740,17 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 2 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 2 — Duration, Dates & Pacing</span>
-                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">Plan Your Schedule & Rhythm</h3>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Step 2 — Duration, Dates & Pacing')}</span>
+                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">{t('Plan Your Schedule & Rhythm')}</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  TripVerse balances daily travel times, stay dates, and activities for a seamless, realistic itinerary.
+                  {t('TripVerse balances daily travel times, stay dates, and activities for a seamless, realistic itinerary.')}
                 </p>
               </div>
 
               {/* Trip Duration */}
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-600 mb-2">
-                  Trip Duration
+                  {t('Trip Duration')}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {[
@@ -770,8 +770,8 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                         : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
                     >
-                      <span className="text-base font-black text-[#0B2545] block">{item.label}</span>
-                      <span className="text-[11px] text-slate-500 font-medium">{item.sub}</span>
+                      <span className="text-base font-black text-[#0B2545] block">{t(item.label)}</span>
+                      <span className="text-[11px] text-slate-500 font-medium">{t(item.sub)}</span>
                     </button>
                   ))}
                 </div>
@@ -781,11 +781,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold uppercase text-slate-600">
-                    Departure / Start Date
+                    {t('Departure / Start Date')}
                   </label>
                   <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
-                    Powers Live Hotel & Ticket Booking
+                    {t('Powers Live Hotel & Ticket Booking')}
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2.5">
@@ -815,7 +815,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                             isSel ? 'bg-[#2D5A3D] text-white border-[#2D5A3D]' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                           }`}
                         >
-                          {preset.label}
+                          {t(preset.label)}
                         </button>
                       );
                     })}
@@ -826,7 +826,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
               {/* Day-to-Day Schedule Pacing */}
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-600 mb-1.5">
-                  Day-to-Day Schedule Pacing
+                  {t('Day-to-Day Schedule Pacing')}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {[
@@ -859,10 +859,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-black text-slate-900">{p.title}</span>
+                          <span className="text-xs font-black text-slate-900">{t(p.title)}</span>
                           {isSel && <Check className="w-3.5 h-3.5 text-[#2D5A3D]" />}
                         </div>
-                        <p className="text-[11px] text-slate-500 leading-snug">{p.desc}</p>
+                        <p className="text-[11px] text-slate-500 leading-snug">{t(p.desc)}</p>
                       </button>
                     );
                   })}
@@ -878,7 +878,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('planner.step4Subtitle')}</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">{t('planner.step4Title')}</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  We optimize room sharing, transport splitting, and suitable stops based on your group.
+                  {t('We optimize room sharing, transport splitting, and suitable stops based on your group.')}
                 </p>
               </div>
 
@@ -931,7 +931,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                   <div className="flex-1 text-center">
                     <span className="text-xl font-black text-[#0B2545]">{travelersCount}</span>
                     <span className="text-xs text-slate-500 font-medium ml-1.5">
-                      {travelersCount === 1 ? 'person' : 'people'}
+                      {travelersCount === 1 ? t('person') : t('people')}
                     </span>
                   </div>
                   <button
@@ -953,7 +953,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('planner.step3Subtitle')}</span>
                 <h3 className="text-2xl font-bold text-[#0B2545] mt-1">{t('planner.step3Title')}</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  This is a budget target. Generated costs are estimates and may exceed it; verify prices with providers before booking.
+                  {t('This is a budget target. Generated costs are estimates and may exceed it; verify prices with providers before booking.')}
                 </p>
               </div>
 
@@ -980,7 +980,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
               {/* Budget Display Card */}
               <div className="p-6 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-50 rounded-2xl border border-emerald-200/80 text-center">
                 <span className="badge-caps text-[#2D5A3D] block">
-                  {budgetMode === 'total' ? 'Total Group Budget' : 'Budget Per Person'}
+                  {t(budgetMode === 'total' ? 'Total Group Budget' : 'Budget Per Person')}
                 </span>
                 <div className="text-4xl sm:text-5xl font-black text-[#0B2545] font-display my-2">
                   {formatCurrency(budgetAmount, currency)}
@@ -1017,10 +1017,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 5 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="badge-caps text-[#2D5A3D]">Step 5 — Travel Style</span>
-                <h3 className="text-xl sm:text-2xl font-bold font-display text-[#0B2545] mt-1">What experiences excite you?</h3>
+                <span className="badge-caps text-[#2D5A3D]">{t('Step 5 — Travel Style')}</span>
+                <h3 className="text-xl sm:text-2xl font-bold font-display text-[#0B2545] mt-1">{t('What experiences excite you?')}</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  Select as many as you like. We will blend attractions according to these vibes.
+                  {t('Select as many as you like. We will blend attractions according to these vibes.')}
                 </p>
               </div>
 
@@ -1039,7 +1039,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                         }`}
                     >
                       <PrefIcon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
-                      <span className="text-xs sm:text-sm font-semibold truncate min-w-0 flex-1">{opt.label}</span>
+                      <span className="text-xs sm:text-sm font-semibold truncate min-w-0 flex-1">{t(opt.label)}</span>
                       {isSelected && <Check className="w-3.5 h-3.5 text-[#2D5A3D] ml-auto shrink-0" />}
                     </button>
                   );
@@ -1048,13 +1048,13 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
 
               <div>
                 <label htmlFor="trip-special-requests" className="block text-xs font-bold uppercase text-slate-600 mb-1.5">
-                  What matters most on this trip?
+                  {t('What matters most on this trip?')}
                 </label>
                 <textarea
                   id="trip-special-requests"
                   value={specialRequests}
                   onChange={(event) => setSpecialRequests(event.target.value.slice(0, 500))}
-                  placeholder="For example: quiet places, easy walks for my parents, local vegetarian food, and no packed schedules."
+                  placeholder={t('For example: quiet places, easy walks for my parents, local vegetarian food, and no packed schedules.')}
                   rows={3}
                   maxLength={500}
                   className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#2D5A3D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#2D5A3D]/15"
@@ -1068,10 +1068,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 6 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 6 — Transportation Mode</span>
-                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">How do you prefer to travel?</h3>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Step 6 — Transportation Mode')}</span>
+                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">{t('How do you prefer to travel?')}</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  For road trips (Car/Bike), we calculate fuel, tolls, and automatic highway break stops.
+                  {t('For road trips (Car/Bike), we calculate fuel, tolls, and automatic highway break stops.')}
                 </p>
               </div>
 
@@ -1080,9 +1080,9 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                 <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-xs sm:text-sm flex items-start gap-2.5">
                   <span className="text-base shrink-0 leading-none mt-0.5">ℹ️</span>
                   <div>
-                    <span className="font-bold block text-amber-900">{transportFeasibility.transitNotice}</span>
+                    <span className="font-bold block text-amber-900">{t(transportFeasibility.transitNotice)}</span>
                     <span className="text-[11px] text-amber-700/90 mt-0.5 block">
-                      Unavailable travel options for this route are automatically excluded to keep your itinerary realistic.
+                      {t('Unavailable travel options for this route are automatically excluded to keep your itinerary realistic.')}
                     </span>
                   </div>
                 </div>
@@ -1092,27 +1092,27 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {transportFeasibility.allModes
                   .filter(m => m.isAvailable)
-                  .map(t => {
+                  .map(tMode => {
                     const IconComponent =
-                      t.id === 'car' ? Car :
-                      t.id === 'bike' ? Bike :
-                      t.id === 'bus' ? Bus :
-                      t.id === 'train' ? Train :
-                      t.id === 'flight' ? Plane : Sparkles;
-                    const isSelected = transportMode === t.id;
+                      tMode.id === 'car' ? Car :
+                      tMode.id === 'bike' ? Bike :
+                      tMode.id === 'bus' ? Bus :
+                      tMode.id === 'train' ? Train :
+                      tMode.id === 'flight' ? Plane : Sparkles;
+                    const isSelected = transportMode === tMode.id;
                     return (
                       <button
-                        key={t.id}
+                        key={tMode.id}
                         type="button"
-                        onClick={() => setTransportMode(t.id as TransportMode)}
+                        onClick={() => setTransportMode(tMode.id as TransportMode)}
                         className={`p-3.5 rounded-2xl border text-left transition-all ${isSelected
                           ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs'
                           : 'border-slate-200 hover:border-slate-300 bg-white'
                           }`}
                       >
                         <IconComponent className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
-                        <span className="text-xs sm:text-sm font-bold text-slate-900 block">{t.label}</span>
-                        <span className="text-[11px] text-slate-500">{t.desc}</span>
+                        <span className="text-xs sm:text-sm font-bold text-slate-900 block">{t(tMode.label)}</span>
+                        <span className="text-[11px] text-slate-500">{t(tMode.desc)}</span>
                       </button>
                     );
                   })}
@@ -1123,9 +1123,9 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <strong className="text-slate-900 block font-bold">Direct Live Booking & Ticketing</strong>
+                  <strong className="text-slate-900 block font-bold">{t('Direct Live Booking & Ticketing')}</strong>
                   <span className="text-slate-500 text-[11px]">
-                    TripVerse matches live Google Flights, IRCTC Express trains, redBus volvo coaches, and Zoomcar self-drives with direct booking deep-links.
+                    {t('TripVerse matches live Google Flights, IRCTC Express trains, redBus volvo coaches, and Zoomcar self-drives with direct booking deep-links.')}
                   </span>
                 </div>
               </div>
@@ -1136,10 +1136,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 7 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 7 — Accommodation</span>
-                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">Where would you like to stay?</h3>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Step 7 — Accommodation')}</span>
+                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">{t('Where would you like to stay?')}</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  TripVerse matches real, verified hotels and boutique stays with instant Booking.com & Google Hotels booking links.
+                  {t('TripVerse matches real, verified hotels and boutique stays with instant Booking.com & Google Hotels booking links.')}
                 </p>
               </div>
 
@@ -1165,8 +1165,8 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                         }`}
                     >
                       <Icon className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
-                      <span className="text-xs sm:text-sm font-bold text-slate-900 block">{acc.label}</span>
-                      <span className="text-[11px] text-slate-500">{acc.desc}</span>
+                      <span className="text-xs sm:text-sm font-bold text-slate-900 block">{t(acc.label)}</span>
+                      <span className="text-[11px] text-slate-500">{t(acc.desc)}</span>
                     </button>
                   );
                 })}
@@ -1178,10 +1178,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 8 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 8 — Dining & Food</span>
-                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">What are your dietary preferences?</h3>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Step 8 — Dining & Food')}</span>
+                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">{t('What are your dietary preferences?')}</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  We calculate calibrated regional dining budgets (famous thalis, street food, and verified kitchens) matching your preference.
+                  {t('We calculate calibrated regional dining budgets (famous thalis, street food, and verified kitchens) matching your preference.')}
                 </p>
               </div>
 
@@ -1207,8 +1207,8 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                         }`}
                     >
                       <Icon className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
-                      <span className="text-xs sm:text-sm font-bold text-slate-900 block">{food.label}</span>
-                      <span className="text-[11px] text-slate-500">{food.desc}</span>
+                      <span className="text-xs sm:text-sm font-bold text-slate-900 block">{t(food.label)}</span>
+                      <span className="text-[11px] text-slate-500">{t(food.desc)}</span>
                     </button>
                   );
                 })}
@@ -1220,10 +1220,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           {currentStep === 9 && (
             <div className="space-y-5 animate-in fade-in">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Step 9 — Core Priority</span>
-                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">What matters most to you?</h3>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Step 9 — Core Priority')}</span>
+                <h3 className="text-2xl font-bold text-[#0B2545] mt-1">{t('What matters most to you?')}</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  Select your top priority. The AI algorithm will balance trade-offs in your favor.
+                  {t('Select your top priority. The AI algorithm will balance trade-offs in your favor.')}
                 </p>
               </div>
 
@@ -1250,8 +1250,8 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                         <Icon className={`w-5 h-5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
                         {isSelected && <Check className="w-4 h-4 text-[#2D5A3D]" />}
                       </div>
-                      <span className="text-sm font-bold text-slate-900 block">{p.label}</span>
-                      <span className="text-xs text-slate-500 mt-0.5 block">{p.desc}</span>
+                      <span className="text-sm font-bold text-slate-900 block">{t(p.label)}</span>
+                      <span className="text-xs text-slate-500 mt-0.5 block">{t(p.desc)}</span>
                     </button>
                   );
                 })}

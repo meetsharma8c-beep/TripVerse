@@ -8,6 +8,7 @@ import { triggerHaptic } from '../../services/deviceService';
 import { ArrowLeft, Bell, MoreVertical, Plane, ChevronRight, Sun, CloudSun, CloudRain, CheckCircle2, Circle, Download, Share2, CreditCard } from 'lucide-react';
 import { getBookingForTrip, BookingRecord, generateTicketReceiptText } from '../../services/paymentGatewayService';
 import { getActiveCurrency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 
 interface TripPassesHubViewProps {
   trip: Trip;
@@ -28,6 +29,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
   onOpenShare,
   onOpenNotifications
 }) => {
+  const { t } = useLanguage();
   // Live weather forecast
   const [weather, setWeather] = useState<WeatherForecast>(() => 
     getDestinationWeather(trip.destination, trip.durationDays)
