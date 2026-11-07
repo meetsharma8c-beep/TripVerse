@@ -56,8 +56,8 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
   const isPro = quota.isPro;
 
   // Base pricing in INR, dynamically converted to user's currency
-  const monthlyPriceINR = 499;
-  const annualPriceINR = 3999;
+  const monthlyPriceINR = 149;
+  const annualPriceINR = 999;
   const annualPerMonthINR = Math.round(annualPriceINR / 12);
 
   const formattedMonthly = formatCurrency(monthlyPriceINR, currency);
@@ -249,7 +249,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                 {/* Popular / Best Value Badge */}
                 <div className="flex items-center justify-between gap-1 mb-2">
                   <span className="px-2 py-0.5 rounded-full bg-[#2D5A3D] text-white text-[9px] font-extrabold uppercase tracking-wide">
-                    {t('Save 33%')}
+                    {t('Save 44%')}
                   </span>
                   {billingCycle === 'annual' && (
                     <div className="w-4 h-4 rounded-full bg-[#2D5A3D] text-white flex items-center justify-center shrink-0">

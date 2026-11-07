@@ -137,18 +137,21 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   } else if (packageType === 'transit_only') {
     initialBaseAmount = baseTransport;
   } else if (packageType === 'pro_subscription') {
-    initialBaseAmount = customAmount || 3999;
+    initialBaseAmount = customAmount || 999;
   }
+
+  const isProSub = packageType === 'pro_subscription';
 
   // Calculate taxes, discounts and net payable
   const coinDiscount = useTravelCoins ? Math.min(TRAVEL_COINS_VALUE, initialBaseAmount * 0.2) : 0;
   const promoDiscount = appliedCoupon ? appliedCoupon.discount : 0;
   const netDiscount = Math.round(coinDiscount + promoDiscount);
   
-  // 18% GST calculation (transparently included/itemized)
-  const taxableBase = Math.max(500, initialBaseAmount - netDiscount);
-  const gstAmount = Math.round(taxableBase * 0.18);
-  const finalPayableINR = Math.max(499, taxableBase + gstAmount);
+  // Taxes and fee calculation: for Pro subscription, headline pricing is all-inclusive
+  const minFloor = isProSub ? (customAmount ? Math.min(customAmount, 99) : 99) : 500;
+  const taxableBase = Math.max(minFloor, initialBaseAmount - netDiscount);
+  const gstAmount = isProSub ? 0 : Math.round(taxableBase * 0.18);
+  const finalPayableINR = isProSub ? (customAmount || initialBaseAmount) : Math.max(499, taxableBase + gstAmount);
 
   // Dynamic UPI URI
   const upiPaymentUri = buildUpiPaymentUri({
@@ -1115,7 +1118,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 {/* Price Itemization Breakdown */}
                 <div className="space-y-1.5 rounded-2xl bg-slate-50/80 p-2.5 sm:p-3 border border-slate-200/80 text-[11px] text-slate-600">
                   <div className="flex justify-between items-center">
-                    <span>Base Package Fare:</span>
+                    <span>{isProSub ? 'TripVerse Pro Plan:' : 'Base Package Fare:'}</span>
                     <span className="font-semibold text-slate-800">{formatCurrency(initialBaseAmount, currency)}</span>
                   </div>
 
@@ -1141,8 +1144,10 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span>Taxes & GST (18%):</span>
-                    <span className="font-semibold text-slate-800">{formatCurrency(gstAmount, currency)}</span>
+                    <span>{isProSub ? 'Taxes & GST (Included):' : 'Taxes & GST (18%):'}</span>
+                    <span className="font-semibold text-slate-800">
+                      {isProSub ? 'Included' : formatCurrency(gstAmount, currency)}
+                    </span>
                   </div>
 
                   <div className="pt-1.5 border-t border-slate-200 flex justify-between items-baseline">
@@ -1161,7 +1166,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   <span>100% Guaranteed Protection</span>
                 </div>
                 <p className="text-[10px] text-emerald-800/80 leading-relaxed">
-                  Instant booking verification with immediate PNR and hotel confirmation. Free cancellation within 24 hours.
+                  {isProSub
+                    ? 'Instant Pro VIP activation with unlimited AI replanning, 4K offline exports, and priority ConCode concierge.'
+                    : 'Instant booking verification with immediate PNR and hotel confirmation. Free cancellation within 24 hours.'}
                 </p>
               </div>
 
