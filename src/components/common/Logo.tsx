@@ -207,8 +207,8 @@ export const Logo: React.FC<LogoProps> = ({
           translate="no"
           className={`font-display font-black tracking-tight whitespace-nowrap notranslate ${current.textMain}`}
         >
-          <span data-no-translate="true" translate="no" className={variant === 'light' ? 'text-white' : 'text-[#0B2545] dark:text-slate-100'}>Trip</span>
-          <span data-no-translate="true" translate="no" className={variant === 'light' ? 'text-emerald-300' : 'text-[#2D5A3D] dark:text-emerald-400'}>Verse</span>
+          <span data-no-translate="true" translate="no" className={`notranslate ${variant === 'light' ? 'text-white' : 'text-[#0B2545] dark:text-slate-100'}`}>Trip</span>
+          <span data-no-translate="true" translate="no" className={`notranslate ${variant === 'light' ? 'text-emerald-300' : 'text-[#2D5A3D] dark:text-emerald-400'}`}>Verse</span>
         </div>
         {showTagline && (
           <span className={`font-semibold tracking-wide mt-0.5 truncate max-w-[190px] sm:max-w-none ${current.textSub} ${

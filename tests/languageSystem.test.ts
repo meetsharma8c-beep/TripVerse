@@ -333,8 +333,22 @@ describe('Global Language & Localization (i18n) Engine', () => {
     allLanguages.forEach((lang) => {
       expect(t('TripVerse', lang)).toBe('TripVerse');
       expect(t('tripverse', lang)).toBe('TripVerse');
+      expect(t('Tipverse', lang)).toBe('TripVerse');
       expect(t('  TripVerse  ', lang)).toBe('  TripVerse  ');
+      
+      // In sentences across all languages, TripVerse remains strictly TripVerse
+      const welcome = t('Welcome to TripVerse', lang);
+      expect(welcome).toContain('TripVerse');
+      expect(welcome).not.toContain('ट्रिपवर्स');
+      expect(welcome).not.toContain('ViajeVerse');
     });
+
+    // Specifically test Hindi and Asian language phrases
+    expect(t('TripVerse VIP Pass', 'hi')).toContain('TripVerse');
+    expect(t('TripVerse Pay Gateway', 'hi')).toContain('TripVerse');
+    expect(t('Welcome to TripVerse', 'hi')).toBe('TripVerse में आपका स्वागत है');
+    expect(t('Welcome to TripVerse', 'ja')).toBe('TripVerse へようこそ');
+    expect(t('Welcome to TripVerse', 'es')).toBe('Bienvenido a TripVerse');
   });
 
   it('preserves leading and trailing emojis while localizing inner phrase', () => {

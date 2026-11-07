@@ -17305,7 +17305,7 @@ export const UNIVERSAL_PHRASE_DICTIONARY: Record<string, Partial<Record<Language
     fr: "Passerelle de Paiement TripVerse",
     de: "TripVerse Pay Gateway",
     ja: "TripVerse ペイゲートウェイ",
-    hi: "ट्रिपवर्स पे गेटवे",
+    hi: "TripVerse पे गेटवे",
     zh: "TripVerse 支付网关",
     ar: "بوابة دفع TripVerse",
     it: "Gateway di Pagamento TripVerse",
@@ -17449,7 +17449,7 @@ export const UNIVERSAL_PHRASE_DICTIONARY: Record<string, Partial<Record<Language
     fr: "PASS VIP TRIPVERSE",
     de: "TRIPVERSE VIP-PASS",
     ja: "TRIPVERSE VIPパス",
-    hi: "ट्रिपवर्स वीआईपी पास",
+    hi: "TRIPVERSE वीआईपी पास",
     zh: "TRIPVERSE VIP 通行证",
     ar: "بطاقة TRIPVERSE VIP",
     it: "PASS VIP TRIPVERSE",
@@ -18493,7 +18493,7 @@ export const UNIVERSAL_PHRASE_DICTIONARY: Record<string, Partial<Record<Language
     fr: "Bienvenue sur TripVerse",
     de: "Willkommen bei TripVerse",
     ja: "TripVerse へようこそ",
-    hi: "ट्रिपवर्स में आपका स्वागत है",
+    hi: "TripVerse में आपका स्वागत है",
     zh: "欢迎来到 TripVerse",
     ar: "مرحباً بكم في TripVerse",
     it: "Benvenuto su TripVerse",
@@ -21362,6 +21362,19 @@ export function getGlobalValueToKeyMap(): Map<string, string> {
 }
 
 /**
+ * Universal Brand Invariance Enforcer:
+ * Guarantees that "TripVerse" (including common case variations, typos like "Tipverse",
+ * or non-Latin transliterations) is ALWAYS preserved identically as "TripVerse"
+ * in every single language, phrase, component, and sentence.
+ */
+export function enforceBrandInvariance(text: string): string {
+  if (!text || typeof text !== 'string') return text;
+  return text
+    .replace(/\b(?:tripverse|tipverse|trip\s+verse)\b/gi, 'TripVerse')
+    .replace(/ट्रिपवर्स/g, 'TripVerse');
+}
+
+/**
  * Universal phrase & arbitrary text translation engine.
  * Converts raw English UI strings, category names, badges, or sentences into the target language.
  */
@@ -21376,7 +21389,7 @@ export function translateText(rawText: string, targetLang?: LanguageCode): strin
   const lower = normalized.toLowerCase();
 
   // 0. The global brand name "TripVerse" must always remain identical and never be translated across any language
-  if (lower === 'tripverse') {
+  if (/^(?:tripverse|tipverse|trip\s+verse)$/i.test(lower)) {
     return leadingWhitespace + 'TripVerse' + trailingWhitespace;
   }
 
@@ -21385,22 +21398,22 @@ export function translateText(rawText: string, targetLang?: LanguageCode): strin
     const revKey = getGlobalValueToKeyMap().get(lower);
     if (revKey) {
       if (UNIVERSAL_PHRASE_DICTIONARY[revKey]?.en) {
-        return leadingWhitespace + UNIVERSAL_PHRASE_DICTIONARY[revKey]!.en! + trailingWhitespace;
+        return leadingWhitespace + enforceBrandInvariance(UNIVERSAL_PHRASE_DICTIONARY[revKey]!.en!) + trailingWhitespace;
       }
       if (TRANSLATIONS.en?.[revKey]) {
-        return leadingWhitespace + TRANSLATIONS.en[revKey] + trailingWhitespace;
+        return leadingWhitespace + enforceBrandInvariance(TRANSLATIONS.en[revKey]) + trailingWhitespace;
       }
     }
-    return rawText;
+    return enforceBrandInvariance(rawText);
   }
 
   // 1. Check exact dictionary match by key or universal phrase dictionary
   const dict = TRANSLATIONS[lang];
   if (dict && dict[normalized]) {
-    return leadingWhitespace + dict[normalized] + trailingWhitespace;
+    return leadingWhitespace + enforceBrandInvariance(dict[normalized]) + trailingWhitespace;
   }
   if (UNIVERSAL_PHRASE_DICTIONARY[lower]?.[lang]) {
-    return leadingWhitespace + UNIVERSAL_PHRASE_DICTIONARY[lower]![lang]! + trailingWhitespace;
+    return leadingWhitespace + enforceBrandInvariance(UNIVERSAL_PHRASE_DICTIONARY[lower]![lang]!) + trailingWhitespace;
   }
 
   // 1a. Quotes wrapper (e.g. "TripVerse plans...", '...', “...”)
@@ -21495,10 +21508,10 @@ export function translateText(rawText: string, targetLang?: LanguageCode): strin
   const revKey = getGlobalValueToKeyMap().get(lower);
   if (revKey) {
     if (UNIVERSAL_PHRASE_DICTIONARY[revKey]?.[lang]) {
-      return leadingWhitespace + UNIVERSAL_PHRASE_DICTIONARY[revKey]![lang]! + trailingWhitespace;
+      return leadingWhitespace + enforceBrandInvariance(UNIVERSAL_PHRASE_DICTIONARY[revKey]![lang]!) + trailingWhitespace;
     }
     if (dict && dict[revKey]) {
-      return leadingWhitespace + dict[revKey] + trailingWhitespace;
+      return leadingWhitespace + enforceBrandInvariance(dict[revKey]) + trailingWhitespace;
     }
   }
 
@@ -21510,7 +21523,7 @@ export function translateText(rawText: string, targetLang?: LanguageCode): strin
     }
   }
 
-  return leadingWhitespace + translated + trailingWhitespace;
+  return leadingWhitespace + enforceBrandInvariance(translated) + trailingWhitespace;
 }
 
 /**
@@ -21754,8 +21767,11 @@ export function localizeDom(targetLang?: LanguageCode) {
         if (parent.closest('[data-no-translate], [translate="no"], .notranslate') || parent.isContentEditable) {
           return NodeFilter.FILTER_REJECT;
         }
+        if (parent.textContent?.replace(/\s+/g, '').toLowerCase() === 'tripverse') {
+          return NodeFilter.FILTER_REJECT;
+        }
         const val = node.nodeValue?.trim();
-        if (!val || val.length < 2 || val.toLowerCase() === 'tripverse') return NodeFilter.FILTER_REJECT;
+        if (!val || val.length < 2 || /^(?:tripverse|tipverse|trip\s+verse)$/i.test(val)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
     });
@@ -21771,10 +21787,10 @@ export function localizeDom(targetLang?: LanguageCode) {
 
       if (lang === 'en') {
         if (currentNode.nodeValue !== orig) {
-          currentNode.nodeValue = orig;
+          currentNode.nodeValue = enforceBrandInvariance(orig);
         }
       } else {
-        const translated = translateText(orig, lang);
+        const translated = enforceBrandInvariance(translateText(orig, lang));
         if (translated && translated !== orig && currentNode.nodeValue !== translated) {
           currentNode.nodeValue = translated;
         }

@@ -254,8 +254,8 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
           translate="no"
           className="text-3xl sm:text-4xl lg:text-5xl font-display font-black tracking-tight text-white mb-2 drop-shadow-md tv-stagger-1 notranslate"
         >
-          <span data-no-translate="true" translate="no">Trip</span>
-          <span data-no-translate="true" translate="no" className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-200">Verse</span>
+          <span data-no-translate="true" translate="no" className="notranslate">Trip</span>
+          <span data-no-translate="true" translate="no" className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-200 notranslate">Verse</span>
         </h1>
 
         {/* Tagline */}
