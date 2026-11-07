@@ -175,29 +175,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#F4F6F2]/90 dark:bg-[#070C16]/90 backdrop-blur-md border-b border-[#E2EBE1] dark:border-slate-800 transition-all pt-safe pl-safe pr-safe">
-      {/* Top Public Announcement Bar - Desktop only for clean mobile app feel */}
-      <div className="hidden lg:flex bg-gradient-to-r from-[#152A1C] via-[#2D5A3D] to-[#152A1C] text-white py-1.5 px-3 sm:px-4 text-center text-xs font-semibold items-center justify-between sm:justify-center gap-2 overflow-hidden shadow-inner">
-        <div className="flex items-center gap-2 truncate">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-extrabold uppercase tracking-widest shrink-0">
-            <Sparkles className="w-3 h-3 text-[#A8C5AC] animate-pulse shrink-0" />
-            <span>{t('AI Travel Planner')}</span>
-          </span>
-          <span className="hidden md:inline truncate text-[#E2EBE1]">
-            {t('Plan day-by-day itineraries, highway pit stops, and budget-optimized routes.')}
-          </span>
-          <span className="md:hidden truncate text-[#E2EBE1]">
-            {t('AI-Powered Journeys')}
-          </span>
-        </div>
-        <button 
-          type="button"
-          onClick={onOpenPlanner}
-          className="underline font-bold text-[#C5D9C8] hover:text-white transition-colors cursor-pointer shrink-0 ml-1 text-[11px] sm:text-xs"
-        >
-          {t('Plan Free Trip ↗')}
-        </button>
-      </div>
-
       <div className="max-w-[1536px] mx-auto px-3 sm:px-5 lg:px-4 2xl:px-8">
         {/* DESKTOP HEADER (Responsive across lg 1024px through 2xl 1536px+ without clipping) */}
         <div className="hidden lg:flex items-center justify-between h-16 xl:h-18 gap-2">
