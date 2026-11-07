@@ -28,8 +28,8 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   if (!imgFailed) {
     return (
       <img
-        src="/tripverse-mark.png"
-        srcSet="/tripverse-mark.png 1x, /tripverse-mark@2x.png 2x"
+        src="/tripverse-mark.png?v=8"
+        srcSet="/tripverse-mark.png?v=8 1x, /tripverse-mark@2x.png?v=8 2x"
         alt="TripVerse Logo"
         onError={() => setImgFailed(true)}
         style={{
@@ -262,11 +262,11 @@ export const Logo: React.FC<LogoProps> = ({
       >
         {!titleImgFailed ? (
           <img
-            src={isLight ? "/tripverse-title-dark.png" : "/tripverse-title.png"}
+            src={isLight ? "/tripverse-title-dark.png?v=8" : "/tripverse-title.png?v=8"}
             srcSet={
               isLight 
-                ? "/tripverse-title-dark.png 1x, /tripverse-title-dark@2x.png 2x" 
-                : "/tripverse-title.png 1x, /tripverse-title@2x.png 2x"
+                ? "/tripverse-title-dark.png?v=8 1x, /tripverse-title-dark@2x.png?v=8 2x" 
+                : "/tripverse-title.png?v=8 1x, /tripverse-title@2x.png?v=8 2x"
             }
             alt="TripVerse"
             onError={() => setTitleImgFailed(true)}
