@@ -79,6 +79,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
   // Dynamic 5-minute (300 seconds) Countdown Timer State
   const INITIAL_TIMER_SECONDS = 300;
+  const targetExpiryRef = useRef<number>(Date.now() + INITIAL_TIMER_SECONDS * 1000);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(INITIAL_TIMER_SECONDS);
   const [isTimerActive, setIsTimerActive] = useState<boolean>(true);
   const [qrKey, setQrKey] = useState<number>(1); // used to force reload / animate QR
@@ -171,6 +172,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   // Ensure timer, gateway stage, and errors are freshly initialized every time modal opens
   useEffect(() => {
     if (isOpen) {
+      targetExpiryRef.current = Date.now() + INITIAL_TIMER_SECONDS * 1000;
       setSecondsRemaining(INITIAL_TIMER_SECONDS);
       setIsTimerActive(true);
       setGatewayStage('checkout');
@@ -180,21 +182,21 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   }, [isOpen]);
 
   // =========================================================================
-  // 5-MINUTE LIVE COUNTDOWN TIMER ENGINE
+  // 5-MINUTE LIVE COUNTDOWN TIMER ENGINE (Wall-Clock Precision)
   // =========================================================================
   useEffect(() => {
     if (!isOpen || !isTimerActive || gatewayStage !== 'checkout') return;
 
-    const timer = setInterval(() => {
-      setSecondsRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setIsTimerActive(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((targetExpiryRef.current - Date.now()) / 1000));
+      setSecondsRemaining(remaining);
+      if (remaining <= 0) {
+        setIsTimerActive(false);
+      }
+    };
+
+    tick();
+    const timer = setInterval(tick, 1000);
 
     return () => clearInterval(timer);
   }, [isOpen, isTimerActive, gatewayStage, qrKey]);
@@ -202,6 +204,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   // Reset timer handler
   const handleRegenerateQr = () => {
     triggerHaptic('medium');
+    targetExpiryRef.current = Date.now() + INITIAL_TIMER_SECONDS * 1000;
     setSecondsRemaining(INITIAL_TIMER_SECONDS);
     setIsTimerActive(true);
     setQrKey(k => k + 1);

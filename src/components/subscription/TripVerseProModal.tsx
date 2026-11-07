@@ -136,6 +136,14 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
     }
   ];
 
+  const isAnnual = billingCycle === 'annual';
+  const ctaHeadline = isAnnual
+    ? `${t('Upgrade to Annual Pro')} — ${formattedAnnual} (${formattedAnnualPerMonth}/mo)`
+    : `${t('Upgrade to Monthly Pro')} — ${formattedMonthly} / mo`;
+  const ctaSubtext = isAnnual
+    ? t('Includes 12 months full VIP access (Works out to just ₹83/month • Save 44%)')
+    : t('Includes 30-day full VIP access • Billed monthly, cancel anytime');
+
   if (!isOpen) return null;
   if (typeof document === 'undefined') return null;
 
@@ -366,25 +374,20 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
             ) : (
               <div className="space-y-1.5">
                 <button
+                  key={`upgrade-btn-${billingCycle}`}
                   type="button"
                   onClick={handleUpgrade}
                   disabled={isProcessing}
                   className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#1E3B27] via-[#2D5A3D] to-[#234730] hover:brightness-105 text-white font-display font-bold text-sm shadow-[0_8px_30px_rgba(45,90,61,0.3)] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-75"
                 >
                   <Crown className="w-4 h-4 text-amber-300 fill-amber-300 shrink-0" />
-                  <span className="truncate">
-                    {isProcessing 
-                      ? t('Activating Pro Pass...') 
-                      : billingCycle === 'annual'
-                        ? `${t('Upgrade to Annual Pro')} — ${formattedAnnual} (${formattedAnnualPerMonth}/mo)`
-                        : `${t('Upgrade to Monthly Pro')} — ${formattedMonthly} / mo`}
+                  <span key={`upgrade-text-${billingCycle}`} className="truncate">
+                    {isProcessing ? t('Activating Pro Pass...') : ctaHeadline}
                   </span>
                   <ChevronRight className="w-4 h-4 ml-0.5 shrink-0" />
                 </button>
-                <div className="text-center text-[10px] text-emerald-800 dark:text-emerald-300 font-medium">
-                  {billingCycle === 'annual' 
-                    ? t('Includes 12 months full VIP access (Works out to just ₹83/month • Save 44%)')
-                    : t('Includes 30-day full VIP access • Billed monthly, cancel anytime')}
+                <div key={`upgrade-subtext-${billingCycle}`} className="text-center text-[10px] text-emerald-800 dark:text-emerald-300 font-medium">
+                  {ctaSubtext}
                 </div>
               </div>
             )}
