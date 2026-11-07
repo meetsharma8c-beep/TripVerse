@@ -35,6 +35,7 @@ import { triggerHaptic } from '../../services/deviceService';
 import { queryConcodeBrain } from '../../services/concodeBrainService';
 import { useLanguage } from '../../services/languageService';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
+import { HighwayConnector } from '../common/Logo';
 
 interface InteractivePhoneDeviceProps {
   currency: SupportedCurrency;
@@ -563,9 +564,11 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                     <div className="w-5 h-5 rounded-lg bg-[#2D5A3D] flex items-center justify-center text-white shadow-2xs">
                       <Compass className="w-3 h-3 text-emerald-300" />
                     </div>
-                    <span className="font-display font-black text-sm tracking-tight text-[#152A1C] dark:text-white">
-                      Trip<span className="text-[#2D5A3D] dark:text-emerald-400">Verse</span>
-                    </span>
+                    <div className="flex items-center font-display font-black text-xs tracking-tight">
+                      <span className="text-[#031832] dark:text-white">Trip</span>
+                      <HighwayConnector className="h-2 w-3.5 mx-0.5" />
+                      <span className="text-[#04803E] dark:text-emerald-400">Verse</span>
+                    </div>
                   </div>
 
                   {/* Header Actions: Currency & Notifications */}

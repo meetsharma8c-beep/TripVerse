@@ -112,7 +112,44 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   );
 };
 
-interface LogoProps {
+/**
+ * Authentic Winding Highway Road & Location Map Pin Connector
+ * Matches the official TripVerse brand identity connecting "Trip" and "Verse".
+ */
+export const HighwayConnector: React.FC<{ className?: string; isLight?: boolean }> = ({ 
+  className = 'h-2.5 w-4.5 sm:h-3 sm:w-5', 
+  isLight = false 
+}) => (
+  <span className={`inline-flex items-center justify-center shrink-0 mx-0.5 select-none pointer-events-none ${className}`} aria-hidden="true">
+    <svg viewBox="0 0 54 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full overflow-visible">
+      {/* Dark Navy / Charcoal Highway Road Path */}
+      <path
+        d="M 3 24 C 14 24, 18 19, 25 15 C 32 11, 38 4, 46 3"
+        stroke={isLight ? '#38BDF8' : '#082B55'}
+        strokeWidth="6"
+        strokeLinecap="round"
+      />
+      {/* Crisp White Dashed Center Lane Marking */}
+      <path
+        d="M 4 24 C 14 24, 18 19, 25 15 C 32 11, 38 4, 45 3"
+        stroke="#FFFFFF"
+        strokeWidth="1.3"
+        strokeDasharray="3 2.5"
+        strokeLinecap="round"
+      />
+      {/* Emerald Green Location Map Pin at the Destination Peak */}
+      <g transform="translate(40, -4) scale(0.68)">
+        <path
+          d="M 12 0 C 6.5 0, 2 4.5, 2 10 C 2 16.5, 12 25, 12 25 C 12 25, 22 16.5, 22 10 C 22 4.5, 17.5 0, 12 0 Z"
+          fill="#05813F"
+        />
+        <circle cx="12" cy="9.5" r="3.5" fill="#FFFFFF" />
+      </g>
+    </svg>
+  </span>
+);
+
+export interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'adaptive';
   layout?: 'horizontal' | 'stacked' | 'adaptive';
   showTagline?: boolean;
@@ -133,38 +170,43 @@ export const Logo: React.FC<LogoProps> = ({
 }) => {
   const sizeMap = {
     adaptive: {
-      imgHeight: 'h-8 max-[350px]:h-7 min-[380px]:h-8.5 sm:h-9 md:h-9.5 lg:h-8 xl:h-9 2xl:h-10.5',
-      textMain: 'text-[17px] max-[350px]:text-[15.5px] min-[380px]:text-[18.5px] sm:text-xl md:text-[22px] lg:text-lg xl:text-xl 2xl:text-2xl',
-      textSub: 'text-[9.5px] min-[400px]:text-[10.5px] xl:text-[11.5px]',
-      gap: 'gap-1.5 max-[350px]:gap-1 min-[380px]:gap-2 sm:gap-2.5 lg:gap-1.5 xl:gap-2 2xl:gap-3',
+      imgHeight: 'h-6.5 min-[380px]:h-7 sm:h-7.5 md:h-8 lg:h-7 xl:h-7.5 2xl:h-8',
+      textMain: 'text-[15px] min-[380px]:text-[16px] sm:text-[17px] md:text-lg lg:text-[15.5px] xl:text-[16.5px] 2xl:text-lg',
+      textSub: 'text-[9px] min-[400px]:text-[9.5px] xl:text-[10px]',
+      gap: 'gap-1.5 min-[380px]:gap-2 lg:gap-1.5 xl:gap-2',
+      roadSize: 'h-2.5 w-4.5 sm:h-3 sm:w-5 lg:h-2.5 lg:w-4.5 xl:h-3 xl:w-5',
       defaultTaglineClass: 'hidden md:block'
     },
     sm: { 
-      imgHeight: 'h-7 sm:h-8', 
-      textMain: 'text-[16.5px] sm:text-lg', 
-      textSub: 'text-[9px] sm:text-[10px]', 
+      imgHeight: 'h-5.5 sm:h-6', 
+      textMain: 'text-[13.5px] sm:text-[14.5px]', 
+      textSub: 'text-[8.5px] sm:text-[9.5px]', 
       gap: 'gap-1.5 sm:gap-2',
+      roadSize: 'h-2 w-3.5 sm:h-2.5 sm:w-4',
       defaultTaglineClass: 'hidden sm:block'
     },
     md: { 
-      imgHeight: 'h-8.5 sm:h-9.5 xl:h-10.5', 
-      textMain: 'text-lg sm:text-xl xl:text-2xl', 
-      textSub: 'text-[10px] sm:text-[10.5px] xl:text-[11.5px]', 
+      imgHeight: 'h-7.5 sm:h-8.5 xl:h-9', 
+      textMain: 'text-base sm:text-lg xl:text-xl', 
+      textSub: 'text-[9.5px] sm:text-[10px] xl:text-[10.5px]', 
       gap: 'gap-2 sm:gap-2.5 xl:gap-3',
+      roadSize: 'h-3 w-5 sm:h-3.5 sm:w-6',
       defaultTaglineClass: 'hidden md:block'
     },
     lg: { 
-      imgHeight: 'h-11 sm:h-13 md:h-14', 
-      textMain: 'text-2xl sm:text-3xl', 
+      imgHeight: 'h-10 sm:h-11 md:h-12', 
+      textMain: 'text-xl sm:text-2xl', 
       textSub: 'text-xs', 
       gap: 'gap-2.5 sm:gap-3',
+      roadSize: 'h-4 w-7 sm:h-4.5 sm:w-8',
       defaultTaglineClass: 'block'
     },
     xl: { 
-      imgHeight: 'h-14 sm:h-16 md:h-18', 
-      textMain: 'text-3xl sm:text-4xl md:text-5xl', 
+      imgHeight: 'h-12 sm:h-14 md:h-16', 
+      textMain: 'text-2xl sm:text-3xl md:text-4xl', 
       textSub: 'text-xs sm:text-sm', 
       gap: 'gap-3 sm:gap-3.5',
+      roadSize: 'h-5 w-9 sm:h-6 sm:w-11',
       defaultTaglineClass: 'block'
     }
   };
@@ -174,6 +216,8 @@ export const Logo: React.FC<LogoProps> = ({
   const effectiveTaglineClass = taglineClassName !== undefined 
     ? taglineClassName 
     : current.defaultTaglineClass;
+
+  const isLight = variant === 'light';
 
   return (
     <div 
@@ -191,12 +235,19 @@ export const Logo: React.FC<LogoProps> = ({
         textRendering: 'geometricPrecision'
       }}
     >
-      {/* Official Exact Brand Icon Mark - Pure Native Vector SVG Rendered in HD at all pixel densities (Retina 2x/3x, OLED, 4K) */}
+      {/* 
+        Official Brand Icon Mark:
+        Unchanged, same as before (Stylized green "T" with origami supersonic flight swoosh)
+      */}
       <div className="relative flex-shrink-0 transition-transform duration-300 group-hover:scale-105 flex items-center justify-center">
         <BrandIconMark className={`${current.imgHeight} w-auto`} />
       </div>
 
-      {/* Brand Text - Protected global trademark that never adapts/translates */}
+      {/* 
+        Official Brand Title:
+        Updated Title Style ("Trip" + Winding Highway Connector with Map Pin + "Verse")
+        Protected global trademark that never adapts/translates
+      */}
       <div 
         data-no-translate="true" 
         translate="no" 
@@ -205,14 +256,30 @@ export const Logo: React.FC<LogoProps> = ({
         <div 
           data-no-translate="true"
           translate="no"
-          className={`font-display font-black tracking-tight whitespace-nowrap notranslate ${current.textMain}`}
+          className={`font-display font-black tracking-tight whitespace-nowrap notranslate flex items-center ${current.textMain}`}
         >
-          <span data-no-translate="true" translate="no" className={`notranslate ${variant === 'light' ? 'text-white' : 'text-[#0B2545] dark:text-slate-100'}`}>Trip</span>
-          <span data-no-translate="true" translate="no" className={`notranslate ${variant === 'light' ? 'text-emerald-300' : 'text-[#2D5A3D] dark:text-emerald-400'}`}>Verse</span>
+          <span 
+            data-no-translate="true" 
+            translate="no" 
+            className={`notranslate ${isLight ? 'text-white' : 'text-[#031832] dark:text-slate-100'}`}
+          >
+            Trip
+          </span>
+
+          <HighwayConnector isLight={isLight} className={current.roadSize} />
+
+          <span 
+            data-no-translate="true" 
+            translate="no" 
+            className={`notranslate ${isLight ? 'text-emerald-300' : 'text-[#04803E] dark:text-emerald-400'}`}
+          >
+            Verse
+          </span>
         </div>
+
         {showTagline && (
           <span className={`font-semibold tracking-wide mt-0.5 truncate max-w-[190px] sm:max-w-none ${current.textSub} ${
-            variant === 'light' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
+            isLight ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
           } ${effectiveTaglineClass}`}>
             {t('Plan Smarter. Travel Further.')}
           </span>
