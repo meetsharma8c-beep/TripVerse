@@ -316,7 +316,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {/* Compact Currency Selector Pill */}
-            <div className="hidden min-[1140px]:flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-8 px-2 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0" title="Change Currency">
+            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-8 px-2 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0" title="Change Currency">
               <select
                 value={currency}
                 onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
@@ -482,11 +482,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* MOBILE APP HEADER (Screen 1: Left Menu Button, Center Logo, Right Profile Avatar) */}
-        <div className="flex lg:hidden items-center justify-between h-14 sm:h-16 gap-2">
-          {/* Left: Mobile App Hamburger Menu Icon */}
+        <div className="flex lg:hidden items-center justify-between h-14 sm:h-16">
+          {/* Left: Mobile App Hamburger Menu Icon (44px min touch target for iOS & Android) */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="w-10 h-10 sm:w-11 sm:h-11 min-w-[40px] min-h-[40px] rounded-full bg-white dark:bg-slate-800 shadow-xs border border-[#E2EBE1] dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-[#152A1C] dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 active:scale-95 transition-all focus:outline-none cursor-pointer shrink-0"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white dark:bg-slate-800 shadow-xs border border-[#E2EBE1] dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-[#152A1C] dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 active:scale-95 transition-all focus:outline-none cursor-pointer"
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-navigation-drawer"
@@ -495,7 +495,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Center: Clean TripVerse Brand Logo */}
-          <div className="flex items-center justify-center min-w-0 px-1 sm:px-2 flex-1 max-w-[170px] sm:max-w-[210px]">
+          <div className="flex items-center justify-center">
             <Logo 
               size="sm" 
               showTagline={false}
@@ -509,7 +509,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenAuthModal}
-                className="h-9 px-3 min-h-[36px] sm:h-10 sm:px-3.5 sm:min-h-[40px] rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="h-10 px-3.5 min-h-[40px] rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer active:scale-95"
               >
                 <User className="w-3.5 h-3.5 shrink-0" />
                 <span>{t('Sign In')}</span>

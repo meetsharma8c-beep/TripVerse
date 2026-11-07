@@ -7,8 +7,9 @@ export interface BrandIconMarkProps {
 }
 
 /**
- * Pure Vector & High-Res Official Brand Icon Mark
- * Renders the official stylized green "T" with supersonic origami flight swoosh.
+ * Pure Vector Native SVG Brand Icon Mark
+ * Renders identical sub-pixel geometric vector paths on iOS (Metal) and Android (Skia)
+ * with zero rasterization degradation or bitmap scaling artifacts.
  */
 export const BrandIconMark: React.FC<BrandIconMarkProps> = ({ 
   className = 'w-auto h-full', 
@@ -27,8 +28,8 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   if (!imgFailed) {
     return (
       <img
-        src="/tripverse-official-mark.png"
-        srcSet="/tripverse-official-mark.png 1x, /tripverse-official-mark@2x.png 2x"
+        src="/tripverse-mark-cropped.png"
+        srcSet="/tripverse-mark-cropped.png 1x, /tripverse-mark-cropped@2x.png 2x, /tripverse-mark-vibrant.png 3x"
         alt="TripVerse Logo"
         onError={() => setImgFailed(true)}
         style={{
@@ -61,29 +62,30 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
     >
       <defs>
         <linearGradient id={tvTGrad} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#00A84D" />
-          <stop offset="40%" stopColor="#05813F" />
-          <stop offset="80%" stopColor="#046833" />
-          <stop offset="100%" stopColor="#024D26" />
+          <stop offset="0%" stopColor="#386B49" />
+          <stop offset="35%" stopColor="#2D5A3D" />
+          <stop offset="70%" stopColor="#244931" />
+          <stop offset="100%" stopColor="#1E3E2B" />
         </linearGradient>
 
         <linearGradient id={tvSwoopPinGrad} x1="15%" y1="30%" x2="55%" y2="95%">
-          <stop offset="0%" stopColor="#10B981" />
-          <stop offset="45%" stopColor="#05813F" />
-          <stop offset="100%" stopColor="#024D26" />
+          <stop offset="0%" stopColor="#386B49" />
+          <stop offset="25%" stopColor="#2D5A3D" />
+          <stop offset="60%" stopColor="#244931" />
+          <stop offset="100%" stopColor="#152A1C" />
         </linearGradient>
 
         <linearGradient id={pTop} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#05813F" />
-          <stop offset="100%" stopColor="#10B981" />
+          <stop offset="0%" stopColor="#2D5A3D" />
+          <stop offset="100%" stopColor="#386B49" />
         </linearGradient>
         <linearGradient id={pMid} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#046833" />
-          <stop offset="100%" stopColor="#05813F" />
+          <stop offset="0%" stopColor="#244931" />
+          <stop offset="100%" stopColor="#2D5A3D" />
         </linearGradient>
         <linearGradient id={pBot} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#024D26" />
-          <stop offset="100%" stopColor="#03562B" />
+          <stop offset="0%" stopColor="#152A1C" />
+          <stop offset="100%" stopColor="#1E3E2B" />
         </linearGradient>
       </defs>
 
@@ -110,44 +112,7 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   );
 };
 
-/**
- * Authentic Winding Highway Road & Location Map Pin Connector
- * Matches the official TripVerse brand identity connecting "Trip" and "Verse".
- */
-export const HighwayConnector: React.FC<{ className?: string; isLight?: boolean }> = ({ 
-  className = 'h-3 w-5 sm:h-3.5 sm:w-6', 
-  isLight = false 
-}) => (
-  <span className={`inline-flex items-center justify-center shrink-0 mx-0.5 select-none pointer-events-none ${className}`} aria-hidden="true">
-    <svg viewBox="0 0 54 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full overflow-visible">
-      {/* Dark Navy / Charcoal Highway Road Path */}
-      <path
-        d="M 3 24 C 14 24, 18 19, 25 15 C 32 11, 38 4, 46 3"
-        stroke={isLight ? '#38BDF8' : '#082B55'}
-        strokeWidth="6.5"
-        strokeLinecap="round"
-      />
-      {/* Crisp White Dashed Center Lane Marking */}
-      <path
-        d="M 4 24 C 14 24, 18 19, 25 15 C 32 11, 38 4, 45 3"
-        stroke="#FFFFFF"
-        strokeWidth="1.3"
-        strokeDasharray="3 2.5"
-        strokeLinecap="round"
-      />
-      {/* Emerald Green Location Map Pin at the Destination Peak */}
-      <g transform="translate(40, -4) scale(0.68)">
-        <path
-          d="M 12 0 C 6.5 0, 2 4.5, 2 10 C 2 16.5, 12 25, 12 25 C 12 25, 22 16.5, 22 10 C 22 4.5, 17.5 0, 12 0 Z"
-          fill="#05813F"
-        />
-        <circle cx="12" cy="9.5" r="3.5" fill="#FFFFFF" />
-      </g>
-    </svg>
-  </span>
-);
-
-export interface LogoProps {
+interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'adaptive';
   layout?: 'horizontal' | 'stacked' | 'adaptive';
   showTagline?: boolean;
@@ -155,7 +120,6 @@ export interface LogoProps {
   variant?: 'dark' | 'light';
   onClick?: () => void;
   className?: string;
-  preferImage?: boolean;
 }
 
 export const Logo: React.FC<LogoProps> = ({
@@ -165,55 +129,42 @@ export const Logo: React.FC<LogoProps> = ({
   taglineClassName,
   variant = 'dark',
   onClick,
-  className = '',
-  preferImage = true
+  className = ''
 }) => {
-  const [imgError, setImgError] = React.useState(false);
-
   const sizeMap = {
     adaptive: {
-      imgHeight: 'h-6 min-[380px]:h-6.5 sm:h-7 lg:h-6 xl:h-6.5 2xl:h-7.5',
-      logoImgHeight: 'h-5.5 min-[380px]:h-6 sm:h-6.5 lg:h-5.5 xl:h-6 2xl:h-7',
-      textMain: 'text-[14px] min-[380px]:text-[15px] sm:text-base lg:text-[14.5px] xl:text-[15.5px] 2xl:text-lg',
-      textSub: 'text-[8.5px] min-[400px]:text-[9.5px] xl:text-[10px]',
-      gap: 'gap-1.5 min-[380px]:gap-2 lg:gap-1.5 xl:gap-2',
-      roadSize: 'h-3 w-5 sm:h-3.5 sm:w-6 lg:h-3 lg:w-5 xl:h-3.5 xl:w-6',
+      imgHeight: 'h-8 max-[350px]:h-7 min-[380px]:h-8.5 sm:h-9 md:h-9.5 lg:h-8 xl:h-9 2xl:h-10.5',
+      textMain: 'text-[17px] max-[350px]:text-[15.5px] min-[380px]:text-[18.5px] sm:text-xl md:text-[22px] lg:text-lg xl:text-xl 2xl:text-2xl',
+      textSub: 'text-[9.5px] min-[400px]:text-[10.5px] xl:text-[11.5px]',
+      gap: 'gap-1.5 max-[350px]:gap-1 min-[380px]:gap-2 sm:gap-2.5 lg:gap-1.5 xl:gap-2 2xl:gap-3',
       defaultTaglineClass: 'hidden md:block'
     },
     sm: { 
-      imgHeight: 'h-5 min-[380px]:h-5.5 sm:h-6', 
-      logoImgHeight: 'h-4.5 min-[380px]:h-5 sm:h-5.5',
-      textMain: 'text-[12.5px] min-[380px]:text-[13.5px] sm:text-[14.5px]', 
-      textSub: 'text-[8px] sm:text-[9px]', 
-      gap: 'gap-1 min-[380px]:gap-1.5 sm:gap-2',
-      roadSize: 'h-2.5 w-4 min-[380px]:h-2.5 min-[380px]:w-4.5 sm:h-3 sm:w-5',
+      imgHeight: 'h-7 sm:h-8', 
+      textMain: 'text-[16.5px] sm:text-lg', 
+      textSub: 'text-[9px] sm:text-[10px]', 
+      gap: 'gap-1.5 sm:gap-2',
       defaultTaglineClass: 'hidden sm:block'
     },
     md: { 
-      imgHeight: 'h-7 sm:h-8 xl:h-8.5', 
-      logoImgHeight: 'h-6 sm:h-7 xl:h-7.5',
-      textMain: 'text-base sm:text-lg xl:text-xl', 
-      textSub: 'text-[9px] sm:text-[9.5px] xl:text-[10px]', 
-      gap: 'gap-1.5 sm:gap-2 xl:gap-2.5',
-      roadSize: 'h-3.5 w-6 sm:h-4 sm:w-7',
+      imgHeight: 'h-8.5 sm:h-9.5 xl:h-10.5', 
+      textMain: 'text-lg sm:text-xl xl:text-2xl', 
+      textSub: 'text-[10px] sm:text-[10.5px] xl:text-[11.5px]', 
+      gap: 'gap-2 sm:gap-2.5 xl:gap-3',
       defaultTaglineClass: 'hidden md:block'
     },
     lg: { 
-      imgHeight: 'h-9 sm:h-10 md:h-11', 
-      logoImgHeight: 'h-8 sm:h-9 md:h-9.5',
-      textMain: 'text-xl sm:text-2xl', 
+      imgHeight: 'h-11 sm:h-13 md:h-14', 
+      textMain: 'text-2xl sm:text-3xl', 
       textSub: 'text-xs', 
-      gap: 'gap-2 sm:gap-2.5',
-      roadSize: 'h-4.5 w-8 sm:h-5 sm:w-9',
+      gap: 'gap-2.5 sm:gap-3',
       defaultTaglineClass: 'block'
     },
     xl: { 
-      imgHeight: 'h-11 sm:h-13 md:h-14', 
-      logoImgHeight: 'h-10 sm:h-11 md:h-12',
-      textMain: 'text-2xl sm:text-3xl md:text-4xl', 
+      imgHeight: 'h-14 sm:h-16 md:h-18', 
+      textMain: 'text-3xl sm:text-4xl md:text-5xl', 
       textSub: 'text-xs sm:text-sm', 
-      gap: 'gap-2.5 sm:gap-3',
-      roadSize: 'h-5 w-9 sm:h-6 sm:w-11',
+      gap: 'gap-3 sm:gap-3.5',
       defaultTaglineClass: 'block'
     }
   };
@@ -223,8 +174,6 @@ export const Logo: React.FC<LogoProps> = ({
   const effectiveTaglineClass = taglineClassName !== undefined 
     ? taglineClassName 
     : current.defaultTaglineClass;
-
-  const isLight = variant === 'light';
 
   return (
     <div 
@@ -242,80 +191,33 @@ export const Logo: React.FC<LogoProps> = ({
         textRendering: 'geometricPrecision'
       }}
     >
-      {/* 
-        Official Exact Brand Identity:
-        Stylized "T" Mark with Origami Airplane Swoosh +
-        "Trip" (Deep Navy) + Winding Highway Road with Map Pin + "Verse" (Vibrant Emerald)
-      */}
-      {preferImage && !imgError && !isStacked ? (
-        <div className="relative flex items-center notranslate">
-          <img
-            src={isLight ? "/tripverse-official-logo-dark.png" : "/tripverse-official-logo.png"}
-            srcSet={
-              isLight 
-                ? "/tripverse-official-logo-dark.png 1x, /tripverse-official-logo-dark@2x.png 2x" 
-                : "/tripverse-official-logo.png 1x, /tripverse-official-logo@2x.png 2x"
-            }
-            alt="TripVerse Logo"
-            onError={() => setImgError(true)}
-            style={{
-              imageRendering: '-webkit-optimize-contrast',
-              transform: 'translateZ(0)',
-              backfaceVisibility: 'hidden'
-            }}
-            className={`select-none pointer-events-none object-contain drop-shadow-2xs transition-transform duration-300 group-hover:scale-[1.02] ${current.logoImgHeight} w-auto`}
-            draggable={false}
-            loading="eager"
-            decoding="async"
-          />
+      {/* Official Exact Brand Icon Mark - Pure Native Vector SVG Rendered in HD at all pixel densities (Retina 2x/3x, OLED, 4K) */}
+      <div className="relative flex-shrink-0 transition-transform duration-300 group-hover:scale-105 flex items-center justify-center">
+        <BrandIconMark className={`${current.imgHeight} w-auto`} />
+      </div>
+
+      {/* Brand Text - Protected global trademark that never adapts/translates */}
+      <div 
+        data-no-translate="true" 
+        translate="no" 
+        className={`flex flex-col leading-none min-w-0 notranslate ${isStacked ? 'items-center mt-1.5' : 'justify-center'}`}
+      >
+        <div 
+          data-no-translate="true"
+          translate="no"
+          className={`font-display font-black tracking-tight whitespace-nowrap notranslate ${current.textMain}`}
+        >
+          <span data-no-translate="true" translate="no" className={`notranslate ${variant === 'light' ? 'text-white' : 'text-[#0B2545] dark:text-slate-100'}`}>Trip</span>
+          <span data-no-translate="true" translate="no" className={`notranslate ${variant === 'light' ? 'text-emerald-300' : 'text-[#2D5A3D] dark:text-emerald-400'}`}>Verse</span>
         </div>
-      ) : (
-        <>
-          {/* Official Brand Icon Mark */}
-          <div className="relative flex-shrink-0 transition-transform duration-300 group-hover:scale-105 flex items-center justify-center">
-            <BrandIconMark className={`${current.imgHeight} w-auto`} />
-          </div>
-
-          {/* Official Wordmark with Winding Highway Connector & Emerald Map Pin */}
-          <div 
-            data-no-translate="true" 
-            translate="no" 
-            className={`flex flex-col leading-none min-w-0 notranslate ${isStacked ? 'items-center mt-1.5' : 'justify-center'}`}
-          >
-            <div 
-              data-no-translate="true"
-              translate="no"
-              className={`font-display font-black tracking-tight whitespace-nowrap notranslate flex items-center ${current.textMain}`}
-            >
-              <span 
-                data-no-translate="true" 
-                translate="no" 
-                className={`notranslate ${isLight ? 'text-white' : 'text-[#031832] dark:text-slate-100'}`}
-              >
-                Trip
-              </span>
-              
-              <HighwayConnector isLight={isLight} className={current.roadSize} />
-
-              <span 
-                data-no-translate="true" 
-                translate="no" 
-                className={`notranslate ${isLight ? 'text-emerald-300' : 'text-[#04803E] dark:text-emerald-400'}`}
-              >
-                Verse
-              </span>
-            </div>
-
-            {showTagline && (
-              <span className={`font-semibold tracking-wide mt-0.5 truncate max-w-[190px] sm:max-w-none ${current.textSub} ${
-                isLight ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
-              } ${effectiveTaglineClass}`}>
-                {t('Plan Smarter. Travel Further.')}
-              </span>
-            )}
-          </div>
-        </>
-      )}
+        {showTagline && (
+          <span className={`font-semibold tracking-wide mt-0.5 truncate max-w-[190px] sm:max-w-none ${current.textSub} ${
+            variant === 'light' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
+          } ${effectiveTaglineClass}`}>
+            {t('Plan Smarter. Travel Further.')}
+          </span>
+        )}
+      </div>
     </div>
   );
 };
