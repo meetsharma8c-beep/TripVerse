@@ -1232,7 +1232,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           }}
                           className="text-[11px] text-[#2D5A3D] hover:underline font-semibold cursor-pointer"
                         >
-                          Forgot Password?
+                          {t('Forgot Password?')}
                         </button>
                       </div>
                       <div className="relative">
@@ -1295,7 +1295,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       }}
                       className="text-[11px] text-[#2D5A3D] hover:underline font-semibold cursor-pointer"
                     >
-                      Already have a 6-digit confirmation code? Enter it here
+                      {t('Already have a 6-digit confirmation code? Enter it here')}
                     </button>
                   </div>
                 </div>

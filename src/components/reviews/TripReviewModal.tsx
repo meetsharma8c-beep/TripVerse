@@ -190,7 +190,7 @@ export const TripReviewModal: React.FC<TripReviewModalProps> = ({
           {/* Experience Feeling Selector */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-700 block">
-              How did the journey feel overall?
+              {t('How did the journey feel overall?')}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[

@@ -72,6 +72,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   onBookingSuccess,
   onNavigateToPasses
 }) => {
+  const { t } = useLanguage();
   // Navigation / Payment Method Tab
   const [activeTab, setActiveTab] = useState<PaymentMethodType>('upi_qr');
   const [upiSubTab, setUpiSubTab] = useState<'qr' | 'apps' | 'id'>('qr');
@@ -1054,7 +1055,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 {/* Promo Coupon Box */}
                 <div className="space-y-1.5 mb-2.5">
                   <label className="text-[10px] font-bold text-slate-700 block">
-                    Have a Promo Code?
+                    {t('Have a Promo Code?')}
                   </label>
                   <div className="flex gap-1.5">
                     <input

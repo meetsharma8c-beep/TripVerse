@@ -327,4 +327,31 @@ describe('Global Language & Localization (i18n) Engine', () => {
     expect(t('TripVerse Legal, Privacy & Safety Trust Center', 'es'))
       .toBe('Centro de Confianza Legal, Privacidad y Seguridad de TripVerse');
   });
+
+  it('guarantees TripVerse brand name is NEVER translated across any language', () => {
+    const allLanguages: LanguageCode[] = ['en', 'es', 'fr', 'de', 'ja', 'hi', 'zh', 'ar', 'it', 'pt'];
+    allLanguages.forEach((lang) => {
+      expect(t('TripVerse', lang)).toBe('TripVerse');
+      expect(t('tripverse', lang)).toBe('TripVerse');
+      expect(t('  TripVerse  ', lang)).toBe('  TripVerse  ');
+    });
+  });
+
+  it('preserves leading and trailing emojis while localizing inner phrase', () => {
+    expect(t('✨ AI Route & Journey Intelligence', 'es')).toContain('✨');
+    expect(t('✨ AI Route & Journey Intelligence', 'es')).toContain('Inteligencia');
+
+    expect(t('🔒 Protected', 'es')).toContain('🔒');
+    expect(t('🔒 Protected', 'es')).toContain('Protegido');
+
+    expect(t('Continue →', 'es')).toBe('Continuar →');
+    expect(t('← Back to Overview', 'es')).toBe('← Volver al Resumen');
+  });
+
+  it('translates dynamic quantity tokens cleanly', () => {
+    expect(t('3 Stops', 'es')).toBe('3 Paradas');
+    expect(t('5 Items', 'es')).toBe('5 Artículos');
+    expect(t('2 Hours', 'es')).toBe('2 Horas');
+    expect(t('4 Days Trip', 'es')).toBe('Viaje de 4 Días');
+  });
 });

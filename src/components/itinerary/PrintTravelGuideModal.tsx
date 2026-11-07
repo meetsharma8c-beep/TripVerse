@@ -216,11 +216,10 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
           <div className="rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 print-avoid-break break-inside-avoid">
             <div className="flex items-center gap-2 text-rose-800">
               <ShieldAlert className="h-4 w-4 shrink-0" />
-              <strong className="text-xs uppercase tracking-wider">Emergency support</strong>
+              <strong className="text-xs uppercase tracking-wider">{t('Emergency support')}</strong>
             </div>
             <p className="mt-2 text-xs leading-relaxed text-rose-900">
-              Emergency numbers vary by location. Verify the correct local emergency and road-assistance contacts before
-              travel. TripVerse does not monitor your location or dispatch help.
+              {t('Emergency numbers vary by location. Verify the correct local emergency and road-assistance contacts before travel. TripVerse does not monitor your location or dispatch help.')}
             </p>
           </div>
 
@@ -264,10 +263,10 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
                   <div className="p-3 bg-white rounded-xl border border-sky-100 space-y-1.5">
                     <div className="font-bold text-sky-950 flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5 text-sky-700" />
-                      <span>Passport & Border Compliance</span>
+                      <span>{t('Passport & Border Compliance')}</span>
                     </div>
                     <p className="text-[11px] text-slate-600">
-                      Passport must be valid for at least <strong>{trip.borderSecuritySentinel.passportValidityRequiredMonths} months</strong> from your return date.
+                      {t('Passport must be valid for at least')} <strong>{trip.borderSecuritySentinel.passportValidityRequiredMonths} {t('months')}</strong> {t('from your return date.')}
                     </p>
                     {trip.borderSecuritySentinel.mandatoryArrivalDeclarations.map((decl, idx) => (
                       <div key={idx} className="p-2 bg-sky-50 rounded-lg text-[11px] text-sky-900 font-medium">

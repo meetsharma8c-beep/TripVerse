@@ -1977,8 +1977,8 @@ export function App() {
                     <div className="w-12 h-12 rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center">
                       <MapPin className="w-6 h-6 animate-bounce" />
                     </div>
-                    <p className="text-sm font-bold text-slate-700">Loading route map…</p>
-                    <p className="text-xs text-slate-400">Preparing route geometry and nearby place listings</p>
+                    <p className="text-sm font-bold text-slate-700">{t('Loading route map…')}</p>
+                    <p className="text-xs text-slate-400">{t('Preparing route geometry and nearby place listings')}</p>
                   </div>
                 }>
                   <SmartRouteMap
@@ -1994,34 +1994,34 @@ export function App() {
                   <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                       <div>
-                        <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">Route-based listings</span>
-                        <h2 className="text-xl font-bold text-[#0B2545]">Highway Break Stops & Waypoints</h2>
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Route-based listings')}</span>
+                        <h2 className="text-xl font-bold text-[#0B2545]">{t('Highway Break Stops & Waypoints')}</h2>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          Geoapify place listings based on OpenStreetMap data near the driving route. Facilities, opening hours, and current availability are not confirmed.
+                          {t('Geoapify place listings based on OpenStreetMap data near the driving route. Facilities, opening hours, and current availability are not confirmed.')}
                         </p>
                       </div>
 
                       <span className="text-xs font-bold text-[#2D5A3D] bg-[#EAF0E9] px-3 py-1.5 rounded-full border border-[#8EA78D]/40 self-start sm:self-auto">
-                        {activeTrip.breakStops.length} mapped listings
+                        {activeTrip.breakStops.length} {t('mapped listings')}
                       </span>
                     </div>
 
                     {activeTrip.travelDataStatus === 'loading' && (
-                      <p className="mb-4 text-sm text-slate-600" role="status">Loading a driving route and nearby OpenStreetMap listings via Geoapify…</p>
+                      <p className="mb-4 text-sm text-slate-600" role="status">{t('Loading a driving route and nearby OpenStreetMap listings via Geoapify…')}</p>
                     )}
                     {activeTrip.travelDataStatus === 'estimate' && (
                       <p className="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3" role="status">
-                        Live route and place data is unavailable. The route and schedule are estimates; no pitstops or facilities are verified.
-                        {activeTrip.travelDataError === 'ORIGIN_NOT_SET' && ' Allow location access or enter a starting city in the full trip planner to request a live route.'}
-                        {activeTrip.travelDataError === 'GEOAPIFY_API_KEY_NOT_CONFIGURED' && ' The server Geoapify API key is not configured. Set GEOAPIFY_API_KEY in Vercel Production.'}
-                        {activeTrip.travelDataError === 'GEOAPIFY_API_KEY_REJECTED' && ' Geoapify rejected the server key. Check the key and plan limits in Geoapify.'}
-                        {activeTrip.travelDataError === 'GEOAPIFY_LOCATION_NOT_FOUND' && ' Geoapify could not resolve the origin or destination. Try a more specific location.'}
+                        {t('Live route and place data is unavailable. The route and schedule are estimates; no pitstops or facilities are verified.')}
+                        {activeTrip.travelDataError === 'ORIGIN_NOT_SET' && (' ' + t('Allow location access or enter a starting city in the full trip planner to request a live route.'))}
+                        {activeTrip.travelDataError === 'GEOAPIFY_API_KEY_NOT_CONFIGURED' && (' ' + t('The server Geoapify API key is not configured. Set GEOAPIFY_API_KEY in Vercel Production.'))}
+                        {activeTrip.travelDataError === 'GEOAPIFY_API_KEY_REJECTED' && (' ' + t('Geoapify rejected the server key. Check the key and plan limits in Geoapify.'))}
+                        {activeTrip.travelDataError === 'GEOAPIFY_LOCATION_NOT_FOUND' && (' ' + t('Geoapify could not resolve the origin or destination. Try a more specific location.'))}
                         {' '}<button
                           type="button"
                           onClick={retryActiveTripRoute}
                           className="ml-1 font-bold underline decoration-amber-700 underline-offset-2 hover:text-amber-950"
                         >
-                          Retry live route
+                          {t('Retry live route')}
                         </button>
                       </p>
                     )}
@@ -2273,7 +2273,7 @@ export function App() {
               <button onClick={() => setLegalModalState({ isOpen: true, tab: 'terms' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Terms')}</button>
               <button onClick={() => setLegalModalState({ isOpen: true, tab: 'advisory' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Advisory')}</button>
               <button onClick={() => setLegalModalState({ isOpen: true, tab: 'feedback' })} className="text-[#2D5A3D] hover:text-[#1E3E2B] bg-[#EAF0E9] px-3 py-1 rounded-full border border-[#DCE7DB] transition-colors cursor-pointer font-bold">{t('Feedback')}</button>
-              <span className="text-[#7A9382]">© 2026 TripVerse</span>
+              <span className="text-[#7A9382]" translate="no" data-no-translate="true">© 2026 TripVerse</span>
             </div>
           </div>
         </footer>

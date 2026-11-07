@@ -341,7 +341,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     ? 'bg-amber-500/10 border-amber-300/40 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20'
                     : 'bg-[#E8EFE7] dark:bg-emerald-950/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400'
                 }`}
-                title={quota.isPro ? 'TripVerse Pro Active' : 'Unlock Unlimited Trips with TripVerse Pro'}
+                title={quota.isPro ? t('TripVerse Pro Active') : t('Unlock Unlimited Trips with TripVerse Pro')}
               >
                 <Crown className={`w-3.5 h-3.5 shrink-0 ${quota.isPro ? 'text-amber-500 fill-amber-500' : 'text-[#2D5A3D] dark:text-emerald-400'}`} />
                 <span>{quota.isPro ? 'PRO' : 'Pro'}</span>
@@ -462,7 +462,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           type="button"
                           onClick={() => {
                             setIsProfileMenuOpen(false);
-                            if (confirm('Are you sure you want to sign out of your TripVerse account?')) {
+                            if (confirm(t('Are you sure you want to sign out of your TripVerse account?'))) {
                               onSignOut();
                             }
                           }}
@@ -538,13 +538,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      if (confirm('Are you sure you want to sign out of your TripVerse account?')) {
+                      if (confirm(t('Are you sure you want to sign out of your TripVerse account?'))) {
                         onSignOut();
                       }
                     }}
                     className="h-9 px-2.5 sm:px-3 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 text-xs font-bold whitespace-nowrap shrink-0 flex items-center gap-1 transition-all shadow-2xs cursor-pointer active:scale-95"
-                    title="Sign Out"
-                    aria-label="Sign Out"
+                    title={t('Sign Out')}
+                    aria-label={t('Sign Out')}
                   >
                     <LogOut className="w-3.5 h-3.5 shrink-0" />
                     <span className="hidden sm:inline">{t('Sign Out')}</span>
@@ -637,7 +637,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </span>
                   </div>
                   <p className={`text-[11px] truncate mt-0.5 ${quota.isPro ? 'text-emerald-200' : 'text-[#5A7362] dark:text-slate-400'}`}>
-                    {quota.isPro ? 'Unlimited Trips & 30h/week AI Active' : 'Unlock Unlimited Trips & AI Brain'}
+                    {quota.isPro ? t('Unlimited Trips & 30h/week AI Active') : t('Unlock Unlimited Trips & AI Brain')}
                   </p>
                 </div>
               </div>
@@ -681,15 +681,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <BrandIconMark className="w-full h-full" idPrefix="nav-banner" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100">TripVerse App</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Free, offline & fast</p>
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{t('TripVerse App')}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">{t('Free, offline & fast')}</p>
                 </div>
               </div>
               <button
                 onClick={handleOpenInstall}
                 className="px-3 py-1.5 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
               >
-                Install
+                {t('Install')}
               </button>
             </div>
           )}
@@ -698,13 +698,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="pt-2 pb-2 px-3 flex items-center justify-between border-t border-slate-200/60 dark:border-slate-800">
             <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-semibold">
               <Languages className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-              <span>Language:</span>
+              <span>{t('Language:')}</span>
             </div>
             <select
               value={language}
               onChange={(e) => handleLanguageChange(e.target.value as LanguageCode)}
               className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
-              aria-label="Select Mobile Language"
+              aria-label={t('Select Mobile Language')}
             >
               {Object.values(LANGUAGES).map((l) => (
                 <option key={l.code} value={l.code} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
@@ -718,13 +718,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="pt-2 pb-2 px-3 flex items-center justify-between border-t border-slate-200/60 dark:border-slate-800">
             <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-semibold">
               <Globe className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-              <span>Currency:</span>
+              <span>{t('Currency:')}</span>
             </div>
             <select
               value={currency}
               onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
               className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
-              aria-label="Select Mobile Currency"
+              aria-label={t('Select Mobile Currency')}
             >
               {Object.keys(CURRENCIES).map((c) => (
                 <option key={c} value={c} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
@@ -738,13 +738,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             onClick={toggleDarkMode}
             className="w-full flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/60 cursor-pointer"
-            aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+            aria-label={isDarkMode ? t('Switch to light mode') : t('Switch to dark mode')}
           >
             <span className="flex items-center gap-3">
               {isDarkMode ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5 text-slate-400 dark:text-slate-500" />}
-              <span>{isDarkMode ? 'Light mode' : 'Dark mode'}</span>
+              <span>{isDarkMode ? t('Light mode') : t('Dark mode')}</span>
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">{isDarkMode ? 'On' : 'Off'}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">{isDarkMode ? t('On') : t('Off')}</span>
           </button>
 
           <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 space-y-2">
@@ -756,7 +756,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-trip-gradient text-white font-bold text-sm shadow-md active:scale-98 transition-transform cursor-pointer"
             >
               <PlaneTakeoff className="w-4 h-4" />
-              <span>Plan My Trip With AI</span>
+              <span>{t('Plan My Trip With AI')}</span>
             </button>
 
             {!isAuthenticated ? (
@@ -769,7 +769,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#E8EFE7] dark:bg-emerald-950/60 border border-[#DCE7DB] dark:border-emerald-800/50 text-[#2D5A3D] dark:text-emerald-300 font-bold text-sm transition-colors cursor-pointer"
               >
                 <User className="w-4 h-4" />
-                <span>Sign In / Register</span>
+                <span>{t('Sign In / Register')}</span>
               </button>
             ) : (
               onSignOut && (
@@ -777,14 +777,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    if (confirm('Are you sure you want to sign out of your TripVerse account?')) {
+                    if (confirm(t('Are you sure you want to sign out of your TripVerse account?'))) {
                       onSignOut();
                     }
                   }}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 font-bold text-sm transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Sign Out</span>
+                  <span>{t('Sign Out')}</span>
                 </button>
               )
             )}

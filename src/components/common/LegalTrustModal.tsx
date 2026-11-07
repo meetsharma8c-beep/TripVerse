@@ -178,9 +178,9 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
               </div>
 
               <div>
-                <h4 className="font-bold text-slate-900 text-sm mb-1">3. Your Data Rights & Deletion</h4>
+                <h4 className="font-bold text-slate-900 text-sm mb-1">{t('3. Your Data Rights & Deletion')}</h4>
                 <p>
-                  You retain complete ownership of your travel data. You can export your journeys anytime or perform a complete data wipe from the Profile tab.
+                  {t('You retain complete ownership of your travel data. You can export your journeys anytime or perform a complete data wipe from the Profile tab.')}
                 </p>
               </div>
 

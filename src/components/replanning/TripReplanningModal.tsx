@@ -347,7 +347,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
               {/* Action Cards: "What would you like to do?" */}
               <div>
                 <h3 className="text-base font-bold text-[#0B2545] mb-3">
-                  What would you like to do?
+                  {t('What would you like to do?')}
                 </h3>
                 
                 <div className="grid grid-cols-1 gap-3.5">
@@ -463,9 +463,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
 
               <div className="space-y-4">
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-950">
-                  TripVerse is free to use and does not have live accommodation inventory. Search the destination on a
-                  booking provider, then confirm the property, availability, safety, price, and cancellation terms there.
-                  Booking and payment happen directly with that provider.
+                  {t('TripVerse is free to use and does not have live accommodation inventory. Search the destination on a booking provider, then confirm the property, availability, safety, price, and cancellation terms there. Booking and payment happen directly with that provider.')}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <a

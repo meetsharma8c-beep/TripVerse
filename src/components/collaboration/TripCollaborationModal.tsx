@@ -512,7 +512,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                     type="text"
                     value={suggestDesc}
                     onChange={(e) => setSuggestDesc(e.target.value)}
-                    placeholder="Why should the group go here? (optional)"
+                    placeholder={t('Why should the group go here? (optional)')}
                     className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                   />
                   <button
