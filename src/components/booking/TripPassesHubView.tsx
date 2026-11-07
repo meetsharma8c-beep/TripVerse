@@ -5,7 +5,7 @@ import { loadTripPacking, saveTripPacking } from '../../services/storageService'
 import { generateSmartPackingList } from '../../services/packingService';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
 import { triggerHaptic } from '../../services/deviceService';
-import { ArrowLeft, Bell, MoreVertical, Plane, ChevronRight, Sun, CloudSun, CloudRain, CheckCircle2, Circle, Download, Share2, CreditCard } from 'lucide-react';
+import { ArrowLeft, Bell, MoreVertical, Plane, Car, Train, Bus, ChevronRight, Sun, CloudSun, CloudRain, CheckCircle2, Circle, Download, Share2, CreditCard } from 'lucide-react';
 import { getBookingForTrip, BookingRecord, generateTicketReceiptText } from '../../services/paymentGatewayService';
 import { getActiveCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
@@ -280,18 +280,26 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
             </div>
 
             {/* Flight Flight Path & Duration */}
-            <div className="flex-1 flex flex-col items-center justify-center px-2">
-              <span className="text-[10px] font-semibold text-[#8EA78D] mb-1">
+            <div className="flex-1 flex flex-col items-center justify-center px-3 min-w-0">
+              <span className="text-[11px] font-bold text-[#5A7362] tracking-wide mb-1.5 whitespace-nowrap">
                 {trip.bestTransportDeal?.route?.duration || '2h 10m'}
               </span>
-              <div className="relative w-full flex items-center justify-center">
-                <div className="w-full border-t-2 border-dashed border-[#8EA78D]/50" />
-                <div className="absolute w-7 h-7 rounded-full bg-[#E8EFE7] text-[#2D5A3D] flex items-center justify-center shadow-2xs">
-                  <Plane className="w-3.5 h-3.5 transform rotate-90 text-[#2D5A3D]" />
+              <div className="relative w-full h-8 flex items-center justify-center my-0.5">
+                <div className="w-full border-t-2 border-dashed border-[#8EA78D]/40" />
+                <div className="absolute w-8 h-8 rounded-full bg-[#E8EFE7] border-2 border-white text-[#2D5A3D] flex items-center justify-center shadow-xs">
+                  {trip.transportMode === 'flight' ? (
+                    <Plane className="w-4 h-4 transform rotate-90 text-[#2D5A3D]" />
+                  ) : trip.transportMode === 'train' ? (
+                    <Train className="w-4 h-4 text-[#2D5A3D]" />
+                  ) : trip.transportMode === 'bus' ? (
+                    <Bus className="w-4 h-4 text-[#2D5A3D]" />
+                  ) : (
+                    <Plane className="w-4 h-4 transform rotate-90 text-[#2D5A3D]" />
+                  )}
                 </div>
               </div>
-              <span className="text-[10px] text-[#5A7362] mt-1 capitalize">
-                {trip.routeType} transit
+              <span className="text-[10px] font-semibold text-[#8EA78D] mt-1.5 capitalize whitespace-nowrap">
+                {trip.routeType ? `${trip.routeType} transit` : 'Scenic transit'}
               </span>
             </div>
 
