@@ -115,7 +115,7 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
  * Matches the official TripVerse brand identity connecting "Trip" and "Verse".
  */
 export const HighwayConnector: React.FC<{ className?: string; isLight?: boolean }> = ({ 
-  className = 'h-4 w-7 sm:h-5 sm:w-8.5', 
+  className = 'h-3 w-5 sm:h-3.5 sm:w-6', 
   isLight = false 
 }) => (
   <span className={`inline-flex items-center justify-center shrink-0 mx-0.5 select-none pointer-events-none ${className}`} aria-hidden="true">
@@ -172,48 +172,48 @@ export const Logo: React.FC<LogoProps> = ({
 
   const sizeMap = {
     adaptive: {
-      imgHeight: 'h-8 max-[350px]:h-7 min-[380px]:h-8.5 sm:h-9 md:h-9.5 lg:h-8.5 xl:h-9.5 2xl:h-10.5',
-      logoImgHeight: 'h-7 max-[350px]:h-6 min-[380px]:h-7.5 sm:h-8.5 md:h-9 lg:h-8 xl:h-8.5 2xl:h-9.5',
-      textMain: 'text-[17px] max-[350px]:text-[15.5px] min-[380px]:text-[18.5px] sm:text-xl md:text-[22px] lg:text-lg xl:text-xl 2xl:text-2xl',
-      textSub: 'text-[9.5px] min-[400px]:text-[10.5px] xl:text-[11.5px]',
-      gap: 'gap-1.5 max-[350px]:gap-1 min-[380px]:gap-2 sm:gap-2.5 lg:gap-2 xl:gap-2.5',
-      roadSize: 'h-3.5 w-6 sm:h-4.5 sm:w-8',
+      imgHeight: 'h-6 min-[380px]:h-6.5 sm:h-7 lg:h-6 xl:h-6.5 2xl:h-7.5',
+      logoImgHeight: 'h-5.5 min-[380px]:h-6 sm:h-6.5 lg:h-5.5 xl:h-6 2xl:h-7',
+      textMain: 'text-[14px] min-[380px]:text-[15px] sm:text-base lg:text-[14.5px] xl:text-[15.5px] 2xl:text-lg',
+      textSub: 'text-[8.5px] min-[400px]:text-[9.5px] xl:text-[10px]',
+      gap: 'gap-1.5 min-[380px]:gap-2 lg:gap-1.5 xl:gap-2',
+      roadSize: 'h-3 w-5 sm:h-3.5 sm:w-6 lg:h-3 lg:w-5 xl:h-3.5 xl:w-6',
       defaultTaglineClass: 'hidden md:block'
     },
     sm: { 
-      imgHeight: 'h-7 sm:h-8', 
-      logoImgHeight: 'h-6 sm:h-7',
-      textMain: 'text-[16.5px] sm:text-lg', 
-      textSub: 'text-[9px] sm:text-[10px]', 
-      gap: 'gap-1.5 sm:gap-2',
-      roadSize: 'h-3 w-5.5 sm:h-3.5 sm:w-6.5',
+      imgHeight: 'h-5 min-[380px]:h-5.5 sm:h-6', 
+      logoImgHeight: 'h-4.5 min-[380px]:h-5 sm:h-5.5',
+      textMain: 'text-[12.5px] min-[380px]:text-[13.5px] sm:text-[14.5px]', 
+      textSub: 'text-[8px] sm:text-[9px]', 
+      gap: 'gap-1 min-[380px]:gap-1.5 sm:gap-2',
+      roadSize: 'h-2.5 w-4 min-[380px]:h-2.5 min-[380px]:w-4.5 sm:h-3 sm:w-5',
       defaultTaglineClass: 'hidden sm:block'
     },
     md: { 
-      imgHeight: 'h-8.5 sm:h-9.5 xl:h-10.5', 
-      logoImgHeight: 'h-7.5 sm:h-8.5 xl:h-9.5',
-      textMain: 'text-lg sm:text-xl xl:text-2xl', 
-      textSub: 'text-[10px] sm:text-[10.5px] xl:text-[11.5px]', 
-      gap: 'gap-2 sm:gap-2.5 xl:gap-3',
-      roadSize: 'h-4 w-7 sm:h-5 sm:w-8.5',
+      imgHeight: 'h-7 sm:h-8 xl:h-8.5', 
+      logoImgHeight: 'h-6 sm:h-7 xl:h-7.5',
+      textMain: 'text-base sm:text-lg xl:text-xl', 
+      textSub: 'text-[9px] sm:text-[9.5px] xl:text-[10px]', 
+      gap: 'gap-1.5 sm:gap-2 xl:gap-2.5',
+      roadSize: 'h-3.5 w-6 sm:h-4 sm:w-7',
       defaultTaglineClass: 'hidden md:block'
     },
     lg: { 
-      imgHeight: 'h-11 sm:h-13 md:h-14', 
-      logoImgHeight: 'h-9.5 sm:h-11 md:h-12',
-      textMain: 'text-2xl sm:text-3xl', 
+      imgHeight: 'h-9 sm:h-10 md:h-11', 
+      logoImgHeight: 'h-8 sm:h-9 md:h-9.5',
+      textMain: 'text-xl sm:text-2xl', 
       textSub: 'text-xs', 
-      gap: 'gap-2.5 sm:gap-3',
-      roadSize: 'h-5 w-9 sm:h-6 sm:w-11',
+      gap: 'gap-2 sm:gap-2.5',
+      roadSize: 'h-4.5 w-8 sm:h-5 sm:w-9',
       defaultTaglineClass: 'block'
     },
     xl: { 
-      imgHeight: 'h-14 sm:h-16 md:h-18', 
-      logoImgHeight: 'h-12 sm:h-14 md:h-16',
-      textMain: 'text-3xl sm:text-4xl md:text-5xl', 
+      imgHeight: 'h-11 sm:h-13 md:h-14', 
+      logoImgHeight: 'h-10 sm:h-11 md:h-12',
+      textMain: 'text-2xl sm:text-3xl md:text-4xl', 
       textSub: 'text-xs sm:text-sm', 
-      gap: 'gap-3 sm:gap-3.5',
-      roadSize: 'h-6 w-11 sm:h-8 sm:w-14',
+      gap: 'gap-2.5 sm:gap-3',
+      roadSize: 'h-5 w-9 sm:h-6 sm:w-11',
       defaultTaglineClass: 'block'
     }
   };

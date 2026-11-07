@@ -252,10 +252,10 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
         <h1 
           data-no-translate="true"
           translate="no"
-          className="text-3xl sm:text-4xl lg:text-5xl font-display font-black tracking-tight text-white mb-2 drop-shadow-md tv-stagger-1 notranslate flex items-center justify-center gap-1"
+          className="text-2xl min-[380px]:text-3xl sm:text-4xl lg:text-5xl font-display font-black tracking-tight text-white mb-2 drop-shadow-md tv-stagger-1 notranslate flex items-center justify-center gap-0.5 sm:gap-1"
         >
           <span data-no-translate="true" translate="no" className="notranslate text-white">Trip</span>
-          <HighwayConnector isLight={true} className="h-6 w-10 sm:h-7 sm:w-12 mx-1" />
+          <HighwayConnector isLight={true} className="h-5 w-8 min-[380px]:h-6 min-[380px]:w-10 sm:h-7 sm:w-12 mx-0.5 sm:mx-1" />
           <span data-no-translate="true" translate="no" className="text-emerald-400 notranslate">Verse</span>
         </h1>
 

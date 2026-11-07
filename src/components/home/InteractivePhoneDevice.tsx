@@ -563,13 +563,13 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                     <img
                       src="/tripverse-official-logo.png"
                       alt="TripVerse Logo"
-                      className="h-6 w-auto object-contain dark:hidden notranslate"
+                      className="h-4.5 sm:h-5 max-w-[125px] w-auto object-contain dark:hidden notranslate"
                       loading="eager"
                     />
                     <img
                       src="/tripverse-official-logo-dark.png"
                       alt="TripVerse Logo"
-                      className="h-6 w-auto object-contain hidden dark:block notranslate"
+                      className="h-4.5 sm:h-5 max-w-[125px] w-auto object-contain hidden dark:block notranslate"
                       loading="eager"
                     />
                   </div>
