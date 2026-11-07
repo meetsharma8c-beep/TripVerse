@@ -248,17 +248,6 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
           </div>
         </div>
 
-        {/* Brand Name Typography with Staggered Reveal - Protected global trademark */}
-        <div className="mb-3 tv-stagger-1 flex items-center justify-center">
-          <img
-            src="/tripverse-title-dark.png?v=10"
-            srcSet="/tripverse-title-dark.png?v=10 1x, /tripverse-title-dark@2x.png?v=10 2x"
-            alt="TripVerse"
-            className="h-7 min-[380px]:h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)] notranslate select-none pointer-events-none"
-            loading="eager"
-          />
-        </div>
-
         {/* Tagline */}
         <p className="text-xs sm:text-sm text-emerald-100/80 font-medium tracking-[0.06em] max-w-xs drop-shadow mb-8 tv-stagger-2">
           {t('Plan Smarter. Travel Further.')}
