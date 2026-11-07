@@ -52,6 +52,31 @@ export interface Coupon {
 
 export const AVAILABLE_COUPONS: Coupon[] = [
   {
+    code: 'PRO50',
+    label: '₹50 OFF',
+    description: 'Flat ₹50 off on TripVerse Pro Annual Pass',
+    discountType: 'flat',
+    discountValue: 50,
+    minAmount: 500
+  },
+  {
+    code: 'VIP10',
+    label: '10% OFF',
+    description: '10% instant discount on TripVerse Pro and travel bookings',
+    discountType: 'percentage',
+    discountValue: 10,
+    minAmount: 100,
+    maxDiscount: 500
+  },
+  {
+    code: 'EARLYBIRD',
+    label: '₹20 OFF',
+    description: 'Flat ₹20 off on TripVerse Pro Monthly Pass',
+    discountType: 'flat',
+    discountValue: 20,
+    minAmount: 100
+  },
+  {
     code: 'TRIPVERSE500',
     label: '₹500 OFF',
     description: 'Flat ₹500 off on any booking above ₹2,000',
@@ -233,7 +258,7 @@ export function evaluateCoupon(
   const coupon = AVAILABLE_COUPONS.find(c => c.code === clean);
   
   if (!coupon) {
-    return { valid: false, discount: 0, message: 'Invalid promo code. Try TRIPVERSE500 or FIRSTTRIP' };
+    return { valid: false, discount: 0, message: 'Invalid promo code. Try PRO50, VIP10, or TRIPVERSE500' };
   }
 
   if (amount < coupon.minAmount) {

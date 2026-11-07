@@ -43,6 +43,24 @@ describe('PaymentGatewayService Unit Tests', () => {
       expect(res.valid).toBe(false);
       expect(res.discount).toBe(0);
     });
+
+    it('applies PRO50 coupon on Pro Annual Pass', () => {
+      const res = evaluateCoupon('PRO50', 999);
+      expect(res.valid).toBe(true);
+      expect(res.discount).toBe(50);
+    });
+
+    it('applies VIP10 percentage coupon on subscriptions', () => {
+      const res = evaluateCoupon('VIP10', 999);
+      expect(res.valid).toBe(true);
+      expect(res.discount).toBe(100);
+    });
+
+    it('applies EARLYBIRD coupon on Pro Monthly Pass', () => {
+      const res = evaluateCoupon('EARLYBIRD', 149);
+      expect(res.valid).toBe(true);
+      expect(res.discount).toBe(20);
+    });
   });
 
   describe('detectCardBrand', () => {

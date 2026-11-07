@@ -249,7 +249,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                 {/* Popular / Best Value Badge */}
                 <div className="flex items-center justify-between gap-1 mb-2">
                   <span className="px-2 py-0.5 rounded-full bg-[#2D5A3D] text-white text-[9px] font-extrabold uppercase tracking-wide">
-                    {t('Save 44%')}
+                    {t('Save 44% (Best Value)')}
                   </span>
                   {billingCycle === 'annual' && (
                     <div className="w-4 h-4 rounded-full bg-[#2D5A3D] text-white flex items-center justify-center shrink-0">
@@ -269,7 +269,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                     <span className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium">/ {t('mo')}</span>
                   </div>
                   <div className="text-[10px] text-[#2D5A3D] dark:text-emerald-400 font-semibold mt-1">
-                    {formattedAnnual} {t('billed yearly')}
+                    {formattedAnnual} {t('billed yearly (Save ₹789)')}
                   </div>
                 </div>
               </button>
@@ -289,7 +289,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
               >
                 <div className="flex items-center justify-between gap-1 mb-2">
                   <span className="px-2 py-0.5 rounded-full bg-[#E8EFE7] text-[#2D5A3D] dark:bg-slate-800 dark:text-emerald-300 text-[9px] font-bold uppercase tracking-wide">
-                    {t('Flexible')}
+                    {t('Flexible Monthly')}
                   </span>
                   {billingCycle === 'monthly' && (
                     <div className="w-4 h-4 rounded-full bg-[#2D5A3D] text-white flex items-center justify-center shrink-0">
@@ -309,7 +309,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                     <span className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium">/ {t('mo')}</span>
                   </div>
                   <div className="text-[10px] text-[#5A7362] dark:text-slate-400 font-medium mt-1">
-                    {t('Billed every month')}
+                    {t('Billed monthly, cancel anytime')}
                   </div>
                 </div>
               </button>
@@ -360,24 +360,33 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                   disabled={isProcessing}
                   className="w-full py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
                 >
-                  {t('Switch back to Free Tier (Developer Test)')}
+                  {t('Switch to Free Tier / Manage Plan')}
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={handleUpgrade}
-                disabled={isProcessing}
-                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#1E3B27] via-[#2D5A3D] to-[#234730] hover:brightness-105 text-white font-display font-bold text-sm shadow-[0_8px_30px_rgba(45,90,61,0.3)] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-75"
-              >
-                <Crown className="w-4 h-4 text-amber-300 fill-amber-300 shrink-0" />
-                <span className="truncate">
-                  {isProcessing 
-                    ? t('Activating Pro Pass...') 
-                    : `${t('Upgrade to Pro')} — ${billingCycle === 'annual' ? formattedAnnual : formattedMonthly}`}
-                </span>
-                <ChevronRight className="w-4 h-4 ml-0.5 shrink-0" />
-              </button>
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={handleUpgrade}
+                  disabled={isProcessing}
+                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#1E3B27] via-[#2D5A3D] to-[#234730] hover:brightness-105 text-white font-display font-bold text-sm shadow-[0_8px_30px_rgba(45,90,61,0.3)] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-75"
+                >
+                  <Crown className="w-4 h-4 text-amber-300 fill-amber-300 shrink-0" />
+                  <span className="truncate">
+                    {isProcessing 
+                      ? t('Activating Pro Pass...') 
+                      : billingCycle === 'annual'
+                        ? `${t('Upgrade to Annual Pro')} — ${formattedAnnual} (${formattedAnnualPerMonth}/mo)`
+                        : `${t('Upgrade to Monthly Pro')} — ${formattedMonthly} / mo`}
+                  </span>
+                  <ChevronRight className="w-4 h-4 ml-0.5 shrink-0" />
+                </button>
+                <div className="text-center text-[10px] text-emerald-800 dark:text-emerald-300 font-medium">
+                  {billingCycle === 'annual' 
+                    ? t('Includes 12 months full VIP access (Works out to just ₹83/month • Save 44%)')
+                    : t('Includes 30-day full VIP access • Billed monthly, cancel anytime')}
+                </div>
+              </div>
             )}
 
             <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#5A7362] dark:text-slate-400 text-center">

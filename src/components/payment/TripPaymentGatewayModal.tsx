@@ -1,5 +1,5 @@
 import { useModalBehavior } from '../../hooks/useModalBehavior';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, 
@@ -147,19 +147,37 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   const promoDiscount = appliedCoupon ? appliedCoupon.discount : 0;
   const netDiscount = Math.round(coinDiscount + promoDiscount);
   
-  // Taxes and fee calculation: for Pro subscription, headline pricing is all-inclusive
-  const minFloor = isProSub ? (customAmount ? Math.min(customAmount, 99) : 99) : 500;
+  // Taxes and fee calculation: for Pro subscription, headline pricing is all-inclusive and respects discounts
+  const minFloor = isProSub ? 1 : 500;
   const taxableBase = Math.max(minFloor, initialBaseAmount - netDiscount);
   const gstAmount = isProSub ? 0 : Math.round(taxableBase * 0.18);
-  const finalPayableINR = isProSub ? (customAmount || initialBaseAmount) : Math.max(499, taxableBase + gstAmount);
+  const finalPayableINR = isProSub 
+    ? Math.max(1, initialBaseAmount - netDiscount) 
+    : Math.max(499, taxableBase + gstAmount);
 
-  // Dynamic UPI URI
-  const upiPaymentUri = buildUpiPaymentUri({
-    amount: finalPayableINR,
-    transactionRef: txnRef,
-    transactionNote: `TripVerse ${destination} Booking`
-  });
-  const upiQrUrl = getUpiQrCodeUrl(upiPaymentUri, 280);
+  // Dynamic UPI URI - recomputed when amount or transaction reference changes
+  const upiPaymentUri = useMemo(() => {
+    return buildUpiPaymentUri({
+      amount: finalPayableINR,
+      transactionRef: txnRef,
+      transactionNote: isProSub ? 'TripVerse Pro VIP Subscription' : `TripVerse ${destination} Booking`
+    });
+  }, [finalPayableINR, txnRef, isProSub, destination]);
+
+  const upiQrUrl = useMemo(() => {
+    return `${getUpiQrCodeUrl(upiPaymentUri, 280)}&ts=${qrKey}`;
+  }, [upiPaymentUri, qrKey]);
+
+  // Ensure timer, gateway stage, and errors are freshly initialized every time modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSecondsRemaining(INITIAL_TIMER_SECONDS);
+      setIsTimerActive(true);
+      setGatewayStage('checkout');
+      setGatewayErrorMessage('');
+      setCouponMessage(null);
+    }
+  }, [isOpen]);
 
   // =========================================================================
   // 5-MINUTE LIVE COUNTDOWN TIMER ENGINE
@@ -427,7 +445,21 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Live 5-Minute Timer Pill in Header */}
+            {gatewayStage === 'checkout' && (
+              <div 
+                title="Your price and session are locked for this duration"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/30 backdrop-blur-sm border border-white/15 text-white shadow-xs"
+              >
+                <Clock className={`w-3.5 h-3.5 ${secondsRemaining <= 45 ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}`} />
+                <span className="hidden sm:inline text-[9px] uppercase font-bold tracking-wider text-slate-300">Locked:</span>
+                <span className={`font-mono font-black text-xs sm:text-sm ${secondsRemaining <= 45 ? 'text-rose-400 animate-pulse' : 'text-emerald-300'}`}>
+                  {formatTimerString(secondsRemaining)}
+                </span>
+              </div>
+            )}
+
             <div className="hidden sm:block text-right">
               <span className="text-[10px] uppercase font-bold text-slate-300 block">Total Payable</span>
               <span className="text-lg font-black text-emerald-300">
@@ -1100,7 +1132,10 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   {/* Clickable Recommended Coupons */}
                   {!appliedCoupon && (
                     <div className="flex flex-wrap gap-1 pt-0.5">
-                      {AVAILABLE_COUPONS.slice(0, 2).map(c => (
+                      {(isProSub
+                        ? AVAILABLE_COUPONS.filter(c => c.minAmount <= initialBaseAmount)
+                        : AVAILABLE_COUPONS.filter(c => !['PRO50', 'EARLYBIRD'].includes(c.code))
+                      ).slice(0, 3).map(c => (
                         <button
                           key={c.code}
                           type="button"
