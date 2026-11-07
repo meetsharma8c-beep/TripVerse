@@ -355,7 +355,10 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   // =========================================================================
   // EXECUTE PAYMENT & CONFIRMATION
   // =========================================================================
-  const initiatePayment = async (methodName: string) => {
+  const initiatePayment = async (
+    methodName: string, 
+    extraOptions?: { wallet?: string; bank?: string; vpa?: string }
+  ) => {
     // Validate card details if initiating from the Card tab with partial input
     if (activeTab === 'card') {
       const digits = cardNumber.replace(/\D/g, '');
@@ -395,7 +398,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
           tripName: trip?.name || 'TripVerse Experience Booking',
           displayCurrency: currency,
           displayAmount: String(targetOrderAmount),
-          packageType
+          packageType,
+          paymentMethod: methodName
         }
       });
 
@@ -404,13 +408,15 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         if (loaded && (window as any).Razorpay) {
           const user = getCurrentUser();
 
-          // Map active tab to Razorpay prefill method
+          // Map active tab to authentic Razorpay prefill method
           let prefillMethod: string | undefined = undefined;
           if (activeTab === 'card') prefillMethod = 'card';
           else if (activeTab === 'netbanking') prefillMethod = 'netbanking';
           else if (activeTab === 'upi_qr' || activeTab === 'upi_apps' || activeTab === 'upi_id') prefillMethod = 'upi';
-          else if (activeTab === 'wallet' || activeTab === 'digital_wallets') prefillMethod = 'wallet';
+          else if (activeTab === 'wallet') prefillMethod = 'wallet';
           else if (activeTab === 'emi') prefillMethod = 'emi';
+          // Note: For 'digital_wallets' (Apple Pay / Google Pay) and 'paypal', leaving prefillMethod undefined
+          // allows Razorpay to display the device's native 1-tap checkout (Pay / GPay) and PayPal.
 
           const rzpConfig: any = {
             key: orderRes.keyId,
@@ -434,14 +440,18 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
           };
 
           if (activeTab === 'netbanking') {
-            const bankInfo = [...POPULAR_BANKS, ...OTHER_BANKS].find(b => b.id === selectedBank);
-            if (bankInfo?.code) {
-              rzpConfig.prefill.bank = bankInfo.code;
+            const bankCode = extraOptions?.bank || [...POPULAR_BANKS, ...OTHER_BANKS].find(b => b.id === selectedBank)?.code;
+            if (bankCode) {
+              rzpConfig.prefill.bank = bankCode;
             }
           }
 
-          if (activeTab === 'upi_id' && upiIdInput.trim()) {
-            rzpConfig.prefill.vpa = upiIdInput.trim();
+          if ((activeTab === 'upi_id' || (activeTab === 'upi_qr' && upiSubTab === 'id')) && (extraOptions?.vpa || upiIdInput.trim())) {
+            rzpConfig.prefill.vpa = (extraOptions?.vpa || upiIdInput).trim();
+          }
+
+          if (activeTab === 'wallet' && extraOptions?.wallet) {
+            rzpConfig.prefill.wallet = extraOptions.wallet;
           }
 
           const rzp = new (window as any).Razorpay({
@@ -819,11 +829,15 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                       {/* QR Display or Expired State */}
                       {secondsRemaining > 0 ? (
                         <div className="space-y-2">
-                          <div className="relative mx-auto w-36 h-36 sm:w-40 sm:h-40 p-1.5 rounded-2xl border border-slate-200 bg-white shadow-xs flex items-center justify-center">
+                          <div 
+                            onClick={() => initiatePayment('Dynamic UPI QR')}
+                            className="relative mx-auto w-36 h-36 sm:w-40 sm:h-40 p-1.5 rounded-2xl border border-slate-200 bg-white shadow-xs flex items-center justify-center cursor-pointer hover:border-emerald-600 hover:shadow-md transition-all group"
+                            title="Click to launch Live Dynamic UPI QR & Pay"
+                          >
                             <img
                               src={upiQrUrl}
                               alt="Scan UPI QR Code to Pay"
-                              className="w-full h-full object-contain rounded-xl"
+                              className="w-full h-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
                             />
                             {/* TripVerse Center Branding Pill */}
                             <div className="absolute inset-0 m-auto w-8 h-8 rounded-lg bg-white/95 border border-emerald-700 shadow-sm flex items-center justify-center">
@@ -837,7 +851,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                           
                           <div className="flex flex-wrap items-center justify-center gap-2">
                             <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-mono font-bold text-emerald-900">
-                              <span>Merchant UPI: {(import.meta as any).env?.VITE_MERCHANT_UPI_VPA || 'tripverse@razorpay'}</span>
+                              <span>NPCI & Razorpay Direct Gateway</span>
                             </div>
                             <button
                               type="button"
@@ -869,21 +883,22 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                       {/* Direct Checkout Actions */}
                       <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
-                        <a
-                          href={upiPaymentUri}
-                          className="flex-1 py-2 px-3 rounded-xl border border-emerald-700 text-emerald-800 hover:bg-emerald-50 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <Smartphone className="w-3.5 h-3.5" />
-                          <span>Open Installed UPI App</span>
-                        </a>
                         <button
                           type="button"
                           onClick={() => initiatePayment('Dynamic UPI QR')}
-                          className="flex-1 py-2 px-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                          className="flex-1 py-3 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
-                          <span>Verify via Razorpay Gateway</span>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                          <span>Launch Live Dynamic QR & Pay</span>
                         </button>
+                        <a
+                          href={upiPaymentUri}
+                          className="sm:w-auto py-3 px-3.5 rounded-xl border border-slate-200 hover:border-emerald-700 text-slate-700 hover:text-emerald-800 hover:bg-emerald-50 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          title="Open default mobile UPI app"
+                        >
+                          <Smartphone className="w-3.5 h-3.5" />
+                          <span>Direct App Intent</span>
+                        </a>
                       </div>
                     </div>
                   )}
@@ -918,21 +933,21 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                         ))}
                       </div>
 
-                      <a
-                        href={upiPaymentUri}
-                        className="w-full mt-3 py-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <span>Open {selectedUpiApp || 'UPI App'} & Pay {formatCurrency(finalPayableINR, currency)}</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
                       <button
                         type="button"
                         onClick={() => initiatePayment(`UPI App (${selectedUpiApp || 'Google Pay'})`)}
-                        className="w-full py-2.5 rounded-xl border border-emerald-700 text-emerald-800 hover:bg-emerald-50 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full mt-3 py-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                       >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Or Pay via Razorpay Checkout</span>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                        <span>Pay with {selectedUpiApp || 'UPI App'} ({formatCurrency(finalPayableINR, currency)})</span>
                       </button>
+                      <a
+                        href={upiPaymentUri}
+                        className="w-full py-2.5 rounded-xl border border-slate-200 hover:border-emerald-700 text-slate-600 hover:text-emerald-800 font-medium text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>Direct Deep Link Intent</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
                     </div>
                   )}
 
@@ -968,7 +983,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                       <button
                         type="button"
-                        onClick={() => initiatePayment(`UPI ID (${upiIdInput || 'user@upi'})`)}
+                        onClick={() => initiatePayment(`UPI ID (${upiIdInput || 'user@upi'})`, { vpa: upiIdInput.trim() })}
                         className="w-full mt-2 py-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <span>Verify & Pay {formatCurrency(finalPayableINR, currency)}</span>
@@ -1302,8 +1317,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   <button
                     type="button"
                     onClick={() => {
-                      const bName = [...POPULAR_BANKS, ...OTHER_BANKS].find(b => b.id === selectedBank)?.name || 'NetBanking';
-                      initiatePayment(`Net Banking (${bName})`);
+                      const bankInfo = [...POPULAR_BANKS, ...OTHER_BANKS].find(b => b.id === selectedBank);
+                      const bName = bankInfo?.name || 'NetBanking';
+                      initiatePayment(`Net Banking (${bName})`, { bank: bankInfo?.code });
                     }}
                     className="w-full mt-2 py-3.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
@@ -1348,15 +1364,15 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                     <span className="text-xs font-bold text-slate-700 block">External Digital Wallets & BNPL</span>
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { id: 'amazon_pay', name: 'Amazon Pay Balance', sub: 'Instant checkout' },
-                        { id: 'paytm_wallet', name: 'Paytm Wallet', sub: 'Postpaid eligible' },
-                        { id: 'simpl', name: 'Simpl PayLater', sub: '0% Interest for 15 Days' },
-                        { id: 'lazypay', name: 'LazyPay', sub: 'Instant ₹10,000 credit' }
+                        { id: 'amazon_pay', name: 'Amazon Pay Balance', sub: 'Instant checkout', code: 'amazonpay' },
+                        { id: 'paytm_wallet', name: 'Paytm Wallet', sub: 'Postpaid eligible', code: 'paytm' },
+                        { id: 'mobikwik', name: 'MobiKwik', sub: 'Instant checkout', code: 'mobikwik' },
+                        { id: 'freecharge', name: 'Freecharge', sub: 'Instant checkout', code: 'freecharge' }
                       ].map(w => (
                         <button
                           key={w.id}
                           type="button"
-                          onClick={() => initiatePayment(`Wallet (${w.name})`)}
+                          onClick={() => initiatePayment(`Wallet (${w.name})`, { wallet: w.code })}
                           className="p-3 rounded-xl border border-slate-200 hover:border-emerald-600 bg-slate-50/50 hover:bg-emerald-50/20 text-left transition-all cursor-pointer"
                         >
                           <span className="text-xs font-bold text-slate-900 block">{w.name}</span>
