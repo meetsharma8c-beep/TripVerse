@@ -237,9 +237,9 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
             />
           </svg>
 
-          {/* Elevated Frosted Glass Brand Mark Plate */}
-          <div className="relative w-24 h-24 sm:w-27 sm:h-27 p-4 sm:p-5 rounded-[28px] sm:rounded-[30px] bg-[#0B1622]/75 backdrop-blur-xl border border-white/20 shadow-[0_24px_56px_rgba(0,0,0,0.75),0_0_40px_rgba(16,185,129,0.26),inset_0_1px_1.5px_rgba(255,255,255,0.28)] flex items-center justify-center">
-            <BrandIconMark className="w-full h-full" idPrefix="splash-pro" />
+          {/* Clean Unboxed Abstracted Brand Mark */}
+          <div className="relative w-24 h-24 sm:w-27 sm:h-27 flex items-center justify-center">
+            <BrandIconMark className="w-full h-full drop-shadow-[0_12px_24px_rgba(0,0,0,0.6)]" idPrefix="splash-pro" />
           </div>
 
           {/* Micro Flight Sparkle Badge */}
