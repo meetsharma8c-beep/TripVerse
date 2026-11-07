@@ -729,7 +729,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
                 {/* Quick Destination Pills (44px min height for ergonomic tapping) */}
                 <div className="flex items-center gap-2 flex-wrap mt-3">
-                  <span className="text-xs font-bold text-[#57685D]">Popular:</span>
+                  <span className="text-xs font-bold text-[#57685D]">{t('dest.popular')}</span>
                   {quickDests.map((item) => (
                     <button
                       key={item.name}
@@ -769,15 +769,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     id="hero-duration-select"
                     value={duration}
                     onChange={(e) => setDuration(Number(e.target.value))}
-                    aria-label="Trip Duration in Days"
+                    aria-label={t('hero.durationDays')}
                     className="w-full px-3.5 py-3 min-h-[44px] rounded-2xl bg-[#F4F6F2] border border-[#DCE7DB] text-[#152A1C] font-semibold focus:bg-white focus:outline-none focus:border-[#2D5A3D] focus:ring-4 focus:ring-[#2D5A3D]/10 text-sm cursor-pointer"
                   >
-                    <option value={1}>1 Day (Express Day Trip)</option>
-                    <option value={2}>2 Days (Weekend Getaway)</option>
-                    <option value={3}>3 Days (Optimal Escape)</option>
-                    <option value={4}>4 Days (Deep Exploration)</option>
-                    <option value={5}>5 Days (Complete Holiday)</option>
-                    <option value={7}>1 Week (Extended Journey)</option>
+                    <option value={1}>{t('hero.day1Express')}</option>
+                    <option value={2}>{t('hero.day2Weekend')}</option>
+                    <option value={3}>{t('hero.day3Optimal')}</option>
+                    <option value={4}>{t('hero.day4Deep')}</option>
+                    <option value={5}>{t('hero.day5Complete')}</option>
+                    <option value={7}>{t('hero.day7Extended')}</option>
                   </select>
                 </div>
 
@@ -797,7 +797,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       -
                     </button>
                     <span className="font-bold text-[#152A1C] text-sm px-2">
-                      {travelers} {travelers === 1 ? 'Traveler (Solo)' : travelers === 2 ? 'Travelers (Couple)' : 'Friends/Family'}
+                      {travelers} {travelers === 1 ? t('hero.soloTraveler') : travelers === 2 ? t('hero.coupleTravelers') : t('hero.groupTravelers')}
                     </span>
                     <button
                       type="button"

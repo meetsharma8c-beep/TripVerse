@@ -4,6 +4,7 @@ import { Destination, UserProfile } from '../../types/trip';
 import { Search, Compass, Star, Sparkles, Bookmark } from 'lucide-react';
 import { handleImageError, synthesizeDestination } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 import { DestinationDetailModal } from './DestinationDetailModal';
 import { ScrollReveal } from '../common/ScrollReveal';
 
@@ -20,6 +21,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   onToggleSaved,
   userProfile
 }) => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('all');
   const [activeModalDest, setActiveModalDest] = useState<Destination | null>(null);
@@ -58,17 +60,17 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   }, [userProfile]);
 
   const filterTabs = [
-    { id: 'all', label: 'All Places' },
-    { id: 'trending', label: 'Trending' },
-    { id: 'budget', label: 'Budget Getaways' },
-    { id: 'weekend', label: 'Weekend Escapes' },
-    { id: 'roadtrip', label: 'Road Trips' },
-    { id: 'heritage', label: 'Royal & Historical' },
-    { id: 'mountain', label: 'Snow & Valleys' },
-    { id: 'beach', label: 'Beaches & Chill' },
-    { id: 'nature', label: 'Nature & Hills' },
-    { id: 'spiritual', label: 'Spiritual & Sacred' },
-    { id: 'adventure', label: 'Adventure & Rafting' },
+    { id: 'all', label: t('cat.all') },
+    { id: 'trending', label: t('cat.trending') },
+    { id: 'budget', label: t('cat.budget') },
+    { id: 'weekend', label: t('cat.weekend') },
+    { id: 'roadtrip', label: t('cat.roadtrip') },
+    { id: 'heritage', label: t('cat.culture') },
+    { id: 'mountain', label: t('cat.snowValleys') },
+    { id: 'beach', label: t('cat.beaches') },
+    { id: 'nature', label: t('cat.nature') },
+    { id: 'spiritual', label: t('cat.spiritual') },
+    { id: 'adventure', label: t('cat.adventure') },
   ];
 
   const filtered = POPULAR_DESTINATIONS.filter(dest => {
@@ -100,13 +102,13 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       <div className="bg-gradient-to-r from-[#152A1C] via-[#2D5A3D] to-[#1B3624] rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
         <div className="max-w-2xl relative z-10 space-y-3">
           <span className="text-xs font-bold uppercase tracking-wider text-[#A8C7A5]">
-            TripVerse Destination Discovery
+            {t('explore.discoveryBadge')}
           </span>
           <h1 className="text-2xl sm:text-4xl font-display font-bold tracking-tight leading-tight">
-            Explore Handpicked Getaways
+            {t('explore.title')}
           </h1>
           <p className="text-xs sm:text-sm text-[#E8EFE7] font-normal leading-relaxed">
-            Discover verified routes, estimated road trip budgets, and authentic experiences tailored for travelers seeking nature, culture, and adventure.
+            {t('explore.subtitle')}
           </p>
 
           {/* Search Input */}
@@ -116,7 +118,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search destinations (e.g. Bali, Kyoto)..."
+              placeholder={t('explore.searchPlaceholder')}
               className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white text-[#152A1C] placeholder:text-[#5A7362] font-semibold text-sm focus:outline-none focus:ring-4 focus:ring-[#8EA78D]/30 shadow-md"
             />
           </div>
@@ -157,15 +159,15 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-bold font-display text-[#152A1C]">
-                  Recommended for Your Style
+                  {t('explore.recommendedStyle')}
                 </h3>
                 <p className="text-xs text-[#5A7362]">
-                  Tailored to your {userProfile?.travelerStyle || 'explorer'} profile & budget preference
+                  {t('explore.tailoredTo', { style: userProfile?.travelerStyle || 'explorer' })}
                 </p>
               </div>
             </div>
             <span className="text-xs font-bold text-[#2D5A3D] bg-[#E8EFE7] px-3 py-1 rounded-full border border-[#8EA78D]/30 self-start sm:self-auto">
-              Style Match
+              {t('explore.styleMatch')}
             </span>
           </div>
 
@@ -300,13 +302,13 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                 <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between text-xs py-2 px-3 rounded-xl bg-[#F4F6F2] border border-[#E2EBE1] gap-2">
                     <div className="min-w-0 flex-1">
-                      <span className="badge-caps text-[#5A7362] block">Typical Cost</span>
+                      <span className="badge-caps text-[#5A7362] block">{t('dest.typicalCost')}</span>
                       <span className="font-bold text-[#152A1C] text-xs font-display truncate block">
-                        From {formatCurrency(dest.startBudget, currency)}
+                        {t('dest.from')}{formatCurrency(dest.startBudget, currency)}
                       </span>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="badge-caps text-[#5A7362] block">Best Time</span>
+                      <span className="badge-caps text-[#5A7362] block">{t('dest.idealWindow')}</span>
                       <span className="font-semibold text-[#152A1C] text-xs">{dest.bestTime}</span>
                     </div>
                   </div>
@@ -331,7 +333,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                   }}
                   className="py-2.5 px-3 rounded-xl bg-[#F4F6F2] hover:bg-[#EAF0E9] text-[#152A1C] border border-[#E2EBE1] font-bold text-xs transition-colors text-center whitespace-nowrap truncate cursor-pointer"
                 >
-                  Explore Details
+                  {t('dest.exploreDetails')}
                 </button>
 
                 <button
@@ -343,7 +345,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                   className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl btn-liquid-primary text-white font-bold text-xs shadow-xs transition-all active:scale-95 whitespace-nowrap truncate cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">Plan Trip</span>
+                  <span className="truncate">{t('dest.planTrip')}</span>
                 </button>
               </div>
               </div>

@@ -144,7 +144,7 @@ import confetti from 'canvas-confetti';
 import { resolveRouteFromBrowser } from './utils/routeResolver';
 
 export function App() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const initialTrips = React.useMemo(() => loadTrips(), []);
   const initialRoute = React.useMemo(() => resolveRouteFromBrowser(initialTrips), [initialTrips]);
 
@@ -1632,7 +1632,7 @@ export function App() {
       <PullToRefresh onRefresh={handlePullRefresh} disabled={isAnyModalOpen}>
 
         {/* Main Content View Switcher */}
-        <main className="flex-1 pb-28 lg:pb-12">
+        <main key={language} className="flex-1 pb-28 lg:pb-12">
           <Suspense fallback={<div className="min-h-[60vh]" aria-busy="true" />}>
 
           {/* VIEW 1: HOME */}

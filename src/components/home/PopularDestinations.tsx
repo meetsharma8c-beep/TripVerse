@@ -4,6 +4,7 @@ import { Destination } from '../../types/trip';
 import { Star, ArrowRight, Sparkles, Compass, Bookmark, Calendar } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 import { ScrollReveal } from '../common/ScrollReveal';
 
 interface PopularDestinationsProps {
@@ -21,6 +22,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
   onToggleSaved,
   onViewAllExplore
 }) => {
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
 
@@ -33,13 +35,13 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
   }, []);
 
   const categories = [
-    { id: 'all', label: 'All Places' },
-    { id: 'heritage', label: 'Culture & Royal' },
-    { id: 'mountain', label: 'Mountains & Snow' },
-    { id: 'nature', label: 'Nature & Hills' },
-    { id: 'beach', label: 'Beaches & Chill' },
-    { id: 'adventure', label: 'River & Thrill' },
-    { id: 'spiritual', label: 'Spiritual & Sacred' }
+    { id: 'all', label: t('cat.all') },
+    { id: 'heritage', label: t('cat.culture') },
+    { id: 'mountain', label: t('cat.mountains') },
+    { id: 'nature', label: t('cat.nature') },
+    { id: 'beach', label: t('cat.beaches') },
+    { id: 'adventure', label: t('cat.adventure') },
+    { id: 'spiritual', label: t('cat.spiritual') }
   ];
 
   const filtered = activeCategory === 'all'
@@ -54,13 +56,13 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#2D5A3D] mb-1">
             <Compass className="w-4 h-4" />
-            <span>Curated Escapes & Nature Havens</span>
+            <span>{t('dest.curatedEscapes')}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-display font-black text-[#152A1C] tracking-tight">
-            Inspiring Destinations
+            {t('dest.inspiringDestinations')}
           </h2>
           <p className="text-sm text-[#57685D] mt-1">
-            Budget-tested routes with highway rest stops and handpicked stays.
+            {t('dest.budgetTested')}
           </p>
         </div>
 
@@ -68,7 +70,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
           onClick={onViewAllExplore}
           className="inline-flex items-center gap-1.5 text-sm font-bold text-[#2D5A3D] hover:text-[#244931] transition-colors group cursor-pointer self-start sm:self-auto"
         >
-          <span>See all</span>
+          <span>{t('dest.seeAll')}</span>
           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </button>
       </div>
@@ -130,7 +132,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                     <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-extrabold text-[#152A1C] shadow-xs">
                       <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                       <span>{dest.rating}</span>
-                      <span className="text-[10px] text-[#2D5A3D] font-bold">Curated</span>
+                      <span className="text-[10px] text-[#2D5A3D] font-bold">{t('dest.curated')}</span>
                     </span>
 
                     <span className="flex items-center gap-1 bg-emerald-950/70 text-emerald-300 border border-emerald-400/30 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] font-bold font-mono uppercase tracking-wider shadow-xs">
@@ -149,7 +151,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                         ? 'bg-[#2D5A3D] text-white shadow-md' 
                         : 'bg-white/90 text-slate-700 hover:bg-white'
                     }`}
-                    aria-label="Save destination"
+                    aria-label={t('dest.save')}
                   >
                     <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-white' : ''}`} />
                   </button>
@@ -185,15 +187,15 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <span className="text-[10px] uppercase font-bold text-[#57685D] block tracking-wider">
-                          Typical Ground Cost
+                          {t('dest.typicalCost')}
                         </span>
                         <span className="font-extrabold text-[#152A1C] text-sm font-display truncate block">
-                          From ~{formatCurrency(dest.startBudget, currency)}
-                          <span className="text-[11px] font-normal text-[#57685D] ml-0.5 font-sans">/person</span>
+                          {t('dest.from')}{formatCurrency(dest.startBudget, currency)}
+                          <span className="text-[11px] font-normal text-[#57685D] ml-0.5 font-sans">{t('dest.perPerson')}</span>
                         </span>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-[10px] uppercase font-bold text-[#57685D] block tracking-wider">Ideal Window</span>
+                        <span className="text-[10px] uppercase font-bold text-[#57685D] block tracking-wider">{t('dest.idealWindow')}</span>
                         <span className="font-bold text-[#2D5A3D] text-xs flex items-center justify-end gap-1">
                           <Calendar className="w-3 h-3 text-[#2D5A3D] shrink-0" />
                           <span>{dest.bestTime || dest.recommendedDuration}</span>
@@ -201,8 +203,8 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-[10px] font-medium text-[#57685D] pt-1.5 border-t border-[#E2EBE1]/80">
-                      <span>Suggested {dest.recommendedDuration}</span>
-                      <span className="text-[#2D5A3D] font-bold">100% Customizable in Planner</span>
+                      <span>{t('dest.suggested')} {dest.recommendedDuration}</span>
+                      <span className="text-[#2D5A3D] font-bold">{t('dest.customizable')}</span>
                     </div>
                   </div>
                 </div>
@@ -213,7 +215,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                     onClick={() => onSelectDestination(dest)}
                     className="py-2.5 px-3 rounded-xl bg-[#E8EFE7] hover:bg-[#DCE7DB] text-[#2D5A3D] font-bold text-xs transition-all active:scale-95 text-center whitespace-nowrap truncate cursor-pointer"
                   >
-                    Explore Details
+                    {t('dest.exploreDetails')}
                   </button>
 
                   <button
@@ -221,7 +223,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                     className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-xs transition-all active:scale-95 whitespace-nowrap truncate cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">Plan Trip</span>
+                    <span className="truncate">{t('dest.planTrip')}</span>
                   </button>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trip, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
 import { Users, Wallet, Sparkles, Share2, Download, AlertTriangle, CheckCircle2, MessageSquareQuote, TrendingDown, Navigation, RotateCcw, Camera, Star, Leaf, ChevronRight, Edit3, Bed, Clock, Ticket } from 'lucide-react';
 
@@ -35,6 +36,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
   onOpenCollaboration,
   onNavigateToRoute
 }) => {
+  const { t } = useLanguage();
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
 
   useEffect(() => {
@@ -233,7 +235,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
               <Navigation className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#2D5A3D]" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] text-[#5A7362] block leading-tight font-medium">Distance</span>
+              <span className="text-[10px] text-[#5A7362] block leading-tight font-medium">{t('Distance')}</span>
               <span className="text-xs sm:text-sm font-bold text-[#152A1C] truncate block">
                 {totalDistanceKm} km
               </span>
@@ -246,7 +248,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
               <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#2D5A3D]" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] text-[#5A7362] block leading-tight font-medium">Est. Cost</span>
+              <span className="text-[10px] text-[#5A7362] block leading-tight font-medium">{t('Est. Cost')}</span>
               <span className="text-xs sm:text-sm font-bold text-[#152A1C] truncate block">
                 {formatCurrency(trip.estimatedTotal, currency)}
               </span>
@@ -259,7 +261,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
               <Leaf className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#2D5A3D]" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] text-[#5A7362] block leading-tight font-medium">CO₂ Saved</span>
+              <span className="text-[10px] text-[#5A7362] block leading-tight font-medium">{t('CO₂ Saved')}</span>
               <span className="text-xs sm:text-sm font-bold text-[#152A1C] truncate block">
                 {co2SavedKg} kg
               </span>
@@ -281,7 +283,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
               title="Open directions in a navigation app"
             >
               <Navigation className="w-3.5 h-3.5 animate-pulse text-white" />
-              <span>Get Directions</span>
+              <span>{t('pillar.nav.title')}</span>
             </button>
           )}
 
@@ -292,7 +294,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
               title="Handle flight/train cancellations, emergency stays & complete trip replanning"
             >
               <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
-              <span>Trip Replanning</span>
+              <span>{t('itinerary.smartReplan')}</span>
             </button>
           )}
 

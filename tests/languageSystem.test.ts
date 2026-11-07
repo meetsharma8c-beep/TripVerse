@@ -215,4 +215,62 @@ describe('Global Language & Localization (i18n) Engine', () => {
     expect(prompt).toContain('The traveler\'s active language is Spanish');
     expect(prompt).toContain('"language": "es"');
   });
+
+  it('translates raw English travel phrases and category titles across all 10 languages', () => {
+    // Check raw phrase translation in Spanish
+    expect(t('Curated Escapes & Nature Havens', 'es')).toBe('Escapadas seleccionadas y refugios naturales');
+    expect(t('Typical Ground Cost', 'es')).toBe('Costo Típico en Destino');
+    expect(t('Ideal Window', 'es')).toBe('Temporada Ideal');
+    expect(t('Explore Details', 'es')).toBe('Explorar Detalles');
+    expect(t('All Places', 'es')).toBe('Todos los Lugares');
+    expect(t('Culture & Royal', 'es')).toBe('Cultura e Historia');
+    expect(t('Mountains & Snow', 'es')).toBe('Montañas y Nieve');
+
+    // Check in French
+    expect(t('Curated Escapes & Nature Havens', 'fr')).toBe('Escapades sélectionnées et havres de nature');
+    expect(t('Typical Ground Cost', 'fr')).toBe('Coût Terrestre Typique');
+    expect(t('Explore Details', 'fr')).toBe('Explorer les Détails');
+
+    // Check in German
+    expect(t('Curated Escapes & Nature Havens', 'de')).toBe('Kuratierte Ausflugsziele & Naturparadiese');
+    expect(t('Typical Ground Cost', 'de')).toBe('Typische Vor-Ort-Kosten');
+    expect(t('Weather forecast', 'de')).toBe('Wettervorhersage');
+
+    // Check in Japanese
+    expect(t('Curated Escapes & Nature Havens', 'ja')).toBe('厳選されたリゾート＆大自然');
+    expect(t('Typical Ground Cost', 'ja')).toBe('現地滞在費用の目安');
+    expect(t('Explore Details', 'ja')).toBe('詳細を見る');
+
+    // Check in Hindi
+    expect(t('Curated Escapes & Nature Havens', 'hi')).toBe('चुनिंदा यात्राएं और प्राकृतिक स्थल');
+    expect(t('Typical Ground Cost', 'hi')).toBe('विशिष्ट जमीनी खर्च');
+    expect(t('All Places', 'hi')).toBe('सभी स्थान');
+
+    // Check in Chinese
+    expect(t('Curated Escapes & Nature Havens', 'zh')).toBe('精选度假胜地与自然乐园');
+    expect(t('Typical Ground Cost', 'zh')).toBe('典型地面行程费用');
+
+    // Check in Arabic
+    expect(t('Curated Escapes & Nature Havens', 'ar')).toBe('رحلات مختارة وملاذات طبيعية');
+    expect(t('Typical Ground Cost', 'ar')).toBe('التكلفة الميدانية النموذجية');
+
+    // Check in Italian
+    expect(t('Curated Escapes & Nature Havens', 'it')).toBe('Fughe curate e rifugi naturali');
+    expect(t('Typical Ground Cost', 'it')).toBe('Costo Tipico a Terra');
+
+    // Check in Portuguese
+    expect(t('Curated Escapes & Nature Havens', 'pt')).toBe('Escapadas selecionadas e refúgios naturais');
+    expect(t('Typical Ground Cost', 'pt')).toBe('Custo Típico no Destino');
+  });
+
+  it('dynamically translates compound tokens (e.g. Days, Nights, Travelers)', () => {
+    expect(t('3 Days', 'es')).toBe('3 Días');
+    expect(t('3 Days', 'fr')).toBe('3 Jours');
+    expect(t('3 Days', 'de')).toBe('3 Tage');
+    expect(t('3 Days', 'ja')).toBe('3 日間');
+    expect(t('3 Days', 'hi')).toBe('3 दिन');
+    expect(t('2 Nights', 'es')).toBe('2 Noches');
+    expect(t('2 Nights', 'ja')).toBe('2 泊');
+    expect(t('2 Travelers', 'es')).toBe('2 Viajeros');
+  });
 });

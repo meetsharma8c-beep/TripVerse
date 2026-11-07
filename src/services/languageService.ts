@@ -285,7 +285,108 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'common.share': 'Share Trip',
     'common.downloadPdf': 'Download Guide',
     'cta.startPlanning': 'Plan My Trip',
-    'cta.exploreDestinations': 'Explore Destinations'
+    'cta.exploreDestinations': 'Explore Destinations',
+
+    // Popular Destinations & Cards
+    'dest.curatedEscapes': 'Curated Escapes & Nature Havens',
+    'dest.inspiringDestinations': 'Inspiring Destinations',
+    'dest.budgetTested': 'Budget-tested routes with highway rest stops and handpicked stays.',
+    'dest.seeAll': 'See all',
+    'dest.typicalCost': 'Typical Ground Cost',
+    'dest.idealWindow': 'Ideal Window',
+    'dest.suggested': 'Suggested',
+    'dest.customizable': '100% Customizable in Planner',
+    'dest.exploreDetails': 'Explore Details',
+    'dest.planTrip': 'Plan Trip',
+    'dest.from': 'From ~',
+    'dest.perPerson': '/person',
+    'dest.curated': 'Curated',
+    'dest.save': 'Save destination',
+    'dest.popular': 'Popular:',
+
+    // Categories
+    'cat.all': 'All Places',
+    'cat.culture': 'Culture & Royal',
+    'cat.mountains': 'Mountains & Snow',
+    'cat.nature': 'Nature & Hills',
+    'cat.beaches': 'Beaches & Chill',
+    'cat.adventure': 'River & Thrill',
+    'cat.spiritual': 'Spiritual & Sacred',
+    'cat.trending': 'Trending',
+    'cat.budget': 'Budget Getaways',
+    'cat.weekend': 'Weekend Escapes',
+    'cat.roadtrip': 'Road Trips',
+    'cat.snowValleys': 'Snow & Valleys',
+
+    // Pillars
+    'pillar.weather.badge': 'Forecast',
+    'pillar.weather.title': 'Weather forecast',
+    'pillar.weather.desc': 'Open-Meteo forecast when coordinates and provider coverage are available; not a road advisory',
+    'pillar.stops.badge': 'When available',
+    'pillar.stops.title': 'Route & place listings',
+    'pillar.stops.desc': 'Driving route geometry and nearby Geoapify/OpenStreetMap places; facilities are not confirmed',
+    'pillar.budget.badge': 'Estimate',
+    'pillar.budget.title': 'Trip budgets',
+    'pillar.budget.desc': 'Draft budget estimates; confirm current prices with providers',
+    'pillar.nav.badge': 'External app',
+    'pillar.nav.title': 'Get directions',
+    'pillar.nav.desc': 'Open a navigation provider for turn-by-turn directions and traffic',
+    'pillar.safety.badge': 'Location-specific',
+    'pillar.safety.title': 'Emergency information',
+    'pillar.safety.desc': 'Use official local services; TripVerse does not verify nearby facilities',
+
+    // Spotlight
+    'spotlight.badge': 'Official Public Release 2.0',
+    'spotlight.title': 'Welcome to the Future of Highway & Travel Intelligence',
+    'spotlight.subtitle': 'Create a draft itinerary and budget, then review live driving routes and nearby map listings when those services are configured.',
+    'spotlight.planFree': 'Plan Free Journey',
+    'spotlight.explore': 'Explore Destinations',
+    'spotlight.share': 'Share',
+
+    // Explore View
+    'explore.discoveryBadge': 'TripVerse Destination Discovery',
+    'explore.title': 'Explore Handpicked Getaways',
+    'explore.subtitle': 'Discover verified routes, estimated road trip budgets, and authentic experiences tailored for travelers seeking nature, culture, and adventure.',
+    'explore.searchPlaceholder': 'Search destinations (e.g. Bali, Kyoto)...',
+    'explore.recommendedStyle': 'Recommended for Your Style',
+    'explore.tailoredTo': 'Tailored to your {style} profile & budget preference',
+    'explore.styleMatch': 'Style Match',
+
+    // Modal
+    'modal.close': 'Close',
+    'modal.foodHighlights': 'Local Culinary Highlights',
+    'modal.highwayCorridor': 'Highway & Route Corridor',
+    'modal.vibe': 'Atmosphere & Vibe',
+    'modal.planThis': 'Plan This Journey',
+    'modal.share': 'Share Destination',
+    'modal.saved': 'Saved to Wishlist',
+    'modal.save': 'Save Destination',
+
+    // Hero Extra Options
+    'hero.soloTraveler': 'Traveler (Solo)',
+    'hero.coupleTravelers': 'Travelers (Couple)',
+    'hero.groupTravelers': 'Travelers (Friends/Family)',
+    'hero.day1Express': '1 Day (Express Day Trip)',
+    'hero.day2Weekend': '2 Days (Weekend Getaway)',
+    'hero.day3Optimal': '3 Days (Optimal Escape)',
+    'hero.day4Deep': '4 Days (Deep Exploration)',
+    'hero.day5Complete': '5 Days (Complete Holiday)',
+    'hero.day7Extended': '1 Week (Extended Journey)',
+
+    // Profile & Auth
+    'profile.title': 'My Profile',
+    'profile.travelPreferences': 'Travel Preferences',
+    'profile.edit': 'Edit Profile',
+    'profile.save': 'Save Changes',
+    'profile.cancel': 'Cancel',
+    'profile.guestMode': 'Guest Account',
+    'profile.tripsPlanned': 'Trips Planned',
+    'profile.placesSaved': 'Saved Places',
+    'profile.co2Saved': 'CO₂ Saved',
+    'profile.digitalPassport': 'Digital Passport',
+    'profile.upgradeToPro': 'Upgrade to Pro',
+    'profile.signOut': 'Sign Out',
+    'profile.signIn': 'Sign In'
   },
   es: {
     // Nav & Common
@@ -465,7 +566,108 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'common.share': 'Compartir Viaje',
     'common.downloadPdf': 'Descargar Guía',
     'cta.startPlanning': 'Planear Mi Viaje',
-    'cta.exploreDestinations': 'Explorar Destinos'
+    'cta.exploreDestinations': 'Explorar Destinos',
+
+    // Popular Destinations & Cards
+    'dest.curatedEscapes': 'Escapadas seleccionadas y refugios naturales',
+    'dest.inspiringDestinations': 'Destinos Inspiradores',
+    'dest.budgetTested': 'Rutas con presupuesto verificado, paradas en carretera y estancias seleccionadas.',
+    'dest.seeAll': 'Ver todos',
+    'dest.typicalCost': 'Costo Típico en Destino',
+    'dest.idealWindow': 'Temporada Ideal',
+    'dest.suggested': 'Sugerido',
+    'dest.customizable': '100% Personalizable en el Planificador',
+    'dest.exploreDetails': 'Explorar Detalles',
+    'dest.planTrip': 'Planear Viaje',
+    'dest.from': 'Desde ~',
+    'dest.perPerson': '/persona',
+    'dest.curated': 'Curado',
+    'dest.save': 'Guardar destino',
+    'dest.popular': 'Popular:',
+
+    // Categories
+    'cat.all': 'Todos los Lugares',
+    'cat.culture': 'Cultura e Historia',
+    'cat.mountains': 'Montañas y Nieve',
+    'cat.nature': 'Naturaleza y Colinas',
+    'cat.beaches': 'Playas y Relax',
+    'cat.adventure': 'Ríos y Aventura',
+    'cat.spiritual': 'Espiritual y Sagrado',
+    'cat.trending': 'Tendencias',
+    'cat.budget': 'Escapadas Económicas',
+    'cat.weekend': 'Escapadas de Fin de Semana',
+    'cat.roadtrip': 'Viajes por Carretera',
+    'cat.snowValleys': 'Nieve y Valles',
+
+    // Pillars
+    'pillar.weather.badge': 'Pronóstico',
+    'pillar.weather.title': 'Pronóstico del Tiempo',
+    'pillar.weather.desc': 'Pronóstico Open-Meteo con coordenadas disponibles; no es aviso de tráfico',
+    'pillar.stops.badge': 'Disponible',
+    'pillar.stops.title': 'Ruta y Lugares',
+    'pillar.stops.desc': 'Geometría de conducción y lugares Geoapify/OpenStreetMap; servicios no garantizados',
+    'pillar.budget.badge': 'Estimado',
+    'pillar.budget.title': 'Presupuesto de Viaje',
+    'pillar.budget.desc': 'Presupuestos preliminares; confirmar precios actuales con proveedores',
+    'pillar.nav.badge': 'App externa',
+    'pillar.nav.title': 'Obtener Indicaciones',
+    'pillar.nav.desc': 'Abrir navegación para indicaciones paso a paso y tráfico',
+    'pillar.safety.badge': 'Por ubicación',
+    'pillar.safety.title': 'Información de Emergencia',
+    'pillar.safety.desc': 'Usar servicios oficiales locales; TripVerse no verifica instalaciones cercanas',
+
+    // Spotlight
+    'spotlight.badge': 'Lanzamiento Oficial 2.0',
+    'spotlight.title': 'Bienvenido al Futuro de la Inteligencia Vial y de Viajes',
+    'spotlight.subtitle': 'Crea un itinerario y presupuesto, luego revisa rutas y mapas en vivo cuando estén configurados.',
+    'spotlight.planFree': 'Planear Viaje Gratis',
+    'spotlight.explore': 'Explorar Destinos',
+    'spotlight.share': 'Compartir',
+
+    // Explore View
+    'explore.discoveryBadge': 'Descubrimiento de Destinos TripVerse',
+    'explore.title': 'Explora Escapadas Seleccionadas',
+    'explore.subtitle': 'Descubre rutas verificadas, presupuestos estimados y experiencias auténticas para amantes de la naturaleza, cultura y aventura.',
+    'explore.searchPlaceholder': 'Buscar destinos (ej. Bali, Kioto)...',
+    'explore.recommendedStyle': 'Recomendado para Tu Estilo',
+    'explore.tailoredTo': 'Adaptado a tu perfil {style} y preferencia de presupuesto',
+    'explore.styleMatch': 'Coincidencia de Estilo',
+
+    // Modal
+    'modal.close': 'Cerrar',
+    'modal.foodHighlights': 'Especialidades Culinarias Locales',
+    'modal.highwayCorridor': 'Corredor y Autovía de Acceso',
+    'modal.vibe': 'Ambiente y Atmósfera',
+    'modal.planThis': 'Planear Este Viaje',
+    'modal.share': 'Compartir Destino',
+    'modal.saved': 'Guardado en Favoritos',
+    'modal.save': 'Guardar Destino',
+
+    // Hero Extra Options
+    'hero.soloTraveler': 'Viajero (En solitario)',
+    'hero.coupleTravelers': 'Viajeros (Pareja)',
+    'hero.groupTravelers': 'Viajeros (Amigos/Familia)',
+    'hero.day1Express': '1 Día (Escapada Express)',
+    'hero.day2Weekend': '2 Días (Fin de Semana)',
+    'hero.day3Optimal': '3 Días (Escape Ideal)',
+    'hero.day4Deep': '4 Días (Exploración Profunda)',
+    'hero.day5Complete': '5 Días (Vacaciones Completas)',
+    'hero.day7Extended': '1 Semana (Viaje Extendido)',
+
+    // Profile & Auth
+    'profile.title': 'Mi Perfil',
+    'profile.travelPreferences': 'Preferencias de Viaje',
+    'profile.edit': 'Editar Perfil',
+    'profile.save': 'Guardar Cambios',
+    'profile.cancel': 'Cancelar',
+    'profile.guestMode': 'Cuenta de Invitado',
+    'profile.tripsPlanned': 'Viajes Planeados',
+    'profile.placesSaved': 'Lugares Guardados',
+    'profile.co2Saved': 'CO₂ Ahorrado',
+    'profile.digitalPassport': 'Pasaporte Digital',
+    'profile.upgradeToPro': 'Mejorar a Pro',
+    'profile.signOut': 'Cerrar Sesión',
+    'profile.signIn': 'Iniciar Sesión'
   },
   fr: {
     // Nav & Common
@@ -645,7 +847,108 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'common.share': 'Partager Voyage',
     'common.downloadPdf': 'Télécharger le Guide',
     'cta.startPlanning': 'Planifier Mon Voyage',
-    'cta.exploreDestinations': 'Explorer les Destinations'
+    'cta.explore Destinations': 'Explorer les Destinations',
+
+    // Popular Destinations & Cards
+    'dest.curatedEscapes': 'Escapades sélectionnées et havres de nature',
+    'dest.inspiringDestinations': 'Destinations Inspirantes',
+    'dest.budgetTested': 'Itinéraires vérifiés avec arrêts sur autoroute et séjours sélectionnés.',
+    'dest.seeAll': 'Voir tout',
+    'dest.typicalCost': 'Coût Terrestre Typique',
+    'dest.idealWindow': 'Période Idéale',
+    'dest.suggested': 'Suggéré',
+    'dest.customizable': '100% Personnalisable dans le Planificateur',
+    'dest.exploreDetails': 'Explorer les Détails',
+    'dest.planTrip': 'Planifier Voyage',
+    'dest.from': 'À partir de ~',
+    'dest.perPerson': '/personne',
+    'dest.curated': 'Sélectionné',
+    'dest.save': 'Enregistrer la destination',
+    'dest.popular': 'Populaire :',
+
+    // Categories
+    'cat.all': 'Tous les Lieux',
+    'cat.culture': 'Culture & Histoire',
+    'cat.mountains': 'Montagnes & Neige',
+    'cat.nature': 'Nature & Collines',
+    'cat.beaches': 'Plages & Détente',
+    'cat.adventure': 'Rivières & Sensations',
+    'cat.spiritual': 'Spirituel & Sacré',
+    'cat.trending': 'Tendances',
+    'cat.budget': 'Escapades Économiques',
+    'cat.weekend': 'Escapades Week-end',
+    'cat.roadtrip': 'Road Trips',
+    'cat.snowValleys': 'Neige & Vallées',
+
+    // Pillars
+    'pillar.weather.badge': 'Prévision',
+    'pillar.weather.title': 'Prévisions Météo',
+    'pillar.weather.desc': 'Prévisions Open-Meteo selon coordonnées disponibles ; pas un avis routier',
+    'pillar.stops.badge': 'Disponible',
+    'pillar.stops.title': 'Itinéraire et Lieux',
+    'pillar.stops.desc': 'Géométrie routière et lieux Geoapify/OpenStreetMap ; services non garantis',
+    'pillar.budget.badge': 'Estimation',
+    'pillar.budget.title': 'Budget du Voyage',
+    'pillar.budget.desc': 'Estimations budgétaires ; confirmer les prix auprès des prestataires',
+    'pillar.nav.badge': 'App externe',
+    'pillar.nav.title': 'Obtenir l’itinéraire',
+    'pillar.nav.desc': 'Ouvrir une navigation pour le guidage virage par virage et le trafic',
+    'pillar.safety.badge': 'Selon lieu',
+    'pillar.safety.title': 'Informations d’Urgence',
+    'pillar.safety.desc': 'Utiliser les services officiels locaux ; TripVerse ne vérifie pas les secours',
+
+    // Spotlight
+    'spotlight.badge': 'Version Officielle 2.0',
+    'spotlight.title': 'Bienvenue dans le Futur de l’Intelligence Routière & Voyage',
+    'spotlight.subtitle': 'Créez un itinéraire et un budget prévisionnel avec itinéraires routiers en direct.',
+    'spotlight.planFree': 'Planifier Voyage Gratuit',
+    'spotlight.explore': 'Explorer Destinations',
+    'spotlight.share': 'Partager',
+
+    // Explore View
+    'explore.discoveryBadge': 'Découverte de Destinations TripVerse',
+    'explore.title': 'Explorez des Escapades Triées sur le Volet',
+    'explore.subtitle': 'Découvrez des routes vérifiées, budgets estimés et expériences authentiques pour les amoureux de nature et de culture.',
+    'explore.searchPlaceholder': 'Rechercher des destinations (ex. Bali, Kyoto)...',
+    'explore.recommendedStyle': 'Recommandé selon Votre Style',
+    'explore.tailoredTo': 'Adapté à votre profil {style} et préférence budgétaire',
+    'explore.styleMatch': 'Correspondance de Style',
+
+    // Modal
+    'modal.close': 'Fermer',
+    'modal.foodHighlights': 'Spécialités Culinaires Locales',
+    'modal.highwayCorridor': 'Corridor Routier et Accès',
+    'modal.vibe': 'Ambiance & Atmosphère',
+    'modal.planThis': 'Planifier ce Voyage',
+    'modal.share': 'Partager la Destination',
+    'modal.saved': 'Enregistré dans la Liste',
+    'modal.save': 'Enregistrer la Destination',
+
+    // Hero Extra Options
+    'hero.soloTraveler': 'Voyageur (Solo)',
+    'hero.coupleTravelers': 'Voyageurs (Duo / Couple)',
+    'hero.groupTravelers': 'Voyageurs (Amis / Famille)',
+    'hero.day1Express': '1 Jour (Escapade Express)',
+    'hero.day2Weekend': '2 Jours (Week-end Évasion)',
+    'hero.day3Optimal': '3 Jours (Évasion Optimale)',
+    'hero.day4Deep': '4 Jours (Exploration Approfondie)',
+    'hero.day5Complete': '5 Jours (Vacances Complètes)',
+    'hero.day7Extended': '1 Semaine (Grand Périple)',
+
+    // Profile & Auth
+    'profile.title': 'Mon Profil',
+    'profile.travelPreferences': 'Préférences de Voyage',
+    'profile.edit': 'Modifier le Profil',
+    'profile.save': 'Enregistrer les Modifications',
+    'profile.cancel': 'Annuler',
+    'profile.guestMode': 'Compte Invité',
+    'profile.tripsPlanned': 'Voyages Planifiés',
+    'profile.placesSaved': 'Lieux Enregistrés',
+    'profile.co2Saved': 'CO₂ Économisé',
+    'profile.digitalPassport': 'Passeport Numérique',
+    'profile.upgradeToPro': 'Passer à Pro',
+    'profile.signOut': 'Déconnexion',
+    'profile.signIn': 'Se Connecter'
   },
   de: {
     // Nav & Common
@@ -825,7 +1128,108 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'common.share': 'Reise teilen',
     'common.downloadPdf': 'Reiseführer herunterladen',
     'cta.startPlanning': 'Reise planen',
-    'cta.exploreDestinations': 'Reiseziele entdecken'
+    'cta.exploreDestinations': 'Reiseziele entdecken',
+
+    // Popular Destinations & Cards
+    'dest.curatedEscapes': 'Kuratierte Ausflugsziele & Naturparadiese',
+    'dest.inspiringDestinations': 'Inspirierende Reiseziele',
+    'dest.budgetTested': 'Budgetgeprüfte Routen mit Raststätten und handverlesenen Unterkünften.',
+    'dest.seeAll': 'Alle ansehen',
+    'dest.typicalCost': 'Typische Vor-Ort-Kosten',
+    'dest.idealWindow': 'Beste Reisezeit',
+    'dest.suggested': 'Empfohlen',
+    'dest.customizable': '100% Anpassbar im Planer',
+    'dest.exploreDetails': 'Details erkunden',
+    'dest.planTrip': 'Reise planen',
+    'dest.from': 'Ab ~',
+    'dest.perPerson': '/Person',
+    'dest.curated': 'Kuratiert',
+    'dest.save': 'Reiseziel speichern',
+    'dest.popular': 'Beliebt:',
+
+    // Categories
+    'cat.all': 'Alle Orte',
+    'cat.culture': 'Kultur & Königlich',
+    'cat.mountains': 'Berge & Schnee',
+    'cat.nature': 'Natur & Hügel',
+    'cat.beaches': 'Strände & Entspannung',
+    'cat.adventure': 'Fluss & Abenteuer',
+    'cat.spiritual': 'Spirituell & Heilig',
+    'cat.trending': 'Beliebt',
+    'cat.budget': 'Budget-Ausflüge',
+    'cat.weekend': 'Wochenendausflüge',
+    'cat.roadtrip': 'Roadtrips',
+    'cat.snowValleys': 'Schnee & Täler',
+
+    // Pillars
+    'pillar.weather.badge': 'Vorhersage',
+    'pillar.weather.title': 'Wettervorhersage',
+    'pillar.weather.desc': 'Open-Meteo-Wetterprognose bei Verfügbarkeit; keine Verkehrsberatung',
+    'pillar.stops.badge': 'Verfügbar',
+    'pillar.stops.title': 'Routen- & Ortsverzeichnis',
+    'pillar.stops.desc': 'Fahrrouten und Orte via Geoapify/OpenStreetMap; Dienste ohne Gewähr',
+    'pillar.budget.badge': 'Schätzung',
+    'pillar.budget.title': 'Reisebudgets',
+    'pillar.budget.desc': 'Vorläufige Kostenschätzung; Preise direkt beim Anbieter prüfen',
+    'pillar.nav.badge': 'Externe App',
+    'pillar.nav.title': 'Route berechnen',
+    'pillar.nav.desc': 'Navigations-App für Abbiegehinweise und Verkehrsinformationen öffnen',
+    'pillar.safety.badge': 'Standortspezifisch',
+    'pillar.safety.title': 'Notfallinformationen',
+    'pillar.safety.desc': 'Offizielle lokale Notdienste nutzen; TripVerse verifiziert keine Rettungskräfte vor Ort',
+
+    // Spotlight
+    'spotlight.badge': 'Offizielle Version 2.0',
+    'spotlight.title': 'Willkommen in der Zukunft der Reise- und Routenintelligenz',
+    'spotlight.subtitle': 'Erstelle Reiseplan und Budget mit Live-Routen und Umgebungsdaten.',
+    'spotlight.planFree': 'Kostenlose Reise planen',
+    'spotlight.explore': 'Reiseziele entdecken',
+    'spotlight.share': 'Teilen',
+
+    // Explore View
+    'explore.discoveryBadge': 'TripVerse Reiseziel-Entdeckung',
+    'explore.title': 'Entdecke handverlesene Kurztrips',
+    'explore.subtitle': 'Entdecke geprüfte Routen, geschätzte Roadtrip-Budgets und authentische Erlebnisse.',
+    'explore.searchPlaceholder': 'Reiseziele suchen (z. B. Bali, Kyoto)...',
+    'explore.recommendedStyle': 'Passend zu deinem Reisestil',
+    'explore.tailoredTo': 'Zugeschnitten auf dein {style}-Profil und Budget',
+    'explore.styleMatch': 'Stil-Übereinstimmung',
+
+    // Modal
+    'modal.close': 'Schließen',
+    'modal.foodHighlights': 'Kulinarische Highlights vor Ort',
+    'modal.highwayCorridor': 'Autobahn- & Anfahrtskorridor',
+    'modal.vibe': 'Atmosphäre & Flair',
+    'modal.planThis': 'Diese Reise planen',
+    'modal.share': 'Reiseziel teilen',
+    'modal.saved': 'Auf Merkliste gespeichert',
+    'modal.save': 'Reiseziel speichern',
+
+    // Hero Extra Options
+    'hero.soloTraveler': 'Reisender (Allein)',
+    'hero.coupleTravelers': 'Reisende (Paar / Duo)',
+    'hero.groupTravelers': 'Reisende (Freunde / Familie)',
+    'hero.day1Express': '1 Tag (Express-Tagesausflug)',
+    'hero.day2Weekend': '2 Tage (Wochenendausflug)',
+    'hero.day3Optimal': '3 Tage (Optimale Auszeit)',
+    'hero.day4Deep': '4 Tage (Ausführliche Erkundung)',
+    'hero.day5Complete': '5 Tage (Kompletturlaub)',
+    'hero.day7Extended': '1 Woche (Große Reise)',
+
+    // Profile & Auth
+    'profile.title': 'Mein Profil',
+    'profile.travelPreferences': 'Reiseeinstellungen',
+    'profile.edit': 'Profil bearbeiten',
+    'profile.save': 'Änderungen speichern',
+    'profile.cancel': 'Abbrechen',
+    'profile.guestMode': 'Gastkonto',
+    'profile.tripsPlanned': 'Geplante Reisen',
+    'profile.placesSaved': 'Gespeicherte Orte',
+    'profile.co2Saved': 'Eingespartes CO₂',
+    'profile.digitalPassport': 'Digitaler Reisepass',
+    'profile.upgradeToPro': 'Auf Pro upgraden',
+    'profile.signOut': 'Abmelden',
+    'profile.signIn': 'Anmelden'
   },
   ja: {
     // Nav & Common
@@ -1005,7 +1409,108 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'common.share': '旅程を共有',
     'common.downloadPdf': 'ガイドを保存',
     'cta.startPlanning': '旅行を計画する',
-    'cta.exploreDestinations': '目的地を見る'
+    'cta.exploreDestinations': '目的地を見る',
+
+    // Popular Destinations & Cards
+    'dest.curatedEscapes': '厳選されたリゾート＆大自然',
+    'dest.inspiringDestinations': '魅力的な旅行先',
+    'dest.budgetTested': '予算確認済みルート、高速道路の休憩所、厳選された宿泊先。',
+    'dest.seeAll': 'すべて見る',
+    'dest.typicalCost': '現地滞在費用の目安',
+    'dest.idealWindow': 'ベストシーズン',
+    'dest.suggested': 'おすすめ',
+    'dest.customizable': 'プランナーで100%自由にカスタマイズ可能',
+    'dest.exploreDetails': '詳細を見る',
+    'dest.planTrip': '旅行を計画',
+    'dest.from': '約 ~',
+    'dest.perPerson': '/人',
+    'dest.curated': '厳選',
+    'dest.save': '目的地を保存',
+    'dest.popular': '人気:',
+
+    // Categories
+    'cat.all': 'すべての場所',
+    'cat.culture': '文化と歴史',
+    'cat.mountains': '山と雪景色',
+    'cat.nature': '自然と丘陵',
+    'cat.beaches': 'ビーチ＆リラックス',
+    'cat.adventure': '川とスリル',
+    'cat.spiritual': 'スピリチュアル＆聖地',
+    'cat.trending': 'トレンド',
+    'cat.budget': 'おトクな旅',
+    'cat.weekend': '週末のショートトリップ',
+    'cat.roadtrip': 'ロードトリップ',
+    'cat.snowValleys': '雪と渓谷',
+
+    // Pillars
+    'pillar.weather.badge': '予報',
+    'pillar.weather.title': '天気予報',
+    'pillar.weather.desc': 'Open-Meteo提供の天気データ（道路交通警報ではありません）',
+    'pillar.stops.badge': '提供時',
+    'pillar.stops.title': 'ルートと立ち寄りスポット',
+    'pillar.stops.desc': 'Geoapify/OpenStreetMapによる走行ルート・スポット案内',
+    'pillar.budget.badge': '概算',
+    'pillar.budget.title': '旅行予算',
+    'pillar.budget.desc': '概算予算プラン。最新価格は提供元に直接ご確認ください',
+    'pillar.nav.badge': '外部アプリ',
+    'pillar.nav.title': '道順を案内',
+    'pillar.nav.desc': 'ナビゲーションアプリを開き、音声案内や渋滞情報を確認',
+    'pillar.safety.badge': '地域限定',
+    'pillar.safety.title': '緊急連絡情報',
+    'pillar.safety.desc': '現地の公式機関をご利用ください。TripVerseは救急施設の確認を行いません',
+
+    // Spotlight
+    'spotlight.badge': '公式リリース 2.0',
+    'spotlight.title': '次世代のハイウェイ＆トラベル・インテリジェンスへようこそ',
+    'spotlight.subtitle': 'リアルタイムの走行ルートと周辺マップをもとに、旅程と予算を自動作成。',
+    'spotlight.planFree': '無料で旅行を計画',
+    'spotlight.explore': '旅行先を探す',
+    'spotlight.share': '共有',
+
+    // Explore View
+    'explore.discoveryBadge': 'TripVerse デスティネーション発見',
+    'explore.title': '厳選されたリゾートを探す',
+    'explore.subtitle': '検証済みのドライブルート、概算ロードトリップ予算、自然や文化を楽しむ本物の体験を見つけましょう。',
+    'explore.searchPlaceholder': '旅行先を検索（例: バリ、京都など）...',
+    'explore.recommendedStyle': 'あなたの旅スタイルにおすすめ',
+    'explore.tailoredTo': 'あなたの{style}スタイルと予算設定に最適化',
+    'explore.styleMatch': 'スタイル一致',
+
+    // Modal
+    'modal.close': '閉じる',
+    'modal.foodHighlights': 'ご当地グルメ・おすすめ名物',
+    'modal.highwayCorridor': 'アクセス道路・ドライブ高速道',
+    'modal.vibe': '街の雰囲気と魅力',
+    'modal.planThis': 'この旅を計画する',
+    'modal.share': '目的地をシェア',
+    'modal.saved': 'ウィッシュリストに保存済み',
+    'modal.save': '目的地を保存',
+
+    // Hero Extra Options
+    'hero.soloTraveler': '旅行者（1人旅）',
+    'hero.coupleTravelers': '旅行者（カップル・2人）',
+    'hero.groupTravelers': '旅行者（友人・ファミリー）',
+    'hero.day1Express': '1日（日帰りエクスプレス）',
+    'hero.day2Weekend': '2日（週末プチトリップ）',
+    'hero.day3Optimal': '3日（理想的なショートトリップ）',
+    'hero.day4Deep': '4日（充実のディープ旅）',
+    'hero.day5Complete': '5日（ゆったりロングホリデー）',
+    'hero.day7Extended': '1週間（充実のグランドジャーニー）',
+
+    // Profile & Auth
+    'profile.title': 'マイプロフィール',
+    'profile.travelPreferences': '旅行の好み',
+    'profile.edit': 'プロフィール編集',
+    'profile.save': '変更を保存',
+    'profile.cancel': 'キャンセル',
+    'profile.guestMode': 'ゲストアカウント',
+    'profile.tripsPlanned': '計画した旅行',
+    'profile.placesSaved': '保存した場所',
+    'profile.co2Saved': '削減CO₂',
+    'profile.digitalPassport': 'デジタルパスポート',
+    'profile.upgradeToPro': 'Proにアップグレード',
+    'profile.signOut': 'ログアウト',
+    'profile.signIn': 'ログイン'
   },
   hi: {
     // Nav & Common
@@ -1185,7 +1690,108 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'common.share': 'ट्रिप साझा करें',
     'common.downloadPdf': 'गाइड डाउनलोड करें',
     'cta.startPlanning': 'मेरी ट्रिप प्लान करें',
-    'cta.exploreDestinations': 'गंतव्य देखें'
+    'cta.exploreDestinations': 'गंतव्य देखें',
+
+    // Popular Destinations & Cards
+    'dest.curatedEscapes': 'चुनिंदा यात्राएं और प्राकृतिक स्थल',
+    'dest.inspiringDestinations': 'प्रेरक यात्रा गंतव्य',
+    'dest.budgetTested': 'बजट-परीक्षित मार्ग, हाईवे विश्राम स्थल और चुनिंदा आवास।',
+    'dest.seeAll': 'सभी देखें',
+    'dest.typicalCost': 'विशिष्ट जमीनी खर्च',
+    'dest.idealWindow': 'आदर्श मौसम',
+    'dest.suggested': 'सुझाया गया',
+    'dest.customizable': 'प्लानर में 100% अनुकूलन योग्य',
+    'dest.exploreDetails': 'विवरण देखें',
+    'dest.planTrip': 'यात्रा प्लान करें',
+    'dest.from': 'लगभग ~',
+    'dest.perPerson': '/व्यक्ति',
+    'dest.curated': 'चुनिंदा',
+    'dest.save': 'गंतव्य सहेजें',
+    'dest.popular': 'लोकप्रिय:',
+
+    // Categories
+    'cat.all': 'सभी स्थान',
+    'cat.culture': 'संस्कृति और विरासत',
+    'cat.mountains': 'पहाड़ और बर्फबारी',
+    'cat.nature': 'प्रकृति और पहाड़ियां',
+    'cat.beaches': 'समुद्र तट और सुकून',
+    'cat.adventure': 'नदियां और रोमांच',
+    'cat.spiritual': 'आध्यात्मिक और पवित्र',
+    'cat.trending': 'ट्रेंडिंग',
+    'cat.budget': 'बजट यात्राएं',
+    'cat.weekend': 'वीकेंड ट्रिप्स',
+    'cat.roadtrip': 'रोड ट्रिप्स',
+    'cat.snowValleys': 'बर्फ और वादियां',
+
+    // Pillars
+    'pillar.weather.badge': 'पूर्वानुमान',
+    'pillar.weather.title': 'मौसम पूर्वानुमान',
+    'pillar.weather.desc': 'उपलब्ध निर्देशांकों पर Open-Meteo मौसम पूर्वानुमान; सड़क सलाह नहीं',
+    'pillar.stops.badge': 'उपलब्ध होने पर',
+    'pillar.stops.title': 'मार्ग और दर्शनीय स्थल',
+    'pillar.stops.desc': 'ड्राइविंग मार्ग और Geoapify/OpenStreetMap स्थल; सुविधाएं असत्यापित',
+    'pillar.budget.badge': 'अनुमानित',
+    'pillar.budget.title': 'यात्रा बजट',
+    'pillar.budget.desc': 'प्रारंभिक बजट अनुमान; प्रदाताओं से वर्तमान दरों की पुष्टि करें',
+    'pillar.nav.badge': 'बाहरी ऐप',
+    'pillar.nav.title': 'दिशा-निर्देश प्राप्त करें',
+    'pillar.nav.desc': 'टर्न-बाय-टर्न दिशा-निर्देश और ट्रैफ़िक के लिए नेविगेशन ऐप खोलें',
+    'pillar.safety.badge': 'स्थान-विशिष्ट',
+    'pillar.safety.title': 'आपातकालीन जानकारी',
+    'pillar.safety.desc': 'स्थानीय आधिकारिक सेवाओं का उपयोग करें; TripVerse सुविधाओं की पुष्टि नहीं करता',
+
+    // Spotlight
+    'spotlight.badge': 'आधिकारिक सार्वजनिक रिलीज़ 2.0',
+    'spotlight.title': 'हाईवे और यात्रा बुद्धिमत्ता के भविष्य में आपका स्वागत है',
+    'spotlight.subtitle': 'एक ड्राफ्ट यात्रा कार्यक्रम और बजट बनाएं, फिर लाइव ड्राइविंग मार्गों और मानचित्र लिस्टिंग की समीक्षा करें।',
+    'spotlight.planFree': 'मुफ्त यात्रा प्लान करें',
+    'spotlight.explore': 'गंतव्य खोजें',
+    'spotlight.share': 'शेयर करें',
+
+    // Explore View
+    'explore.discoveryBadge': 'TripVerse गंतव्य खोज',
+    'explore.title': 'चुनिंदा पर्यटन स्थलों का अन्वेषण करें',
+    'explore.subtitle': 'प्रमाणित ड्राइविंग मार्ग, अनुमानित बजट और प्रकृति व संस्कृति प्रेमियों के लिए वास्तविक अनुभव खोजें।',
+    'explore.searchPlaceholder': 'गंतव्य खोजें (जैसे बाली, क्योटो, मनाली)...',
+    'explore.recommendedStyle': 'आपकी यात्रा शैली के अनुकूल',
+    'explore.tailoredTo': 'आपके {style} प्रोफाइल और बजट के अनुसार तैयार',
+    'explore.styleMatch': 'शैली मेल',
+
+    // Modal
+    'modal.close': 'बंद करें',
+    'modal.foodHighlights': 'स्थानीय प्रसिद्ध व्यंजन',
+    'modal.highwayCorridor': 'हाईवे व मार्ग कनेक्टिविटी',
+    'modal.vibe': 'माहौल और अनुभव',
+    'modal.planThis': 'यह यात्रा प्लान करें',
+    'modal.share': 'गंतव्य साझा करें',
+    'modal.saved': 'विशलिस्ट में सहेजा गया',
+    'modal.save': 'गंतव्य सहेजें',
+
+    // Hero Extra Options
+    'hero.soloTraveler': 'यात्री (अकेले)',
+    'hero.coupleTravelers': 'यात्री (जोड़ा / दो लोग)',
+    'hero.groupTravelers': 'यात्री (मित्र / परिवार)',
+    'hero.day1Express': '1 दिन (एक्सप्रेस डे ट्रिप)',
+    'hero.day2Weekend': '2 दिन (वीकेंड गेटअवे)',
+    'hero.day3Optimal': '3 दिन (उत्तम यात्रा)',
+    'hero.day4Deep': '4 दिन (गहन अन्वेषण)',
+    'hero.day5Complete': '5 दिन (पूर्ण छुट्टियां)',
+    'hero.day7Extended': '1 सप्ताह (विस्तृत यात्रा)',
+
+    // Profile & Auth
+    'profile.title': 'मेरा प्रोफ़ाइल',
+    'profile.travelPreferences': 'यात्रा प्राथमिकताएं',
+    'profile.edit': 'प्रोफ़ाइल संपादित करें',
+    'profile.save': 'बदलाव सहेजें',
+    'profile.cancel': 'रद्द करें',
+    'profile.guestMode': 'अतिथि खाता',
+    'profile.tripsPlanned': 'नियोजित यात्राएं',
+    'profile.placesSaved': 'सहेजे गए स्थान',
+    'profile.co2Saved': 'बचाया गया CO₂',
+    'profile.digitalPassport': 'डिजिटल पासपोर्ट',
+    'profile.upgradeToPro': 'प्रो में अपग्रेड करें',
+    'profile.signOut': 'साइन आउट',
+    'profile.signIn': 'साइन इन करें'
   },
   zh: {
     // Nav & Common
@@ -1365,7 +1971,108 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'common.share': '分享行程',
     'common.downloadPdf': '下载行程指南',
     'cta.startPlanning': '规划我的旅行',
-    'cta.exploreDestinations': '探索目的地'
+    'cta.exploreDestinations': '探索目的地',
+
+    // Popular Destinations & Cards
+    'dest.curatedEscapes': '精选度假胜地与自然乐园',
+    'dest.inspiringDestinations': '启发灵感的旅行目的地',
+    'dest.budgetTested': '经过预算验证的路线、高速公路休息站和精选住宿。',
+    'dest.seeAll': '查看全部',
+    'dest.typicalCost': '典型地面行程费用',
+    'dest.idealWindow': '最佳旅游季节',
+    'dest.suggested': '建议',
+    'dest.customizable': '可在规划器中100%自由定制',
+    'dest.exploreDetails': '探索详情',
+    'dest.planTrip': '规划旅行',
+    'dest.from': '起价约 ~',
+    'dest.perPerson': '/人',
+    'dest.curated': '精选',
+    'dest.save': '保存目的地',
+    'dest.popular': '热门:',
+
+    // Categories
+    'cat.all': '所有地点',
+    'cat.culture': '文化与皇室',
+    'cat.mountains': '山峦与冰雪',
+    'cat.nature': '自然与山丘',
+    'cat.beaches': '沙滩与悠闲',
+    'cat.adventure': '河流与刺激',
+    'cat.spiritual': '精神与神圣',
+    'cat.trending': '热门趋势',
+    'cat.budget': '高性价比度假',
+    'cat.weekend': '周末短途游',
+    'cat.roadtrip': '自驾公路游',
+    'cat.snowValleys': '雪景与峡谷',
+
+    // Pillars
+    'pillar.weather.badge': '预报',
+    'pillar.weather.title': '天气预报',
+    'pillar.weather.desc': '基于Open-Meteo提供的坐标气象预报；非道路交管警报',
+    'pillar.stops.badge': '可用时提供',
+    'pillar.stops.title': '路线与景点列表',
+    'pillar.stops.desc': 'Geoapify/OpenStreetMap自驾导航几何与周边地点信息',
+    'pillar.budget.badge': '估算',
+    'pillar.budget.title': '旅行预算估算',
+    'pillar.budget.desc': '草拟行程预算估算；具体价格请直接向服务商核实',
+    'pillar.nav.badge': '外部应用',
+    'pillar.nav.title': '获取导航路线',
+    'pillar.nav.desc': '打开专业导航应用以获取实时路况与转弯导航指示',
+    'pillar.safety.badge': '特定区域',
+    'pillar.safety.title': '紧急求助信息',
+    'pillar.safety.desc': '请使用当地官方应急机构；TripVerse不直接核验现场设施',
+
+    // Spotlight
+    'spotlight.badge': '官方公开版本 2.0',
+    'spotlight.title': '欢迎体验新一代公路自驾与旅行智能',
+    'spotlight.subtitle': '智能生成草拟行程与预算，结合实时驾驶路线与地图探索。',
+    'spotlight.planFree': '免费规划旅行',
+    'spotlight.explore': '探索目的地',
+    'spotlight.share': '分享',
+
+    // Explore View
+    'explore.discoveryBadge': 'TripVerse 目的地探索',
+    'explore.title': '探索精选旅行胜地',
+    'explore.subtitle': '发现经过验证的公路路线、自驾预算估算以及为自然与文化爱好者量身打造的真实体验。',
+    'explore.searchPlaceholder': '搜索旅行目的地（如巴厘岛、京都）...',
+    'explore.recommendedStyle': '为您量身定制的旅行推荐',
+    'explore.tailoredTo': '针对您的{style}风格和预算偏好进行定制',
+    'explore.styleMatch': '风格匹配',
+
+    // Modal
+    'modal.close': '关闭',
+    'modal.foodHighlights': '当地特色美食精选',
+    'modal.highwayCorridor': '公路交通走廊与路线',
+    'modal.vibe': '风情与人文特色',
+    'modal.planThis': '规划此行程',
+    'modal.share': '分享目的地',
+    'modal.saved': '已收藏至心愿单',
+    'modal.save': '保存目的地',
+
+    // Hero Extra Options
+    'hero.soloTraveler': '旅行者（独行）',
+    'hero.coupleTravelers': '旅行者（情侣 / 双人）',
+    'hero.groupTravelers': '旅行者（朋友 / 家庭）',
+    'hero.day1Express': '1 天（一日速览）',
+    'hero.day2Weekend': '2 天（周末度假）',
+    'hero.day3Optimal': '3 天（最佳假期）',
+    'hero.day4Deep': '4 天（深度探索）',
+    'hero.day5Complete': '5 天（完整假期）',
+    'hero.day7Extended': '1 周（深度长途游）',
+
+    // Profile & Auth
+    'profile.title': '我的个人资料',
+    'profile.travelPreferences': '旅行偏好',
+    'profile.edit': '编辑资料',
+    'profile.save': '保存更改',
+    'profile.cancel': '取消',
+    'profile.guestMode': '访客账户',
+    'profile.tripsPlanned': '已规划旅行',
+    'profile.placesSaved': '已收藏地点',
+    'profile.co2Saved': '已减排CO₂',
+    'profile.digitalPassport': '数字护照',
+    'profile.upgradeToPro': '升级至专业版',
+    'profile.signOut': '退出登录',
+    'profile.signIn': '登录'
   },
   ar: {
     // Nav & Common
@@ -1545,7 +2252,108 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'common.share': 'مشاركة الرحلة',
     'common.downloadPdf': 'تحميل الدليل',
     'cta.startPlanning': 'خطط لرحلتي',
-    'cta.exploreDestinations': 'استكشف الوجهات'
+    'cta.exploreDestinations': 'استكشف الوجهات',
+
+    // Popular Destinations & Cards
+    'dest.curatedEscapes': 'رحلات مختارة وملاذات طبيعية',
+    'dest.inspiringDestinations': 'وجهات ملهمة',
+    'dest.budgetTested': 'مسارات مجربة الميزانية مع استراحات الطرق السريعة وإقامات مختارة.',
+    'dest.seeAll': 'عرض الكل',
+    'dest.typicalCost': 'التكلفة الميدانية النموذجية',
+    'dest.idealWindow': 'الموسم المثالي',
+    'dest.suggested': 'مقترح',
+    'dest.customizable': 'قابل للتخصيص 100% في المخطط',
+    'dest.exploreDetails': 'استكشاف التفاصيل',
+    'dest.planTrip': 'تخطيط الرحلة',
+    'dest.from': 'يبدأ من ~',
+    'dest.perPerson': '/شخص',
+    'dest.curated': 'مختار',
+    'dest.save': 'حفظ الوجهة',
+    'dest.popular': 'شائع:',
+
+    // Categories
+    'cat.all': 'جميع الأماكن',
+    'cat.culture': 'الثقافة والتاريخ',
+    'cat.mountains': 'الجبال والثلوج',
+    'cat.nature': 'الطبيعة والتلال',
+    'cat.beaches': 'الشواطئ والاسترخاء',
+    'cat.adventure': 'الأنهار والمغامرة',
+    'cat.spiritual': 'الروحانية والمقدسات',
+    'cat.trending': 'شائع الآن',
+    'cat.budget': 'رحلات اقتصادية',
+    'cat.weekend': 'عطلات نهاية الأسبوع',
+    'cat.roadtrip': 'رحلات الطرق البرية',
+    'cat.snowValleys': 'الثلوج والوديان',
+
+    // Pillars
+    'pillar.weather.badge': 'توقعات',
+    'pillar.weather.title': 'توقعات الطقس',
+    'pillar.weather.desc': 'توقعات Open-Meteo عند توفر الإحداثيات؛ وليست تحذيرات طرق رسمية',
+    'pillar.stops.badge': 'حسب التوفر',
+    'pillar.stops.title': 'دليل المسار والأماكن',
+    'pillar.stops.desc': 'مسارات القيادة والأماكن عبر Geoapify/OpenStreetMap؛ المرافق غير مؤكدة',
+    'pillar.budget.badge': 'تقديري',
+    'pillar.budget.title': 'ميزانية الرحلة',
+    'pillar.budget.desc': 'تقديرات ميزانية أولية؛ يرجى التحقق من الأسعار مباشرة مع المزودين',
+    'pillar.nav.badge': 'تطبيق خارجي',
+    'pillar.nav.title': 'الحصول على الاتجاهات',
+    'pillar.nav.desc': 'فتح تطبيق الملاحة للتوجيه خطوة بخطوة وتحديثات حركة المرور',
+    'pillar.safety.badge': 'خاص بالموقع',
+    'pillar.safety.title': 'معلومات الطوارئ',
+    'pillar.safety.desc': 'استخدم الخدمات الرسمية المحلية؛ لا تتحقق TripVerse من المنشآت الطارئة',
+
+    // Spotlight
+    'spotlight.badge': 'الإصدار الرسمي 2.0',
+    'spotlight.title': 'مرحبًا بك في مستقبل الذكاء السياحي والمسارات البرية',
+    'spotlight.subtitle': 'أنشئ مسودة خطة وميزانية رحلتك مع استعراض مسارات القيادة الحية والأماكن القريبة.',
+    'spotlight.planFree': 'تخطيط رحلة مجانية',
+    'spotlight.explore': 'استكشاف الوجهات',
+    'spotlight.share': 'مشاركة',
+
+    // Explore View
+    'explore.discoveryBadge': 'استكشاف الوجهات عبر TripVerse',
+    'explore.title': 'استكشف ملاذات مختارة بعناية',
+    'explore.subtitle': 'اكتشف مسارات برية موثوقة وميزانيات تقديرية وتجارب أصيلة لعشاق الطبيعة والمغامرة.',
+    'explore.searchPlaceholder': 'ابحث عن وجهات (مثل بالي، كيوتو)...',
+    'explore.recommendedStyle': 'موصى به وفق أسلوب سفرك',
+    'explore.tailoredTo': 'مصمم خصيصًا ليناسب نمط {style} وتفضيلات ميزانيتك',
+    'explore.styleMatch': 'مطابقة الأسلوب',
+
+    // Modal
+    'modal.close': 'إغلاق',
+    'modal.foodHighlights': 'أشهى المأكولات والمطاعم المحلية',
+    'modal.highwayCorridor': 'طريق السفر ومحور الوصول',
+    'modal.vibe': 'الأجواء والطابع العام',
+    'modal.planThis': 'تخطيط هذه الرحلة',
+    'modal.share': 'مشاركة الوجهة',
+    'modal.saved': 'تم الحفظ في المفضلة',
+    'modal.save': 'حفظ الوجهة',
+
+    // Hero Extra Options
+    'hero.soloTraveler': 'مسافر (فردي)',
+    'hero.coupleTravelers': 'مسافرون (ثنائي / زوجان)',
+    'hero.groupTravelers': 'مسافرون (أصدقاء / عائلة)',
+    'hero.day1Express': 'يوم واحد (رحلة يومية سريعة)',
+    'hero.day2Weekend': 'يومان (عطلة نهاية الأسبوع)',
+    'hero.day3Optimal': '3 أيام (رحلة مثالية)',
+    'hero.day4Deep': '4 أيام (استكشاف عميق)',
+    'hero.day5Complete': '5 أيام (إجازة متكاملة)',
+    'hero.day7Extended': 'أسبوع كامل (رحلة شاملة)',
+
+    // Profile & Auth
+    'profile.title': 'ملفي الشخصي',
+    'profile.travelPreferences': 'تفضيلات السفر',
+    'profile.edit': 'تعديل الملف',
+    'profile.save': 'حفظ التغييرات',
+    'profile.cancel': 'إلغاء',
+    'profile.guestMode': 'حساب زائر',
+    'profile.tripsPlanned': 'رحلات مخططة',
+    'profile.placesSaved': 'أماكن محفوظة',
+    'profile.co2Saved': 'وفر ثاني أكسيد الكربون',
+    'profile.digitalPassport': 'جواز السفر الرقمي',
+    'profile.upgradeToPro': 'الترقية إلى برو',
+    'profile.signOut': 'تسجيل الخروج',
+    'profile.signIn': 'تسجيل الدخول'
   },
   it: {
     // Nav & Common
@@ -1725,7 +2533,108 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'common.share': 'Condividi Viaggio',
     'common.downloadPdf': 'Scarica Guida',
     'cta.startPlanning': 'Pianifica Viaggio',
-    'cta.exploreDestinations': 'Esplora Destinazioni'
+    'cta.exploreDestinations': 'Esplora Destinazioni',
+
+    // Popular Destinations & Cards
+    'dest.curatedEscapes': 'Fughe curate e rifugi naturali',
+    'dest.inspiringDestinations': 'Destinazioni Ispiratrici',
+    'dest.budgetTested': 'Rotte testate per il budget con soste autostradali e soggiorni selezionati.',
+    'dest.seeAll': 'Vedi tutti',
+    'dest.typicalCost': 'Costo Tipico a Terra',
+    'dest.idealWindow': 'Periodo Ideale',
+    'dest.suggested': 'Consigliato',
+    'dest.customizable': '100% Personalizzabile nel Pianificatore',
+    'dest.exploreDetails': 'Esplora Dettagli',
+    'dest.planTrip': 'Pianifica Viaggio',
+    'dest.from': 'Da ~',
+    'dest.perPerson': '/persona',
+    'dest.curated': 'Curato',
+    'dest.save': 'Salva destinazione',
+    'dest.popular': 'Popolare:',
+
+    // Categories
+    'cat.all': 'Tutti i Luoghi',
+    'cat.culture': 'Cultura e Storia',
+    'cat.mountains': 'Montagna e Neve',
+    'cat.nature': 'Natura e Colline',
+    'cat.beaches': 'Spiagge e Relax',
+    'cat.adventure': 'Fiumi e Avventura',
+    'cat.spiritual': 'Spirituale e Sacro',
+    'cat.trending': 'Di Tendenza',
+    'cat.budget': 'Fughe Economiche',
+    'cat.weekend': 'Fughe del Weekend',
+    'cat.roadtrip': 'Viaggi su Strada',
+    'cat.snowValleys': 'Neve e Valli',
+
+    // Pillars
+    'pillar.weather.badge': 'Previsione',
+    'pillar.weather.title': 'Previsioni Meteo',
+    'pillar.weather.desc': 'Previsioni Open-Meteo ove disponibili le coordinate; non è un avviso stradale',
+    'pillar.stops.badge': 'Quando disponibile',
+    'pillar.stops.title': 'Percorso e Luoghi',
+    'pillar.stops.desc': 'Tracciato stradale e luoghi Geoapify/OpenStreetMap; servizi non garantiti',
+    'pillar.budget.badge': 'Stima',
+    'pillar.budget.title': 'Budget di Viaggio',
+    'pillar.budget.desc': 'Stime di budget preliminari; verifica le tariffe con i fornitori',
+    'pillar.nav.badge': 'App esterna',
+    'pillar.nav.title': 'Ottieni Indicazioni',
+    'pillar.nav.desc': 'Apri un navigatore per indicazioni passo-passo e traffico in tempo reale',
+    'pillar.safety.badge': 'Specifico del luogo',
+    'pillar.safety.title': 'Informazioni di Emergenza',
+    'pillar.safety.desc': 'Utilizza i servizi ufficiali locali; TripVerse non verifica le strutture d’emergenza',
+
+    // Spotlight
+    'spotlight.badge': 'Rilascio Ufficiale 2.0',
+    'spotlight.title': 'Benvenuto nel Futuro dell’Intelligenza di Viaggio e Stradale',
+    'spotlight.subtitle': 'Crea un itinerario e un budget con rotte stradali in tempo reale ed esplorazione mappe.',
+    'spotlight.planFree': 'Pianifica Viaggio Gratis',
+    'spotlight.explore': 'Esplora Destinazioni',
+    'spotlight.share': 'Condividi',
+
+    // Explore View
+    'explore.discoveryBadge': 'Scoperta Destinazioni TripVerse',
+    'explore.title': 'Esplora Fughe Selezionate',
+    'explore.subtitle': 'Scopri percorsi verificati, budget stradali stimati ed esperienze autentiche per gli amanti della natura e della cultura.',
+    'explore.searchPlaceholder': 'Cerca destinazioni (es. Bali, Kyoto)...',
+    'explore.recommendedStyle': 'Consigliato per il Tuo Stile',
+    'explore.tailoredTo': 'Adattato al tuo profilo {style} e preferenza di budget',
+    'explore.styleMatch': 'Stile Corrispondente',
+
+    // Modal
+    'modal.close': 'Chiudi',
+    'modal.foodHighlights': 'Specialità Gastronomiche Locali',
+    'modal.highwayCorridor': 'Corridoio Autostradale e Accesso',
+    'modal.vibe': 'Atmosfera e Sentori',
+    'modal.planThis': 'Pianifica Questo Viaggio',
+    'modal.share': 'Condividi Destinazione',
+    'modal.saved': 'Salvato nei Preferiti',
+    'modal.save': 'Salva Destinazione',
+
+    // Hero Extra Options
+    'hero.soloTraveler': 'Viaggiatore (Solo)',
+    'hero.coupleTravelers': 'Viaggiatori (Coppia / Duo)',
+    'hero.groupTravelers': 'Viaggiatori (Amici / Famiglia)',
+    'hero.day1Express': '1 Giorno (Gita Giornaliera)',
+    'hero.day2Weekend': '2 Giorni (Fuga Weekend)',
+    'hero.day3Optimal': '3 Giorni (Fuga Ideale)',
+    'hero.day4Deep': '4 Giorni (Esplorazione Approfondita)',
+    'hero.day5Complete': '5 Giorni (Vacanza Completa)',
+    'hero.day7Extended': '1 Settimana (Grande Viaggio)',
+
+    // Profile & Auth
+    'profile.title': 'Il Mio Profilo',
+    'profile.travelPreferences': 'Preferenze di Viaggio',
+    'profile.edit': 'Modifica Profilo',
+    'profile.save': 'Salva Modifiche',
+    'profile.cancel': 'Annulla',
+    'profile.guestMode': 'Account Ospite',
+    'profile.tripsPlanned': 'Viaggi Pianificati',
+    'profile.placesSaved': 'Luoghi Salvati',
+    'profile.co2Saved': 'CO₂ Risparmiata',
+    'profile.digitalPassport': 'Passaporto Digitale',
+    'profile.upgradeToPro': 'Passa a Pro',
+    'profile.signOut': 'Disconnetti',
+    'profile.signIn': 'Accedi'
   },
   pt: {
     // Nav & Common
@@ -1905,9 +2814,874 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'common.share': 'Compartilhar Viagem',
     'common.downloadPdf': 'Baixar Guia',
     'cta.startPlanning': 'Planejar Minha Viagem',
-    'cta.exploreDestinations': 'Explorar Destinos'
+    'cta.exploreDestinations': 'Explorar Destinos',
+
+    // Popular Destinations & Cards
+    'dest.curatedEscapes': 'Escapadas selecionadas e refúgios naturais',
+    'dest.inspiringDestinations': 'Destinos Inspiradores',
+    'dest.budgetTested': 'Rotas testadas no orçamento com paradas de rodovia e estadias selecionadas.',
+    'dest.seeAll': 'Ver todos',
+    'dest.typicalCost': 'Custo Típico no Destino',
+    'dest.idealWindow': 'Período Ideal',
+    'dest.suggested': 'Sugerido',
+    'dest.customizable': '100% Personalizável no Planejador',
+    'dest.exploreDetails': 'Explorar Detalhes',
+    'dest.planTrip': 'Planejar Viagem',
+    'dest.from': 'A partir de ~',
+    'dest.perPerson': '/pessoa',
+    'dest.curated': 'Curadoria',
+    'dest.save': 'Salvar destino',
+    'dest.popular': 'Popular:',
+
+    // Categories
+    'cat.all': 'Todos os Lugares',
+    'cat.culture': 'Cultura e História',
+    'cat.mountains': 'Montanhas e Neve',
+    'cat.nature': 'Natureza e Colinas',
+    'cat.beaches': 'Praias e Relax',
+    'cat.adventure': 'Rios e Aventura',
+    'cat.spiritual': 'Espiritual e Sagrado',
+    'cat.trending': 'Em Alta',
+    'cat.budget': 'Escapadas Econômicas',
+    'cat.weekend': 'Escapadas de Fim de Semana',
+    'cat.roadtrip': 'Viagens de Carro',
+    'cat.snowValleys': 'Neve e Vales',
+
+    // Pillars
+    'pillar.weather.badge': 'Previsão',
+    'pillar.weather.title': 'Previsão do Tempo',
+    'pillar.weather.desc': 'Previsão Open-Meteo quando coordenadas disponíveis; não é aviso rodoviário',
+    'pillar.stops.badge': 'Quando disponível',
+    'pillar.stops.title': 'Rotas e Locais',
+    'pillar.stops.desc': 'Traçado da rota e locais Geoapify/OpenStreetMap; serviços não garantidos',
+    'pillar.budget.badge': 'Estimativa',
+    'pillar.budget.title': 'Orçamentos de Viagem',
+    'pillar.budget.desc': 'Estimativas preliminares; confirme preços atuais com os fornecedores',
+    'pillar.nav.badge': 'Aplicativo externo',
+    'pillar.nav.title': 'Obter Rotas',
+    'pillar.nav.desc': 'Abrir navegador para direções curva a curva e trânsito',
+    'pillar.safety.badge': 'Específico do local',
+    'pillar.safety.title': 'Informações de Emergência',
+    'pillar.safety.desc': 'Utilize serviços oficiais locais; o TripVerse não valida instalações de emergência',
+
+    // Spotlight
+    'spotlight.badge': 'Lançamento Oficial 2.0',
+    'spotlight.title': 'Bem-vindo ao Futuro da Inteligência Rodoviária e de Viagens',
+    'spotlight.subtitle': 'Crie roteiro e orçamento preliminares com rotas ao vivo e mapa de atrações.',
+    'spotlight.planFree': 'Planejar Viagem Grátis',
+    'spotlight.explore': 'Explorar Destinos',
+    'spotlight.share': 'Compartilhar',
+
+    // Explore View
+    'explore.discoveryBadge': 'Descoberta de Destinos TripVerse',
+    'explore.title': 'Explore Escapadas Selecionadas',
+    'explore.subtitle': 'Descubra rotas verificadas, orçamentos estimados e experiências autênticas para quem ama natureza e cultura.',
+    'explore.searchPlaceholder': 'Buscar destinos (ex: Bali, Kyoto)...',
+    'explore.recommendedStyle': 'Recomendado para Seu Estilo',
+    'explore.tailoredTo': 'Personalizado para seu perfil {style} e orçamento',
+    'explore.styleMatch': 'Combina com seu Estilo',
+
+    // Modal
+    'modal.close': 'Fechar',
+    'modal.foodHighlights': 'Destaques Culinários Locais',
+    'modal.highwayCorridor': 'Corredor Rodoviário e Acesso',
+    'modal.vibe': 'Atmosfera e Estilo',
+    'modal.planThis': 'Planejar Esta Viagem',
+    'modal.share': 'Compartilhar Destino',
+    'modal.saved': 'Salvo nos Favoritos',
+    'modal.save': 'Salvar Destino',
+
+    // Hero Extra Options
+    'hero.soloTraveler': 'Viajante (Solo)',
+    'hero.coupleTravelers': 'Viajantes (Casal / Dupla)',
+    'hero.groupTravelers': 'Viajantes (Amigos / Família)',
+    'hero.day1Express': '1 Dia (Passeio Expresso)',
+    'hero.day2Weekend': '2 Dias (Fim de Semana)',
+    'hero.day3Optimal': '3 Dias (Escapada Ideal)',
+    'hero.day4Deep': '4 Dias (Exploração Completa)',
+    'hero.day5Complete': '5 Dias (Férias Completas)',
+    'hero.day7Extended': '1 Semana (Grande Jornada)',
+
+    // Profile & Auth
+    'profile.title': 'Meu Perfil',
+    'profile.travelPreferences': 'Preferências de Viagem',
+    'profile.edit': 'Editar Perfil',
+    'profile.save': 'Salvar Alterações',
+    'profile.cancel': 'Cancelar',
+    'profile.guestMode': 'Conta de Convidado',
+    'profile.tripsPlanned': 'Viagens Planejadas',
+    'profile.placesSaved': 'Lugares Salvos',
+    'profile.co2Saved': 'CO₂ Economizado',
+    'profile.digitalPassport': 'Passaporte Digital',
+    'profile.upgradeToPro': 'Atualizar para Pro',
+    'profile.signOut': 'Sair',
+    'profile.signIn': 'Entrar'
   }
 };
+
+/**
+ * Universal bilingual & multilingual travel phrase mapping for continuous instant UI translation.
+ */
+export const UNIVERSAL_PHRASE_DICTIONARY: Record<string, Partial<Record<LanguageCode, string>>> = {
+  'curated escapes & nature havens': {
+    en: 'Curated Escapes & Nature Havens',
+    es: 'Escapadas seleccionadas y refugios naturales',
+    fr: 'Escapades sélectionnées et havres de nature',
+    de: 'Kuratierte Ausflugsziele & Naturparadiese',
+    ja: '厳選されたリゾート＆大自然',
+    hi: 'चुनिंदा यात्राएं और प्राकृतिक स्थल',
+    zh: '精选度假胜地与自然乐园',
+    ar: 'رحلات مختارة وملاذات طبيعية',
+    it: 'Fughe curate e rifugi naturali',
+    pt: 'Escapadas selecionadas e refúgios naturais'
+  },
+  'inspiring destinations': {
+    en: 'Inspiring Destinations',
+    es: 'Destinos Inspiradores',
+    fr: 'Destinations Inspirantes',
+    de: 'Inspirierende Reiseziele',
+    ja: '魅力的な旅行先',
+    hi: 'प्रेरक यात्रा गंतव्य',
+    zh: '启发灵感的旅行目的地',
+    ar: 'وجهات ملهمة',
+    it: 'Destinazioni Ispiratrici',
+    pt: 'Destinos Inspiradores'
+  },
+  'budget-tested routes with highway rest stops and handpicked stays.': {
+    en: 'Budget-tested routes with highway rest stops and handpicked stays.',
+    es: 'Rutas con presupuesto verificado, paradas en carretera y estancias seleccionadas.',
+    fr: 'Itinéraires vérifiés avec arrêts sur autoroute et séjours sélectionnés.',
+    de: 'Budgetgeprüfte Routen mit Raststätten und handverlesenen Unterkünften.',
+    ja: '予算確認済みルート、高速道路の休憩所、厳選された宿泊先。',
+    hi: 'बजट-परीक्षित मार्ग, हाईवे विश्राम स्थल और चुनिंदा आवास।',
+    zh: '经过预算验证的路线、高速公路休息站和精选住宿。',
+    ar: 'مسارات مجربة الميزانية مع استراحات الطرق السريعة وإقامات مختارة.',
+    it: 'Rotte testate per il budget con soste autostradali e soggiorni selezionati.',
+    pt: 'Rotas testadas no orçamento com paradas de rodovia e estadias selecionadas.'
+  },
+  'see all': {
+    en: 'See all',
+    es: 'Ver todos',
+    fr: 'Voir tout',
+    de: 'Alle ansehen',
+    ja: 'すべて見る',
+    hi: 'सभी देखें',
+    zh: '查看全部',
+    ar: 'عرض الكل',
+    it: 'Vedi tutti',
+    pt: 'Ver todos'
+  },
+  'typical ground cost': {
+    en: 'Typical Ground Cost',
+    es: 'Costo Típico en Destino',
+    fr: 'Coût Terrestre Typique',
+    de: 'Typische Vor-Ort-Kosten',
+    ja: '現地滞在費用の目安',
+    hi: 'विशिष्ट जमीनी खर्च',
+    zh: '典型地面行程费用',
+    ar: 'التكلفة الميدانية النموذجية',
+    it: 'Costo Tipico a Terra',
+    pt: 'Custo Típico no Destino'
+  },
+  'ideal window': {
+    en: 'Ideal Window',
+    es: 'Temporada Ideal',
+    fr: 'Période Idéale',
+    de: 'Beste Reisezeit',
+    ja: 'ベストシーズン',
+    hi: 'आदर्श मौसम',
+    zh: '最佳旅游季节',
+    ar: 'الموسم المثالي',
+    it: 'Periodo Ideale',
+    pt: 'Período Ideal'
+  },
+  'explore details': {
+    en: 'Explore Details',
+    es: 'Explorar Detalles',
+    fr: 'Explorer les Détails',
+    de: 'Details erkunden',
+    ja: '詳細を見る',
+    hi: 'विवरण देखें',
+    zh: '探索详情',
+    ar: 'استكشاف التفاصيل',
+    it: 'Esplora Dettagli',
+    pt: 'Explorar Detalhes'
+  },
+  'plan trip': {
+    en: 'Plan Trip',
+    es: 'Planear Viaje',
+    fr: 'Planifier Voyage',
+    de: 'Reise planen',
+    ja: '旅行を計画',
+    hi: 'यात्रा प्लान करें',
+    zh: '规划旅行',
+    ar: 'تخطيط الرحلة',
+    it: 'Pianifica Viaggio',
+    pt: 'Planejar Viagem'
+  },
+  'plan trip now': {
+    en: 'Plan Trip Now',
+    es: 'Planear Viaje Ahora',
+    fr: 'Planifier Voyage Maintenant',
+    de: 'Jetzt Reise planen',
+    ja: '今すぐ旅行を計画',
+    hi: 'अभी यात्रा प्लान करें',
+    zh: '立即规划旅行',
+    ar: 'خطط لرحلتك الآن',
+    it: 'Pianifica Ora',
+    pt: 'Planejar Viagem Agora'
+  },
+  'all places': {
+    en: 'All Places',
+    es: 'Todos los Lugares',
+    fr: 'Tous les Lieux',
+    de: 'Alle Orte',
+    ja: 'すべての場所',
+    hi: 'सभी स्थान',
+    zh: '所有地点',
+    ar: 'جميع الأماكن',
+    it: 'Tutti i Luoghi',
+    pt: 'Todos os Lugares'
+  },
+  'culture & royal': {
+    en: 'Culture & Royal',
+    es: 'Cultura e Historia',
+    fr: 'Culture & Histoire',
+    de: 'Kultur & Königlich',
+    ja: '文化と歴史',
+    hi: 'संस्कृति और विरासत',
+    zh: '文化与皇室',
+    ar: 'الثقافة والتاريخ',
+    it: 'Cultura e Storia',
+    pt: 'Cultura e História'
+  },
+  'mountains & snow': {
+    en: 'Mountains & Snow',
+    es: 'Montañas y Nieve',
+    fr: 'Montagnes & Neige',
+    de: 'Berge & Schnee',
+    ja: '山と雪景色',
+    hi: 'पहाड़ और बर्फबारी',
+    zh: '山峦与冰雪',
+    ar: 'الجبال والثلوج',
+    it: 'Montagna e Neve',
+    pt: 'Montanhas e Neve'
+  },
+  'nature & hills': {
+    en: 'Nature & Hills',
+    es: 'Naturaleza y Colinas',
+    fr: 'Nature & Collines',
+    de: 'Natur & Hügel',
+    ja: '自然と丘陵',
+    hi: 'प्रकृति और पहाड़ियां',
+    zh: '自然与山丘',
+    ar: 'الطبيعة والتلال',
+    it: 'Natura e Colline',
+    pt: 'Natureza e Colinas'
+  },
+  'beaches & chill': {
+    en: 'Beaches & Chill',
+    es: 'Playas y Relax',
+    fr: 'Plages & Détente',
+    de: 'Strände & Entspannung',
+    ja: 'ビーチ＆リラックス',
+    hi: 'समुद्र तट और सुकून',
+    zh: '沙滩与悠闲',
+    ar: 'الشواطئ والاسترخاء',
+    it: 'Spiagge e Relax',
+    pt: 'Praias e Relax'
+  },
+  'river & thrill': {
+    en: 'River & Thrill',
+    es: 'Ríos y Aventura',
+    fr: 'Rivières & Sensations',
+    de: 'Fluss & Abenteuer',
+    ja: '川とスリル',
+    hi: 'नदियां और रोमांच',
+    zh: '河流与刺激',
+    ar: 'الأنهار والمغامرة',
+    it: 'Fiumi e Avventura',
+    pt: 'Rios e Aventura'
+  },
+  'adventure & rafting': {
+    en: 'Adventure & Rafting',
+    es: 'Aventura y Rafting',
+    fr: 'Aventure & Rafting',
+    de: 'Abenteuer & Rafting',
+    ja: 'アドベンチャー＆ラフティング',
+    hi: 'रोमांच और राफ्टिंग',
+    zh: '探险与漂流',
+    ar: 'المغامرة والتجديف',
+    it: 'Avventura e Rafting',
+    pt: 'Aventura e Rafting'
+  },
+  'spiritual & sacred': {
+    en: 'Spiritual & Sacred',
+    es: 'Espiritual y Sagrado',
+    fr: 'Spirituel & Sacré',
+    de: 'Spirituell & Heilig',
+    ja: 'スピリチュアル＆聖地',
+    hi: 'आध्यात्मिक और पवित्र',
+    zh: '精神与神圣',
+    ar: 'الروحانية والمقدسات',
+    it: 'Spirituale e Sacro',
+    pt: 'Espiritual e Sagrado'
+  },
+  'trending': {
+    en: 'Trending',
+    es: 'Tendencias',
+    fr: 'Tendances',
+    de: 'Beliebt',
+    ja: 'トレンド',
+    hi: 'ट्रेंडिंग',
+    zh: '热门趋势',
+    ar: 'شائع الآن',
+    it: 'Di Tendenza',
+    pt: 'Em Alta'
+  },
+  'budget getaways': {
+    en: 'Budget Getaways',
+    es: 'Escapadas Económicas',
+    fr: 'Escapades Économiques',
+    de: 'Budget-Ausflüge',
+    ja: 'おトクな旅',
+    hi: 'बजट यात्राएं',
+    zh: '高性价比度假',
+    ar: 'رحلات اقتصادية',
+    it: 'Fughe Economiche',
+    pt: 'Escapadas Econômicas'
+  },
+  'weekend escapes': {
+    en: 'Weekend Escapes',
+    es: 'Escapadas de Fin de Semana',
+    fr: 'Escapades Week-end',
+    de: 'Wochenendausflüge',
+    ja: '週末のショートトリップ',
+    hi: 'वीकेंड ट्रिप्स',
+    zh: '周末短途游',
+    ar: 'عطلات نهاية الأسبوع',
+    it: 'Fughe del Weekend',
+    pt: 'Escapadas de Fim de Semana'
+  },
+  'road trips': {
+    en: 'Road Trips',
+    es: 'Viajes por Carretera',
+    fr: 'Road Trips',
+    de: 'Roadtrips',
+    ja: 'ロードトリップ',
+    hi: 'रोड ट्रिप्स',
+    zh: '自驾公路游',
+    ar: 'رحلات الطرق البرية',
+    it: 'Viaggi su Strada',
+    pt: 'Viagens de Carro'
+  },
+  'snow & valleys': {
+    en: 'Snow & Valleys',
+    es: 'Nieve y Valles',
+    fr: 'Neige & Vallées',
+    de: 'Schnee & Täler',
+    ja: '雪と渓谷',
+    hi: 'बर्फ और वादियां',
+    zh: '雪景与峡谷',
+    ar: 'الثلوج والوديان',
+    it: 'Neve e Valli',
+    pt: 'Neve e Vales'
+  },
+  'royal & historical': {
+    en: 'Royal & Historical',
+    es: 'Real e Histórico',
+    fr: 'Royal & Historique',
+    de: 'Königlich & Historisch',
+    ja: '王室と歴史遺産',
+    hi: 'शाही और ऐतिहासिक',
+    zh: '皇家与历史',
+    ar: 'ملكي وتاريخي',
+    it: 'Reale e Storico',
+    pt: 'Real e Histórico'
+  },
+  'weather forecast': {
+    en: 'Weather forecast',
+    es: 'Pronóstico del Tiempo',
+    fr: 'Prévisions Météo',
+    de: 'Wettervorhersage',
+    ja: '天気予報',
+    hi: 'मौसम पूर्वानुमान',
+    zh: '天气预报',
+    ar: 'توقعات الطقس',
+    it: 'Previsioni Meteo',
+    pt: 'Previsão do Tempo'
+  },
+  'forecast': {
+    en: 'Forecast',
+    es: 'Pronóstico',
+    fr: 'Prévision',
+    de: 'Vorhersage',
+    ja: '予報',
+    hi: 'पूर्वानुमान',
+    zh: '预报',
+    ar: 'توقعات',
+    it: 'Previsione',
+    pt: 'Previsão'
+  },
+  'route & place listings': {
+    en: 'Route & place listings',
+    es: 'Ruta y Lugares',
+    fr: 'Itinéraire et Lieux',
+    de: 'Routen- & Ortsverzeichnis',
+    ja: 'ルートと立ち寄りスポット',
+    hi: 'मार्ग और दर्शनीय स्थल',
+    zh: '路线与景点列表',
+    ar: 'دليل المسار والأماكن',
+    it: 'Percorso e Luoghi',
+    pt: 'Rotas e Locais'
+  },
+  'when available': {
+    en: 'When available',
+    es: 'Disponible',
+    fr: 'Selon disponibilité',
+    de: 'Wenn verfügbar',
+    ja: '提供時',
+    hi: 'उपलब्ध होने पर',
+    zh: '可用时提供',
+    ar: 'حسب التوفر',
+    it: 'Quando disponibile',
+    pt: 'Quando disponível'
+  },
+  'trip budgets': {
+    en: 'Trip budgets',
+    es: 'Presupuesto de Viaje',
+    fr: 'Budget du Voyage',
+    de: 'Reisebudgets',
+    ja: '旅行予算',
+    hi: 'यात्रा बजट',
+    zh: '旅行预算估算',
+    ar: 'ميزانية الرحلة',
+    it: 'Budget di Viaggio',
+    pt: 'Orçamentos de Viagem'
+  },
+  'estimate': {
+    en: 'Estimate',
+    es: 'Estimado',
+    fr: 'Estimation',
+    de: 'Schätzung',
+    ja: '概算',
+    hi: 'अनुमानित',
+    zh: '估算',
+    ar: 'تقديري',
+    it: 'Stima',
+    pt: 'Estimativa'
+  },
+  'get directions': {
+    en: 'Get directions',
+    es: 'Obtener Indicaciones',
+    fr: 'Obtenir l’itinéraire',
+    de: 'Route berechnen',
+    ja: '道順を案内',
+    hi: 'दिशा-निर्देश प्राप्त करें',
+    zh: '获取导航路线',
+    ar: 'الحصول على الاتجاهات',
+    it: 'Ottieni Indicazioni',
+    pt: 'Obter Rotas'
+  },
+  'external app': {
+    en: 'External app',
+    es: 'App externa',
+    fr: 'App externe',
+    de: 'Externe App',
+    ja: '外部アプリ',
+    hi: 'बाहरी ऐप',
+    zh: '外部应用',
+    ar: 'تطبيق خارجي',
+    it: 'App esterna',
+    pt: 'Aplicativo externo'
+  },
+  'emergency information': {
+    en: 'Emergency information',
+    es: 'Información de Emergencia',
+    fr: 'Informations d’Urgence',
+    de: 'Notfallinformationen',
+    ja: '緊急連絡情報',
+    hi: 'आपातकालीन जानकारी',
+    zh: '紧急求助信息',
+    ar: 'معلومات الطوارئ',
+    it: 'Informazioni di Emergenza',
+    pt: 'Informações de Emergência'
+  },
+  'location-specific': {
+    en: 'Location-specific',
+    es: 'Por ubicación',
+    fr: 'Selon lieu',
+    de: 'Standortspezifisch',
+    ja: '地域限定',
+    hi: 'स्थान-विशिष्ट',
+    zh: '特定区域',
+    ar: 'خاص بالموقع',
+    it: 'Specifico del luogo',
+    pt: 'Específico do local'
+  },
+  'official public release 2.0': {
+    en: 'Official Public Release 2.0',
+    es: 'Lanzamiento Oficial 2.0',
+    fr: 'Version Officielle 2.0',
+    de: 'Offizielle Version 2.0',
+    ja: '公式リリース 2.0',
+    hi: 'आधिकारिक सार्वजनिक रिलीज़ 2.0',
+    zh: '官方公开版本 2.0',
+    ar: 'الإصدار الرسمي 2.0',
+    it: 'Rilascio Ufficiale 2.0',
+    pt: 'Lançamento Oficial 2.0'
+  },
+  'plan free journey': {
+    en: 'Plan Free Journey',
+    es: 'Planear Viaje Gratis',
+    fr: 'Planifier Voyage Gratuit',
+    de: 'Kostenlose Reise planen',
+    ja: '無料で旅行を計画',
+    hi: 'मुफ्त यात्रा प्लान करें',
+    zh: '免费规划旅行',
+    ar: 'تخطيط رحلة مجانية',
+    it: 'Pianifica Viaggio Gratis',
+    pt: 'Planejar Viagem Grátis'
+  },
+  'curated': {
+    en: 'Curated',
+    es: 'Curado',
+    fr: 'Sélectionné',
+    de: 'Kuratiert',
+    ja: '厳選',
+    hi: 'चुनिंदा',
+    zh: '精选',
+    ar: 'مختار',
+    it: 'Curato',
+    pt: 'Curadoria'
+  },
+  'popular:': {
+    en: 'Popular:',
+    es: 'Popular:',
+    fr: 'Populaire :',
+    de: 'Beliebt:',
+    ja: '人気:',
+    hi: 'लोकप्रिय:',
+    zh: '热门:',
+    ar: 'شائع:',
+    it: 'Popolare:',
+    pt: 'Popular:'
+  },
+  'suggested': {
+    en: 'Suggested',
+    es: 'Sugerido',
+    fr: 'Suggéré',
+    de: 'Empfohlen',
+    ja: 'おすすめ',
+    hi: 'सुझाया गया',
+    zh: '建议',
+    ar: 'مقترح',
+    it: 'Consigliato',
+    pt: 'Sugerido'
+  },
+  '100% customizable in planner': {
+    en: '100% Customizable in Planner',
+    es: '100% Personalizable en el Planificador',
+    fr: '100% Personnalisable dans le Planificateur',
+    de: '100% Anpassbar im Planer',
+    ja: 'プランナーで100%自由にカスタマイズ可能',
+    hi: 'प्लानर में 100% अनुकूलन योग्य',
+    zh: '可在规划器中100%自由定制',
+    ar: 'قابل للتخصيص 100% في المخطط',
+    it: '100% Personalizzabile nel Pianificatore',
+    pt: '100% Personalizável no Planejador'
+  },
+  '/person': {
+    en: '/person',
+    es: '/persona',
+    fr: '/personne',
+    de: '/Person',
+    ja: '/人',
+    hi: '/व्यक्ति',
+    zh: '/人',
+    ar: '/شخص',
+    it: '/persona',
+    pt: '/pessoa'
+  },
+  'from ~': {
+    en: 'From ~',
+    es: 'Desde ~',
+    fr: 'À partir de ~',
+    de: 'Ab ~',
+    ja: '約 ~',
+    hi: 'लगभग ~',
+    zh: '起价约 ~',
+    ar: 'يبدأ من ~',
+    it: 'Da ~',
+    pt: 'A partir de ~'
+  },
+  'sign in': {
+    en: 'Sign In',
+    es: 'Iniciar Sesión',
+    fr: 'Se Connecter',
+    de: 'Anmelden',
+    ja: 'ログイン',
+    hi: 'साइन इन करें',
+    zh: '登录',
+    ar: 'تسجيل الدخول',
+    it: 'Accedi',
+    pt: 'Entrar'
+  },
+  'sign out': {
+    en: 'Sign Out',
+    es: 'Cerrar Sesión',
+    fr: 'Déconnexion',
+    de: 'Abmelden',
+    ja: 'ログアウト',
+    hi: 'साइन आउट',
+    zh: '退出登录',
+    ar: 'تسجيل الخروج',
+    it: 'Disconnetti',
+    pt: 'Sair'
+  },
+  'save destination': {
+    en: 'Save destination',
+    es: 'Guardar destino',
+    fr: 'Enregistrer la destination',
+    de: 'Reiseziel speichern',
+    ja: '目的地を保存',
+    hi: 'गंतव्य सहेजें',
+    zh: '保存目的地',
+    ar: 'حفظ الوجهة',
+    it: 'Salva destinazione',
+    pt: 'Salvar destino'
+  },
+  'explore handpicked getaways': {
+    en: 'Explore Handpicked Getaways',
+    es: 'Explora Escapadas Seleccionadas',
+    fr: 'Explorez des Escapades Triées sur le Volet',
+    de: 'Entdecke handverlesene Kurztrips',
+    ja: '厳選されたリゾートを探す',
+    hi: 'चुनिंदा पर्यटन स्थलों का अन्वेषण करें',
+    zh: '探索精选旅行胜地',
+    ar: 'استكشف ملاذات مختارة بعناية',
+    it: 'Esplora Fughe Selezionate',
+    pt: 'Explore Escapadas Selecionadas'
+  },
+  'recommended for your style': {
+    en: 'Recommended for Your Style',
+    es: 'Recomendado para Tu Estilo',
+    fr: 'Recommandé selon Votre Style',
+    de: 'Passend zu deinem Reisestil',
+    ja: 'あなたの旅スタイルにおすすめ',
+    hi: 'आपकी यात्रा शैली के अनुकूल',
+    zh: '为您量身定制的旅行推荐',
+    ar: 'موصى به وفق أسلوب سفرك',
+    it: 'Consigliato per il Tuo Stile',
+    pt: 'Recomendado para Seu Estilo'
+  },
+  'style match': {
+    en: 'Style Match',
+    es: 'Coincidencia de Estilo',
+    fr: 'Correspondance de Style',
+    de: 'Stil-Übereinstimmung',
+    ja: 'スタイル一致',
+    hi: 'शैली मेल',
+    zh: '风格匹配',
+    ar: 'مطابقة الأسلوب',
+    it: 'Stile Corrispondente',
+    pt: 'Combina com seu Estilo'
+  },
+  'tripverse destination discovery': {
+    en: 'TripVerse Destination Discovery',
+    es: 'Descubrimiento de Destinos TripVerse',
+    fr: 'Découverte de Destinations TripVerse',
+    de: 'TripVerse Reiseziel-Entdeckung',
+    ja: 'TripVerse デスティネーション発見',
+    hi: 'TripVerse गंतव्य खोज',
+    zh: 'TripVerse 目的地探索',
+    ar: 'استكشاف الوجهات عبر TripVerse',
+    it: 'Scoperta Destinazioni TripVerse',
+    pt: 'Descoberta de Destinos TripVerse'
+  },
+  'my profile': {
+    en: 'My Profile',
+    es: 'Mi Perfil',
+    fr: 'Mon Profil',
+    de: 'Mein Profil',
+    ja: 'マイプロフィール',
+    hi: 'मेरा प्रोफ़ाइल',
+    zh: '我的个人资料',
+    ar: 'ملفي الشخصي',
+    it: 'Il Mio Profilo',
+    pt: 'Meu Perfil'
+  },
+  'travel preferences': {
+    en: 'Travel Preferences',
+    es: 'Preferencias de Viaje',
+    fr: 'Préférences de Voyage',
+    de: 'Reiseeinstellungen',
+    ja: '旅行の好み',
+    hi: 'यात्रा प्राथमिकताएं',
+    zh: '旅行偏好',
+    ar: 'تفضيلات السفر',
+    it: 'Preferenze di Viaggio',
+    pt: 'Preferências de Viagem'
+  },
+  'digital passport': {
+    en: 'Digital Passport',
+    es: 'Pasaporte Digital',
+    fr: 'Passeport Numérique',
+    de: 'Digitaler Reisepass',
+    ja: 'デジタルパスポート',
+    hi: 'डिजिटल पासपोर्ट',
+    zh: '数字护照',
+    ar: 'جواز السفر الرقمي',
+    it: 'Passaporto Digitale',
+    pt: 'Passaporte Digital'
+  },
+  'upgrade to pro': {
+    en: 'Upgrade to Pro',
+    es: 'Mejorar a Pro',
+    fr: 'Passer à Pro',
+    de: 'Auf Pro upgraden',
+    ja: 'Proにアップグレード',
+    hi: 'प्रो में अपग्रेड करें',
+    zh: '升级至专业版',
+    ar: 'الترقية إلى برو',
+    it: 'Passa a Pro',
+    pt: 'Atualizar para Pro'
+  }
+};
+
+/**
+ * Common word tokens mapped across all 10 languages for dynamic compound text translation.
+ */
+const DYNAMIC_WORD_REPLACEMENTS: [RegExp, Record<LanguageCode, string>][] = [
+  [/\b(\d+)\s+Days?\b/gi, {
+    en: '$1 Days',
+    es: '$1 Días',
+    fr: '$1 Jours',
+    de: '$1 Tage',
+    ja: '$1 日間',
+    hi: '$1 दिन',
+    zh: '$1 天',
+    ar: '$1 أيام',
+    it: '$1 Giorni',
+    pt: '$1 Dias'
+  }],
+  [/\b(\d+)\s+Nights?\b/gi, {
+    en: '$1 Nights',
+    es: '$1 Noches',
+    fr: '$1 Nuits',
+    de: '$1 Nächte',
+    ja: '$1 泊',
+    hi: '$1 रातें',
+    zh: '$1 晚',
+    ar: '$1 ليالٍ',
+    it: '$1 Notti',
+    pt: '$1 Noites'
+  }],
+  [/\b(\d+)\s+Travelers?\b/gi, {
+    en: '$1 Travelers',
+    es: '$1 Viajeros',
+    fr: '$1 Voyageurs',
+    de: '$1 Reisende',
+    ja: '$1 名様',
+    hi: '$1 यात्री',
+    zh: '$1 位旅行者',
+    ar: '$1 مسافرين',
+    it: '$1 Viaggiatori',
+    pt: '$1 Viajantes'
+  }],
+  [/\bSuggested\b/gi, {
+    en: 'Suggested',
+    es: 'Sugerido',
+    fr: 'Suggéré',
+    de: 'Empfohlen',
+    ja: 'おすすめ',
+    hi: 'सुझाया गया',
+    zh: '建议',
+    ar: 'مقترح',
+    it: 'Consigliato',
+    pt: 'Sugerido'
+  }],
+  [/\bFrom\s*~/gi, {
+    en: 'From ~',
+    es: 'Desde ~',
+    fr: 'À partir de ~',
+    de: 'Ab ~',
+    ja: '約 ~',
+    hi: 'लगभग ~',
+    zh: '起价约 ~',
+    ar: 'يبدأ من ~',
+    it: 'Da ~',
+    pt: 'A partir de ~'
+  }],
+  [/\/person\b/gi, {
+    en: '/person',
+    es: '/persona',
+    fr: '/personne',
+    de: '/Person',
+    ja: '/人',
+    hi: '/व्यक्ति',
+    zh: '/人',
+    ar: '/شخص',
+    it: '/persona',
+    pt: '/pessoa'
+  }]
+];
+
+// In-memory reverse lookup map: English text -> translation key
+let enValueToKeyMap: Map<string, string> | null = null;
+function getEnValueToKeyMap(): Map<string, string> {
+  if (!enValueToKeyMap) {
+    enValueToKeyMap = new Map<string, string>();
+    if (TRANSLATIONS.en) {
+      for (const [k, v] of Object.entries(TRANSLATIONS.en)) {
+        if (typeof v === 'string') {
+          enValueToKeyMap.set(v.toLowerCase().trim(), k);
+        }
+      }
+    }
+  }
+  return enValueToKeyMap;
+}
+
+/**
+ * Universal phrase & arbitrary text translation engine.
+ * Converts raw English UI strings, category names, badges, or sentences into the target language.
+ */
+export function translateText(rawText: string, targetLang?: LanguageCode): string {
+  if (!rawText || typeof rawText !== 'string') return rawText;
+  const lang = targetLang || getActiveLanguage();
+  if (lang === 'en') return rawText;
+
+  const normalized = rawText.trim();
+  const lower = normalized.toLowerCase();
+
+  // 1. Check exact dictionary match by key
+  const dict = TRANSLATIONS[lang];
+  if (dict && dict[normalized]) {
+    return dict[normalized];
+  }
+
+  // 2. Check universal phrase dictionary
+  if (UNIVERSAL_PHRASE_DICTIONARY[lower]?.[lang]) {
+    return UNIVERSAL_PHRASE_DICTIONARY[lower]![lang]!;
+  }
+
+  // 3. Reverse lookup against English dictionary values
+  const revKey = getEnValueToKeyMap().get(lower);
+  if (revKey && dict && dict[revKey]) {
+    return dict[revKey];
+  }
+
+  // 4. Token-based dynamic replacement (e.g. "Suggested 3 - 4 Days", "3 Days • 2 Nights", "From ~₹15,000/person")
+  let translated = normalized;
+  for (const [pattern, translations] of DYNAMIC_WORD_REPLACEMENTS) {
+    if (translations[lang]) {
+      translated = translated.replace(pattern, translations[lang]);
+    }
+  }
+
+  return translated;
+}
 
 /**
  * Automatically detects the ideal starting language based on the user's browser navigator locale.
@@ -1971,7 +3745,7 @@ export function setActiveLanguage(lang: LanguageCode): void {
 }
 
 /**
- * Instant translation lookup with graceful fallback to English and raw key,
+ * Instant translation lookup with graceful fallback to Universal Phrase Engine and English,
  * with optional dynamic parameter interpolation (e.g. {current}, {total}, {count}).
  */
 export function t(
@@ -1994,7 +3768,12 @@ export function t(
   }
 
   const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
-  let text = dict && dict[key] ? dict[key] : (TRANSLATIONS.en && TRANSLATIONS.en[key] ? TRANSLATIONS.en[key] : key);
+  let text = dict && dict[key] ? dict[key] : (TRANSLATIONS.en && TRANSLATIONS.en[key] ? TRANSLATIONS.en[key] : '');
+
+  // If not found in key-based dictionaries, run Universal Phrase Translation
+  if (!text) {
+    text = translateText(key, currentLang);
+  }
 
   if (params) {
     for (const [pKey, pVal] of Object.entries(params)) {
@@ -2002,7 +3781,7 @@ export function t(
     }
   }
 
-  return text;
+  return text || key;
 }
 
 /**
@@ -2034,6 +3813,7 @@ export function useLanguage() {
     language,
     setLanguage: changeLanguage,
     t: (key: string, params?: Record<string, string | number>) => t(key, language, params),
+    translate: (rawText: string) => translateText(rawText, language),
     languages: LANGUAGES,
     currentConfig: LANGUAGES[language] || LANGUAGES.en
   };

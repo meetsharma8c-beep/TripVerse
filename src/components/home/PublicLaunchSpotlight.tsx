@@ -13,6 +13,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
+import { useLanguage } from '../../services/languageService';
 
 interface PublicLaunchSpotlightProps {
   onOpenPlanner: () => void;
@@ -23,6 +24,7 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
   onOpenPlanner,
   onExplore
 }) => {
+  const { t } = useLanguage();
   const [copiedLink, setCopiedLink] = useState(false);
   const launchUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tripverse-pied.vercel.app';
 
@@ -74,13 +76,13 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-xs font-black uppercase tracking-widest mb-3">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-300 animate-pulse" />
-                <span>Official Public Release 2.0</span>
+                <span>{t('spotlight.badge')}</span>
               </div>
               <h2 className="text-2xl sm:text-4xl font-display font-black tracking-tight text-white leading-tight">
-                Welcome to the Future of <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Highway & Travel Intelligence</span>
+                {t('spotlight.title')}
               </h2>
               <p className="text-sm sm:text-base text-slate-300 max-w-2xl mt-2 font-normal leading-relaxed">
-                Create a draft itinerary and budget, then review live driving routes and nearby map listings when those services are configured. Confirm bookings and place details directly with providers.
+                {t('spotlight.subtitle')}
               </p>
             </div>
 
@@ -91,7 +93,7 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
                 onClick={onOpenPlanner}
                 className="px-6 py-3.5 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-sm shadow-lg shadow-emerald-500/30 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
               >
-                <span>Plan Free Journey</span>
+                <span>{t('spotlight.planFree')}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
               <button
@@ -100,7 +102,7 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
                 className="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/20 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
               >
                 <Compass className="w-4 h-4 text-emerald-300" />
-                <span>Explore the World</span>
+                <span>{t('spotlight.explore')}</span>
               </button>
             </div>
           </div>

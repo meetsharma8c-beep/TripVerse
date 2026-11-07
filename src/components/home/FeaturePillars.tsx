@@ -1,43 +1,46 @@
 import React from 'react';
 import { CloudRain, Coffee, ShieldCheck, Navigation, Percent } from 'lucide-react';
 import { ScrollReveal } from '../common/ScrollReveal';
+import { useLanguage } from '../../services/languageService';
 
 export const FeaturePillars: React.FC = () => {
+  const { t } = useLanguage();
+
   const pillars = [
     {
       id: 'weather',
       icon: CloudRain,
-      badge: 'Forecast',
-      title: 'Weather forecast',
-      desc: 'Open-Meteo forecast when coordinates and provider coverage are available; not a road advisory'
+      badge: t('pillar.weather.badge'),
+      title: t('pillar.weather.title'),
+      desc: t('pillar.weather.desc')
     },
     {
       id: 'break-stops',
       icon: Coffee,
-      badge: 'When available',
-      title: 'Route & place listings',
-      desc: 'Driving route geometry and nearby Geoapify/OpenStreetMap places; facilities are not confirmed'
+      badge: t('pillar.stops.badge'),
+      title: t('pillar.stops.title'),
+      desc: t('pillar.stops.desc')
     },
     {
       id: 'pricing',
       icon: Percent,
-      badge: 'Estimate',
-      title: 'Trip budgets',
-      desc: 'Draft budget estimates; confirm current prices with providers'
+      badge: t('pillar.budget.badge'),
+      title: t('pillar.budget.title'),
+      desc: t('pillar.budget.desc')
     },
     {
       id: 'navigation',
       icon: Navigation,
-      badge: 'External app',
-      title: 'Get directions',
-      desc: 'Open a navigation provider for turn-by-turn directions and traffic'
+      badge: t('pillar.nav.badge'),
+      title: t('pillar.nav.title'),
+      desc: t('pillar.nav.desc')
     },
     {
       id: 'safety',
       icon: ShieldCheck,
-      badge: 'Location-specific',
-      title: 'Emergency information',
-      desc: 'Use official local services; TripVerse does not verify nearby facilities'
+      badge: t('pillar.safety.badge'),
+      title: t('pillar.safety.title'),
+      desc: t('pillar.safety.desc')
     }
   ];
 

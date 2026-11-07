@@ -3,6 +3,7 @@ import { Destination, CurrencyCode } from '../../types/trip';
 import { X, Sparkles, MapPin, Wallet, Star, Bookmark, Check, Car, Utensils, Share2, ShieldCheck, Compass } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 import { triggerHaptic } from '../../services/deviceService';
 import { Landmark3DViewer } from '../common/Landmark3DViewer';
 
@@ -67,6 +68,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
   isSaved = false,
   onToggleSaved
 }) => {
+  const { t } = useLanguage();
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
   const [copiedLink, setCopiedLink] = useState(false);
   const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
@@ -364,9 +366,9 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="btn-liquid-glass px-5 py-3 rounded-full text-slate-700 font-bold text-xs"
+            className="btn-liquid-glass px-5 py-3 rounded-full text-slate-700 font-bold text-xs cursor-pointer"
           >
-            Close
+            {t('modal.close')}
           </button>
 
           <button
@@ -377,10 +379,10 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
               onClose();
               onPlanTrip(destName);
             }}
-            className="btn-liquid-primary flex-1 py-3.5 px-5 rounded-full text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2"
+            className="btn-liquid-primary flex-1 py-3.5 px-5 rounded-full text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
           >
             <Sparkles className="w-4 h-4 shrink-0" />
-            <span>Plan {destination.name} Trip With AI</span>
+            <span>{t('modal.planThis')}</span>
           </button>
         </div>
 

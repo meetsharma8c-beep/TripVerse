@@ -17,6 +17,7 @@ import {
 } from '../../services/authService';
 import { AuthUser } from '../../types/auth';
 import { TripVerseProModal } from '../subscription/TripVerseProModal';
+import { useLanguage } from '../../services/languageService';
 
 interface ProfileViewProps {
   userProfile: UserProfile;
@@ -53,6 +54,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onOpenLegal,
   onOpenProModal
 }) => {
+  const { t } = useLanguage();
   const [currency, setCurrency] = useState<Currency>(getStoredCurrency());
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<UserProfile>(userProfile);
@@ -286,7 +288,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D] font-semibold text-xs border border-[#8EA78D]/30 transition-colors cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
+                  <span>{isEditing ? t('profile.cancel') : t('profile.edit')}</span>
                 </button>
 
                 {savedAccounts.length > 1 && (
@@ -331,19 +333,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <button
                     onClick={handleSignOut}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs border border-rose-200 transition-colors cursor-pointer"
-                    title="Sign Out"
+                    title={t('profile.signOut')}
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    <span>Sign Out</span>
+                    <span>{t('profile.signOut')}</span>
                   </button>
                 ) : (
                   <button
                     onClick={onOpenAuthModal}
                     className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-95"
-                    title="Sign In or Register"
+                    title={t('profile.signIn')}
                   >
                     <User className="w-3.5 h-3.5" />
-                    <span>Sign In / Register</span>
+                    <span>{t('profile.signIn')}</span>
                   </button>
                 )}
               </div>
@@ -385,17 +387,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-3 pt-6 mt-6 border-t border-slate-100 text-center">
           <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 min-w-0">
-            <span className="text-[10px] uppercase font-semibold text-slate-400 block tracking-wider">Trips Planned</span>
+            <span className="text-[10px] uppercase font-semibold text-slate-400 block tracking-wider">{t('profile.tripsPlanned')}</span>
             <span className="text-xl sm:text-2xl font-serif font-bold text-slate-900">{tripsCount}</span>
           </div>
           <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 min-w-0">
-            <span className="text-[10px] uppercase font-semibold text-slate-400 block tracking-wider">Highway Kms</span>
+            <span className="text-[10px] uppercase font-semibold text-slate-400 block tracking-wider">{t('Highway Kms')}</span>
             <span className="text-xl sm:text-2xl font-serif font-bold text-[#2D5A3D]">
               {highwayKms > 0 ? `${highwayKms.toLocaleString()} km` : '0 km'}
             </span>
           </div>
           <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 min-w-0">
-            <span className="text-[10px] uppercase font-semibold text-slate-400 block tracking-wider">Passport Badges</span>
+            <span className="text-[10px] uppercase font-semibold text-slate-400 block tracking-wider">{t('Passport Badges')}</span>
             <span className="text-xl sm:text-2xl font-serif font-bold text-amber-500">
               {activeBadgesCount > 0 ? `${activeBadgesCount} Active` : '0 Active'}
             </span>
