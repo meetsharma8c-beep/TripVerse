@@ -14,6 +14,7 @@ import { generateAITrip } from './plannerEngine';
 import { AIAppAction } from './aiAssistant';
 import { CONCODE_MASTER_PROMPT } from './concodeMasterPrompt';
 import { resolveTransitContext } from './transportFeasibilityEngine';
+import { getReplanOptions } from './replanningService';
 
 export interface BrainStatus {
   online: boolean;
@@ -103,7 +104,7 @@ export interface ConcodeBrainResponse {
   structuredItinerary?: StructuredItinerary;
   budgetBreakdown?: AIChatBudgetBreakdown;
   modificationBadge?: {
-    type: 'cheaper' | 'removed' | 'added' | 'rainy' | 'saved' | 'delay';
+    type: 'cheaper' | 'removed' | 'added' | 'rainy' | 'saved' | 'delay' | 'replan';
     label: string;
     detail: string;
   };
@@ -1035,6 +1036,58 @@ export async function queryConcodeBrain(
         type: 'UPDATE_TRIP',
         payload: { updatedTrip }
       }
+    };
+  }
+
+  // =========================================================================
+  // SCENARIO: CANCELLATIONS, SEVERE DISRUPTIONS & REPLANNING (emergency protocol)
+  // =========================================================================
+  if (
+    norm.includes('flight cancel') ||
+    norm.includes('flight cancelled') ||
+    norm.includes('train cancel') ||
+    norm.includes('train cancelled') ||
+    norm.includes('trip cancel') ||
+    norm.includes('trip cancelled') ||
+    norm.includes('road closed') ||
+    norm.includes('road closure') ||
+    norm.includes('landslide') ||
+    norm.includes('storm') ||
+    (norm.includes('replan') && !norm.includes('delay')) ||
+    norm.includes('replanning')
+  ) {
+    const dest = session.destination || currentDest || tripContext.destination || 'your destination';
+    const cleanDest = dest.split(',')[0].trim();
+    const reason = norm.includes('train') 
+      ? 'train_cancellation' 
+      : (norm.includes('road') || norm.includes('landslide')) 
+        ? 'official_change' 
+        : (norm.includes('storm') || norm.includes('weather')) 
+          ? 'weather_alert' 
+          : 'flight_cancellation';
+
+    const replanData = getReplanOptions(tripContext, reason as any);
+    const topAlternative = replanData.newDestinations[0]?.destination || 'nearby safe alternatives';
+
+    return {
+      guild: 'system_architect',
+      guildIcon: '🏛️',
+      confidence: 0.99,
+      response: `**ConCode Disruption Protocol Activated for ${cleanDest}!**\n\n` +
+        `Per ConCode Reliability Section 19, when a cancellation or disruption occurs, we prioritize safety, location, and viable alternatives over assumptions:\n\n` +
+        `• **Immediate Action:** We have prepared draft alternatives including safe nearby destinations like **${topAlternative}** and date-shifting options.\n` +
+        `• **Direct Carrier Verification:** Contact the operating provider directly to confirm cancellation status, rescheduling waivers, and ticket refund eligibility.\n` +
+        `• **Interactive Replanner:** You can preview full day-by-day itineraries for alternate routes or secure nearby stays with one tap below.`,
+      modificationBadge: {
+        type: 'replan',
+        label: 'Re-Plan Ready',
+        detail: `Disruption alternative for ${cleanDest}`
+      },
+      actionButtons: [
+        { label: 'Open Re-planning Options', action: 'OPEN_REPLANNING', primary: true },
+        { label: 'Find Nearby Stays', action: 'OPEN_EMERGENCY_STAY' },
+        { label: 'Refund & Policy Docket', action: 'OPEN_REFUND_INFO' }
+      ]
     };
   }
 

@@ -104,6 +104,16 @@ describe('CONCODE Brain Advanced Capabilities Integration', () => {
     expect(res.updatedTrip?.itinerary[0].activities[0].title).toContain('Hotel Check-in');
   });
 
+  it('activates ConCode Section 19 disruption protocol for cancellations and severe disruption replanning', async () => {
+    const res = await queryConcodeBrain('My flight was cancelled, please replan my trip', mockTrip);
+    expect(res.guild).toBe('system_architect');
+    expect(res.modificationBadge?.type).toBe('replan');
+    expect(res.response).toContain('ConCode Disruption Protocol Activated');
+    expect(res.actionButtons?.some(btn => btn.action === 'OPEN_REPLANNING')).toBe(true);
+    expect(res.actionButtons?.some(btn => btn.action === 'OPEN_EMERGENCY_STAY')).toBe(true);
+    expect(res.actionButtons?.some(btn => btn.action === 'OPEN_REFUND_INFO')).toBe(true);
+  });
+
   it('orchestrates group travel consensus across the swarm', async () => {
     const res = await queryConcodeBrain('Plan a group trip with mixed preferences for adventure and food', mockTrip);
     expect(res.guild).toBe('research_scientist');

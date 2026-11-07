@@ -352,7 +352,7 @@ export interface ChatMessage {
   structuredItinerary?: StructuredItinerary;
   budgetBreakdown?: AIChatBudgetBreakdown;
   modificationBadge?: {
-    type: 'cheaper' | 'removed' | 'added' | 'rainy' | 'saved' | 'delay';
+    type: 'cheaper' | 'removed' | 'added' | 'rainy' | 'saved' | 'delay' | 'replan';
     label: string;
     detail: string;
   };
