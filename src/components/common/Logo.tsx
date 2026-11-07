@@ -28,8 +28,8 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   if (!imgFailed) {
     return (
       <img
-        src="/tripverse-mark-cropped.png"
-        srcSet="/tripverse-mark-cropped.png 1x, /tripverse-mark-cropped@2x.png 2x, /tripverse-mark-vibrant.png 3x"
+        src="/tripverse-mark.png"
+        srcSet="/tripverse-mark.png 1x, /tripverse-mark@2x.png 2x"
         alt="TripVerse Logo"
         onError={() => setImgFailed(true)}
         style={{
@@ -168,9 +168,12 @@ export const Logo: React.FC<LogoProps> = ({
   onClick,
   className = ''
 }) => {
+  const [titleImgFailed, setTitleImgFailed] = React.useState(false);
+
   const sizeMap = {
     adaptive: {
       imgHeight: 'h-6.5 min-[380px]:h-7 sm:h-7.5 md:h-8 lg:h-7 xl:h-7.5 2xl:h-8',
+      titleHeight: 'h-5 min-[380px]:h-5.5 sm:h-6 md:h-6 lg:h-5.5 xl:h-6 2xl:h-6.5',
       textMain: 'text-[15px] min-[380px]:text-[16px] sm:text-[17px] md:text-lg lg:text-[15.5px] xl:text-[16.5px] 2xl:text-lg',
       textSub: 'text-[9px] min-[400px]:text-[9.5px] xl:text-[10px]',
       gap: 'gap-1.5 min-[380px]:gap-2 lg:gap-1.5 xl:gap-2',
@@ -179,6 +182,7 @@ export const Logo: React.FC<LogoProps> = ({
     },
     sm: { 
       imgHeight: 'h-5.5 sm:h-6', 
+      titleHeight: 'h-4.5 sm:h-5',
       textMain: 'text-[13.5px] sm:text-[14.5px]', 
       textSub: 'text-[8.5px] sm:text-[9.5px]', 
       gap: 'gap-1.5 sm:gap-2',
@@ -187,6 +191,7 @@ export const Logo: React.FC<LogoProps> = ({
     },
     md: { 
       imgHeight: 'h-7.5 sm:h-8.5 xl:h-9', 
+      titleHeight: 'h-6 sm:h-6.5 xl:h-7',
       textMain: 'text-base sm:text-lg xl:text-xl', 
       textSub: 'text-[9.5px] sm:text-[10px] xl:text-[10.5px]', 
       gap: 'gap-2 sm:gap-2.5 xl:gap-3',
@@ -195,6 +200,7 @@ export const Logo: React.FC<LogoProps> = ({
     },
     lg: { 
       imgHeight: 'h-10 sm:h-11 md:h-12', 
+      titleHeight: 'h-8 sm:h-9 md:h-10',
       textMain: 'text-xl sm:text-2xl', 
       textSub: 'text-xs', 
       gap: 'gap-2.5 sm:gap-3',
@@ -203,6 +209,7 @@ export const Logo: React.FC<LogoProps> = ({
     },
     xl: { 
       imgHeight: 'h-12 sm:h-14 md:h-16', 
+      titleHeight: 'h-10 sm:h-12 md:h-14',
       textMain: 'text-2xl sm:text-3xl md:text-4xl', 
       textSub: 'text-xs sm:text-sm', 
       gap: 'gap-3 sm:gap-3.5',
@@ -245,7 +252,7 @@ export const Logo: React.FC<LogoProps> = ({
 
       {/* 
         Official Brand Title:
-        Updated Title Style ("Trip" + Winding Highway Connector with Map Pin + "Verse")
+        Rendered from official standalone title wordmark asset with crisp vector fallback
         Protected global trademark that never adapts/translates
       */}
       <div 
@@ -253,29 +260,51 @@ export const Logo: React.FC<LogoProps> = ({
         translate="no" 
         className={`flex flex-col leading-none min-w-0 notranslate ${isStacked ? 'items-center mt-1.5' : 'justify-center'}`}
       >
-        <div 
-          data-no-translate="true"
-          translate="no"
-          className={`font-display font-black tracking-tight whitespace-nowrap notranslate flex items-center ${current.textMain}`}
-        >
-          <span 
-            data-no-translate="true" 
-            translate="no" 
-            className={`notranslate ${isLight ? 'text-white' : 'text-[#031832] dark:text-slate-100'}`}
+        {!titleImgFailed ? (
+          <img
+            src={isLight ? "/tripverse-title-dark.png" : "/tripverse-title.png"}
+            srcSet={
+              isLight 
+                ? "/tripverse-title-dark.png 1x, /tripverse-title-dark@2x.png 2x" 
+                : "/tripverse-title.png 1x, /tripverse-title@2x.png 2x"
+            }
+            alt="TripVerse"
+            onError={() => setTitleImgFailed(true)}
+            style={{
+              imageRendering: '-webkit-optimize-contrast',
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden'
+            }}
+            className={`select-none pointer-events-none object-contain drop-shadow-2xs transition-transform duration-300 group-hover:scale-[1.02] ${current.titleHeight} w-auto`}
+            draggable={false}
+            loading="eager"
+            decoding="async"
+          />
+        ) : (
+          <div 
+            data-no-translate="true"
+            translate="no"
+            className={`font-display font-black tracking-tight whitespace-nowrap notranslate flex items-center ${current.textMain}`}
           >
-            Trip
-          </span>
+            <span 
+              data-no-translate="true" 
+              translate="no" 
+              className={`notranslate ${isLight ? 'text-white' : 'text-[#072851] dark:text-slate-100'}`}
+            >
+              Trip
+            </span>
 
-          <HighwayConnector isLight={isLight} className={current.roadSize} />
+            <HighwayConnector isLight={isLight} className={current.roadSize} />
 
-          <span 
-            data-no-translate="true" 
-            translate="no" 
-            className={`notranslate ${isLight ? 'text-emerald-300' : 'text-[#04803E] dark:text-emerald-400'}`}
-          >
-            Verse
-          </span>
-        </div>
+            <span 
+              data-no-translate="true" 
+              translate="no" 
+              className={`notranslate ${isLight ? 'text-emerald-300' : 'text-[#0D723B] dark:text-emerald-400'}`}
+            >
+              Verse
+            </span>
+          </div>
+        )}
 
         {showTagline && (
           <span className={`font-semibold tracking-wide mt-0.5 truncate max-w-[190px] sm:max-w-none ${current.textSub} ${

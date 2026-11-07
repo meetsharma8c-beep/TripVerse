@@ -561,14 +561,24 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                     onClick={() => setActiveScreen('home')}
                     className="flex items-center gap-1.5 cursor-pointer notranslate"
                   >
-                    <div className="w-5 h-5 rounded-lg bg-[#2D5A3D] flex items-center justify-center text-white shadow-2xs">
-                      <Compass className="w-3 h-3 text-emerald-300" />
-                    </div>
-                    <div className="flex items-center font-display font-black text-xs tracking-tight">
-                      <span className="text-[#031832] dark:text-white">Trip</span>
-                      <HighwayConnector className="h-2 w-3.5 mx-0.5" />
-                      <span className="text-[#04803E] dark:text-emerald-400">Verse</span>
-                    </div>
+                    <img
+                      src="/tripverse-mark.png"
+                      alt="TripVerse Logo Mark"
+                      className="w-5 h-5 object-contain notranslate"
+                      loading="eager"
+                    />
+                    <img
+                      src="/tripverse-title.png"
+                      alt="TripVerse"
+                      className="h-3.5 w-auto object-contain dark:hidden notranslate"
+                      loading="eager"
+                    />
+                    <img
+                      src="/tripverse-title-dark.png"
+                      alt="TripVerse"
+                      className="h-3.5 w-auto object-contain hidden dark:block notranslate"
+                      loading="eager"
+                    />
                   </div>
 
                   {/* Header Actions: Currency & Notifications */}
