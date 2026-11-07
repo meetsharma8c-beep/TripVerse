@@ -6,12 +6,14 @@ import { loadTripPacking, saveTripPacking } from '../../services/storageService'
 import { openExternalUrl, triggerHaptic } from '../../services/deviceService';
 import confetti from 'canvas-confetti';
 import { Sun, CloudRain, Wind, Droplets, CheckCircle2, Circle, Plus, Trash2, RotateCcw, Sparkles, Thermometer, Share2, Check, Luggage, Compass, Umbrella, Shirt } from 'lucide-react';
+import { useLanguage } from '../../services/languageService';
 
 interface PackingWeatherViewProps {
   trip: Trip;
 }
 
 export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
+  const { t } = useLanguage();
   // Show a clearly marked seasonal estimate until the live forecast request succeeds.
   const [weather, setWeather] = useState<WeatherForecast>(() => 
     getDestinationWeather(trip.destination, trip.durationDays)

@@ -41,12 +41,14 @@ import {
 } from 'lucide-react';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { UpiPaymentModal } from './UpiPaymentModal';
+import { useLanguage } from '../../services/languageService';
 
 interface TripSplitExpensesProps {
   trip: Trip;
 }
 
 export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
+  const { t } = useLanguage();
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);

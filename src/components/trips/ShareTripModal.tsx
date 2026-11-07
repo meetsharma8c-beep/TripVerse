@@ -2,6 +2,7 @@ import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
 import { Trip } from '../../types/trip';
 import { getStoredCurrency, formatCurrency, Currency } from '../../services/currencyService';
+import { useLanguage } from '../../services/languageService';
 import { X, Share2, Copy, Check } from 'lucide-react';
 
 interface ShareTripModalProps {
@@ -15,6 +16,7 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
   isOpen,
   onClose
 }) => {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [currency, setCurrency] = useState<Currency>(getStoredCurrency());
 

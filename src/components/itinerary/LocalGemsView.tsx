@@ -5,6 +5,7 @@ import { triggerHaptic } from '../../services/deviceService';
 import { getStoredCurrency, formatCurrency, Currency } from '../../services/currencyService';
 import confetti from 'canvas-confetti';
 import { Utensils, Sparkles, MapPin, Star, Plus, Check, Compass, Clock, Leaf, ExternalLink, ShieldCheck, RefreshCw } from 'lucide-react';
+import { useLanguage } from '../../services/languageService';
 
 interface LocalGemsViewProps {
   trip: Trip;
@@ -12,6 +13,7 @@ interface LocalGemsViewProps {
 }
 
 export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
+  const { t } = useLanguage();
   const [gemsData, setGemsData] = useState<DestinationGems>({
     destination: trip.destination,
     foodGems: [],

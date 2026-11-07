@@ -5180,6 +5180,522 @@ export const UNIVERSAL_PHRASE_DICTIONARY: Record<string, Partial<Record<Language
     it: 'Rivedi e Ripianifica Viaggio',
     pt: 'Revisar e Replanejar Viagem',
   },
+  'compare live transport & booking': {
+    en: 'Compare Live Transport & Booking',
+    es: 'Comparar Transporte y Reservas en Vivo',
+    fr: 'Comparer les Transports et Réservations en Direct',
+    de: 'Live-Transport & Buchungen vergleichen',
+    ja: '交通と予約をリアルタイムで比較',
+    hi: 'लाइव परिवहन और बुकिंग की तुलना करें',
+    zh: '实时比对交通与预订',
+    ar: 'مقارنة وسائل النقل والحجز المباشر',
+    it: 'Confronta Trasporti e Prenotazioni dal Vivo',
+    pt: 'Comparar Transporte e Reservas ao Vivo',
+  },
+  'external provider search': {
+    en: 'External Provider Search',
+    es: 'Búsqueda en Proveedores Externos',
+    fr: 'Recherche de Prestataires Externes',
+    de: 'Suche nach externen Anbietern',
+    ja: '外部プロバイダー検索',
+    hi: 'बाहरी प्रदाता खोज',
+    zh: '外部服务商搜索',
+    ar: 'بحث مزودي الخدمة الخارجيين',
+    it: 'Ricerca Fornitori Esterni',
+    pt: 'Pesquisa de Fornecedores Externos',
+  },
+  'packing checklist': {
+    en: 'Packing Checklist',
+    es: 'Lista de Equipaje',
+    fr: 'Liste de Colisage',
+    de: 'Packliste',
+    ja: 'パッキングリスト',
+    hi: 'पैकिंग चेकलिस्ट',
+    zh: '打包清单',
+    ar: 'قائمة الأمتعة',
+    it: 'Lista Bagagli',
+    pt: 'Lista de Bagagem',
+  },
+  'view & print travel dossier': {
+    en: 'View & Print Travel Dossier',
+    es: 'Ver e Imprimir Dossier de Viaje',
+    fr: 'Voir et Imprimer le Dossier de Voyage',
+    de: 'Reisedossier anzeigen & drucken',
+    ja: '旅行資料を表示・印刷',
+    hi: 'यात्रा दस्तावेज़ देखें और प्रिंट करें',
+    zh: '查看并打印旅行指南',
+    ar: 'عرض وطباعة ملف السفر',
+    it: 'Visualizza e Stampa Dossier di Viaggio',
+    pt: 'Ver e Imprimir Dossiê de Viagem',
+  },
+  'smart packing & climate forecast': {
+    en: 'Smart Packing & Climate Forecast',
+    es: 'Equipaje Inteligente y Pronóstico del Clima',
+    fr: 'Bagages Intelligents et Prévisions Météo',
+    de: 'Intelligentes Packen & Klimavorhersage',
+    ja: 'スマートパッキングと気候予報',
+    hi: 'स्मार्ट पैकिंग और मौसम पूर्वानुमान',
+    zh: '智能打包与气候预测',
+    ar: 'الأمتعة الذكية وتوقعات الطقس',
+    it: 'Preparazione Bagagli Smart e Meteo',
+    pt: 'Bagagem Inteligente e Previsão do Clima',
+  },
+  'items packed': {
+    en: 'Items Packed',
+    es: 'Artículos Empacados',
+    fr: 'Articles Emballés',
+    de: 'Gepackte Artikel',
+    ja: '梱包済みの持ち物',
+    hi: 'पैक किए गए सामान',
+    zh: '已打包物品',
+    ar: 'العناصر المحزومة',
+    it: 'Articoli Imballati',
+    pt: 'Itens Embalados',
+  },
+  'custom packing item': {
+    en: 'Custom Packing Item',
+    es: 'Artículo Personalizado de Equipaje',
+    fr: 'Article Personnalisé',
+    de: 'Benutzerdefinierter Packartikel',
+    ja: 'カスタムアイテムを追加',
+    hi: 'कस्टम पैकिंग आइटम',
+    zh: '自定义行李物品',
+    ar: 'عنصر أمتعة مخصص',
+    it: 'Articolo Personalizzato',
+    pt: 'Item de Bagagem Personalizado',
+  },
+  'local gems & secret detours': {
+    en: 'Local Gems & Secret Detours',
+    es: 'Tesoros Locales y Desvíos Secretos',
+    fr: 'Trésors Locaux et Détours Secrets',
+    de: 'Lokale Geheimtipps & Abstecher',
+    ja: '地元の隠れた名所と寄り道',
+    hi: 'स्थानीय छिपे हुए स्थल और गुप्त पड़ाव',
+    zh: '当地特色小众景点与秘密路线',
+    ar: 'الجواهر المحلية والمسارات السرية',
+    it: 'Gemme Locali e Deviazioni Segrete',
+    pt: 'Tesouros Locais e Desvios Secretos',
+  },
+  'filter by vibe': {
+    en: 'Filter by Vibe',
+    es: 'Filtrar por Ambiente',
+    fr: 'Filtrer par Ambiance',
+    de: 'Nach Atmosphäre filtern',
+    ja: '雰囲気で絞り込む',
+    hi: 'माहौल के अनुसार फ़िल्टर करें',
+    zh: '按旅行氛围筛选',
+    ar: 'تصفية حسب الأجواء',
+    it: 'Filtra per Atmosfera',
+    pt: 'Filtrar por Vibe',
+  },
+  'trip expenses & group settlement': {
+    en: 'Trip Expenses & Group Settlement',
+    es: 'Gastos de Viaje y Liquidación Grupal',
+    fr: 'Dépenses de Voyage et Règlement de Groupe',
+    de: 'Reiseausgaben & Gruppenabrechnung',
+    ja: '旅行の支出と割り勘精算',
+    hi: 'यात्रा के खर्च और समूह का निपटान',
+    zh: '旅行费用与群组分摊',
+    ar: 'نفقات الرحلة والتسوية الجماعية',
+    it: 'Spese di Viaggio e Saldo di Gruppo',
+    pt: 'Despesas de Viagem e Divisão de Custos',
+  },
+  'add expense': {
+    en: 'Add Expense',
+    es: 'Agregar Gasto',
+    fr: 'Ajouter une Dépense',
+    de: 'Ausgabe hinzufügen',
+    ja: '支出を追加',
+    hi: 'खर्च जोड़ें',
+    zh: '添加支出',
+    ar: 'إضافة نفقة',
+    it: 'Aggiungi Spesa',
+    pt: 'Adicionar Despesa',
+  },
+  'who paid': {
+    en: 'Who Paid',
+    es: '¿Quién Pagó?',
+    fr: 'Qui a Payé ?',
+    de: 'Wer hat bezahlt?',
+    ja: '支払った人',
+    hi: 'किसने भुगतान किया',
+    zh: '付款人',
+    ar: 'من دفع',
+    it: 'Chi ha Pagato',
+    pt: 'Quem Pagou',
+  },
+  'settle up': {
+    en: 'Settle Up',
+    es: 'Liquidar Cuentas',
+    fr: 'Régler les Comptes',
+    de: 'Abrechnen',
+    ja: '精算する',
+    hi: 'हिसाब चुकता करें',
+    zh: '结清账目',
+    ar: 'تسوية الحساب',
+    it: 'Salda i Conti',
+    pt: 'Acertar Contas',
+  },
+  'trip passes & transit checkout': {
+    en: 'Trip Passes & Transit Checkout',
+    es: 'Pases de Viaje y Pago de Tránsito',
+    fr: 'Pass Voyage et Paiement du Transit',
+    de: 'Reisepässe & Transit-Kasse',
+    ja: '旅行パスと交通チケットの決済',
+    hi: 'ट्रिप पास और ट्रांजिट चेकआउट',
+    zh: '旅行通票与交通结账',
+    ar: 'تصاريح السفر والدفع',
+    it: 'Pass di Viaggio e Checkout Trasporti',
+    pt: 'Passes de Viagem e Pagamento de Trânsito',
+  },
+  'direct gateway': {
+    en: 'Direct Gateway',
+    es: 'Pasarela Directa',
+    fr: 'Passerelle Directe',
+    de: 'Direktes Gateway',
+    ja: 'ダイレクトゲートウェイ',
+    hi: 'सीधा गेटवे',
+    zh: '直连通道',
+    ar: 'بوابة مباشرة',
+    it: 'Gateway Diretto',
+    pt: 'Gateway Direto',
+  },
+  'cancellation guarantee': {
+    en: 'Cancellation Guarantee',
+    es: 'Garantía de Cancelación',
+    fr: 'Garantie d\'Annulation',
+    de: 'Stornierungsgarantie',
+    ja: 'キャンセル保証',
+    hi: 'रद्दीकरण गारंटी',
+    zh: '退订保障',
+    ar: 'ضمان الإلغاء',
+    it: 'Garanzia di Cancellazione',
+    pt: 'Garantia de Cancelamento',
+  },
+  'tripverse pay gateway': {
+    en: 'TripVerse Pay Gateway',
+    es: 'Pasarela de Pago TripVerse',
+    fr: 'Passerelle de Paiement TripVerse',
+    de: 'TripVerse Pay Gateway',
+    ja: 'TripVerse ペイゲートウェイ',
+    hi: 'ट्रिपवर्स पे गेटवे',
+    zh: 'TripVerse 支付网关',
+    ar: 'بوابة دفع TripVerse',
+    it: 'Gateway di Pagamento TripVerse',
+    pt: 'Gateway de Pagamento TripVerse',
+  },
+  'select payment method': {
+    en: 'Select Payment Method',
+    es: 'Seleccionar Método de Pago',
+    fr: 'Sélectionner le Mode de Paiement',
+    de: 'Zahlungsmethode wählen',
+    ja: 'お支払い方法を選択',
+    hi: 'भुगतान विधि चुनें',
+    zh: '选择支付方式',
+    ar: 'اختر طريقة الدفع',
+    it: 'Seleziona Metodo di Pagamento',
+    pt: 'Selecionar Método de Pagamento',
+  },
+  'scan upi qr': {
+    en: 'Scan UPI QR',
+    es: 'Escanear QR de UPI',
+    fr: 'Scanner le QR UPI',
+    de: 'UPI-QR-Code scannen',
+    ja: 'UPI QRコードをスキャン',
+    hi: 'UPI QR स्कैन करें',
+    zh: '扫描 UPI 二维码',
+    ar: 'مسح رمز UPI QR',
+    it: 'Scansiona QR UPI',
+    pt: 'Escanear QR UPI',
+  },
+  'dynamic replanning engine': {
+    en: 'Dynamic Replanning Engine',
+    es: 'Motor de Replanificación Dinámica',
+    fr: 'Moteur de Replanification Dynamique',
+    de: 'Dynamische Umplanungs-Engine',
+    ja: '動的再計画エンジン',
+    hi: 'गतिशील पुनर्नियोजन इंजन',
+    zh: '动态重新规划引擎',
+    ar: 'محرك إعادة التخطيط الديناميكي',
+    it: 'Motore di Ripianificazione Dinamica',
+    pt: 'Motor de Replanejamento Dinâmico',
+  },
+  'resolve disruption': {
+    en: 'Resolve Disruption',
+    es: 'Resolver Interrupción',
+    fr: 'Résoudre la Perturbation',
+    de: 'Störung beheben',
+    ja: '旅程の乱れを解消',
+    hi: 'व्यवधान का समाधान करें',
+    zh: '解决行程延误/异常',
+    ar: 'حل الاضطراب',
+    it: 'Risolvi Interruzione',
+    pt: 'Resolver Interrupção',
+  },
+  'trip memory journal': {
+    en: 'Trip Memory Journal',
+    es: 'Diario de Recuerdos del Viaje',
+    fr: 'Journal de Souvenirs de Voyage',
+    de: 'Reiseerinnerungs-Tagebuch',
+    ja: '旅行の思い出フォト日誌',
+    hi: 'यात्रा स्मृति पत्रिका',
+    zh: '旅行回忆日志',
+    ar: 'مذكرات ذكريات الرحلة',
+    it: 'Diario dei Ricordi di Viaggio',
+    pt: 'Diário de Memórias da Viagem',
+  },
+  'add photo note': {
+    en: 'Add Photo Note',
+    es: 'Agregar Foto y Nota',
+    fr: 'Ajouter une Photo et une Note',
+    de: 'Fototext hinzufügen',
+    ja: '写真とメモを追加',
+    hi: 'फोटो नोट जोड़ें',
+    zh: '添加照片备注',
+    ar: 'إضافة صورة وملاحظة',
+    it: 'Aggiungi Nota con Foto',
+    pt: 'Adicionar Nota com Foto',
+  },
+  'export keepsake': {
+    en: 'Export Keepsake',
+    es: 'Exportar Recuerdo',
+    fr: 'Exporter un Souvenir',
+    de: 'Erinnerung exportieren',
+    ja: 'アルバムを書き出す',
+    hi: 'स्मृति चिन्ह निर्यात करें',
+    zh: '导出旅行纪念册',
+    ar: 'تصدير الذكرى',
+    it: 'Esporta Ricordo',
+    pt: 'Exportar Lembrança',
+  },
+  'travel notifications': {
+    en: 'Travel Notifications',
+    es: 'Notificaciones de Viaje',
+    fr: 'Notifications de Voyage',
+    de: 'Reisebenachrichtigungen',
+    ja: '旅行の通知',
+    hi: 'यात्रा सूचनाएं',
+    zh: '行程通知中心',
+    ar: 'إشعارات السفر',
+    it: 'Notifiche di Viaggio',
+    pt: 'Notificações de Viagem',
+  },
+  'mark all read': {
+    en: 'Mark All Read',
+    es: 'Marcar Todo como Leído',
+    fr: 'Tout Marquer comme Lu',
+    de: 'Alle als gelesen markieren',
+    ja: 'すべて既読にする',
+    hi: 'सभी को पढ़ा हुआ चिह्नित करें',
+    zh: '全部标为已读',
+    ar: 'تحديد الكل كمقروء',
+    it: 'Segna Tutti come Letti',
+    pt: 'Marcar Tudo como Lido',
+  },
+  'welcome to tripverse': {
+    en: 'Welcome to TripVerse',
+    es: 'Bienvenido a TripVerse',
+    fr: 'Bienvenue sur TripVerse',
+    de: 'Willkommen bei TripVerse',
+    ja: 'TripVerse へようこそ',
+    hi: 'ट्रिपवर्स में आपका स्वागत है',
+    zh: '欢迎来到 TripVerse',
+    ar: 'مرحباً بكم في TripVerse',
+    it: 'Benvenuto su TripVerse',
+    pt: 'Bem-vindo ao TripVerse',
+  },
+  'rate your trip': {
+    en: 'Rate Your Trip',
+    es: 'Califica tu Viaje',
+    fr: 'Évaluez votre Voyage',
+    de: 'Bewerten Sie Ihre Reise',
+    ja: '旅行を評価する',
+    hi: 'अपनी यात्रा को रेट करें',
+    zh: '评价您的旅行',
+    ar: 'قيّم رحلتك',
+    it: 'Valuta il tuo Viaggio',
+    pt: 'Avalie sua Viagem',
+  },
+  'collaborative group planning': {
+    en: 'Collaborative Group Planning',
+    es: 'Planificación Grupal Colaborativa',
+    fr: 'Planification de Groupe Collaborative',
+    de: 'Gemeinsame Gruppenplanung',
+    ja: 'グループ共同旅行計画',
+    hi: 'सहयोगी समूह योजना',
+    zh: '多人协同行程规划',
+    ar: 'تخطيط جماعي تعاوني',
+    it: 'Pianificazione Collaborativa di Gruppo',
+    pt: 'Planejamento Colaborativo em Grupo',
+  },
+  'invite friends': {
+    en: 'Invite Friends',
+    es: 'Invitar Amigos',
+    fr: 'Inviter des Amis',
+    de: 'Freunde einladen',
+    ja: '友達を招待',
+    hi: 'मित्रों को आमंत्रित करें',
+    zh: '邀请好友',
+    ar: 'دعوة الأصدقاء',
+    it: 'Invita Amici',
+    pt: 'Convidar Amigos',
+  },
+  'share itinerary': {
+    en: 'Share Itinerary',
+    es: 'Compartir Itinerario',
+    fr: 'Partager l\'Itinéraire',
+    de: 'Reiseplan teilen',
+    ja: '旅程を共有',
+    hi: 'यात्रा कार्यक्रम साझा करें',
+    zh: '分享行程单',
+    ar: 'مشاركة خطة الرحلة',
+    it: 'Condividi Itinerario',
+    pt: 'Compartilhar Itinerário',
+  },
+  'digital travel passport': {
+    en: 'Digital Travel Passport',
+    es: 'Pasaporte Digital de Viaje',
+    fr: 'Passeport de Voyage Numérique',
+    de: 'Digitaler Reisepass',
+    ja: 'デジタル旅行パスポート',
+    hi: 'डिजिटल यात्रा पासपोर्ट',
+    zh: '数字旅行护照',
+    ar: 'جواز السفر الرقمي',
+    it: 'Passaporto Digitale di Viaggio',
+    pt: 'Passaporte Digital de Viagem',
+  },
+  'terms of service': {
+    en: 'Terms of Service',
+    es: 'Términos del Servicio',
+    fr: 'Conditions d\'Utilisation',
+    de: 'Nutzungsbedingungen',
+    ja: '利用規約',
+    hi: 'सेवा की शर्तें',
+    zh: '服务条款',
+    ar: 'شروط الخدمة',
+    it: 'Termini di Servizio',
+    pt: 'Termos de Serviço',
+  },
+  'privacy policy': {
+    en: 'Privacy Policy',
+    es: 'Política de Privacidad',
+    fr: 'Politique de Confidentialité',
+    de: 'Datenschutzrichtlinie',
+    ja: 'プライバシーポリシー',
+    hi: 'गोपनीयता नीति',
+    zh: '隐私政策',
+    ar: 'سياسة الخصوصية',
+    it: 'Informativa sulla Privacy',
+    pt: 'Política de Privacidade',
+  },
+  'free cancellation': {
+    en: 'Free cancellation',
+    es: 'Cancelación gratuita',
+    fr: 'Annulation gratuite',
+    de: 'Kostenlose Stornierung',
+    ja: 'キャンセル無料',
+    hi: 'मुफ्त रद्दीकरण',
+    zh: '免费退订',
+    ar: 'إلغاء مجاني',
+    it: 'Cancellazione gratuita',
+    pt: 'Cancelamento gratuito',
+  },
+  'pay at hotel': {
+    en: 'Pay at hotel',
+    es: 'Pagar en el hotel',
+    fr: 'Payer à l\'hôtel',
+    de: 'Im Hotel bezahlen',
+    ja: '現地ホテル払い',
+    hi: 'होटल में भुगतान करें',
+    zh: '到店付款',
+    ar: 'الدفع في الفندق',
+    it: 'Paga in hotel',
+    pt: 'Pague no hotel',
+  },
+  'breakfast included': {
+    en: 'Breakfast Included',
+    es: 'Desayuno Incluido',
+    fr: 'Petit-déjeuner Inclus',
+    de: 'Frühstück inbegriffen',
+    ja: '朝食付き',
+    hi: 'नाश्ता शामिल',
+    zh: '含早餐',
+    ar: 'الإفطار مشمول',
+    it: 'Colazione Inclusa',
+    pt: 'Café da manhã incluído',
+  },
+  'unlimited kilometers': {
+    en: 'Unlimited Kilometers',
+    es: 'Kilometraje Ilimitado',
+    fr: 'Kilométrage Illimité',
+    de: 'Unbegrenzte Kilometer',
+    ja: '走行距離無制限',
+    hi: 'असीमित किलोमीटर',
+    zh: '无限里程',
+    ar: 'كيلومترات غير محدودة',
+    it: 'Chilometraggio Illimitato',
+    pt: 'Quilometragem Ilimitada',
+  },
+  'door-to-door': {
+    en: 'Door-to-Door',
+    es: 'Puerta a Puerta',
+    fr: 'Porte-à-Porte',
+    de: 'Tür-zu-Tür',
+    ja: 'ドアツードア送迎',
+    hi: 'घर से गंतव्य तक',
+    zh: '门到门接送',
+    ar: 'من الباب إلى الباب',
+    it: 'Porta a Porta',
+    pt: 'Porta a Porta',
+  },
+  'fastest transit': {
+    en: 'Fastest Transit',
+    es: 'Tránsito Más Rápido',
+    fr: 'Transit le Plus Rapide',
+    de: 'Schnellster Transit',
+    ja: '最速アクセス',
+    hi: 'सबसे तेज़ आवागमन',
+    zh: '最快直达',
+    ar: 'أسرع وسيلة نقل',
+    it: 'Transito Più Veloce',
+    pt: 'Trânsito Mais Rápido',
+  },
+  'premium comfort': {
+    en: 'Premium Comfort',
+    es: 'Confort Premium',
+    fr: 'Confort Premium',
+    de: 'Erstklassiger Komfort',
+    ja: 'プレミアムコンフォート',
+    hi: 'प्रीमियम सुविधा',
+    zh: '尊享舒适',
+    ar: 'راحة فائقة',
+    it: 'Comfort Premium',
+    pt: 'Conforto Premium',
+  },
+  'budget friendly': {
+    en: 'Budget Friendly',
+    es: 'Económico',
+    fr: 'Économique',
+    de: 'Budgetfreundlich',
+    ja: 'リーズナブルでお得',
+    hi: 'बजट अनुकूल',
+    zh: '经济实惠',
+    ar: 'مناسب للميزانية',
+    it: 'Economico',
+    pt: 'Econômico',
+  },
+  'best value & scenic': {
+    en: 'Best Value & Scenic',
+    es: 'Mejor Valor y Panorámico',
+    fr: 'Meilleur Rapport Qualité-Prix et Pittoresque',
+    de: 'Bester Wert & landschaftlich reizvoll',
+    ja: '景観良好・高コスパ',
+    hi: 'सर्वश्रेष्ठ मूल्य और सुंदर दृश्य',
+    zh: '超值风景路线',
+    ar: 'أفضل قيمة ومشاهد طبيعية',
+    it: 'Miglior Valore e Panoramico',
+    pt: 'Melhor Valor e Cênico',
+  },
 };
 
 /**
@@ -5257,6 +5773,66 @@ const DYNAMIC_WORD_REPLACEMENTS: [RegExp, Record<LanguageCode, string>][] = [
     ar: '/شخص',
     it: '/persona',
     pt: '/pessoa'
+  }],
+  [/\b(\d+)\s+of\s+(\d+)\s+packed\b/gi, {
+    en: '$1 of $2 packed',
+    es: '$1 de $2 empacados',
+    fr: '$1 sur $2 emballés',
+    de: '$1 von $2 gepackt',
+    ja: '$1 / $2 梱包済み',
+    hi: '$1 / $2 पैक किए गए',
+    zh: '已打包 $1 / $2',
+    ar: 'تم حزم $1 من $2',
+    it: '$1 su $2 imballati',
+    pt: '$1 de $2 embalados'
+  }],
+  [/\bStep\s+(\d+)\b/gi, {
+    en: 'Step $1',
+    es: 'Paso $1',
+    fr: 'Étape $1',
+    de: 'Schritt $1',
+    ja: 'ステップ $1',
+    hi: 'चरण $1',
+    zh: '步骤 $1',
+    ar: 'الخطوة $1',
+    it: 'Passo $1',
+    pt: 'Etapa $1'
+  }],
+  [/\bDay\s+(\d+)\b/gi, {
+    en: 'Day $1',
+    es: 'Día $1',
+    fr: 'Jour $1',
+    de: 'Tag $1',
+    ja: '日目 $1',
+    hi: 'दिन $1',
+    zh: '第 $1 天',
+    ar: 'اليوم $1',
+    it: 'Giorno $1',
+    pt: 'Dia $1'
+  }],
+  [/\bSaved\s+₹?(\d[\d,]*)\b/gi, {
+    en: 'Saved ₹$1',
+    es: 'Ahorró ₹$1',
+    fr: 'Économisé ₹$1',
+    de: 'Gespart ₹$1',
+    ja: '節約 ₹$1',
+    hi: 'बचत ₹$1',
+    zh: '节省 ₹$1',
+    ar: 'وفرت ₹$1',
+    it: 'Risparmiato ₹$1',
+    pt: 'Economizou ₹$1'
+  }],
+  [/\b(\d[\d,]*)\s+Reviews?\b/gi, {
+    en: '$1 Reviews',
+    es: '$1 Reseñas',
+    fr: '$1 Avis',
+    de: '$1 Bewertungen',
+    ja: '$1 件のレビュー',
+    hi: '$1 समीक्षाएं',
+    zh: '$1 条评价',
+    ar: '$1 تقييم',
+    it: '$1 Recensioni',
+    pt: '$1 Avaliações'
   }]
 ];
 
@@ -5464,11 +6040,55 @@ let domLocalizationTimer: any = null;
 export function localizeDom(targetLang?: LanguageCode) {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   const lang = targetLang || getActiveLanguage();
-  if (lang === 'en') return;
 
   const root = document.querySelector('main') || document.body;
   if (!root) return;
 
+  // 1. Localize or restore Input & Textarea Placeholders
+  try {
+    const inputs = root.querySelectorAll('input[placeholder], textarea[placeholder]');
+    inputs.forEach(el => {
+      const inputEl = el as HTMLInputElement | HTMLTextAreaElement;
+      if (!(inputEl as any).__origPlaceholder) {
+        (inputEl as any).__origPlaceholder = inputEl.placeholder;
+      }
+      const orig = (inputEl as any).__origPlaceholder;
+      if (lang === 'en') {
+        if (orig && inputEl.placeholder !== orig) {
+          inputEl.placeholder = orig;
+        }
+      } else {
+        const tr = translateText(orig, lang);
+        if (tr && tr !== orig && inputEl.placeholder !== tr) {
+          inputEl.placeholder = tr;
+        }
+      }
+    });
+  } catch {}
+
+  // 2. Localize or restore Tooltip Titles
+  try {
+    const titledEls = root.querySelectorAll('[title]');
+    titledEls.forEach(el => {
+      const htmlEl = el as HTMLElement;
+      if (!(htmlEl as any).__origTitle) {
+        (htmlEl as any).__origTitle = htmlEl.title;
+      }
+      const orig = (htmlEl as any).__origTitle;
+      if (lang === 'en') {
+        if (orig && htmlEl.title !== orig) {
+          htmlEl.title = orig;
+        }
+      } else {
+        const tr = translateText(orig, lang);
+        if (tr && tr !== orig && htmlEl.title !== tr) {
+          htmlEl.title = tr;
+        }
+      }
+    });
+  } catch {}
+
+  // 3. Localize or restore visible DOM Text Nodes
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       const parent = node.parentElement;
@@ -5493,9 +6113,16 @@ export function localizeDom(targetLang?: LanguageCode) {
       orig = currentNode.nodeValue || '';
       originalNodeTextMap.set(currentNode, orig);
     }
-    const translated = translateText(orig, lang);
-    if (translated && translated !== orig && currentNode.nodeValue !== translated) {
-      currentNode.nodeValue = translated;
+
+    if (lang === 'en') {
+      if (currentNode.nodeValue !== orig) {
+        currentNode.nodeValue = orig;
+      }
+    } else {
+      const translated = translateText(orig, lang);
+      if (translated && translated !== orig && currentNode.nodeValue !== translated) {
+        currentNode.nodeValue = translated;
+      }
     }
     currentNode = walker.nextNode();
   }
@@ -5508,9 +6135,7 @@ export function initDomLocalizationObserver() {
     if (domLocalizationTimer) clearTimeout(domLocalizationTimer);
     domLocalizationTimer = setTimeout(() => {
       const current = getActiveLanguage();
-      if (current !== 'en') {
-        localizeDom(current);
-      }
+      localizeDom(current);
     }, 60);
   };
 

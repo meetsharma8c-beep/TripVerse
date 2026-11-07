@@ -4,6 +4,7 @@ import { Trip, TripReview } from '../../types/trip';
 import { saveTripReview } from '../../services/storageService';
 import { Star, X, Check, Sparkles, ThumbsUp, ThumbsDown, Award } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { useLanguage } from '../../services/languageService';
 
 interface TripReviewModalProps {
   trip: Trip;
@@ -29,6 +30,7 @@ export const TripReviewModal: React.FC<TripReviewModalProps> = ({
   onClose,
   onSavedReview
 }) => {
+  const { t } = useLanguage();
   const existingReview = trip.review;
 
   const [rating, setRating] = useState<number>(existingReview?.rating || 5);

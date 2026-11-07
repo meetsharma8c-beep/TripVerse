@@ -272,5 +272,17 @@ describe('Global Language & Localization (i18n) Engine', () => {
     expect(t('2 Nights', 'es')).toBe('2 Noches');
     expect(t('2 Nights', 'ja')).toBe('2 泊');
     expect(t('2 Travelers', 'es')).toBe('2 Viajeros');
+    expect(t('4 of 8 packed', 'es')).toBe('4 de 8 empacados');
+    expect(t('4 of 8 packed', 'fr')).toBe('4 sur 8 emballés');
+    expect(t('4 of 8 packed', 'hi')).toBe('4 / 8 पैक किए गए');
+    expect(t('Step 4', 'es')).toBe('Paso 4');
+    expect(t('Step 4', 'ja')).toBe('ステップ 4');
+    expect(t('Step 4', 'hi')).toBe('चरण 4');
+    expect(t('Day 2', 'es')).toBe('Día 2');
+    expect(t('Day 2', 'fr')).toBe('Jour 2');
+    expect(t('Day 2', 'hi')).toBe('दिन 2');
+    expect(t('Compare Live Transport & Booking', 'es')).toBe('Comparar Transporte y Reservas en Vivo');
+    expect(t('Packing Checklist', 'fr')).toBe('Liste de Colisage');
+    expect(t('Trip Expenses & Group Settlement', 'hi')).toBe('यात्रा के खर्च और समूह का निपटान');
   });
 });

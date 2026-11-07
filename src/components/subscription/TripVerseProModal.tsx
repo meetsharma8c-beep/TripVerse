@@ -13,6 +13,7 @@ import { CurrencyCode } from '../../types/trip';
 import { triggerHaptic } from '../../services/deviceService';
 import confetti from 'canvas-confetti';
 import { TripPaymentGatewayModal } from '../payment/TripPaymentGatewayModal';
+import { useLanguage } from '../../services/languageService';
 
 interface TripVerseProModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
   title = 'Travel Without Limits with',
   subtitle = 'Unlock unlimited AI itineraries, real-time monsoon detours, and a dedicated 30h/week AI travel co-pilot.'
 }) => {
+  const { t } = useLanguage();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGatewayOpen, setIsGatewayOpen] = useState(false);

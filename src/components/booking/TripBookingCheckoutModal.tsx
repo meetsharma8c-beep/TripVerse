@@ -7,6 +7,7 @@ import { buildFlightBookingUrl, buildTrainBookingUrl, buildBusBookingUrl, buildC
 import { TripPaymentGatewayModal } from '../payment/TripPaymentGatewayModal';
 import { getBookingForTrip, BookingRecord, generateTicketReceiptText } from '../../services/paymentGatewayService';
 import { triggerHaptic } from '../../services/deviceService';
+import { useLanguage } from '../../services/languageService';
 
 interface TripBookingCheckoutModalProps {
   trip: Trip;
@@ -23,6 +24,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
   currency,
   onNavigateToPasses
 }) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'all' | 'hotels' | 'transport' | 'activities'>('all');
   const [isGatewayOpen, setIsGatewayOpen] = useState(false);
   const [gatewayParams, setGatewayParams] = useState<{

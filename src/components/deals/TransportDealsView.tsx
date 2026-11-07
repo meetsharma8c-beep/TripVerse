@@ -7,6 +7,7 @@ import { loadTripPacking, saveTripPacking } from '../../services/storageService'
 import { generateSmartPackingList } from '../../services/packingService';
 import { resolveTransitContext, getFeasibleTransportModes } from '../../services/transportFeasibilityEngine';
 import { getBookingForTrip } from '../../services/paymentGatewayService';
+import { useLanguage } from '../../services/languageService';
 
 interface TransportDealsViewProps {
   trip: Trip;
@@ -29,6 +30,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
   onOpenPrint,
   onOpenBooking 
 }) => {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<TransportMode>(trip.transportMode || 'car');
   const [weather, setWeather] = useState<WeatherForecast>(() =>
     getDestinationWeather(trip.destination, trip.durationDays)
@@ -360,9 +362,9 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
           <div className="flex items-center justify-between text-xs font-bold text-[#152A1C]">
             <div className="flex items-center gap-1.5">
               <Luggage className="w-3.5 h-3.5 text-[#2D5A3D]" />
-              <span>Packing Checklist</span>
+              <span>{t('Packing Checklist')}</span>
             </div>
-            <span className="text-[#5A7362] text-[11px]">{packedCount} of {packingItems.length} packed</span>
+            <span className="text-[#5A7362] text-[11px]">{t(`${packedCount} of ${packingItems.length} packed`)}</span>
           </div>
 
           <div className="w-full bg-[#E2EBE1] rounded-full h-1.5 overflow-hidden">
@@ -389,7 +391,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
                 ) : (
                   <Circle className="w-4 h-4 text-slate-300 shrink-0" />
                 )}
-                <span className={item.isPacked ? 'font-semibold' : ''}>{item.name}</span>
+                <span className={item.isPacked ? 'font-semibold' : ''}>{t(item.name)}</span>
               </button>
             ))}
           </div>
@@ -403,7 +405,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
             className="w-full py-3.5 px-6 rounded-full bg-[#2D5A3D] hover:bg-[#244931] text-white font-display font-bold text-sm shadow-md shadow-[#2D5A3D]/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
           >
             <Download className="w-4 h-4" />
-            <span>View & Print Travel Dossier</span>
+            <span>{t('View & Print Travel Dossier')}</span>
           </button>
         </div>
 
@@ -414,8 +416,8 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
       {/* ============================================================== */}
       <section className="space-y-5 rounded-3xl border border-[#E2EBE1] bg-white p-5 shadow-sm sm:p-7">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">External Provider Search</p>
-          <h2 className="mt-1 text-xl font-bold font-display text-[#152A1C]">Compare Live Transport & Booking</h2>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('External Provider Search')}</p>
+          <h2 className="mt-1 text-xl font-bold font-display text-[#152A1C]">{t('Compare Live Transport & Booking')}</h2>
           <p className="mt-1 text-sm text-[#5A7362]">
             {trip.origin} → {trip.destination}
           </p>
