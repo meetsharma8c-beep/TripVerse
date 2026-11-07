@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { ShieldAlert, RotateCcw, Home, Trash2 } from 'lucide-react';
+import { t } from '../../services/languageService';
 
 interface Props {
   children: ReactNode;
@@ -40,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleHardReset = () => {
-    if (confirm('This will refresh TripVerse and reset temporary session cache. Your saved trips will remain intact. Continue?')) {
+    if (confirm(t('This will refresh TripVerse and reset temporary session cache. Your saved trips will remain intact. Continue?'))) {
       try {
         sessionStorage.clear();
         localStorage.removeItem('tripverse_active_trip_id');
@@ -64,13 +65,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <div className="space-y-2">
               <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
-                Safe Journey Shield
+                {t('Safe Journey Shield')}
               </span>
               <h1 className="text-2xl font-black font-display text-white tracking-tight">
-                TripVerse Encountered a Bump
+                {t('TripVerse Encountered a Bump')}
               </h1>
               <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
-                We've safely isolated an unexpected display glitch. Your itineraries and travel data remain safe and sound.
+                {t("We've safely isolated an unexpected display glitch. Your itineraries and travel data remain safe and sound.")}
               </p>
             </div>
 
@@ -90,7 +91,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-trip-gradient text-white font-bold text-sm shadow-lg shadow-emerald-600/20 hover:brightness-110 active:scale-98 transition-all"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>Reload Application</span>
+                <span>{t('Reload Application')}</span>
               </button>
 
               <div className="grid grid-cols-2 gap-3">
@@ -99,7 +100,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-600 transition-colors"
                 >
                   <Home className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Return Home</span>
+                  <span>{t('Return Home')}</span>
                 </button>
 
                 <button
@@ -107,14 +108,14 @@ export class ErrorBoundary extends Component<Props, State> {
                   className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-600 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Reset Cache</span>
+                  <span>{t('Reset Cache')}</span>
                 </button>
               </div>
             </div>
 
             <div className="pt-4 border-t border-slate-700/60 flex items-center justify-between text-[11px] text-slate-400">
-              <span className="font-semibold">TripVerse AI Engine</span>
-              <span>Need help? support@tripverse.ai</span>
+              <span className="font-semibold">{t('TripVerse AI Engine')}</span>
+              <span>{t('Need help? support@tripverse.ai')}</span>
             </div>
 
           </div>

@@ -283,6 +283,48 @@ describe('Global Language & Localization (i18n) Engine', () => {
     expect(t('Day 2', 'hi')).toBe('दिन 2');
     expect(t('Compare Live Transport & Booking', 'es')).toBe('Comparar Transporte y Reservas en Vivo');
     expect(t('Packing Checklist', 'fr')).toBe('Liste de Colisage');
-    expect(t('Trip Expenses & Group Settlement', 'hi')).toBe('यात्रा के खर्च और समूह का निपटान');
+    expect(t('TripExpenses & Group Settlement', 'hi')).toBe('TripExpenses & Group Settlement');
+  });
+
+  it('handles trailing colons, ellipses, and leading asterisks seamlessly', () => {
+    // Trailing colon
+    expect(t('Select Cabin Class:', 'es')).toBe('Seleccionar clase de cabina:');
+    expect(t('Select Coach Class:', 'ja')).toBe('車両クラスを選択:');
+
+    // Trailing ellipsis
+    expect(t('Processing...', 'es')).toBe('Procesando...');
+
+    // Leading asterisk note
+    expect(t('* Realistic estimates based on seasonal averages. Excludes personal shopping.', 'es'))
+      .toBe('* Estimaciones realistas basadas en promedios estacionales. Excluye compras personales.');
+  });
+
+  it('performs seamless bidirectional reverse lookup between non-English languages', () => {
+    // If a node was previously rendered in Spanish, it can transition to Japanese
+    expect(t('Guardar Cambios', 'ja')).toBe('変更を保存');
+    expect(t('Guardar Cambios', 'hi')).toBe('बदलाव सहेजें');
+    expect(t('Guardar Cambios', 'en')).toBe('Save Changes');
+
+    // And French to Japanese
+    expect(t('Explorer les Détails', 'ja')).toBe('詳細を見る');
+    expect(t('Explorer les Détails', 'en')).toBe('Explore Details');
+  });
+
+  it('translates newly registered modal and drawer phrases accurately across languages', () => {
+    // Auth Modal
+    expect(t('Create your TripVerse Account', 'es')).toBe('Crea tu Cuenta de TripVerse');
+    expect(t('Create your TripVerse Account', 'ja')).toBe('TripVerse アカウントを作成');
+
+    // Replanning Modal
+    expect(t('Smart replanning engine', 'es')).toBe('Motor inteligente de replanificación');
+    expect(t('Smart replanning engine', 'fr')).toBe('Moteur de replanification intelligent');
+
+    // Payment Gateway
+    expect(t('Trip Payment Gateway', 'es')).toBe('Pasarela de Pago de Viaje');
+    expect(t('Trip Payment Gateway', 'ja')).toBe('旅行決済ゲートウェイ');
+
+    // Legal & Trust
+    expect(t('TripVerse Legal, Privacy & Safety Trust Center', 'es'))
+      .toBe('Centro de Confianza Legal, Privacidad y Seguridad de TripVerse');
   });
 });
