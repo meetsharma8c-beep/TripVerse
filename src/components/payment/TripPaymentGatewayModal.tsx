@@ -26,8 +26,9 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Trip, CurrencyCode } from '../../types/trip';
-import { formatCurrency, CURRENCIES } from '../../services/currencyService';
+import { formatCurrency, CURRENCIES, convertFromINR } from '../../services/currencyService';
 import { triggerHaptic } from '../../services/deviceService';
+import { getCurrentUser } from '../../services/authService';
 import { 
   BookingRecord, 
   PaymentMethodType, 
@@ -103,6 +104,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   const [cardExpiry, setCardExpiry] = useState<string>('');
   const [cardCvv, setCardCvv] = useState<string>('');
   const [saveCard, setSaveCard] = useState<boolean>(true);
+  const [cardValidationError, setCardValidationError] = useState<string | null>(null);
 
   // Netbanking Form States
   const [selectedBank, setSelectedBank] = useState<string>('hdfc');
@@ -208,6 +210,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   const handleTabSwitch = (newTab: PaymentMethodType) => {
     triggerHaptic('light');
     setActiveTab(newTab);
+    setCardValidationError(null);
     const duration = getSessionDuration(newTab);
     targetExpiryRef.current = Date.now() + duration * 1000;
     setSecondsRemaining(duration);
@@ -228,6 +231,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         prevCurrencyRef.current = currency;
         const defaultTab = currency === 'INR' ? 'upi_qr' : 'card';
         setActiveTab(defaultTab);
+        setCardValidationError(null);
         const duration = getSessionDuration(defaultTab);
         targetExpiryRef.current = Date.now() + duration * 1000;
         setSecondsRemaining(duration);
@@ -352,31 +356,96 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   // EXECUTE PAYMENT & CONFIRMATION
   // =========================================================================
   const initiatePayment = async (methodName: string) => {
+    // Validate card details if initiating from the Card tab with partial input
+    if (activeTab === 'card') {
+      const digits = cardNumber.replace(/\D/g, '');
+      if (digits.length > 0 && digits.length < 15) {
+        setCardValidationError('Please enter a valid 15 or 16-digit card number.');
+        return;
+      }
+      if (cardExpiry.trim().length > 0 && !/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardExpiry.trim())) {
+        setCardValidationError('Please enter card expiry in MM/YY format (e.g. 12/28).');
+        return;
+      }
+      if (cardCvv.trim().length > 0 && cardCvv.trim().length < 3) {
+        setCardValidationError('Please enter a valid 3 or 4-digit CVV/CVC code.');
+        return;
+      }
+      setCardValidationError(null);
+    }
+
     triggerHaptic('medium');
     setGatewayStage('authorizing');
     setGatewayErrorMessage('');
 
+    // Genuine worldwide currency matching with Razorpay supported currencies
+    const ALLOWED_RAZORPAY_CURRENCIES = new Set(['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD', 'JPY', 'AUD', 'CAD']);
+    const targetOrderCurrency = ALLOWED_RAZORPAY_CURRENCIES.has(currency) ? currency : 'USD';
+    const targetOrderAmount = targetOrderCurrency === 'INR'
+      ? finalPayableINR
+      : Math.max(1, convertFromINR(finalPayableINR, targetOrderCurrency));
+
     // Attempt Live Gateway Checkout via Razorpay Serverless API
     try {
       const orderRes = await createRazorpayOrder({
-        amount: finalPayableINR,
-        currency: 'INR',
+        amount: targetOrderAmount,
+        currency: targetOrderCurrency,
         notes: {
           tripId: trip?.id || 'pro-membership',
-          tripName: trip?.name || 'TripVerse Experience Booking'
+          tripName: trip?.name || 'TripVerse Experience Booking',
+          displayCurrency: currency,
+          displayAmount: String(targetOrderAmount),
+          packageType
         }
       });
 
       if (orderRes?.ok && (orderRes.mode === 'live' || orderRes.mode === 'test') && orderRes.orderId && orderRes.keyId) {
         const loaded = await loadRazorpayScript();
         if (loaded && (window as any).Razorpay) {
-          const rzp = new (window as any).Razorpay({
+          const user = getCurrentUser();
+
+          // Map active tab to Razorpay prefill method
+          let prefillMethod: string | undefined = undefined;
+          if (activeTab === 'card') prefillMethod = 'card';
+          else if (activeTab === 'netbanking') prefillMethod = 'netbanking';
+          else if (activeTab === 'upi_qr' || activeTab === 'upi_apps' || activeTab === 'upi_id') prefillMethod = 'upi';
+          else if (activeTab === 'wallet' || activeTab === 'digital_wallets') prefillMethod = 'wallet';
+          else if (activeTab === 'emi') prefillMethod = 'emi';
+
+          const rzpConfig: any = {
             key: orderRes.keyId,
-            amount: finalPayableINR * 100,
-            currency: 'INR',
-            name: 'Trip-Verse',
+            amount: orderRes.amount,
+            currency: orderRes.currency,
+            name: 'TripVerse',
             description: customTitle || trip?.name || 'TripVerse Experience Booking',
             order_id: orderRes.orderId,
+            prefill: {
+              name: cardHolder.trim() || user?.displayName || '',
+              email: user?.email || '',
+              contact: user?.phoneNumber || '',
+              method: prefillMethod
+            },
+            modal: {
+              ondismiss: () => {
+                setGatewayStage('checkout');
+              }
+            },
+            theme: { color: '#2D5A3D' }
+          };
+
+          if (activeTab === 'netbanking') {
+            const bankInfo = [...POPULAR_BANKS, ...OTHER_BANKS].find(b => b.id === selectedBank);
+            if (bankInfo?.code) {
+              rzpConfig.prefill.bank = bankInfo.code;
+            }
+          }
+
+          if (activeTab === 'upi_id' && upiIdInput.trim()) {
+            rzpConfig.prefill.vpa = upiIdInput.trim();
+          }
+
+          const rzp = new (window as any).Razorpay({
+            ...rzpConfig,
             handler: async (response: any) => {
               const verifyRes = await verifyRazorpayPayment({
                 razorpay_order_id: response.razorpay_order_id,
@@ -389,13 +458,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 setGatewayErrorMessage('Cryptographic payment signature verification failed. Your account was not charged.');
                 setGatewayStage('unavailable');
               }
-            },
-            modal: {
-              ondismiss: () => {
-                setGatewayStage('checkout');
-              }
-            },
-            theme: { color: '#2D5A3D' }
+            }
           });
 
           if (typeof rzp.on === 'function') {
@@ -1042,6 +1105,13 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                           : 'Save card securely with PCI-DSS Level 1 & 256-bit AES Tokenization'}
                       </span>
                     </label>
+
+                    {cardValidationError && (
+                      <div className="p-2.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>{cardValidationError}</span>
+                      </div>
+                    )}
 
                     <button
                       type="button"

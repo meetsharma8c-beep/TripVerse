@@ -424,7 +424,7 @@ export async function createRazorpayOrder(params: {
   currency?: string;
   receipt?: string;
   notes?: Record<string, string>;
-}): Promise<{ ok: boolean; mode: 'live' | 'test' | 'unavailable' | 'simulation'; keyId?: string; orderId?: string; order_id?: string; error?: string; message?: string }> {
+}): Promise<{ ok: boolean; mode: 'live' | 'test' | 'unavailable' | 'simulation'; keyId?: string; orderId?: string; order_id?: string; amount?: number; currency?: string; error?: string; message?: string }> {
   try {
     const res = await fetch('/api/create-razorpay-order', {
       method: 'POST',

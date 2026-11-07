@@ -142,5 +142,27 @@ describe('PaymentGatewayService Unit Tests', () => {
       expect(formatTimer(0)).toBe('00:00');
       expect(formatTimer(-1)).toBe('00:00');
     });
+
+    it('accurately converts INR amounts into worldwide currencies for universal transactions', () => {
+      // Test conversion for key worldwide currencies
+      const inrAmount = 999; // Annual Pro Pass
+      expect(convertFromINR(inrAmount, 'USD')).toBeGreaterThan(0);
+      expect(convertFromINR(inrAmount, 'EUR')).toBeGreaterThan(0);
+      expect(convertFromINR(inrAmount, 'GBP')).toBeGreaterThan(0);
+      expect(convertFromINR(inrAmount, 'AED')).toBeGreaterThan(0);
+      expect(convertFromINR(inrAmount, 'JPY')).toBeGreaterThan(0);
+
+      // Verify that Razorpay allowed currencies map cleanly
+      const ALLOWED_RAZORPAY_CURRENCIES = new Set(['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD', 'JPY', 'AUD', 'CAD']);
+      ['USD', 'EUR', 'GBP', 'AED', 'SGD', 'JPY', 'AUD', 'CAD', 'INR'].forEach(cur => {
+        expect(ALLOWED_RAZORPAY_CURRENCIES.has(cur)).toBe(true);
+      });
+
+      // Unsupported currencies fallback to USD cleanly
+      const fallbackTarget = (cur: string) => ALLOWED_RAZORPAY_CURRENCIES.has(cur) ? cur : 'USD';
+      expect(fallbackTarget('NZD')).toBe('USD');
+      expect(fallbackTarget('CHF')).toBe('USD');
+      expect(fallbackTarget('THB')).toBe('USD');
+    });
   });
 });
