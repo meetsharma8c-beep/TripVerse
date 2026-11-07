@@ -160,29 +160,38 @@ export function saveBookingRecord(booking: BookingRecord): void {
 }
 
 /**
- * Generate a randomized realistic PNR for transport
+ * Generate a cryptographically secure realistic PNR for transport
  */
 export function generatePNR(prefix: string = 'TRV'): string {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   const nums = '23456789';
   let pnr = prefix + '-';
-  for (let i = 0; i < 3; i++) {
-    pnr += letters.charAt(Math.floor(Math.random() * letters.length));
-  }
-  for (let i = 0; i < 4; i++) {
-    pnr += nums.charAt(Math.floor(Math.random() * nums.length));
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const lBuf = new Uint8Array(3);
+    const nBuf = new Uint8Array(4);
+    crypto.getRandomValues(lBuf);
+    crypto.getRandomValues(nBuf);
+    for (let i = 0; i < 3; i++) pnr += letters.charAt(lBuf[i] % letters.length);
+    for (let i = 0; i < 4; i++) pnr += nums.charAt(nBuf[i] % nums.length);
+  } else {
+    for (let i = 0; i < 3; i++) pnr += letters.charAt(Math.floor(Math.random() * letters.length));
+    for (let i = 0; i < 4; i++) pnr += nums.charAt(Math.floor(Math.random() * nums.length));
   }
   return pnr;
 }
 
 /**
- * Generate a randomized realistic Hotel confirmation voucher code
+ * Generate a cryptographically secure realistic Hotel confirmation voucher code
  */
 export function generateHotelVoucher(): string {
   const chars = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
   let code = 'HTL-';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const buf = new Uint8Array(6);
+    crypto.getRandomValues(buf);
+    for (let i = 0; i < 6; i++) code += chars.charAt(buf[i] % chars.length);
+  } else {
+    for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;
 }

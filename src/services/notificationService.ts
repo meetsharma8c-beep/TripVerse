@@ -56,11 +56,17 @@ export function markAllNotificationsAsRead(ids: string[]): void {
  * Uses the trip createdAt or synthetic future date (e.g. 2 days from now for upcoming trips).
  */
 export function calculateCountdown(trip: Trip): TripCountdownInfo {
-  // Synthesize departure date: 2 days from today at 07:00 AM for upcoming trips
   const now = new Date();
-  const targetDate = new Date();
+  let targetDate = new Date();
   
-  if (trip.status === 'upcoming') {
+  // Use genuine trip.startDate whenever specified by the traveler
+  if (trip.startDate) {
+    const parsedStart = new Date(trip.startDate);
+    if (!isNaN(parsedStart.getTime())) {
+      targetDate = parsedStart;
+      targetDate.setHours(7, 0, 0, 0);
+    }
+  } else if (trip.status === 'upcoming') {
     targetDate.setDate(now.getDate() + 2);
     targetDate.setHours(7, 0, 0, 0);
   } else if (trip.status === 'ongoing') {

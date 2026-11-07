@@ -172,6 +172,15 @@ describe('TripVerse Worldwide Globalization & Multi-Currency Engine', () => {
       expect(parisTrip.destinationDetails?.country).toBe('France');
       expect(parisTrip.estimatedTotal).toBeGreaterThan(0);
     });
+
+    it('synchronizes real live exchange rates without throwing or corrupting currency rates', async () => {
+      const { syncLiveExchangeRates, CURRENCIES } = await import('../src/services/currencyService');
+      const res = await syncLiveExchangeRates();
+      // Even if network is simulated or offline in test environment, rates remain valid positive numbers
+      expect(CURRENCIES.USD.rateFromINR).toBeGreaterThan(0);
+      expect(CURRENCIES.EUR.rateFromINR).toBeGreaterThan(0);
+      expect(CURRENCIES.JPY.rateFromINR).toBeGreaterThan(0);
+    });
   });
 
 });

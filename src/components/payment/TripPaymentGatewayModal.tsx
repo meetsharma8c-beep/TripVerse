@@ -317,7 +317,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   const finalizeSuccessfulBooking = (methodName: string, customTxnId?: string) => {
     const pnrGenerated = generatePNR('TRV');
     const voucherGenerated = generateHotelVoucher();
-    const bookingId = `TRV-BKG-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
+    const bookingId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? `TRV-BKG-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
+      : `TRV-BKG-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
     const effectiveTxnId = customTxnId || txnRef;
 
     const items = [
