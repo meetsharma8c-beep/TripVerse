@@ -184,6 +184,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center gap-1.5 xl:gap-2 min-w-0 shrink-0">
               <Logo 
                 size="adaptive" 
+                variant={isDarkMode ? 'light' : 'auto'}
                 taglineClassName="hidden 2xl:block"
                 onClick={() => onNavigate('home')} 
               />
@@ -475,6 +476,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center justify-center">
             <Logo 
               size="sm" 
+              variant={isDarkMode ? 'light' : 'auto'}
               showTagline={false}
               onClick={() => onNavigate('home')} 
             />

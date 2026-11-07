@@ -106,16 +106,22 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
  * Authentic Winding Highway Road & Location Map Pin Connector
  * Matches the official TripVerse brand identity connecting "Trip" and "Verse".
  */
-export const HighwayConnector: React.FC<{ className?: string; isLight?: boolean }> = ({ 
+export const HighwayConnector: React.FC<{ 
+  className?: string; 
+  isLight?: boolean;
+  isAuto?: boolean;
+}> = ({ 
   className = 'h-2.5 w-4.5 sm:h-3 sm:w-5', 
-  isLight = false 
+  isLight = false,
+  isAuto = true
 }) => (
   <span className={`inline-flex items-center justify-center shrink-0 mx-0.5 select-none pointer-events-none ${className}`} aria-hidden="true">
     <svg viewBox="0 0 54 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full overflow-visible">
-      {/* Dark Navy / Charcoal Highway Road Path */}
+      {/* Dark Navy / Charcoal Highway Road in light mode, Sky Blue in night mode */}
       <path
         d="M 3 24 C 14 24, 18 19, 25 15 C 32 11, 38 4, 46 3"
-        stroke={isLight ? '#38BDF8' : '#082B55'}
+        className={isAuto ? 'stroke-[#082B55] dark:stroke-[#38BDF8]' : undefined}
+        stroke={!isAuto ? (isLight ? '#38BDF8' : '#082B55') : undefined}
         strokeWidth="6"
         strokeLinecap="round"
       />
@@ -131,7 +137,8 @@ export const HighwayConnector: React.FC<{ className?: string; isLight?: boolean 
       <g transform="translate(40, -4) scale(0.68)">
         <path
           d="M 12 0 C 6.5 0, 2 4.5, 2 10 C 2 16.5, 12 25, 12 25 C 12 25, 22 16.5, 22 10 C 22 4.5, 17.5 0, 12 0 Z"
-          fill="#05813F"
+          className={isAuto ? 'fill-[#05813F] dark:fill-[#34D399]' : undefined}
+          fill={!isAuto ? (isLight ? '#34D399' : '#05813F') : undefined}
         />
         <circle cx="12" cy="9.5" r="3.5" fill="#FFFFFF" />
       </g>
@@ -144,7 +151,7 @@ export interface LogoProps {
   layout?: 'horizontal' | 'stacked' | 'adaptive';
   showTagline?: boolean;
   taglineClassName?: string;
-  variant?: 'dark' | 'light';
+  variant?: 'dark' | 'light' | 'auto';
   onClick?: () => void;
   className?: string;
 }
@@ -154,7 +161,7 @@ export const Logo: React.FC<LogoProps> = ({
   layout = 'horizontal',
   showTagline = true,
   taglineClassName,
-  variant = 'dark',
+  variant = 'auto',
   onClick,
   className = ''
 }) => {
@@ -215,6 +222,7 @@ export const Logo: React.FC<LogoProps> = ({
     : current.defaultTaglineClass;
 
   const isLight = variant === 'light';
+  const isAuto = variant === 'auto';
 
   return (
     <div 
@@ -244,6 +252,7 @@ export const Logo: React.FC<LogoProps> = ({
         Official Brand Title:
         Rendered from official standalone title wordmark asset with crisp vector fallback
         Protected global trademark that never adapts/translates
+        In Night/Dark mode, automatically renders luminous high-contrast white title
       */}
       <div 
         data-no-translate="true" 
@@ -251,20 +260,39 @@ export const Logo: React.FC<LogoProps> = ({
         className={`flex flex-col leading-none min-w-0 notranslate ${isStacked ? 'items-center mt-1.5' : 'justify-center'}`}
       >
         {!titleImgFailed ? (
-          <img
-            src={isLight ? "/tripverse-title-dark.png?v=10" : "/tripverse-title.png?v=10"}
-            srcSet={
-              isLight 
-                ? "/tripverse-title-dark.png?v=10 1x, /tripverse-title-dark@2x.png?v=10 2x" 
-                : "/tripverse-title.png?v=10 1x, /tripverse-title@2x.png?v=10 2x"
-            }
-            alt="TripVerse"
-            onError={() => setTitleImgFailed(true)}
-            className={`select-none pointer-events-none object-contain drop-shadow-2xs transition-transform duration-300 group-hover:scale-[1.02] ${current.titleHeight} w-auto`}
-            draggable={false}
-            loading="eager"
-            decoding="async"
-          />
+          <>
+            {/* Light Mode Wordmark: Dark Navy 'Trip' + Forest Green 'Verse' (hidden in night mode) */}
+            {(variant === 'dark' || isAuto) && (
+              <img
+                src="/tripverse-title.png?v=11"
+                srcSet="/tripverse-title.png?v=11 1x, /tripverse-title@2x.png?v=11 2x"
+                alt="TripVerse"
+                onError={() => setTitleImgFailed(true)}
+                className={`select-none pointer-events-none object-contain drop-shadow-2xs transition-transform duration-300 group-hover:scale-[1.02] ${current.titleHeight} w-auto ${
+                  isAuto ? 'block dark:hidden' : 'block'
+                }`}
+                draggable={false}
+                loading="eager"
+                decoding="async"
+              />
+            )}
+
+            {/* Night / Dark Mode Wordmark: Crisp Luminous Pearl 'Trip' + Vibrant Emerald 'Verse' (visible in night mode) */}
+            {(variant === 'light' || isAuto) && (
+              <img
+                src="/tripverse-title-dark.png?v=11"
+                srcSet="/tripverse-title-dark.png?v=11 1x, /tripverse-title-dark@2x.png?v=11 2x"
+                alt="TripVerse"
+                onError={() => setTitleImgFailed(true)}
+                className={`select-none pointer-events-none object-contain drop-shadow-2xs transition-transform duration-300 group-hover:scale-[1.02] ${current.titleHeight} w-auto ${
+                  isAuto ? 'hidden dark:block' : 'block'
+                }`}
+                draggable={false}
+                loading="eager"
+                decoding="async"
+              />
+            )}
+          </>
         ) : (
           <div 
             data-no-translate="true"
@@ -274,17 +302,33 @@ export const Logo: React.FC<LogoProps> = ({
             <span 
               data-no-translate="true" 
               translate="no" 
-              className={`notranslate ${isLight ? 'text-white' : 'text-[#072851] dark:text-slate-100'}`}
+              className={`notranslate ${
+                variant === 'light' 
+                  ? 'text-white' 
+                  : variant === 'dark'
+                    ? 'text-[#072851]'
+                    : 'text-[#072851] dark:text-white'
+              }`}
             >
               Trip
             </span>
 
-            <HighwayConnector isLight={isLight} className={current.roadSize} />
+            <HighwayConnector 
+              isLight={isLight} 
+              isAuto={isAuto}
+              className={current.roadSize} 
+            />
 
             <span 
               data-no-translate="true" 
               translate="no" 
-              className={`notranslate ${isLight ? 'text-emerald-300' : 'text-[#0D723B] dark:text-emerald-400'}`}
+              className={`notranslate ${
+                variant === 'light' 
+                  ? 'text-emerald-300' 
+                  : variant === 'dark'
+                    ? 'text-[#0D723B]'
+                    : 'text-[#0D723B] dark:text-emerald-400'
+              }`}
             >
               Verse
             </span>
@@ -293,7 +337,11 @@ export const Logo: React.FC<LogoProps> = ({
 
         {showTagline && (
           <span className={`font-semibold tracking-wide mt-0.5 truncate max-w-[190px] sm:max-w-none ${current.textSub} ${
-            isLight ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'
+            variant === 'light' 
+              ? 'text-slate-300' 
+              : variant === 'dark'
+                ? 'text-slate-500'
+                : 'text-slate-500 dark:text-slate-400'
           } ${effectiveTaglineClass}`}>
             {t('Plan Smarter. Travel Further.')}
           </span>

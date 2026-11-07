@@ -2251,27 +2251,27 @@ export function App() {
         </main>
 
         {/* Modern Footer */}
-        <footer className="bg-white border-t border-[#E2EBE1] py-8 lg:py-10 mt-auto pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-10">
+        <footer className="bg-white dark:bg-[#070C16] border-t border-[#E2EBE1] dark:border-slate-800 py-8 lg:py-10 mt-auto pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-10 transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left lg:max-w-[50%]">
               <Logo size="adaptive" showTagline={false} />
-              <span className="hidden sm:inline text-[#DCE7DB]">|</span>
-              <span className="text-xs font-semibold text-[#5A7362]">
+              <span className="hidden sm:inline text-[#DCE7DB] dark:text-slate-700">|</span>
+              <span className="text-xs font-semibold text-[#5A7362] dark:text-slate-400">
                 {t('"TripVerse plans the journey, not just the destination."')}
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-[#5A7362]">
-              <button onClick={() => setIsOnboardingOpen(true)} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Interactive Tour')}</button>
-              <button onClick={() => setCurrentTab('explore')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Destinations')}</button>
-              <button onClick={() => handleOpenPlannerWithPrefill()} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('AI Engine')}</button>
-              <button onClick={() => setCurrentTab('trips')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('My Routes')}</button>
-              <span className="text-[#DCE7DB]">|</span>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'privacy' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Privacy')}</button>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'terms' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Terms')}</button>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'advisory' })} className="hover:text-[#2D5A3D] transition-colors cursor-pointer">{t('Advisory')}</button>
-              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'feedback' })} className="text-[#2D5A3D] hover:text-[#1E3E2B] bg-[#EAF0E9] px-3 py-1 rounded-full border border-[#DCE7DB] transition-colors cursor-pointer font-bold">{t('Feedback')}</button>
-              <span className="text-[#7A9382]" translate="no" data-no-translate="true">© 2026 TripVerse</span>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-[#5A7362] dark:text-slate-400">
+              <button onClick={() => setIsOnboardingOpen(true)} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('Interactive Tour')}</button>
+              <button onClick={() => setCurrentTab('explore')} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('Destinations')}</button>
+              <button onClick={() => handleOpenPlannerWithPrefill()} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('AI Engine')}</button>
+              <button onClick={() => setCurrentTab('trips')} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('My Routes')}</button>
+              <span className="text-[#DCE7DB] dark:text-slate-700">|</span>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'privacy' })} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('Privacy')}</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'terms' })} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('Terms')}</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'advisory' })} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('Advisory')}</button>
+              <button onClick={() => setLegalModalState({ isOpen: true, tab: 'feedback' })} className="text-[#2D5A3D] dark:text-emerald-300 hover:text-[#1E3E2B] dark:hover:text-emerald-200 bg-[#EAF0E9] dark:bg-emerald-950/50 px-3 py-1 rounded-full border border-[#DCE7DB] dark:border-emerald-800/40 transition-colors cursor-pointer font-bold">{t('Feedback')}</button>
+              <span className="text-[#7A9382] dark:text-slate-500" translate="no" data-no-translate="true">© 2026 TripVerse</span>
             </div>
           </div>
         </footer>
