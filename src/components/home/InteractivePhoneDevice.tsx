@@ -82,8 +82,8 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
   const [isSilentMode, setIsSilentMode] = useState(false);
   const [flashlightOn, setFlashlightOn] = useState(false);
   
-  // Titanium Colorway Finish
-  const [titaniumFinish, setTitaniumFinish] = useState<TitaniumFinish>('natural');
+  // Titanium Colorway Finish (Defaulted to Black Titanium)
+  const titaniumFinish: TitaniumFinish = 'black';
 
   // Camera Control State
   const [cameraZoom, setCameraZoom] = useState<number>(1);
@@ -1270,34 +1270,9 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
       </div>
 
       {/* ============================================================== */}
-      {/* MINIMALIST HARDWARE CONTROLS (NO "IPHONE 16" TEXT)             */}
+      {/* MINIMALIST HARDWARE CONTROLS                                   */}
       {/* ============================================================== */}
       <div className="mt-3 flex items-center justify-center gap-4 text-slate-500">
-        {/* Subtle Titanium Color Swatches (Clean Dots, No Marketing Labels) */}
-        <div className="flex items-center gap-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-800 shadow-2xs">
-          {(['natural', 'black', 'desert', 'white'] as TitaniumFinish[]).map((finish) => {
-            const colors = {
-              natural: 'bg-[#a39b91]',
-              black: 'bg-[#282a2d]',
-              desert: 'bg-[#c7af93]',
-              white: 'bg-[#e2e8f0]'
-            };
-            return (
-              <button
-                key={finish}
-                type="button"
-                onClick={() => {
-                  triggerHaptic('light');
-                  setTitaniumFinish(finish);
-                }}
-                className={`w-3 h-3 rounded-full ${colors[finish]} border border-slate-400/50 transition-all cursor-pointer ${
-                  titaniumFinish === finish ? 'ring-2 ring-emerald-500 scale-125' : 'opacity-70 hover:opacity-100'
-                }`}
-              />
-            );
-          })}
-        </div>
-
         {/* Minimalist interactive shortcuts */}
         <div className="flex items-center gap-2.5 text-[11px] font-semibold text-slate-500">
           <button
