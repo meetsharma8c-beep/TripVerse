@@ -377,6 +377,12 @@ describe('Auth Security & Verification Tests', () => {
     expect(res.allowed).toBe(false);
     expect(res.remaining).toBe(0);
 
+    // Step 5b: Deleting trips from local list cannot bypass 3-trip lifetime allowance
+    (global as any).localStorage.setItem(`tripverse_trips_u_${testUser.uid}`, JSON.stringify([]));
+    const deleteBypassCheck = getUserSubscriptionQuota(exhaustedUser);
+    expect(deleteBypassCheck.canCreateTrip).toBe(false);
+    expect(deleteBypassCheck.freeTripsRemaining).toBe(0);
+
     // Step 6: When user upgrades to Pro, unlimited trip creation is unlocked
     await upgradeUserToPro(exhaustedUser, 365);
     const proUser = { ...exhaustedUser, subscriptionTier: 'pro' as const, freeTripsRemaining: 9999 };

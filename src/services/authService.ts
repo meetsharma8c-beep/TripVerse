@@ -1002,6 +1002,8 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
       age: 25,
       emailVerified: true,
       provider: 'email',
+      subscriptionTier: 'free',
+      freeTripsRemaining: 3,
       createdAt: now,
       lastLoginAt: now,
       savedPlaceIds: []
@@ -2246,19 +2248,26 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
     }
   }
 
-  // Cross-reference actual user-created trips count to enforce strict 3-trip allowance
+  // Cross-reference actual user-created trips count and lifetime created count to enforce strict 3-trip allowance
   let userCreatedTripsCount = 0;
+  let lifetimeCreatedCount = 0;
   if (user.uid && typeof localStorage !== 'undefined') {
     try {
       const raw = localStorage.getItem(`tripverse_trips_u_${user.uid}`);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          userCreatedTripsCount = parsed.filter((t: any) => t && t.isUserCreated).length;
+          userCreatedTripsCount = parsed.filter((t: any) => t && t.isUserCreated && !t.isSample).length;
         }
+      }
+      const storedLifetime = localStorage.getItem(`tripverse_lifetime_trips_created_u_${user.uid}`);
+      if (storedLifetime) {
+        lifetimeCreatedCount = parseInt(storedLifetime, 10) || 0;
       }
     } catch {}
   }
+
+  const effectiveCreatedTrips = Math.max(userCreatedTripsCount, lifetimeCreatedCount);
 
   // Registered accounts get strictly 3 free trips on creation
   const rawRemaining = typeof user.freeTripsRemaining === 'number' ? user.freeTripsRemaining : 3;
@@ -2267,7 +2276,7 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
     freeTripsRemaining = 9999;
   } else {
     // Cannot exceed 3 minus created trips, and cannot exceed raw remaining
-    const tripsLeftFromCount = Math.max(0, 3 - userCreatedTripsCount);
+    const tripsLeftFromCount = Math.max(0, 3 - effectiveCreatedTrips);
     freeTripsRemaining = Math.max(0, Math.min(rawRemaining, tripsLeftFromCount));
   }
 
@@ -2321,10 +2330,18 @@ export function consumeTripCredit(userParam?: AuthUser | null): { allowed: boole
     targetUser.freeTripsRemaining = newRemaining;
   }
 
+  // Track lifetime created count in persistent storage so deleting an existing trip cannot bypass the 3-trip allowance
+  if (targetUser.uid && typeof localStorage !== 'undefined') {
+    try {
+      const currentLifetime = parseInt(localStorage.getItem(`tripverse_lifetime_trips_created_u_${targetUser.uid}`) || '0', 10);
+      localStorage.setItem(`tripverse_lifetime_trips_created_u_${targetUser.uid}`, (currentLifetime + 1).toString());
+    } catch {}
+  }
+
   updateAuthProfile({ freeTripsRemaining: newRemaining }).catch(() => {});
   if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
     try {
-      window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { remaining: newRemaining } }));
+      window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { remaining: newRemaining, user: targetUser } }));
     } catch (_) {}
   }
   return { allowed: true, remaining: newRemaining };

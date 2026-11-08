@@ -1031,7 +1031,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-[#0B2545]">Sign In or Sign Up with Google</h3>
+                <h3 className="text-xl font-bold text-[#0B2545]">Sign In with Google (or Sign Up)</h3>
                 <p className="text-xs text-slate-500">
                   Fast, verified 1-tap sign-in & instant account registration. Unlocks the AI Trip Planner with 3 free trip plans.
                 </p>

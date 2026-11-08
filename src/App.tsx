@@ -384,7 +384,19 @@ export function App() {
         window.dispatchEvent(new CustomEvent('tripverse_visited_states_change', { detail: guestStates }));
       }
     });
-    return unsub;
+
+    const handleQuotaUpdate = () => {
+      const active = getCurrentUser();
+      if (active) {
+        setCurrentUser({ ...active });
+      }
+    };
+    window.addEventListener('tripverse_quota_updated', handleQuotaUpdate);
+
+    return () => {
+      unsub();
+      window.removeEventListener('tripverse_quota_updated', handleQuotaUpdate);
+    };
   }, []);
 
   // Helper to preload critical visual assets before revealing the UI
@@ -1127,7 +1139,6 @@ export function App() {
 
     setTimeout(async () => {
       try {
-        consumeTripCredit(currentUser);
         let originCoords: Coordinates | undefined;
         if (typeof navigator !== 'undefined' && navigator.geolocation) {
           originCoords = await Promise.race([
@@ -1170,6 +1181,8 @@ export function App() {
           newTrip.userId = currentUser.uid;
           newTrip.isUserCreated = true;
         }
+        // Deduct free credit only upon successful generation
+        consumeTripCredit(currentUser);
         saveOrUpdateTrip(newTrip, currentUser?.uid);
         setTrips(prev => [newTrip, ...prev]);
         setActiveTripIdState(newTrip.id);
@@ -1209,7 +1222,6 @@ export function App() {
       return;
     }
 
-    consumeTripCredit(currentUser);
     triggerHaptic('success');
     setIsGeneratingTrip(true);
     try {
@@ -1218,6 +1230,8 @@ export function App() {
         newTrip.userId = currentUser.uid;
         newTrip.isUserCreated = true;
       }
+      // Deduct free credit only upon successful generation
+      consumeTripCredit(currentUser);
       saveOrUpdateTrip(newTrip, currentUser?.uid);
       setTrips(prev => [newTrip, ...prev]);
       setActiveTripIdState(newTrip.id);
@@ -2391,13 +2405,13 @@ export function App() {
             onClose={() => setIsGuestPlannerRestrictedOpen(false)}
             onOpenSignUp={() => {
               setIsGuestPlannerRestrictedOpen(false);
-              setAuthModalInitialMethod('google');
+              setAuthModalInitialMethod('email');
               setAuthModalInitialSubMode('signup');
               setIsAuthModalOpen(true);
             }}
             onOpenSignIn={() => {
               setIsGuestPlannerRestrictedOpen(false);
-              setAuthModalInitialMethod('google');
+              setAuthModalInitialMethod('email');
               setAuthModalInitialSubMode('login');
               setIsAuthModalOpen(true);
             }}
@@ -2407,6 +2421,7 @@ export function App() {
 
         {isPlannerOpen && (
           <PlannerWizard
+            currentUser={currentUser}
             initialDestination={plannerPrefill.destination}
             initialDuration={plannerPrefill.duration}
             initialTravelers={plannerPrefill.travelers}
@@ -2662,6 +2677,16 @@ export function App() {
       <TripVerseProModal
         isOpen={isProModalOpen}
         currentUser={currentUser}
+        title={
+          currentUser && !isGuestUser(currentUser) && !getUserSubscriptionQuota(currentUser).canCreateTrip
+            ? "You've Completed Your 3 Free Trip Plans"
+            : 'Travel Without Limits with'
+        }
+        subtitle={
+          currentUser && !isGuestUser(currentUser) && !getUserSubscriptionQuota(currentUser).canCreateTrip
+            ? 'Upgrade to TripVerse Pro for unlimited AI-powered trip planning, offline itineraries, and priority travel intelligence.'
+            : 'Unlock unlimited AI itineraries, real-time monsoon detours, and a dedicated 30h/week AI travel co-pilot.'
+        }
         onClose={() => setIsProModalOpen(false)}
         onSubscribed={() => {
           const updated = getCurrentUser();

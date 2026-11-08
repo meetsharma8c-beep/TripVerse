@@ -143,7 +143,7 @@ async function runE2ELaunchVerification() {
     // Attempt to open AI Planner from Navbar
     await page.evaluate(() => {
       const links = Array.from(document.querySelectorAll('header button, nav button'));
-      const plannerBtn = links.find((l) => l.innerText?.includes('Planner') || l.innerText?.includes('Plan My Trip'));
+      const plannerBtn = links.find((l) => l.innerText?.includes('Planner') || l.innerText?.includes('Plan My Trip') || l.innerText?.includes('Plan Trip'));
       if (plannerBtn) plannerBtn.click();
     });
     await new Promise((r) => setTimeout(r, 800));
@@ -187,7 +187,7 @@ async function runE2ELaunchVerification() {
     const nameInput = await page.$(`${MODAL} input[placeholder="Enter your full name"]`);
     const emailInput = await page.$(`${MODAL} input[placeholder="your.email@domain.com"]`);
     const passInput = await page.$(`${MODAL} input[placeholder="Min 6 chars"]`);
-    const confirmInput = await page.$(`${MODAL} input[placeholder="Repeat password"]`);
+    const confirmInput = (await page.$(`${MODAL} input[placeholder="Repeat password"]`)) || (await page.$(`${MODAL} input[placeholder="Repeat Password"]`));
 
     if (!nameInput || !emailInput || !passInput || !confirmInput) {
       throw new Error('Create Account form inputs not found inside AuthModal');

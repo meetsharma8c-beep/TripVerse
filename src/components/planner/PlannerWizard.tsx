@@ -1,5 +1,5 @@
 import { useModalBehavior } from '../../hooks/useModalBehavior';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   ArrowLeft,
@@ -51,11 +51,13 @@ import { PlannerInput } from '../../services/plannerEngine';
 import { GenerationLoader } from './GenerationLoader';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { searchLocations, resolvePreciseLocationSync, PreciseLocation } from '../../services/locationService';
+import { AuthUser } from '../../types/auth';
 import { getUserSubscriptionQuota, getCurrentUser, isGuestUser } from '../../services/authService';
 import { getFeasibleTransportModes } from '../../services/transportFeasibilityEngine';
 import { useLanguage } from '../../services/languageService';
 
 interface PlannerWizardProps {
+  currentUser?: AuthUser | null;
   initialDestination?: string;
   initialDuration?: number;
   initialTravelers?: number;
@@ -68,6 +70,7 @@ interface PlannerWizardProps {
 }
 
 export const PlannerWizard: React.FC<PlannerWizardProps> = ({
+  currentUser,
   initialDestination = '',
   initialDuration = 3,
   initialTravelers = 3,
@@ -79,8 +82,16 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   onOpenAuthModal
 }) => {
   const { t } = useLanguage();
-  const quota = getUserSubscriptionQuota();
-  const isGuest = isGuestUser(getCurrentUser());
+  const [quota, setQuota] = useState(() => getUserSubscriptionQuota(currentUser));
+  const isGuest = isGuestUser(currentUser ?? getCurrentUser());
+
+  useEffect(() => {
+    setQuota(getUserSubscriptionQuota(currentUser));
+    const handleQuota = () => setQuota(getUserSubscriptionQuota(currentUser));
+    window.addEventListener('tripverse_quota_updated', handleQuota);
+    return () => window.removeEventListener('tripverse_quota_updated', handleQuota);
+  }, [currentUser]);
+
   useModalBehavior(true);
   const [currentStep, setCurrentStep] = useState<number>(1);
   const totalSteps = 9;
@@ -436,14 +447,12 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                     <span>PRO</span>
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={onOpenProModal}
-                    className="px-2 py-0.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold tracking-wider shrink-0 cursor-pointer transition-colors"
-                    title="Free Explorer Tier • Click to Upgrade"
+                  <div
+                    className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold tracking-wider shrink-0 select-none"
+                    title={`${quota.freeTripsRemaining} of 3 free trips remaining`}
                   >
                     {t('planner.freeTripsRemaining', { count: quota.freeTripsRemaining })}
-                  </button>
+                  </div>
                 )}
               </div>
               <span className="text-[11px] sm:text-xs text-slate-500 font-semibold block">
