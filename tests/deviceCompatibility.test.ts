@@ -177,6 +177,27 @@ describe('Cross-OS & Cross-Device Compatibility Engine', () => {
     expect(domClasses.has('is-retina')).toBe(true);
   });
 
+  it('correctly handles Windows 2-in-1 hybrid laptops by preserving mouse-device class when fine pointer exists', () => {
+    (global as any).window.navigator = {
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+      platform: 'Win32',
+      maxTouchPoints: 10
+    };
+    (global as any).window.innerWidth = 1440;
+    (global as any).window.matchMedia = (query: string) => ({
+      matches: query.includes('pointer: fine') || query.includes('any-pointer: fine'),
+      addListener: () => {},
+      removeListener: () => {}
+    });
+
+    applyDeviceClassesToDom();
+
+    expect(domClasses.has('os-windows')).toBe(true);
+    expect(domClasses.has('device-desktop')).toBe(true);
+    expect(domClasses.has('touch-device')).toBe(true);
+    expect(domClasses.has('mouse-device')).toBe(true);
+  });
+
   it('guarantees touch-device CSS rules exempt indicator buttons to prevent vertical stretching', () => {
     const fs = require('fs');
     const path = require('path');

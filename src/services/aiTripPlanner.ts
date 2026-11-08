@@ -35,6 +35,8 @@ export function buildPrompt(input: PlannerInput, baseline: Trip): string {
         language: activeLanguage,
         interests: baseline.preferences,
         specialRequests: (input.specialRequests || '').slice(0, 500),
+        userPreferredSights: (input.selectedActivities || []).filter(Boolean),
+        itineraryStyle: input.itineraryStyle || 'flexible_custom',
         transportMode: baseline.transportMode,
         accommodationType: baseline.accommodationType,
         selectedStay: baseline.selectedHotel?.name,

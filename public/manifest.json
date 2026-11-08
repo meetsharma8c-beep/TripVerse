@@ -6,9 +6,10 @@
   "start_url": "https://trip-verse.com/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#FFFFFF",
   "theme_color": "#2D5A3D",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "categories": ["travel", "navigation", "lifestyle"],
   "icons": [
     {

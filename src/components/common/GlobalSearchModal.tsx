@@ -85,7 +85,22 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     : trips.slice(0, 2);
 
   // Quick App Actions
-  const quickActions = [
+  const baseActions = [
+    ...(query.trim()
+      ? [
+          {
+            id: 'plan_searched_destination',
+            label: `${t('Plan trip to')} "${query.trim()}"`,
+            desc: t('Customize route, dates, budget & activities step-by-step'),
+            icon: Sparkles,
+            iconColor: 'text-[#2D5A3D]',
+            action: () => {
+              onClose();
+              onOpenPlanner({ destination: query.trim() });
+            }
+          }
+        ]
+      : []),
     {
       id: 'plan_trip',
       label: t('Create New Itinerary with AI'),
@@ -130,7 +145,10 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
         onNavigateTab('explore');
       }
     }
-  ].filter(act => 
+  ];
+
+  const quickActions = baseActions.filter(act => 
+    act.id === 'plan_searched_destination' ||
     !normalizedQuery || 
     act.label.toLowerCase().includes(normalizedQuery) || 
     act.desc.toLowerCase().includes(normalizedQuery)
@@ -156,6 +174,14 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && query.trim()) {
+                e.preventDefault();
+                triggerHaptic('light');
+                onClose();
+                onOpenPlanner({ destination: query.trim() });
+              }
+            }}
             placeholder={t('Search trips, destinations, or quick actions (⌘K)...')}
             className="flex-1 bg-transparent text-sm sm:text-base font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none"
           />
@@ -251,10 +277,25 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                         <p className="text-[11px] text-slate-500 truncate">{dest.tagline}</p>
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold text-[#2D5A3D] shrink-0 flex items-center gap-1">
-                      <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                      <span>{dest.rating}</span>
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] font-bold text-[#2D5A3D] flex items-center gap-1">
+                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                        <span>{dest.rating}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          triggerHaptic('light');
+                          onClose();
+                          onOpenPlanner({ destination: dest.name });
+                        }}
+                        className="px-2.5 py-1 rounded-xl bg-[#E8EFE7] text-[#2D5A3D] hover:bg-[#2D5A3D] hover:text-white text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                        title={`Plan trip to ${dest.name}`}
+                      >
+                        {t('Plan')}
+                      </button>
+                    </div>
                   </button>
                 ))}
               </div>

@@ -48,6 +48,7 @@ export interface DeviceInfo {
   isTablet: boolean;
   isDesktop: boolean;
   isTouch: boolean;
+  hasFinePointer: boolean;
   isRetina: boolean;
   hasNotch: boolean;
   hasHaptics: boolean;
@@ -101,6 +102,10 @@ export function getDeviceInfo(): DeviceInfo {
     window.matchMedia('(pointer: coarse)').matches || ((nav?.maxTouchPoints || 0) > 0)
   ) : false;
 
+  const hasFinePointer = typeof window !== 'undefined' ? (
+    window.matchMedia('(pointer: fine)').matches || window.matchMedia('(any-pointer: fine)').matches
+  ) : true;
+
   const isRetina = typeof window !== 'undefined' ? (window.devicePixelRatio >= 2) : false;
 
   const hasNotch = typeof window !== 'undefined' ? (
@@ -132,6 +137,7 @@ export function getDeviceInfo(): DeviceInfo {
     isTablet,
     isDesktop,
     isTouch,
+    hasFinePointer,
     isRetina,
     hasNotch,
     hasHaptics,
@@ -155,7 +161,9 @@ export function applyDeviceClassesToDom(): void {
 
   // Touch vs Mouse
   root.classList.toggle('touch-device', info.isTouch);
-  root.classList.toggle('mouse-device', !info.isTouch);
+  // Guarantee mouse-device classes for devices with a fine pointer (mouse / precision trackpad),
+  // including Windows 2-in-1 hybrid touch laptops
+  root.classList.toggle('mouse-device', info.hasFinePointer || !info.isTouch);
 
   // Standalone / PWA
   root.classList.toggle('is-standalone', info.isStandalone);
@@ -343,4 +351,23 @@ export async function hideNativeSplashScreen(fadeOutDuration = 400): Promise<voi
     }
   }
 }
+
+/**
+ * Synchronize the application icon badge count across Windows Taskbar and Android Launcher (PWA & Web)
+ */
+export function syncAppBadge(count: number): void {
+  if (typeof navigator === 'undefined') return;
+  try {
+    if ('setAppBadge' in navigator) {
+      if (count > 0) {
+        (navigator as any).setAppBadge(count).catch(() => {});
+      } else {
+        (navigator as any).clearAppBadge().catch(() => {});
+      }
+    }
+  } catch {
+    // Ignore environments where App Badging is not supported or permitted
+  }
+}
+
 

@@ -35,6 +35,8 @@ export interface PlannerInput {
   originCoords?: Coordinates;
   startDate?: string;
   pacing?: 'relaxed' | 'balanced' | 'fast_paced';
+  itineraryStyle?: 'flexible_custom' | 'ai_curated';
+  selectedActivities?: string[];
 }
 
 /**
@@ -498,9 +500,11 @@ export function generateAITrip(input: PlannerInput): Trip {
   const cuisine = getRegionalCuisine(state, country, foodPref);
   const activityMeta = getActivityTypeMeta(spotType, category);
 
-  // Compile full deduplicated highlights list: prioritize live discovered genuine highlights from preciseLoc
+  // Compile full deduplicated highlights list: prioritize user selected sights, live discovered highlights from preciseLoc, and atlas
   const atlasHighlights = getDestinationHighlights(spotName, 25);
+  const userChosenActivities = (input.selectedActivities || []).map(s => s.trim()).filter(Boolean);
   const rawHighlights = Array.from(new Set([
+    ...userChosenActivities,
     ...(preciseLoc?.highlights && preciseLoc.highlights.length > 0 ? preciseLoc.highlights : []),
     ...atlasHighlights,
     ...(matchedDest.popularActivities || [])

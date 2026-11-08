@@ -86,7 +86,20 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* Universal Cross-OS Smooth Scrollbar (Windows, Linux, macOS) */
+html, body {
+  overscroll-behavior-y: none;
+}
+
+/* Universal Cross-OS Smooth Scrollbar (Windows Firefox/Edge/Chrome, Linux, macOS) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(142, 167, 141, 0.4) transparent;
+}
+
+html.dark * {
+  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+}
+
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
@@ -120,7 +133,7 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 .touch-device a:not(.min-h-0):not(.no-min-h), 
 .touch-device input, 
 .touch-device select {
-  min-height: 38px;
+  min-height: 42px;
 }
 
 /* Crisp rendering on Retina & High-DPI screens (macOS, iPad, 4K Windows) */
@@ -1340,3 +1353,40 @@ div[style*="z-index: 2000000000"] {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+/* ==========================================================================
+   WINDOWS HIGH CONTRAST & ACCESSIBILITY MODE (FORCED-COLORS)
+   ========================================================================== */
+@media (forced-colors: active) {
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  .nature-card,
+  .glass-panel {
+    border: 1px solid ButtonBorder !important;
+  }
+
+  .btn-liquid-primary,
+  .btn-liquid-navy {
+    background: Highlight !important;
+    color: HighlightText !important;
+    border: 1px solid HighlightText !important;
+  }
+
+  .btn-liquid-primary *,
+  .btn-liquid-navy * {
+    color: HighlightText !important;
+  }
+
+  .btn-liquid-glass {
+    border: 1px solid ButtonBorder !important;
+  }
+
+  :focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px !important;
+  }
+}
+

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, ShieldCheck, Car, Bed, Coffee, CheckCircle2 } from 'lucide-react';
+import { formatCurrency, getActiveCurrency } from '../../services/currencyService';
 
 interface AIGenerationSkeletonProps {
   destination: string;
@@ -15,6 +16,7 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
   budget
 }) => {
   const [stepIndex, setStepIndex] = useState(0);
+  const currency = getActiveCurrency();
 
   const steps = [
     {
@@ -34,7 +36,7 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
     },
     {
       title: 'Locking Partner Stays & Day Itinerary',
-      desc: `Ensuring total spend fits comfortably within your ₹${budget.toLocaleString()} budget...`,
+      desc: `Ensuring total spend fits comfortably within your ${formatCurrency(budget, currency)} budget...`,
       icon: Bed
     }
   ];
@@ -68,7 +70,7 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
             Crafting Your {destination || 'Custom'} Journey
           </h3>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            {duration} Days • {travelers} Explorers • Budget: ₹{budget.toLocaleString()}
+            {duration} Days • {travelers} Explorers • Budget: {formatCurrency(budget, currency)}
           </p>
         </div>
 

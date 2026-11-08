@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DayPlan, ItineraryActivity, TransportDeal, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError, DEFAULT_TRAVEL_FALLBACK_IMAGE } from '../../utils/destinationImages';
 import { fetchOriginalPhoto, getInstantPhoto } from '../../services/originalPhotoService';
-import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, Info, ShieldCheck, Zap, Activity, Building2, Moon } from 'lucide-react';
+import { getDestinationHighlights } from '../../services/landmarkAtlasService';
+import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, Info, ShieldCheck, Zap, Activity, Building2, Moon, RotateCcw, CalendarPlus } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { Landmark3DViewer } from '../common/Landmark3DViewer';
 import { toggleDayWeatherMode } from '../../services/smartTravelEngine';
@@ -20,6 +21,10 @@ interface DayTimelineProps {
   onMoveActivity?: (dayNumber: number, activityId: string, direction: 'up' | 'down') => void;
   onToggleComplete?: (dayNumber: number, activityId: string) => void;
   onOptimizeWithAI?: () => void;
+  onClearDay?: (dayNumber: number) => void;
+  onAddDay?: () => void;
+  onDeleteDay?: (dayNumber: number) => void;
+  onQuickAddSight?: (dayNumber: number, sightName: string) => void;
 }
 
 const DayThumbnailImage: React.FC<{
@@ -73,7 +78,11 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
   onDeleteActivity,
   onMoveActivity,
   onToggleComplete,
-  onOptimizeWithAI
+  onOptimizeWithAI,
+  onClearDay,
+  onAddDay,
+  onDeleteDay,
+  onQuickAddSight
 }) => {
   const { t } = useLanguage();
   const [selectedDay, setSelectedDay] = useState<number>(1);
@@ -83,6 +92,12 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
   const [is3DOpen, setIs3DOpen] = useState(false);
   const [selected3DLandmark, setSelected3DLandmark] = useState('');
   const [weatherSwappedDays, setWeatherSwappedDays] = useState<Record<number, boolean>>({});
+  const [isFlexiblePacing, setIsFlexiblePacing] = useState(false);
+
+  const destinationHighlights = useMemo(() => {
+    if (!destination) return [];
+    return getDestinationHighlights(destination, 14);
+  }, [destination]);
 
   const handleToggleWeatherMode = (dayNumber: number) => {
     triggerHaptic('medium');
@@ -148,12 +163,34 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
   return (
     <div className="space-y-6 font-sans pb-28 md:pb-8">
       
-      {/* Advisory Note */}
-      <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#E8EFE7]/60 border border-[#8EA78D]/30 text-xs text-[#2D5A3D]">
-        <Compass className="w-4 h-4 text-[#2D5A3D] shrink-0" />
-        <span className="flex-1">
-          {t('itinerary.smartItineraryAdvisory')}
-        </span>
+      {/* Itinerary Control Bar: Advisory & Flexibility Switch */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-[#E8EFE7]/70 border border-[#8EA78D]/30">
+        <div className="flex items-center gap-2 text-xs text-[#2D5A3D]">
+          <Compass className="w-4 h-4 text-[#2D5A3D] shrink-0" />
+          <span className="font-semibold">
+            {isFlexiblePacing 
+              ? 'Flexible Exploration Mode: Day goals without rigid hour-by-hour locks' 
+              : t('itinerary.smartItineraryAdvisory')}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic('light');
+              setIsFlexiblePacing(prev => !prev);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              isFlexiblePacing
+                ? 'bg-[#2D5A3D] text-white shadow-xs'
+                : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300'
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>{isFlexiblePacing ? 'Flexible Mode (Active)' : 'Switch to Flexible Mode'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Screen 2: Vertical Day Timeline Stream */}
@@ -233,8 +270,46 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
 
                   </div>
 
-                  {/* Right Thumbnail Image matching Reference Screen 2 */}
-                  <div className="shrink-0">
+                  {/* Right Controls & Thumbnail Image */}
+                  <div className="shrink-0 flex items-center gap-2">
+                    {isExpanded && (
+                      <div className="flex flex-col gap-1 items-end">
+                        {onClearDay && activeDay.activities.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              triggerHaptic('warning');
+                              if (window.confirm(`Clear all activities in Day ${day.dayNumber} to start with a blank day?`)) {
+                                onClearDay(day.dayNumber);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer text-[10px] font-bold flex items-center gap-1"
+                            title={`Clear Day ${day.dayNumber} activities`}
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Clear</span>
+                          </button>
+                        )}
+                        {onDeleteDay && itinerary.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              triggerHaptic('warning');
+                              if (window.confirm(`Remove Day ${day.dayNumber} from this itinerary?`)) {
+                                onDeleteDay(day.dayNumber);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-[10px] font-bold flex items-center gap-1"
+                            title={`Remove Day ${day.dayNumber}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Delete Day</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <DayThumbnailImage day={day} destination={destination} />
                   </div>
 
@@ -347,6 +422,33 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
 
                     {/* Timeline items for this day */}
                     <div className="space-y-3">
+                      {activeDay.activities.length === 0 && (
+                        <div className="p-6 text-center space-y-3 bg-white rounded-2xl border border-dashed border-[#8EA78D]/50 shadow-2xs">
+                          <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-[#2D5A3D] mx-auto flex items-center justify-center">
+                            <Compass className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-[#152A1C]">Flexible Free Exploration Day</h4>
+                            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                              No rigid activities scheduled for Day {day.dayNumber}. Wander at your own pace, enjoy spontaneous meals, or add sights of your choice below.
+                            </p>
+                          </div>
+                          {onAddActivity && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                triggerHaptic('light');
+                                onAddActivity(day.dayNumber);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2D5A3D] text-white text-xs font-bold shadow-xs hover:bg-[#234730] transition-colors cursor-pointer"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Add Custom Activity</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+
                       {activeDay.activities.map((act, idx) => {
                         const Icon = getActivityIcon(act.type);
 
@@ -381,7 +483,9 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                                 )}
 
                                 <span className="text-xs font-bold text-[#2D5A3D] bg-[#E8EFE7] px-2 py-0.5 rounded-full shrink-0">
-                                  {act.time}
+                                  {isFlexiblePacing 
+                                    ? (idx === 0 ? 'Morning' : idx === 1 ? 'Midday' : idx === 2 ? 'Afternoon' : idx === 3 ? 'Sunset' : 'Evening')
+                                    : act.time}
                                 </span>
 
                                 <span className={`text-sm font-bold min-w-0 break-words leading-snug ${act.completed ? 'line-through text-slate-400' : 'text-[#152A1C]'}`}>
@@ -611,6 +715,46 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                       })}
                     </div>
 
+                    {/* Quick-Pick Destination Sights Strip */}
+                    {destinationHighlights.length > 0 && (
+                      <div className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-200/60 space-y-2">
+                        <div className="flex items-center justify-between text-xs font-bold text-[#2D5A3D]">
+                          <span className="flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Quick Add Sights to Day {day.dayNumber} ({destination || 'Destination'}):</span>
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-normal">Click to add in 1-tap</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                          {destinationHighlights.map((hl) => {
+                            const alreadyAdded = activeDay.activities.some(a => a.title.toLowerCase().includes(hl.toLowerCase()) || hl.toLowerCase().includes(a.title.toLowerCase()));
+                            return (
+                              <button
+                                key={hl}
+                                type="button"
+                                disabled={alreadyAdded}
+                                onClick={() => {
+                                  triggerHaptic('success');
+                                  if (onQuickAddSight) {
+                                    onQuickAddSight(day.dayNumber, hl);
+                                  } else if (onAddActivity) {
+                                    onAddActivity(day.dayNumber);
+                                  }
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer text-left truncate max-w-full ${
+                                  alreadyAdded
+                                    ? 'bg-emerald-100/60 text-emerald-800 border border-emerald-200 opacity-60 cursor-default'
+                                    : 'bg-white hover:bg-emerald-100/70 border border-emerald-200 text-slate-800 shadow-2xs'
+                                }`}
+                              >
+                                {alreadyAdded ? `✓ ${hl}` : `+ ${hl}`}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Multi-Persona Parallel Group Explorer Card */}
                     {activeDay.groupBranches && activeDay.groupBranches.length > 0 && (
                       <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/70 to-slate-50 border border-emerald-200 space-y-3">
@@ -701,7 +845,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
         {/* Action Controls: Responsive Setup */}
         <div className="pl-13 sm:pl-15 pt-1 space-y-3">
           
-          {/* Desktop Toolbar (md+): Inline "+ Add Activity" + "Optimize with AI" + Settings */}
+          {/* Desktop Toolbar (md+): Inline "+ Add Activity" + "+ Add Day" + "Optimize with AI" + Settings */}
           <div className="hidden md:flex items-center gap-3">
             {onAddActivity && (
               <button
@@ -716,6 +860,21 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                   <Plus className="w-3.5 h-3.5" />
                 </div>
                 <span>Add Activity</span>
+              </button>
+            )}
+
+            {onAddDay && (
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('success');
+                  onAddDay();
+                }}
+                className="py-3.5 px-5 rounded-2xl border border-emerald-300 bg-white hover:bg-emerald-50 text-[#2D5A3D] font-display font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs active:scale-[0.99] shrink-0"
+                title="Add an extra day to this trip"
+              >
+                <CalendarPlus className="w-4 h-4 text-[#2D5A3D]" />
+                <span>+ Add Day</span>
               </button>
             )}
 
@@ -742,22 +901,38 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
             </button>
           </div>
 
-          {/* Mobile Only: "+ Add Activity" Full Width Button */}
-          {onAddActivity && (
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic('light');
-                onAddActivity(selectedDay);
-              }}
-              className="md:hidden w-full py-3.5 rounded-2xl border-2 border-dashed border-[#8EA78D]/50 hover:border-[#2D5A3D] bg-[#F8FAF7] hover:bg-[#E8EFE7]/50 text-[#2D5A3D] font-display font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer group shadow-2xs active:scale-[0.99]"
-            >
-              <div className="w-5 h-5 rounded-full bg-[#E8EFE7] group-hover:bg-[#2D5A3D] text-[#2D5A3D] group-hover:text-white flex items-center justify-center transition-colors">
-                <Plus className="w-3.5 h-3.5" />
-              </div>
-              <span>Add Activity</span>
-            </button>
-          )}
+          {/* Mobile Only: "+ Add Activity" & "+ Add Day" Buttons */}
+          <div className="md:hidden space-y-2">
+            {onAddActivity && (
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('light');
+                  onAddActivity(selectedDay);
+                }}
+                className="w-full py-3.5 rounded-2xl border-2 border-dashed border-[#8EA78D]/50 hover:border-[#2D5A3D] bg-[#F8FAF7] hover:bg-[#E8EFE7]/50 text-[#2D5A3D] font-display font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer group shadow-2xs active:scale-[0.99]"
+              >
+                <div className="w-5 h-5 rounded-full bg-[#E8EFE7] group-hover:bg-[#2D5A3D] text-[#2D5A3D] group-hover:text-white flex items-center justify-center transition-colors">
+                  <Plus className="w-3.5 h-3.5" />
+                </div>
+                <span>Add Activity</span>
+              </button>
+            )}
+
+            {onAddDay && (
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('success');
+                  onAddDay();
+                }}
+                className="w-full py-2.5 rounded-2xl border border-emerald-300 bg-white hover:bg-emerald-50 text-[#2D5A3D] font-display font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs active:scale-[0.99]"
+              >
+                <CalendarPlus className="w-3.5 h-3.5 text-[#2D5A3D]" />
+                <span>+ Add Day {itinerary.length + 1} to Itinerary</span>
+              </button>
+            )}
+          </div>
 
         </div>
 

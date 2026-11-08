@@ -45,17 +45,22 @@ import {
   Calendar,
   Lock,
   Info,
+  Compass,
+  SlidersHorizontal,
+  Plus,
   LucideIcon
 } from 'lucide-react';
 import { TravelPreference, TravelerType, TransportMode, AccommodationType, FoodPreference, Priority, Coordinates } from '../../types/trip';
 import { PlannerInput } from '../../services/plannerEngine';
-import { GenerationLoader } from './GenerationLoader';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { searchLocations, resolvePreciseLocationSync, PreciseLocation } from '../../services/locationService';
+import { getDestinationHighlights } from '../../services/landmarkAtlasService';
+import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { AuthUser } from '../../types/auth';
 import { getUserSubscriptionQuota, getCurrentUser, isGuestUser } from '../../services/authService';
 import { getFeasibleTransportModes } from '../../services/transportFeasibilityEngine';
 import { useLanguage } from '../../services/languageService';
+import { loadUserProfile } from '../../services/storageService';
 
 interface PlannerWizardProps {
   currentUser?: AuthUser | null;
@@ -98,7 +103,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   const totalSteps = 9;
 
   // Step 1: Destination
-  const [origin, setOrigin] = useState('Ahmedabad, Gujarat');
+  const [origin, setOrigin] = useState(() => loadUserProfile(currentUser?.uid)?.location || 'Ahmedabad, Gujarat');
   const [originCoords, setOriginCoords] = useState<Coordinates | undefined>();
   const [destination, setDestination] = useState(initialDestination);
 
@@ -213,6 +218,31 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   // Step 4: Budget
   const [budgetMode, setBudgetMode] = useState<'per_person' | 'total'>(initialBudgetMode);
   const [budgetAmount, setBudgetAmount] = useState<number>(initialBudget);
+
+  // Synchronize dynamic prefilled parameters from search bar or explore modals
+  useEffect(() => {
+    if (initialDestination) {
+      setDestination(initialDestination);
+      const spot = resolvePreciseLocationSync(initialDestination);
+      if (spot) setSelectedPreciseSpot(spot);
+    }
+  }, [initialDestination]);
+
+  useEffect(() => {
+    if (initialDuration) setDuration(initialDuration);
+  }, [initialDuration]);
+
+  useEffect(() => {
+    if (initialTravelers) setTravelersCount(initialTravelers);
+  }, [initialTravelers]);
+
+  useEffect(() => {
+    if (initialBudget) setBudgetAmount(initialBudget);
+  }, [initialBudget]);
+
+  useEffect(() => {
+    if (initialBudgetMode) setBudgetMode(initialBudgetMode);
+  }, [initialBudgetMode]);
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
 
   React.useEffect(() => {
@@ -257,9 +287,6 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   // Step 9: Comfort Priorities
   const [priorities, setPriorities] = useState<Priority[]>(['budget', 'experience', 'comfort']);
 
-  // Loading state
-  const [isGenerating, setIsGenerating] = useState(false);
-
   const togglePreference = (pref: TravelPreference) => {
     if (preferences.includes(pref)) {
       setPreferences(preferences.filter(p => p !== pref));
@@ -292,8 +319,8 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         if (onOpenProModal) onOpenProModal();
         return;
       }
-      // Trigger AI Generation
-      setIsGenerating(true);
+      // Submit directly to unified AI trip generator
+      handleFinalSubmit();
     }
   };
 
@@ -301,6 +328,55 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  // Traveler Itinerary Flexibility & Sights Choice
+  const [itineraryStyle, setItineraryStyle] = useState<'flexible_custom' | 'ai_curated'>('flexible_custom');
+  const [availableSights, setAvailableSights] = useState<string[]>([]);
+  const [selectedSights, setSelectedSights] = useState<string[]>([]);
+  const [customSightInput, setCustomSightInput] = useState('');
+
+  // Dynamically populate genuine sights whenever destination or selected spot changes
+  useEffect(() => {
+    const rawDest = (selectedPreciseSpot?.name || destination || '').trim();
+    if (!rawDest) {
+      setAvailableSights([]);
+      setSelectedSights([]);
+      return;
+    }
+    const matched = POPULAR_DESTINATIONS.find(
+      d => d.name.toLowerCase() === rawDest.toLowerCase() ||
+           rawDest.toLowerCase().includes(d.name.toLowerCase())
+    );
+    const atlasHighlights = getDestinationHighlights(rawDest, 14);
+    const combined = Array.from(new Set([
+      ...(selectedPreciseSpot?.highlights || []),
+      ...(matched?.popularActivities || []),
+      ...atlasHighlights
+    ].filter(Boolean)));
+    setAvailableSights(combined);
+    // Pre-select top 4 genuine sights so the user starts with curated choices they can modify
+    setSelectedSights(prev => prev.length > 0 ? prev : combined.slice(0, 5));
+  }, [destination, selectedPreciseSpot]);
+
+  const toggleSight = (sight: string) => {
+    if (selectedSights.includes(sight)) {
+      setSelectedSights(selectedSights.filter(s => s !== sight));
+    } else {
+      setSelectedSights([...selectedSights, sight]);
+    }
+  };
+
+  const handleAddCustomSight = () => {
+    const trimmed = customSightInput.trim();
+    if (!trimmed) return;
+    if (!selectedSights.includes(trimmed)) {
+      setSelectedSights(prev => [...prev, trimmed]);
+    }
+    if (!availableSights.includes(trimmed)) {
+      setAvailableSights(prev => [trimmed, ...prev]);
+    }
+    setCustomSightInput('');
   };
 
   const handleFinalSubmit = () => {
@@ -326,7 +402,9 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
       destinationCoords: selectedPreciseSpot?.coordinates,
       preciseLocation: selectedPreciseSpot || undefined,
       startDate,
-      pacing
+      pacing,
+      itineraryStyle,
+      selectedActivities: selectedSights
     };
     onTripGenerated(input);
   };
@@ -417,16 +495,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           </div>
         </div>
       ) : (
-        <>
-          {isGenerating && (
-            <GenerationLoader
-              destinationName={destination}
-              transportMode={transportMode}
-              onComplete={handleFinalSubmit}
-            />
-          )}
-
-          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200">
+        <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200">
 
         {/* Top Header */}
         <div className="px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
@@ -1023,37 +1092,177 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
             </div>
           )}
 
-          {/* STEP 5: TRAVEL PREFERENCES */}
+          {/* STEP 5: TRAVEL PREFERENCES & SIGHTS SELECTION */}
           {currentStep === 5 && (
-            <div className="space-y-5 animate-in fade-in">
+            <div className="space-y-6 animate-in fade-in">
               <div>
-                <span className="badge-caps text-[#2D5A3D]">{t('Step 5 — Travel Style')}</span>
-                <h3 className="text-xl sm:text-2xl font-bold font-display text-[#0B2545] mt-1">{t('What experiences excite you?')}</h3>
+                <span className="badge-caps text-[#2D5A3D]">{t('Step 5 — Sights & Flexibility')}</span>
+                <h3 className="text-xl sm:text-2xl font-bold font-display text-[#0B2545] mt-1">{t('Customize Your Itinerary & Sights')}</h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  {t('Select as many as you like. We will blend attractions according to these vibes.')}
+                  {t('No forced rigid plans. Choose your itinerary style and select the exact sights you want to visit.')}
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                {preferenceOptions.map(opt => {
-                  const isSelected = preferences.includes(opt.id);
-                  const PrefIcon = opt.icon;
-                  return (
+              {/* Itinerary Flexibility Mode Selector */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setItineraryStyle('flexible_custom')}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    itineraryStyle === 'flexible_custom'
+                      ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs ring-2 ring-[#2D5A3D]/20'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#2D5A3D] flex items-center justify-center">
+                      <Compass className="w-4 h-4" />
+                    </div>
+                    {itineraryStyle === 'flexible_custom' && (
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Selected
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm font-bold text-slate-900 block">Flexible Custom Plan (Traveler's Choice)</span>
+                  <span className="text-xs text-slate-500 mt-1 block">
+                    Zero rigid schedules or fixed hours. Choose your own sights and explore at your own pace with total flexibility.
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setItineraryStyle('ai_curated')}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    itineraryStyle === 'ai_curated'
+                      ? 'border-[#2D5A3D] bg-emerald-50/70 shadow-xs ring-2 ring-[#2D5A3D]/20'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-[#2D5A3D]" />
+                    </div>
+                    {itineraryStyle === 'ai_curated' && (
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Selected
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm font-bold text-slate-900 block">AI Curated Timeline</span>
+                  <span className="text-xs text-slate-500 mt-1 block">
+                    AI balances your selected sights across days with optimized routing, while leaving everything 100% editable.
+                  </span>
+                </button>
+              </div>
+
+              {/* Genuine Destination Sights & Attractions Selection */}
+              {availableSights.length > 0 && (
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/90 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
+                        Select Sights to Visit in {destination || 'Destination'}
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        {selectedSights.length} of {availableSights.length} attractions chosen by you
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSights([...availableSights])}
+                        className="text-[11px] font-bold text-[#2D5A3D] hover:underline cursor-pointer"
+                      >
+                        Select All
+                      </button>
+                      <span className="text-slate-300">•</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSights([])}
+                        className="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-1 max-h-48 overflow-y-auto overscroll-contain pr-1">
+                    {availableSights.map((sight) => {
+                      const isChosen = selectedSights.includes(sight);
+                      return (
+                        <button
+                          key={sight}
+                          type="button"
+                          onClick={() => toggleSight(sight)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                            isChosen
+                              ? 'bg-[#2D5A3D] text-white shadow-2xs font-bold'
+                              : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          {isChosen && <Check className="w-3.5 h-3.5" />}
+                          <span className="truncate max-w-[220px]">{sight}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Add Custom Spot / Attraction */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="text"
+                      value={customSightInput}
+                      onChange={(e) => setCustomSightInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomSight();
+                        }
+                      }}
+                      placeholder={`Add another spot in ${destination || 'this trip'} (e.g. local bazaar, cafe)...`}
+                      className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#2D5A3D] focus:outline-none"
+                    />
                     <button
-                      key={opt.id}
                       type="button"
-                      onClick={() => togglePreference(opt.id)}
-                      className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all min-w-0 ${isSelected
-                        ? 'border-[#2D5A3D] bg-emerald-50 text-slate-900 font-bold shadow-2xs'
-                        : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
-                        }`}
+                      onClick={handleAddCustomSight}
+                      disabled={!customSightInput.trim()}
+                      className="px-3 py-1.5 rounded-xl bg-[#2D5A3D] text-white text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1 shrink-0"
                     >
-                      <PrefIcon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
-                      <span className="text-xs sm:text-sm font-semibold truncate min-w-0 flex-1">{t(opt.label)}</span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[#2D5A3D] ml-auto shrink-0" />}
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add</span>
                     </button>
-                  );
-                })}
+                  </div>
+                </div>
+              )}
+
+              {/* Experience Vibes */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
+                  {t('Trip Vibes & Interests')}
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {preferenceOptions.map(opt => {
+                    const isSelected = preferences.includes(opt.id);
+                    const PrefIcon = opt.icon;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => togglePreference(opt.id)}
+                        className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all min-w-0 cursor-pointer ${isSelected
+                          ? 'border-[#2D5A3D] bg-emerald-50 text-slate-900 font-bold shadow-2xs'
+                          : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
+                          }`}
+                      >
+                        <PrefIcon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
+                        <span className="text-xs sm:text-sm font-semibold truncate min-w-0 flex-1">{t(opt.label)}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#2D5A3D] ml-auto shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>
@@ -1065,7 +1274,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                   value={specialRequests}
                   onChange={(event) => setSpecialRequests(event.target.value.slice(0, 500))}
                   placeholder={t('For example: quiet places, easy walks for my parents, local vegetarian food, and no packed schedules.')}
-                  rows={3}
+                  rows={2}
                   maxLength={500}
                   className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#2D5A3D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#2D5A3D]/15"
                 />
@@ -1317,7 +1526,6 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         </div>
 
       </div>
-        </>
       )}
     </div>
   );

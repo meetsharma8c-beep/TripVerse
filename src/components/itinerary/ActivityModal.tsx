@@ -1,10 +1,11 @@
 import { useModalBehavior } from '../../hooks/useModalBehavior';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ItineraryActivity } from '../../types/trip';
 import { triggerHaptic } from '../../services/deviceService';
 import { getStoredCurrency, Currency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
-import { Clock, MapPin, Check, Coins, X } from 'lucide-react';
+import { getDestinationHighlights } from '../../services/landmarkAtlasService';
+import { Clock, MapPin, Check, Coins, X, Sparkles } from 'lucide-react';
 
 interface ActivityModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface ActivityModalProps {
   dayNumber: number;
   existingActivity?: ItineraryActivity | null;
   onSave: (dayNumber: number, activity: Partial<ItineraryActivity>) => void;
+  destination?: string;
 }
 
 export function ActivityModal({
@@ -19,7 +21,8 @@ export function ActivityModal({
   onClose,
   dayNumber,
   existingActivity,
-  onSave
+  onSave,
+  destination
 }: ActivityModalProps) {
   const { t } = useLanguage();
   const [currency, setCurrency] = useState<Currency>(getStoredCurrency());
@@ -63,6 +66,22 @@ export function ActivityModal({
   }
 
   useModalBehavior(isOpen, onClose);
+
+  const destinationHighlights = useMemo(() => {
+    if (!destination) return [];
+    return getDestinationHighlights(destination, 10);
+  }, [destination]);
+
+  const handleQuickSelectHighlight = (highlight: string) => {
+    triggerHaptic('light');
+    setTitle(highlight);
+    setLocation(destination ? `${highlight}, ${destination}` : highlight);
+    setType('attraction');
+    setTag('Destination Highlight');
+    setDescription(`Must-visit local landmark and cultural experience in ${destination || 'this region'}.`);
+    setCost('200');
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -112,6 +131,28 @@ export function ActivityModal({
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1 overscroll-contain">
           
+          {/* Quick-Pick Destination Highlights */}
+          {destinationHighlights.length > 0 && !existingActivity && (
+            <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200/70 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#2D5A3D]">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Quick-Pick from {destination} Sights:</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                {destinationHighlights.map((hl) => (
+                  <button
+                    key={hl}
+                    type="button"
+                    onClick={() => handleQuickSelectHighlight(hl)}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-100/70 border border-emerald-200 text-xs font-medium text-slate-800 transition-colors text-left truncate max-w-full cursor-pointer"
+                  >
+                    + {hl}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">{t('Activity Title')} *</label>
             <input

@@ -303,12 +303,15 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
 
           {/* Top Recommended Activities & Experiences */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Top Experiences & Sightseeing
-              </h3>
-              <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                {destination.popularActivities.length} Must-Visits
+            <div className="flex items-center justify-between flex-wrap gap-1">
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Top Sights & Experiences
+                </h3>
+                <span className="text-[10px] text-slate-400 font-medium">100% flexible — pick your favorites when planning</span>
+              </div>
+              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                {destination.popularActivities.length} Curated Options
               </span>
             </div>
 

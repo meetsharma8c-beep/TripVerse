@@ -1,5 +1,5 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { Trip, Destination, BreakStop, BudgetBreakdown, UserProfile, ItineraryActivity, Coordinates } from './types/trip';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { Trip, Destination, BreakStop, BudgetBreakdown, UserProfile, ItineraryActivity, Coordinates, DayPlan } from './types/trip';
 import {
   loadTrips,
   saveTrips,
@@ -29,7 +29,7 @@ import { applyGeoapifyTravelData, fetchGeoapifyTravelData, getBreakStopSection }
 import { getStoredCurrency, setActiveCurrency, Currency, syncLiveExchangeRates } from './services/currencyService';
 import { generateNotifications } from './services/notificationService';
 import { AIAppAction } from './services/aiAssistant';
-import { triggerHaptic } from './services/deviceService';
+import { triggerHaptic, syncAppBadge } from './services/deviceService';
 import { formatCurrency } from './services/currencyService';
 import { useLanguage } from './services/languageService';
 
@@ -629,9 +629,50 @@ export function App() {
     }
   }, [currentTab, activeTripIdState, selectedDestinationForDetails, trips]);
 
+  // Overlay modal state tracking for Android back gesture & browser history synchronization
+  const isOverlayModalOpen = Boolean(
+    isBookingModalOpen ||
+    isGlobalSearchOpen ||
+    isPlannerOpen ||
+    isGuestPlannerRestrictedOpen ||
+    isAIChatOpen ||
+    isLiveNavOpen ||
+    isShareModalOpen ||
+    isNotificationCenterOpen ||
+    isPhotoJournalOpen ||
+    isReviewModalOpen ||
+    isAuthModalOpen ||
+    isProModalOpen ||
+    isOnboardingOpen ||
+    activityModalState.isOpen ||
+    legalModalState.isOpen ||
+    isBestDealModalOpen ||
+    isPrintModalOpen ||
+    isCollabModalOpen
+  );
+
+  const modalHistoryPushedRef = useRef(false);
+
+  useEffect(() => {
+    if (isOverlayModalOpen) {
+      if (!modalHistoryPushedRef.current) {
+        modalHistoryPushedRef.current = true;
+        window.history.pushState({ isModal: true }, '');
+      }
+    } else {
+      if (modalHistoryPushedRef.current) {
+        modalHistoryPushedRef.current = false;
+        if (window.history.state?.isModal) {
+          window.history.back();
+        }
+      }
+    }
+  }, [isOverlayModalOpen]);
+
   // Browser & Android Hardware/Gesture Back Button Handler
   useEffect(() => {
     const handlePopState = () => {
+      modalHistoryPushedRef.current = false;
       // Step 1: If any top-level modal or drawer is open, dismiss it first (native app feel)
       if (isBookingModalOpen) {
         setIsBookingModalOpen(false);
@@ -1022,11 +1063,13 @@ export function App() {
     }
   }, [showSplash]);
 
-  // Update notification counts in real-time
+  // Update notification counts in real-time & sync App Badging (Windows Taskbar & Android Launcher)
   useEffect(() => {
     const updateNotifs = () => {
       const notifs = generateNotifications(trips, activeTrip);
-      setUnreadNotificationCount(notifs.filter(n => !n.read).length);
+      const unreadCount = notifs.filter(n => !n.read).length;
+      setUnreadNotificationCount(unreadCount);
+      syncAppBadge(unreadCount);
     };
     updateNotifs();
     window.addEventListener('tripverse_notifications_updated', updateNotifs);
@@ -1106,7 +1149,7 @@ export function App() {
     setIsPlannerOpen(true);
   };
 
-  // Direct 1-Click Fast Trip Generator (Delivering on 'Plan in 30 Seconds' promise)
+  // Guide the user directly into the authentic step-by-step Trip Planner flow prefilled with their searched destination
   const handleQuickPlanDirect = (params: {
     destination?: string;
     duration?: number;
@@ -1114,106 +1157,7 @@ export function App() {
     budget?: number;
     budgetMode?: 'per_person' | 'total';
   }) => {
-    const activeUser = currentUser ?? getCurrentUser();
-    if (isGuestUser(activeUser)) {
-      setPlannerPrefill({
-        destination: params.destination?.trim() || 'Udaipur',
-        duration: params.duration || 3,
-        travelers: params.travelers || 2,
-        budget: params.budget || 8000,
-        budgetMode: params.budgetMode || 'total'
-      });
-      setIsGuestPlannerRestrictedOpen(true);
-      return;
-    }
-
-    const quota = getUserSubscriptionQuota(activeUser);
-    if (!quota.canCreateTrip) {
-      setIsProModalOpen(true);
-      return;
-    }
-
-    triggerHaptic('medium');
-    const finalParams = {
-      destination: params.destination?.trim() || 'Udaipur',
-      duration: params.duration || 3,
-      travelers: params.travelers || 2,
-      budget: params.budget || 8000
-    };
-    setGenerationParams(finalParams);
-    setIsGeneratingTrip(true);
-
-    setTimeout(async () => {
-      try {
-        let originCoords: Coordinates | undefined;
-        if (typeof navigator !== 'undefined' && navigator.geolocation) {
-          originCoords = await Promise.race([
-            new Promise<Coordinates | undefined>(resolve => {
-              navigator.geolocation.getCurrentPosition(
-                position => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
-                error => {
-                  console.warn('Current location unavailable for quick planning', error.message);
-                  resolve(undefined);
-                },
-                { enableHighAccuracy: false, maximumAge: 60_000, timeout: 800 }
-              );
-            }),
-            new Promise<Coordinates | undefined>(resolve => setTimeout(() => resolve(undefined), 800))
-          ]);
-        }
-        const fallbackOrigin =
-          userProfile?.location && userProfile.location.trim().toLowerCase() !== 'india'
-            ? userProfile.location.trim()
-            : 'Ahmedabad, Gujarat';
-        const input: PlannerInput = {
-          destination: finalParams.destination,
-          destinationName: finalParams.destination.charAt(0).toUpperCase() + finalParams.destination.slice(1),
-          origin: originCoords ? 'Current Location' : fallbackOrigin,
-          durationDays: finalParams.duration,
-          travelersCount: finalParams.travelers,
-          travelerType: 'friends',
-          budgetMode: 'total',
-          budgetAmount: finalParams.budget,
-          preferences: ['nature', 'photography', 'food'],
-          transportMode: 'car',
-          accommodationType: 'hotel',
-          foodPreference: 'all',
-          priorities: ['balanced', 'scenic', 'food'],
-          originCoords
-        };
-
-        const newTrip = await generatePersonalizedTrip(input);
-        if (currentUser?.uid) {
-          newTrip.userId = currentUser.uid;
-          newTrip.isUserCreated = true;
-        }
-        // Deduct free credit only upon successful generation
-        consumeTripCredit(currentUser);
-        saveOrUpdateTrip(newTrip, currentUser?.uid);
-        setTrips(prev => [newTrip, ...prev]);
-        setActiveTripIdState(newTrip.id);
-        setActiveTripId(newTrip.id, currentUser?.uid);
-
-        try {
-          localStorage.setItem(`tripverse_plan_generated_${currentUser?.uid || 'guest'}`, 'true');
-        } catch { }
-
-        setCurrentTab('trip-detail');
-        setTripSubTab('itinerary');
-        triggerHaptic('success');
-
-        try {
-          confetti({
-            particleCount: 65,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#2D5A3D', '#386B49', '#38BDF8', '#F59E0B']
-          });
-        } catch { }
-      } finally {
-        setIsGeneratingTrip(false);
-      }
-    }, 650);
+    handleOpenPlannerWithPrefill(params);
   };
 
   const handleTripGenerated = async (input: PlannerInput) => {
@@ -1229,6 +1173,14 @@ export function App() {
       return;
     }
 
+    setGenerationParams({
+      destination: input.destinationName || input.destination || 'Custom Destination',
+      duration: input.durationDays || 3,
+      travelers: input.travelersCount || 2,
+      budget: input.budgetAmount || 15000
+    });
+    setIsPlannerOpen(false);
+
     triggerHaptic('success');
     setIsGeneratingTrip(true);
     try {
@@ -1241,8 +1193,8 @@ export function App() {
       consumeTripCredit(currentUser);
       saveOrUpdateTrip(newTrip, currentUser?.uid);
       setTrips(prev => [newTrip, ...prev]);
+      setActiveTripId(newTrip.id, currentUser?.uid);
       setActiveTripIdState(newTrip.id);
-      setIsPlannerOpen(false);
       setCurrentTab('trip-detail');
       setTripSubTab('itinerary');
     } finally {
@@ -1589,6 +1541,81 @@ export function App() {
     handleUpdateTrip({ ...activeTrip, itinerary: updatedDays });
   };
 
+  const handleClearDay = (dayNumber: number) => {
+    if (!activeTrip) return;
+    triggerHaptic('warning');
+    const updatedDays = activeTrip.itinerary.map(day => {
+      if (day.dayNumber === dayNumber) {
+        return { ...day, activities: [], dayEstimatedCost: 0 };
+      }
+      return day;
+    });
+    const newActivitiesTotal = updatedDays.reduce((sum, d) => sum + d.dayEstimatedCost, 0);
+    handleUpdateTrip({
+      ...activeTrip,
+      itinerary: updatedDays,
+      estimatedTotal: Math.max(500, newActivitiesTotal + (activeTrip.budgetBreakdown?.transportation || 0) + (activeTrip.budgetBreakdown?.accommodation || 0)),
+      budgetBreakdown: {
+        ...activeTrip.budgetBreakdown,
+        activities: newActivitiesTotal
+      }
+    });
+  };
+
+  const handleAddDay = () => {
+    if (!activeTrip) return;
+    triggerHaptic('success');
+    const newDayNumber = activeTrip.itinerary.length + 1;
+    const newDay: DayPlan = {
+      dayNumber: newDayNumber,
+      title: `Day ${newDayNumber} — Flexible Exploration & Local Sights`,
+      theme: 'Traveler Choice, Leisure Exploration & Local Highlights',
+      dayEstimatedCost: 0,
+      activities: []
+    };
+    const updatedDays = [...activeTrip.itinerary, newDay];
+    handleUpdateTrip({
+      ...activeTrip,
+      durationDays: newDayNumber,
+      itinerary: updatedDays
+    });
+  };
+
+  const handleDeleteDay = (dayNumber: number) => {
+    if (!activeTrip || activeTrip.itinerary.length <= 1) return;
+    triggerHaptic('warning');
+    const remaining = activeTrip.itinerary
+      .filter(day => day.dayNumber !== dayNumber)
+      .map((day, idx) => ({
+        ...day,
+        dayNumber: idx + 1,
+        title: day.title.replace(/Day \d+/, `Day ${idx + 1}`),
+        activities: day.activities.map(act => ({ ...act, dayNumber: idx + 1 }))
+      }));
+    const newActivitiesTotal = remaining.reduce((sum, d) => sum + d.dayEstimatedCost, 0);
+    handleUpdateTrip({
+      ...activeTrip,
+      durationDays: remaining.length,
+      itinerary: remaining,
+      estimatedTotal: Math.max(500, newActivitiesTotal + (activeTrip.budgetBreakdown?.transportation || 0) + (activeTrip.budgetBreakdown?.accommodation || 0)),
+      budgetBreakdown: {
+        ...activeTrip.budgetBreakdown,
+        activities: newActivitiesTotal
+      }
+    });
+  };
+
+  const handleQuickAddSight = (dayNumber: number, sightTitle: string) => {
+    handleAddOrUpdateActivity(dayNumber, {
+      title: sightTitle,
+      location: activeTrip ? `${sightTitle}, ${activeTrip.destination}` : sightTitle,
+      type: 'attraction',
+      tag: 'Curated Sight',
+      estimatedCost: 200,
+      description: `Scenic highlight and cultural experience in ${activeTrip?.destination || 'destination'}.`
+    });
+  };
+
   const isAnyModalOpen = Boolean(
     isProModalOpen ||
     isBookingModalOpen ||
@@ -1761,10 +1788,10 @@ export function App() {
               <HeroSection
                 activeTrip={activeTrip}
                 onQuickPlan={(params) => {
-                  handleQuickPlanDirect(params);
+                  handleOpenPlannerWithPrefill(params);
                 }}
                 onExplore={() => setCurrentTab('explore')}
-                onOpenPlanner={() => handleOpenPlannerWithPrefill()}
+                onOpenPlanner={(params) => handleOpenPlannerWithPrefill(params)}
                 onSelectDestination={(dest) => setSelectedDestinationForDetails(dest)}
               />
 
@@ -1785,13 +1812,8 @@ export function App() {
                   setSelectedDestinationForDetails(dest);
                 }}
                 onPlanTripForDestination={(destName) => {
-                  const matchedDest = POPULAR_DESTINATIONS.find(d => d.name.toLowerCase() === destName.toLowerCase());
                   handleOpenPlannerWithPrefill({
-                    destination: destName,
-                    duration: matchedDest ? parseDurationDays(matchedDest.recommendedDuration) : 3,
-                    travelers: 2,
-                    budget: matchedDest?.startBudget || 15000,
-                    budgetMode: 'per_person'
+                    destination: destName
                   });
                 }}
                 savedItemIds={savedItemIds}
@@ -2044,6 +2066,10 @@ export function App() {
                   onMoveActivity={handleMoveActivity}
                   onToggleComplete={handleToggleActivityComplete}
                   onOptimizeWithAI={() => setTripSubTab('hub')}
+                  onClearDay={handleClearDay}
+                  onAddDay={handleAddDay}
+                  onDeleteDay={handleDeleteDay}
+                  onQuickAddSight={handleQuickAddSight}
                 />
               )}
 
@@ -2627,6 +2653,7 @@ export function App() {
           onClose={() => setActivityModalState(prev => ({ ...prev, isOpen: false, activity: null }))}
           dayNumber={activityModalState.dayNumber}
           existingActivity={activityModalState.activity}
+          destination={activeTrip.destination}
           onSave={(dayNumber, act) => {
             handleAddOrUpdateActivity(dayNumber, act);
           }}

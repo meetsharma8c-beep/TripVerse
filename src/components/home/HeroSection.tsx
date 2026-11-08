@@ -29,15 +29,21 @@ import { ScrollReveal } from '../common/ScrollReveal';
 
 interface HeroSectionProps {
   activeTrip?: Trip | null;
-  onQuickPlan: (params: {
-    destination: string;
-    duration: number;
-    travelers: number;
-    budget: number;
+  onQuickPlan?: (params: {
+    destination?: string;
+    duration?: number;
+    travelers?: number;
+    budget?: number;
     budgetMode?: 'total' | 'per_person';
   }) => void;
   onExplore: () => void;
-  onOpenPlanner?: () => void;
+  onOpenPlanner?: (params?: {
+    destination?: string;
+    duration?: number;
+    travelers?: number;
+    budget?: number;
+    budgetMode?: 'per_person' | 'total';
+  }) => void;
   onSelectDestination?: (dest: Destination) => void;
 }
 
@@ -117,6 +123,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const [showFloatingDropdown, setShowFloatingDropdown] = useState(false);
   const [showPlannerDropdown, setShowPlannerDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [plannerHighlightedIndex, setPlannerHighlightedIndex] = useState(-1);
   const [showGuaranteeModal, setShowGuaranteeModal] = useState(false);
 
   const floatingSearchRef = React.useRef<HTMLDivElement>(null);
@@ -143,6 +150,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   useEffect(() => {
     setHighlightedIndex(-1);
+    setPlannerHighlightedIndex(-1);
   }, [suggestions]);
 
   // Mobile Inspiring Destinations Carousel state (Matching Reference Image Screen 1)
@@ -248,13 +256,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     setShowFloatingDropdown(false);
     setShowPlannerDropdown(false);
     setHighlightedIndex(-1);
-    onQuickPlan({
+    const planParams = {
       destination: spot.name,
       duration,
       travelers,
       budget,
       budgetMode,
-    });
+    };
+    if (onOpenPlanner) {
+      onOpenPlanner(planParams);
+    } else if (onQuickPlan) {
+      onQuickPlan(planParams);
+    }
   };
 
   const handleFloatingKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -285,36 +298,88 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }
   };
 
+  const handlePlannerKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showPlannerDropdown) {
+      if (e.key === 'ArrowDown' && suggestions.length > 0) {
+        setShowPlannerDropdown(true);
+        setPlannerHighlightedIndex(0);
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setPlannerHighlightedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setPlannerHighlightedIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setShowPlannerDropdown(false);
+      setPlannerHighlightedIndex(-1);
+    } else if (e.key === 'Enter') {
+      if (plannerHighlightedIndex >= 0 && suggestions[plannerHighlightedIndex]) {
+        e.preventDefault();
+        const selected = suggestions[plannerHighlightedIndex];
+        setDestination(selected.name);
+        setShowPlannerDropdown(false);
+        setPlannerHighlightedIndex(-1);
+      }
+    }
+  };
+
   const handleFloatingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const targetDest =
       showFloatingDropdown && highlightedIndex >= 0 && suggestions[highlightedIndex]
         ? suggestions[highlightedIndex].name
-        : destination.trim() || 'Udaipur';
+        : destination.trim();
 
-    setDestination(targetDest);
+    if (targetDest) {
+      setDestination(targetDest);
+    }
     setShowFloatingDropdown(false);
     setHighlightedIndex(-1);
-    onQuickPlan({
-      destination: targetDest,
+    const planParams = {
+      destination: targetDest || undefined,
       duration,
       travelers,
       budget,
       budgetMode,
-    });
+    };
+    if (onOpenPlanner) {
+      onOpenPlanner(planParams);
+    } else if (onQuickPlan) {
+      onQuickPlan(planParams);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setShowPlannerDropdown(false);
     setShowFloatingDropdown(false);
-    onQuickPlan({
-      destination: destination.trim() || 'Udaipur',
+    setPlannerHighlightedIndex(-1);
+    const targetDest =
+      showPlannerDropdown && plannerHighlightedIndex >= 0 && suggestions[plannerHighlightedIndex]
+        ? suggestions[plannerHighlightedIndex].name
+        : destination.trim();
+
+    if (targetDest) {
+      setDestination(targetDest);
+    }
+    const planParams = {
+      destination: targetDest || undefined,
       duration,
       travelers,
       budget,
       budgetMode,
-    });
+    };
+    if (onOpenPlanner) {
+      onOpenPlanner(planParams);
+    } else if (onQuickPlan) {
+      onQuickPlan(planParams);
+    }
   };
 
   return (
@@ -530,13 +595,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       type="button"
                       onClick={() => {
                         setShowFloatingDropdown(false);
-                        onQuickPlan({
+                        const planParams = {
                           destination: destination.trim(),
                           duration,
                           travelers,
                           budget,
                           budgetMode,
-                        });
+                        };
+                        if (onOpenPlanner) {
+                          onOpenPlanner(planParams);
+                        } else if (onQuickPlan) {
+                          onQuickPlan(planParams);
+                        }
                       }}
                       className="w-full px-4 py-3.5 text-left hover:bg-[#E8EFE7]/60 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-3 cursor-pointer group"
                     >
@@ -589,12 +659,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   onClick={() => {
                     if (onSelectDestination) {
                       onSelectDestination(dest);
-                    } else {
+                    } else if (onOpenPlanner) {
+                      onOpenPlanner({
+                        destination: dest.name,
+                      });
+                    } else if (onQuickPlan) {
                       onQuickPlan({
                         destination: dest.name,
-                        duration: 3,
-                        travelers: 2,
-                        budget: dest.startBudget
                       });
                     }
                   }}
@@ -603,12 +674,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       e.preventDefault();
                       if (onSelectDestination) {
                         onSelectDestination(dest);
-                      } else {
+                      } else if (onOpenPlanner) {
+                        onOpenPlanner({
+                          destination: dest.name,
+                        });
+                      } else if (onQuickPlan) {
                         onQuickPlan({
                           destination: dest.name,
-                          duration: 3,
-                          travelers: 2,
-                          budget: dest.startBudget
                         });
                       }
                     }
@@ -690,13 +762,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  onQuickPlan({
-                    destination: destination.trim() || 'Udaipur',
+                  const planParams = {
+                    destination: destination.trim() || undefined,
                     duration,
                     travelers,
                     budget,
                     budgetMode
-                  });
+                  };
+                  if (onOpenPlanner) {
+                    onOpenPlanner(planParams);
+                  } else if (onQuickPlan) {
+                    onQuickPlan(planParams);
+                  }
                 }}
                 className="card-elevate flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-center"
               >
@@ -820,6 +897,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       setShowPlannerDropdown(true);
                     }}
                     onFocus={() => setShowPlannerDropdown(true)}
+                    onKeyDown={handlePlannerKeyDown}
                     placeholder={t('hero.destinationPlaceholder')}
                     className="w-full pl-4 pr-10 py-3 sm:py-3.5 min-h-[44px] rounded-2xl bg-[#F4F6F2] dark:bg-slate-800/80 border border-[#DCE7DB] dark:border-slate-700 text-[#152A1C] dark:text-slate-100 font-semibold placeholder:text-[#57685D] dark:placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#2D5A3D] dark:focus:border-emerald-500 focus:ring-4 focus:ring-[#2D5A3D]/10 dark:focus:ring-emerald-500/20 transition-all text-sm sm:text-base"
                     autoComplete="off"
@@ -834,6 +912,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           setDestination('');
                           setSuggestions([]);
                           setShowPlannerDropdown(false);
+                          setPlannerHighlightedIndex(-1);
                         }}
                         className="text-slate-400 hover:text-[#152A1C] dark:hover:text-slate-200 p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg"
                         aria-label="Clear destination input"
@@ -851,7 +930,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       <span>{t('hero.suggestedPlaces')}</span>
                       <span>{t('hero.verifiedGeocoding')}</span>
                     </div>
-                    {suggestions.map((spot) => {
+                    {suggestions.map((spot, idx) => {
                       const IconComp =
                         spot.spotType === 'temple' ? Flame :
                           spot.spotType === 'nature' ? Trees :
@@ -859,43 +938,78 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                               spot.spotType === 'beach' ? Sun :
                                 MapPin;
 
+                      const isHighlighted = plannerHighlightedIndex === idx;
+
                       return (
-                        <button
+                        <div
                           key={spot.id}
-                          type="button"
-                          onClick={() => {
-                            setDestination(spot.name);
-                            setShowPlannerDropdown(false);
-                          }}
-                          className="w-full px-3.5 py-3 text-left hover:bg-[#E8EFE7] dark:hover:bg-slate-800/60 transition-colors flex items-center gap-2.5 cursor-pointer group min-h-[44px]"
+                          className={`w-full px-3.5 py-3 text-left transition-colors flex items-center justify-between gap-2.5 min-h-[44px] ${
+                            isHighlighted ? 'bg-[#E8EFE7] dark:bg-slate-800' : 'hover:bg-[#E8EFE7]/70 dark:hover:bg-slate-800/60'
+                          }`}
                         >
-                          {spot.image ? (
-                            <img
-                              src={spot.image}
-                              alt={spot.name}
-                              className="w-8 h-8 rounded-lg object-cover shrink-0 border border-[#DCE7DB] dark:border-slate-700"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-lg bg-[#E8EFE7] dark:bg-slate-800 group-hover:bg-[#2D5A3D] group-hover:text-white text-[#2D5A3D] dark:text-emerald-400 flex items-center justify-center shrink-0 transition-colors">
-                              <IconComp className="w-4 h-4" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDestination(spot.name);
+                              setShowPlannerDropdown(false);
+                              setPlannerHighlightedIndex(-1);
+                            }}
+                            className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer"
+                          >
+                            {spot.image ? (
+                              <img
+                                src={spot.image}
+                                alt={spot.name}
+                                className="w-8 h-8 rounded-lg object-cover shrink-0 border border-[#DCE7DB] dark:border-slate-700"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-lg bg-[#E8EFE7] dark:bg-slate-800 group-hover:bg-[#2D5A3D] group-hover:text-white text-[#2D5A3D] dark:text-emerald-400 flex items-center justify-center shrink-0 transition-colors">
+                                <IconComp className="w-4 h-4" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-bold text-[#152A1C] dark:text-slate-100">
+                                  {spot.name}
+                                </span>
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#F4F6F2] dark:bg-slate-800 text-[#57685D] dark:text-slate-300 border border-[#E2EBE1] dark:border-slate-700">
+                                  {spot.country && spot.country !== 'India' && spot.country !== 'Worldwide' ? `${spot.country}` : spot.state}
+                                </span>
+                                <span className="text-[11px] font-mono text-[#2D5A3D] dark:text-emerald-400 bg-[#E8EFE7] dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-[#DCE7DB] dark:border-emerald-800/50">
+                                  {spot.coordinates.lat.toFixed(2)}°, {spot.coordinates.lng.toFixed(2)}°
+                                </span>
+                              </div>
+                              <p className="text-xs text-[#57685D] dark:text-slate-400 truncate mt-0.5">{spot.fullName}</p>
                             </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-bold text-[#152A1C] dark:text-slate-100 group-hover:text-[#2D5A3D] dark:group-hover:text-emerald-400">
-                                {spot.name}
-                              </span>
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#F4F6F2] dark:bg-slate-800 text-[#57685D] dark:text-slate-300 border border-[#E2EBE1] dark:border-slate-700">
-                                {spot.country && spot.country !== 'India' && spot.country !== 'Worldwide' ? `${spot.country}` : spot.state}
-                              </span>
-                              <span className="text-[11px] font-mono text-[#2D5A3D] dark:text-emerald-400 bg-[#E8EFE7] dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-[#DCE7DB] dark:border-emerald-800/50">
-                                {spot.coordinates.lat.toFixed(2)}°, {spot.coordinates.lng.toFixed(2)}°
-                              </span>
-                            </div>
-                            <p className="text-xs text-[#57685D] dark:text-slate-400 truncate mt-0.5">{spot.fullName}</p>
-                          </div>
-                        </button>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDestination(spot.name);
+                              setShowPlannerDropdown(false);
+                              setPlannerHighlightedIndex(-1);
+                              const planParams = {
+                                destination: spot.name,
+                                duration,
+                                travelers,
+                                budget,
+                                budgetMode,
+                              };
+                              if (onOpenPlanner) {
+                                onOpenPlanner(planParams);
+                              } else if (onQuickPlan) {
+                                onQuickPlan(planParams);
+                              }
+                            }}
+                            className="hidden xs:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#2D5A3D]/10 hover:bg-[#2D5A3D] text-[#2D5A3D] hover:text-white text-xs font-bold transition-all shrink-0 cursor-pointer"
+                            title={`Plan trip to ${spot.name}`}
+                          >
+                            <span>Plan</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -1179,7 +1293,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
           {/* Right Column: Real figure, shape and functionality of a real smartphone */}
           <div className="lg:col-span-5 flex justify-center">
-            <InteractivePhoneDevice currency={currency} activeTrip={activeTrip} onQuickPlan={onQuickPlan} />
+            <InteractivePhoneDevice currency={currency} activeTrip={activeTrip} onQuickPlan={onOpenPlanner || onQuickPlan || (() => {})} />
           </div>
 
         </ScrollReveal>

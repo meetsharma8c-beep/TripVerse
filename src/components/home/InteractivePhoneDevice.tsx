@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Wifi, 
   Battery, 
@@ -242,27 +242,48 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
   // Curated popular destinations from actual app data
   const phoneFeaturedDestinations = POPULAR_DESTINATIONS.slice(0, 4);
 
-  // Day timeline activities preview
-  const day1Activities = [
-    { time: '09:00 AM', title: 'City Palace & Royal Museum', cat: 'Heritage', cost: 1200, rating: 4.9 },
-    { time: '01:30 PM', title: 'Mewari Thali Lunch at Ambrai', cat: 'Dining', cost: 650, rating: 4.8 },
-    { time: '05:00 PM', title: 'Sunset Boat Cruise on Lake Pichola', cat: 'Scenic', cost: 450, rating: 4.9 },
-    { time: '08:00 PM', title: 'Hathipole Artisan Market Walk', cat: 'Shopping', cost: 500, rating: 4.7 }
-  ];
+  // Day timeline activities preview (reflects real active trip if present, or flexible template)
+  const activeItineraryDays = (activeTrip?.itinerary && activeTrip.itinerary.length > 0)
+    ? activeTrip.itinerary
+    : null;
 
-  const day2Activities = [
-    { time: '09:30 AM', title: 'Jagdish Temple Architectural Tour', cat: 'Culture', cost: 200, rating: 4.8 },
-    { time: '01:00 PM', title: 'Lakeside Organic Cafe', cat: 'Dining', cost: 550, rating: 4.7 },
-    { time: '04:30 PM', title: 'Sajjangarh Monsoon Palace Viewpoint', cat: 'Nature', cost: 350, rating: 4.9 }
-  ];
+  interface PhonePreviewActivity {
+    time: string;
+    title: string;
+    cat: string;
+    cost: number;
+    rating: number;
+  }
 
-  const day3Activities = [
-    { time: '10:00 AM', title: 'Saheliyon Ki Bari Fountains', cat: 'Garden', cost: 150, rating: 4.6 },
-    { time: '01:30 PM', title: 'Rajasthani Dal Baati Churma Feast', cat: 'Dining', cost: 600, rating: 4.9 },
-    { time: '05:00 PM', title: 'Return Express Highway Drive', cat: 'Transit', cost: 800, rating: 4.8 }
-  ];
-
-  const currentActivities = selectedDayIndex === 0 ? day1Activities : selectedDayIndex === 1 ? day2Activities : day3Activities;
+  const currentActivities: PhonePreviewActivity[] = useMemo(() => {
+    if (activeItineraryDays && activeItineraryDays[selectedDayIndex]) {
+      return activeItineraryDays[selectedDayIndex].activities.map(a => ({
+        time: a.time,
+        title: a.title,
+        cat: a.type === 'food' ? 'Dining' : a.type === 'attraction' ? 'Sight' : a.type === 'hotel' ? 'Stay' : 'Highlight',
+        cost: a.estimatedCost,
+        rating: 4.8
+      }));
+    }
+    const fallbackDays: PhonePreviewActivity[][] = [
+      [
+        { time: 'Morning', title: 'Arrival & Scenic Exploration', cat: 'Explorer', cost: 400, rating: 4.8 },
+        { time: 'Midday', title: 'Authentic Regional Dining', cat: 'Dining', cost: 550, rating: 4.9 },
+        { time: 'Golden Hour', title: 'Iconic Sunset Vista & Photos', cat: 'Scenic', cost: 200, rating: 4.9 }
+      ],
+      [
+        { time: 'Morning', title: 'Heritage Citadel & Architecture Walk', cat: 'Culture', cost: 300, rating: 4.8 },
+        { time: 'Afternoon', title: 'Local Artisan Bazaar Exploration', cat: 'Shopping', cost: 450, rating: 4.7 },
+        { time: 'Evening', title: 'Open-Air Starlight Courtyard Dinner', cat: 'Dining', cost: 650, rating: 4.9 }
+      ],
+      [
+        { time: 'Morning', title: 'Botanical Gardens & Viewpoint', cat: 'Nature', cost: 150, rating: 4.6 },
+        { time: 'Midday', title: 'Celebratory Farewell Lunch', cat: 'Dining', cost: 600, rating: 4.9 },
+        { time: 'Evening', title: 'Scenic Return Transit Journey', cat: 'Transit', cost: 750, rating: 4.8 }
+      ]
+    ];
+    return fallbackDays[selectedDayIndex] || fallbackDays[0];
+  }, [activeItineraryDays, selectedDayIndex]);
 
   return (
     <div className="relative w-full max-w-[360px] sm:max-w-[380px] mx-auto select-none transition-all duration-300">
@@ -820,7 +841,7 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
 
                     {/* Day Selection Tabs */}
                     <div className="flex items-center gap-1.5 bg-slate-200/70 dark:bg-slate-800/80 p-1 rounded-xl">
-                      {['Day 1', 'Day 2', 'Day 3'].map((day, idx) => (
+                      {(activeItineraryDays ? activeItineraryDays.map((_, idx) => `Day ${idx + 1}`) : ['Day 1', 'Day 2', 'Day 3']).map((day, idx) => (
                         <button
                           key={day}
                           type="button"
