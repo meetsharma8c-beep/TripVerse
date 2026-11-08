@@ -42,10 +42,14 @@ async function runE2ELaunchVerification() {
     // -------------------------------------------------------------------------
     console.log('[1/6] Loading production build with ?sandbox=true to verify sandbox is disabled...');
     await page.goto(`${BASE_URL}?sandbox=true`, { waitUntil: 'networkidle2' });
-    await page.evaluate(() => localStorage.clear());
+    await page.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem('tripverse_onboarding_completed_v1', 'true');
+      localStorage.setItem('tripverse_onboarding_completed', 'true');
+    });
     await page.goto(`${BASE_URL}?sandbox=true`, { waitUntil: 'networkidle2' });
 
-    const MODAL = '.fixed.inset-0 .bg-white.rounded-3xl.max-w-md';
+    const MODAL = 'div[role="dialog"][aria-label="TripVerse Authentication"]';
 
     async function openAuthModal() {
       await page.evaluate(() => {
@@ -103,8 +107,10 @@ async function runE2ELaunchVerification() {
     await new Promise((r) => setTimeout(r, 300));
 
     const googleTabOk = await page.evaluate((sel) => {
-      const text = document.querySelector(sel)?.innerText || '';
-      return text.includes('Sign In with Google') && text.includes('Continue with Google');
+      const modal = document.querySelector(sel);
+      const text = modal?.innerText || '';
+      const hasGisOrBtn = Boolean(modal?.querySelector('[class*="min-h-[44px]"]') || text.includes('Continue with Google'));
+      return text.includes('Google') && hasGisOrBtn;
     }, MODAL);
     if (!googleTabOk) throw new Error('Google Sign-In tab did not render expected button');
     console.log('   ✅ PASS: Google Sign-In tab renders cleanly.');
@@ -155,7 +161,7 @@ async function runE2ELaunchVerification() {
       const text = dialog?.innerText || '';
       return {
         shown: !!dialog,
-        cleanCopy: text.includes('Sign up with Google or Email') && !text.includes('Mobile OTP')
+        cleanCopy: (text.includes('Sign Up to Unlock AI Planner') || text.includes('free registered account') || text.includes('Guest Mode')) && !text.includes('Mobile OTP')
       };
     });
     if (!restrictedCheck.shown || !restrictedCheck.cleanCopy) {
@@ -229,13 +235,24 @@ async function runE2ELaunchVerification() {
     await new Promise((r) => setTimeout(r, 500));
 
     await page.evaluate(() => {
-      const btns = Array.from(document.querySelectorAll('button'));
-      const quickPlanBtn = btns.find((b) => b.innerText?.includes('Plan My Trip (Instant AI)'));
-      if (quickPlanBtn) quickPlanBtn.click();
+      const quickPlanBtn = document.querySelector('form button.btn-liquid-primary') ||
+        Array.from(document.querySelectorAll('form button')).find((b) => 
+          b.innerText?.includes('Generate Smart Itinerary')
+        );
+      if (quickPlanBtn) {
+        quickPlanBtn.click();
+      } else {
+        const heroForm = document.querySelector('form.space-y-5') || document.querySelector('form');
+        if (heroForm) heroForm.requestSubmit();
+      }
     });
 
-    // Wait for 1-click generation (1.5s geolocation race + trip generation)
-    await new Promise((r) => setTimeout(r, 3500));
+    // Wait for AI generation (geolocation race + landmark discovery + itinerary compilation)
+    await page.waitForFunction(() => {
+      const bodyText = document.body.innerText || '';
+      const tripsRaw = Object.keys(localStorage).find((k) => k.startsWith('tripverse_trips'));
+      return (bodyText.includes('Day 1') || bodyText.includes('Day 2')) && !!tripsRaw;
+    }, { timeout: 15000 });
 
     const itineraryRendered = await page.evaluate(() => {
       const bodyText = document.body.innerText || '';

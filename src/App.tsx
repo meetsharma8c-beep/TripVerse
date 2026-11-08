@@ -1761,7 +1761,7 @@ export function App() {
               <HeroSection
                 activeTrip={activeTrip}
                 onQuickPlan={(params) => {
-                  handleOpenPlannerWithPrefill(params);
+                  handleQuickPlanDirect(params);
                 }}
                 onExplore={() => setCurrentTab('explore')}
                 onOpenPlanner={() => handleOpenPlannerWithPrefill()}
