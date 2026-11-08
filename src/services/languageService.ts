@@ -21582,6 +21582,9 @@ export function setActiveLanguage(lang: LanguageCode): void {
     }
 
     window.dispatchEvent(new CustomEvent('tripverse_language_change', { detail: lang }));
+    setTimeout(() => {
+      localizeDom(lang);
+    }, 10);
   } catch (e) {
     console.warn('Could not persist language preference:', e);
   }

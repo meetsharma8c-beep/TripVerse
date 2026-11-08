@@ -54,15 +54,12 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
         setRefreshState('success');
         triggerHaptic('success');
 
-        // Smoothly hide after success confirmation
+        // Smoothly reload the entire application window so all components, language strings, and code bundles are 100% fresh
         setTimeout(() => {
-          setPullDistance(0);
-          setTimeout(() => {
-            setRefreshState('idle');
-            isPullingRef.current = false;
-            canPullRef.current = false;
-          }, 320);
-        }, 550);
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          }
+        }, 350);
       }, remaining);
     }
   }, [onRefresh]);
