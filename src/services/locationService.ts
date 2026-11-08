@@ -1,4 +1,5 @@
 import { Coordinates, Destination } from '../types/trip';
+import { POPULAR_DESTINATIONS } from '../data/destinations';
 import { resolveCanonicalDestination } from './canonicalCityService';
 import { getDestinationHighlights } from './landmarkAtlasService';
 
@@ -518,6 +519,13 @@ export function normalizeQuery(query: string): string {
 /**
  * Fast search combining curated offline spots and live OpenStreetMap Nominatim
  */
+/**
+ * Fast, universal destination search combining:
+ * 1. Curated Top Destinations (instant 0ms with high-res photography & curated landmarks)
+ * 2. Curated Precise Atlas spots (villages, pilgrimage sites, micro-regions)
+ * 3. Live OpenStreetMap Nominatim with English localization (accept-language=en)
+ * 4. Live Wikipedia REST API fallback (for obscure or minor global destinations)
+ */
 export async function searchLocations(
   query: string,
   signal?: AbortSignal
@@ -531,65 +539,143 @@ export async function searchLocations(
   }
 
   const cleanNorm = normalizeQuery(trimmed);
+  const cleanNormWordRegex = new RegExp(`\\b${cleanNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
 
-  // 1. Check curated offline index first (zero latency)
-  const localMatches: PreciseLocation[] = [];
-  for (const spot of PRECISE_SPOTS_INDEX) {
-    const spotNorm = normalizeQuery(`${spot.name} ${spot.state} ${spot.fullName}`);
+  const combined: PreciseLocation[] = [];
+  const seenKeys = new Set<string>();
+  const seenCoords = new Set<string>();
+
+  const addDistinct = (item: PreciseLocation) => {
+    const nameKey = `${item.name.toLowerCase()}|${item.country.toLowerCase()}`;
+    const coordKey = `${item.coordinates.lat.toFixed(1)},${item.coordinates.lng.toFixed(1)}`;
+    if (!seenKeys.has(nameKey) && !seenCoords.has(coordKey)) {
+      seenKeys.add(nameKey);
+      seenCoords.add(coordKey);
+      combined.push(item);
+    }
+  };
+
+  // 1. Check curated major global destinations first (instant 0ms, rich photos & ratings)
+  for (const dest of POPULAR_DESTINATIONS) {
+    const destNameLower = dest.name.toLowerCase();
+    const destCountryLower = (dest.country || '').toLowerCase();
+    const destStateLower = (dest.state || '').toLowerCase();
+
     if (
-      spotNorm.includes(cleanNorm) ||
-      cleanNorm.includes(normalizeQuery(spot.name)) ||
-      spot.name.toLowerCase().startsWith(trimmed.toLowerCase()) ||
-      spot.highlights.some(h => normalizeQuery(h).includes(cleanNorm))
+      destNameLower === cleanNorm ||
+      destNameLower.startsWith(cleanNorm) ||
+      cleanNorm.startsWith(destNameLower) ||
+      destNameLower.includes(cleanNorm) ||
+      (cleanNorm.length >= 4 && (destCountryLower.startsWith(cleanNorm) || destStateLower.startsWith(cleanNorm)))
     ) {
-      localMatches.push(spot);
+      let spotType: PreciseLocation['spotType'] = 'city';
+      if (dest.category === 'beach') spotType = 'beach';
+      else if (dest.category === 'mountain') spotType = 'hill_station';
+      else if (dest.category === 'heritage') spotType = 'monument';
+      else if (dest.category === 'spiritual') spotType = 'temple';
+      else if (dest.category === 'nature') spotType = 'nature';
+
+      addDistinct({
+        id: `dest-${dest.id}`,
+        name: dest.name,
+        fullName: `${dest.name}, ${dest.state ? `${dest.state}, ` : ''}${dest.country || 'Worldwide'}`,
+        state: dest.state,
+        country: dest.country || 'Worldwide',
+        coordinates: dest.coordinates,
+        category: dest.category,
+        spotType,
+        highlights: dest.popularActivities?.slice(0, 4) || [],
+        tagline: dest.tagline || `${dest.name} • ${dest.country || 'Worldwide'}`,
+        image: dest.image
+      });
     }
   }
 
-  // 2. Query OpenStreetMap Nominatim for live geocoding (covers any spot anywhere in the world)
-  let liveResults: PreciseLocation[] = [];
+  // 2. Check curated precise spots index (pilgrimage, micro-spots, famous landmarks)
+  for (const spot of PRECISE_SPOTS_INDEX) {
+    const spotNameLower = spot.name.toLowerCase();
+    const spotFullNameLower = spot.fullName.toLowerCase();
+
+    const isMatch =
+      spotNameLower === cleanNorm ||
+      spotNameLower.startsWith(cleanNorm) ||
+      cleanNorm.startsWith(spotNameLower) ||
+      spotNameLower.includes(cleanNorm) ||
+      cleanNormWordRegex.test(spotFullNameLower) ||
+      spot.highlights.some(h => cleanNormWordRegex.test(h));
+
+    if (isMatch) {
+      addDistinct(spot);
+    }
+  }
+
+  // 3. Query OpenStreetMap Nominatim with English localization (accept-language=en)
+  // Covers any minor village, town, island, valley, or landmark across the entire globe
+  let nominatimSucceeded = false;
   try {
     const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
       trimmed
-    )}&addressdetails=1&limit=6`;
+    )}&addressdetails=1&limit=6&accept-language=en`;
 
     const res = await fetch(nominatimUrl, {
       signal,
       headers: {
         'Accept': 'application/json',
-        'User-Agent': 'TripVerse-AI-Travel-Platform/1.0'
+        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'TripVerse-Client/1.0 (travel@trip-verse.com)'
       }
     });
 
     if (res.ok) {
       const items = await res.json();
-      if (Array.isArray(items)) {
-        liveResults = items.map((item: any, idx: number) => {
+      if (Array.isArray(items) && items.length > 0) {
+        nominatimSucceeded = true;
+        for (const item of items) {
           const address = item.address || {};
-          const cityOrTown = address.city || address.town || address.village || address.suburb || address.hamlet || address.county || item.name;
-          const state = address.state || address.province || address.region || '';
-          const country = address.country || (address.country_code ? address.country_code.toUpperCase() : '') || 'Global';
+          const rawCityOrTown =
+            address.city ||
+            address.town ||
+            address.village ||
+            address.suburb ||
+            address.island ||
+            address.hamlet ||
+            address.municipality ||
+            item.name ||
+            trimmed;
+
+          // Strip administrative suffixes like "(District)" or "district"
+          const cleanTitle = String(rawCityOrTown)
+            .replace(/\s*\((?:District|municipality|city)\)/gi, '')
+            .replace(/\s+district$/i, '')
+            .trim();
+
+          const state = String(address.state || address.province || address.region || '')
+            .replace(/\s+district$/i, '')
+            .trim();
+
+          const country = address.country || (address.country_code ? address.country_code.toUpperCase() : '') || 'Worldwide';
           const displayName = item.display_name || '';
 
           // Determine spot type & category
-          const type = item.type || item.class || 'place';
+          const type = (item.type || item.class || 'place').toLowerCase();
+          const textBlob = `${cleanTitle} ${displayName} ${type}`.toLowerCase();
+
           let spotType: PreciseLocation['spotType'] = 'city';
           let category: Destination['category'] = 'roadtrip';
 
-          const textBlob = `${displayName} ${type}`.toLowerCase();
-          if (textBlob.includes('temple') || textBlob.includes('mandir') || textBlob.includes('church') || textBlob.includes('mosque') || textBlob.includes('spiritual')) {
+          if (textBlob.includes('temple') || textBlob.includes('mandir') || textBlob.includes('church') || textBlob.includes('mosque') || textBlob.includes('cathedral') || textBlob.includes('monastery') || textBlob.includes('spiritual')) {
             spotType = 'temple';
             category = 'spiritual';
-          } else if (textBlob.includes('beach') || textBlob.includes('coast') || textBlob.includes('island')) {
+          } else if (textBlob.includes('beach') || textBlob.includes('coast') || textBlob.includes('island') || textBlob.includes('atoll')) {
             spotType = 'beach';
             category = 'beach';
-          } else if (textBlob.includes('mountain') || textBlob.includes('hill') || textBlob.includes('peak') || textBlob.includes('valley')) {
+          } else if (textBlob.includes('mountain') || textBlob.includes('hill') || textBlob.includes('peak') || textBlob.includes('valley') || textBlob.includes('alps') || textBlob.includes('pass')) {
             spotType = 'hill_station';
             category = 'mountain';
-          } else if (textBlob.includes('fort') || textBlob.includes('palace') || textBlob.includes('heritage') || textBlob.includes('monument')) {
+          } else if (textBlob.includes('fort') || textBlob.includes('palace') || textBlob.includes('heritage') || textBlob.includes('monument') || textBlob.includes('castle') || textBlob.includes('ruins')) {
             spotType = 'monument';
             category = 'heritage';
-          } else if (textBlob.includes('waterfall') || textBlob.includes('lake') || textBlob.includes('river') || textBlob.includes('forest')) {
+          } else if (textBlob.includes('waterfall') || textBlob.includes('lake') || textBlob.includes('river') || textBlob.includes('forest') || textBlob.includes('park') || textBlob.includes('canyon')) {
             spotType = 'nature';
             category = 'nature';
           } else if (textBlob.includes('village') || textBlob.includes('hamlet')) {
@@ -597,18 +683,11 @@ export async function searchLocations(
             category = 'weekend';
           }
 
-          // Format a distinctive title so multiple admin results don't all look identical
-          let title = cityOrTown || item.name || trimmed;
-          const isDistrict = type === 'administrative' || displayName.toLowerCase().includes('district');
-          if (isDistrict && !title.toLowerCase().includes('district')) {
-            title = `${title} (District)`;
-          }
-
-          return {
-            id: `osm-${item.osm_id || idx}-${Date.now()}`,
-            name: title,
-            fullName: displayName.split(',').slice(0, 3).join(', ').trim() || displayName,
-            state: state || cityOrTown || country,
+          addDistinct({
+            id: `osm-${item.osm_id || Math.random().toString(36).slice(2, 8)}`,
+            name: cleanTitle,
+            fullName: [cleanTitle, state, country].filter(Boolean).join(', '),
+            state: state || country,
             country,
             coordinates: {
               lat: parseFloat(item.lat),
@@ -617,36 +696,64 @@ export async function searchLocations(
             category,
             spotType,
             highlights: [
-              `Authentic local sights in ${cityOrTown || title}`,
+              `Authentic local sights in ${cleanTitle}`,
               `Regional culinary stops & culture`,
               `Scenic approaches & viewpoints`
             ],
-            tagline: `${title} • ${state ? `${state}, ` : ''}${country}`,
+            tagline: `${cleanTitle} • ${state ? `${state}, ` : ''}${country}`,
             image: undefined
-          };
-        });
+          });
+        }
       }
     }
   } catch {
-    // Network or abort error; fallback gracefully to local matches
+    // Network or abort error; gracefully fall back
   }
 
-  // Deduplicate and combine (give priority to local verified spots)
-  const combined: PreciseLocation[] = [...localMatches];
-  const seenKeys = new Set(localMatches.map(m => `${m.name.toLowerCase()}|${m.state.toLowerCase()}`));
-  const seenCoords = new Set(localMatches.map(m => `${m.coordinates.lat.toFixed(1)},${m.coordinates.lng.toFixed(1)}`));
-
-  for (const item of liveResults) {
-    const nameKey = `${item.name.toLowerCase()}|${item.state.toLowerCase()}`;
-    const coordKey = `${item.coordinates.lat.toFixed(1)},${item.coordinates.lng.toFixed(1)}`;
-    if (!seenKeys.has(nameKey) && !seenCoords.has(coordKey)) {
-      seenKeys.add(nameKey);
-      seenCoords.add(coordKey);
-      combined.push(item);
+  // 4. Fallback to Wikipedia REST API if Nominatim returned 0 items
+  // Covers obscure landmarks, remote islands, and minor worldwide spots
+  if (!nominatimSucceeded && combined.length === 0) {
+    try {
+      const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(
+        trimmed.replace(/\s+/g, '_')
+      )}`;
+      const wikiRes = await fetch(wikiUrl, {
+        signal,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'TripVerse-Client/1.0 (travel@trip-verse.com)'
+        }
+      });
+      if (wikiRes.ok) {
+        const wikiData = await wikiRes.json();
+        if (wikiData && wikiData.type !== 'disambiguation') {
+          const lat = wikiData.coordinates?.lat || 20.5937;
+          const lng = wikiData.coordinates?.lon || 78.9629;
+          addDistinct({
+            id: `wiki-${wikiData.pageid || Math.random().toString(36).slice(2, 8)}`,
+            name: wikiData.title || trimmed,
+            fullName: `${wikiData.title || trimmed}, Global Destination`,
+            state: 'Worldwide Destination',
+            country: 'Worldwide',
+            coordinates: { lat, lng },
+            category: 'roadtrip',
+            spotType: 'city',
+            highlights: [
+              `Famous landmarks & heritage of ${wikiData.title || trimmed}`,
+              `Authentic local dining & culture`,
+              `Scenic photography viewpoints`
+            ],
+            tagline: wikiData.description || `${wikiData.title || trimmed} • Worldwide`,
+            image: wikiData.thumbnail?.source || wikiData.originalimage?.source
+          });
+        }
+      }
+    } catch {
+      // Ignore
     }
   }
 
-  // Limit to top 6 distinct results
+  // Limit to top 6 distinct results and cache in memory
   const result = combined.slice(0, 6);
   geocodeCache.set(cacheKey, result);
   return result;

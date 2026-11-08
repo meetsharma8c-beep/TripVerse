@@ -5,6 +5,8 @@ import { selectHotelForTrip } from '../src/services/hotelService';
 import { generateTransportDeals } from '../src/services/dealService';
 import { getLocalGems } from '../src/services/localGemsService';
 
+import { searchLocations } from '../src/services/locationService';
+
 describe('Worldwide Dynamic Location & Live Attractions Intelligence', () => {
   it('resolves genuine coordinates and live attractions for arbitrary global destinations without mocks', async () => {
     // 1. Reykjavik, Iceland (Nordic)
@@ -111,4 +113,45 @@ describe('Worldwide Dynamic Location & Live Attractions Intelligence', () => {
     expect(gems.foodGems[0].dish).not.toContain("Signature Reykjavik Chef's Local Specialty");
     expect(gems.foodGems[0].dish).toContain('Langoustine');
   });
+
+  it('resolves both major and minor destinations worldwide with clean English names and zero false-positives', async () => {
+    // 1. Major metropolises: instant, high-quality, clean names
+    const tokyoResults = await searchLocations('Tokyo');
+    expect(tokyoResults.length).toBeGreaterThan(0);
+    expect(tokyoResults[0].name).toBe('Tokyo');
+    expect(tokyoResults[0].country).toBe('Japan');
+
+    const romeResults = await searchLocations('Rome');
+    expect(romeResults.length).toBeGreaterThan(0);
+    expect(romeResults[0].name).toBe('Rome');
+    expect(romeResults[0].country).toBe('Italy');
+    // Ensure Burj Khalifa is NOT returned for "Rome" (was caused by loose "promenade" highlight match)
+    expect(romeResults.some(r => r.name.toLowerCase().includes('burj'))).toBe(false);
+
+    const parisResults = await searchLocations('Paris');
+    expect(parisResults.length).toBeGreaterThan(0);
+    expect(parisResults[0].name).toBe('Paris');
+    expect(parisResults[0].country).toBe('France');
+
+    // 2. Minor, remote, and regional destinations
+    const choptaResults = await searchLocations('Chopta');
+    expect(choptaResults.length).toBeGreaterThan(0);
+    expect(choptaResults[0].name).toBe('Chopta');
+
+    const hallstattResults = await searchLocations('Hallstatt');
+    expect(hallstattResults.length).toBeGreaterThan(0);
+    expect(hallstattResults[0].name.toLowerCase()).toContain('hallstatt');
+    expect(hallstattResults[0].country.toLowerCase()).toContain('austria');
+
+    const zermattResults = await searchLocations('Zermatt');
+    expect(zermattResults.length).toBeGreaterThan(0);
+    expect(zermattResults[0].name.toLowerCase()).toContain('zermatt');
+    expect(zermattResults[0].country.toLowerCase()).toContain('switzerland');
+
+    // 3. Verify clean names: no artificial "(District)" suffix
+    const allNames = [...tokyoResults, ...romeResults, ...parisResults, ...hallstattResults, ...zermattResults].map(r => r.name);
+    for (const name of allNames) {
+      expect(name).not.toContain('(District)');
+    }
+  }, 15000);
 });

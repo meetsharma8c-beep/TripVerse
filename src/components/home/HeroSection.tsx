@@ -114,8 +114,36 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   // Location suggestions state
   const [suggestions, setSuggestions] = useState<PreciseLocation[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [showFloatingDropdown, setShowFloatingDropdown] = useState(false);
+  const [showPlannerDropdown, setShowPlannerDropdown] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [showGuaranteeModal, setShowGuaranteeModal] = useState(false);
+
+  const floatingSearchRef = React.useRef<HTMLDivElement>(null);
+  const plannerSearchRef = React.useRef<HTMLDivElement>(null);
+
+  // Click outside to dismiss autocomplete dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (floatingSearchRef.current && !floatingSearchRef.current.contains(target)) {
+        setShowFloatingDropdown(false);
+      }
+      if (plannerSearchRef.current && !plannerSearchRef.current.contains(target)) {
+        setShowPlannerDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [suggestions]);
 
   // Mobile Inspiring Destinations Carousel state (Matching Reference Image Screen 1)
   const [carouselActiveIndex, setCarouselActiveIndex] = useState(0);
@@ -215,8 +243,71 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     { name: 'Goa', label: 'Goa' }
   ];
 
+  const handleSelectFloatingSuggestion = (spot: PreciseLocation) => {
+    setDestination(spot.name);
+    setShowFloatingDropdown(false);
+    setShowPlannerDropdown(false);
+    setHighlightedIndex(-1);
+    onQuickPlan({
+      destination: spot.name,
+      duration,
+      travelers,
+      budget,
+      budgetMode,
+    });
+  };
+
+  const handleFloatingKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showFloatingDropdown) {
+      if (e.key === 'ArrowDown' && suggestions.length > 0) {
+        setShowFloatingDropdown(true);
+        setHighlightedIndex(0);
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setShowFloatingDropdown(false);
+      setHighlightedIndex(-1);
+    } else if (e.key === 'Enter') {
+      if (highlightedIndex >= 0 && suggestions[highlightedIndex]) {
+        e.preventDefault();
+        handleSelectFloatingSuggestion(suggestions[highlightedIndex]);
+      }
+    }
+  };
+
+  const handleFloatingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetDest =
+      showFloatingDropdown && highlightedIndex >= 0 && suggestions[highlightedIndex]
+        ? suggestions[highlightedIndex].name
+        : destination.trim() || 'Udaipur';
+
+    setDestination(targetDest);
+    setShowFloatingDropdown(false);
+    setHighlightedIndex(-1);
+    onQuickPlan({
+      destination: targetDest,
+      duration,
+      travelers,
+      budget,
+      budgetMode,
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowPlannerDropdown(false);
+    setShowFloatingDropdown(false);
     onQuickPlan({
       destination: destination.trim() || 'Udaipur',
       duration,
@@ -307,34 +398,40 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           {/* Floating Pill Search Bar (Matching Reference Image Screen 1) */}
-          <div className="relative max-w-2xl mx-auto -mt-7 sm:-mt-8 z-30 px-2 sm:px-4 tv-stagger-3">
-            <form onSubmit={handleSubmit} className="relative">
-              <div className="bg-white/95 backdrop-blur-md rounded-full p-2 pl-4 sm:pl-6 shadow-[0_16px_40px_-8px_rgba(45,90,61,0.22)] border border-[#DCE7DB] flex items-center justify-between gap-2.5 transition-all duration-300 focus-within:ring-4 focus-within:ring-[#2D5A3D]/15 focus-within:border-[#2D5A3D] focus-within:shadow-[0_20px_48px_-8px_rgba(45,90,61,0.28)]">
+          <div ref={floatingSearchRef} className="relative max-w-2xl mx-auto -mt-7 sm:-mt-8 z-30 px-2 sm:px-4 tv-stagger-3">
+            <form onSubmit={handleFloatingSubmit} className="relative">
+              <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-full p-2 pl-4 sm:pl-6 shadow-[0_16px_40px_-8px_rgba(45,90,61,0.22)] border border-[#DCE7DB] dark:border-slate-800 flex items-center justify-between gap-2.5 transition-all duration-300 focus-within:ring-4 focus-within:ring-[#2D5A3D]/15 dark:focus-within:ring-emerald-500/20 focus-within:border-[#2D5A3D] dark:focus-within:border-emerald-500 focus-within:shadow-[0_20px_48px_-8px_rgba(45,90,61,0.28)]">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Search className="w-5 h-5 text-slate-400 shrink-0" />
+                  <Search className="w-5 h-5 text-slate-400 dark:text-slate-400 shrink-0" />
                   <input
                     id="hero-floating-destination-input"
                     type="text"
                     value={destination}
                     onChange={(e) => {
                       setDestination(e.target.value);
-                      setShowDropdown(true);
+                      setShowFloatingDropdown(true);
                     }}
-                    onFocus={() => setShowDropdown(true)}
+                    onFocus={() => setShowFloatingDropdown(true)}
+                    onKeyDown={handleFloatingKeyDown}
                     placeholder={t('hero.searchPlaceholder')}
                     className="w-full bg-transparent dark:bg-transparent text-sm sm:text-base font-semibold text-[#152A1C] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-400 focus:outline-none border-0 ring-0 focus:ring-0 shadow-none"
                     style={{ backgroundColor: 'transparent' }}
+                    autoComplete="off"
+                    aria-autocomplete="list"
+                    aria-expanded={showFloatingDropdown}
+                    aria-controls="hero-floating-search-dropdown"
                   />
                   {isSearching ? (
-                    <Loader2 className="w-4 h-4 text-[#2D5A3D] animate-spin shrink-0" />
+                    <Loader2 className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400 animate-spin shrink-0" />
                   ) : destination.trim().length > 0 ? (
                     <button
                       type="button"
                       onClick={() => {
                         setDestination('');
                         setSuggestions([]);
+                        setShowFloatingDropdown(false);
                       }}
-                      className="p-1 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                      className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                       aria-label={t('hero.clearSearch')}
                     >
                       <X className="w-4 h-4" />
@@ -344,7 +441,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
                 <button
                   type="submit"
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#2D5A3D] hover:bg-[#244931] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#2D5A3D]/30 active:scale-95 transition-all cursor-pointer"
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#2D5A3D] hover:bg-[#244931] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-[#2D5A3D]/30 active:scale-95 transition-all cursor-pointer"
                   aria-label={t('hero.searchDestination')}
                   title={t('hero.searchDestination')}
                 >
@@ -353,13 +450,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
 
               {/* Autocomplete Dropdown */}
-              {showDropdown && suggestions.length > 0 && (
-                <div className="absolute left-2 right-2 sm:left-4 sm:right-4 top-full mt-2 bg-white rounded-3xl border border-[#E2EBE1] shadow-2xl z-50 overflow-hidden divide-y divide-[#E2EBE1] max-h-60 overflow-y-auto animate-in fade-in">
-                  <div className="px-4 py-2 bg-[#F4F6F2] text-[11px] font-bold uppercase tracking-wider text-[#57685D] flex items-center justify-between">
+              {showFloatingDropdown && (suggestions.length > 0 || isSearching || destination.trim().length >= 2) && (
+                <div 
+                  id="hero-floating-search-dropdown"
+                  role="listbox"
+                  className="absolute left-2 right-2 sm:left-4 sm:right-4 top-full mt-2 bg-white dark:bg-slate-900 rounded-3xl border border-[#E2EBE1] dark:border-slate-800 shadow-2xl z-50 overflow-hidden divide-y divide-[#E2EBE1] dark:divide-slate-800 max-h-72 overflow-y-auto animate-in fade-in"
+                >
+                  <div className="px-4 py-2 bg-[#F4F6F2] dark:bg-slate-800/80 text-[11px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 flex items-center justify-between">
                     <span>{t('hero.suggestedPlaces')}</span>
                     <span>{t('hero.verifiedGeocoding')}</span>
                   </div>
-                  {suggestions.map((spot) => {
+
+                  {suggestions.map((spot, index) => {
+                    const isSelected = highlightedIndex === index;
                     const IconComp =
                       spot.spotType === 'temple' ? Flame :
                         spot.spotType === 'nature' ? Trees :
@@ -371,26 +474,86 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       <button
                         key={spot.id}
                         type="button"
-                        onClick={() => {
-                          setDestination(spot.name);
-                          setShowDropdown(false);
-                        }}
-                        className="w-full px-4 py-3 text-left hover:bg-[#E8EFE7] transition-colors flex items-center gap-3 cursor-pointer group min-h-[44px]"
+                        role="option"
+                        aria-selected={isSelected}
+                        onMouseEnter={() => setHighlightedIndex(index)}
+                        onClick={() => handleSelectFloatingSuggestion(spot)}
+                        className={`w-full px-4 py-3 text-left transition-colors flex items-center gap-3 cursor-pointer group min-h-[52px] ${
+                          isSelected
+                            ? 'bg-[#E8EFE7] dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400'
+                            : 'hover:bg-[#E8EFE7]/60 dark:hover:bg-slate-800/50'
+                        }`}
                       >
-                        <div className="w-8 h-8 rounded-xl bg-[#E8EFE7] text-[#2D5A3D] group-hover:bg-[#2D5A3D] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
-                          <IconComp className="w-4 h-4" />
-                        </div>
+                        {spot.image ? (
+                          <img
+                            src={spot.image}
+                            alt={spot.name}
+                            className="w-10 h-10 rounded-xl object-cover shrink-0 border border-[#DCE7DB] dark:border-slate-700"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                            isSelected
+                              ? 'bg-[#2D5A3D] text-white'
+                              : 'bg-[#E8EFE7] dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400 group-hover:bg-[#2D5A3D] group-hover:text-white'
+                          }`}>
+                            <IconComp className="w-5 h-5" />
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-bold text-[#152A1C] truncate">
-                            {spot.name}
+                          <div className="text-sm font-bold text-[#152A1C] dark:text-slate-100 truncate flex items-center gap-2">
+                            <span>{spot.name}</span>
+                            {spot.category && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8EFE7] dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400 font-medium capitalize shrink-0">
+                                {spot.category}
+                              </span>
+                            )}
                           </div>
-                          <div className="text-xs text-[#57685D] truncate">
-                            {spot.state || spot.country || 'Worldwide destination'}
+                          <div className="text-xs text-[#57685D] dark:text-slate-400 truncate">
+                            {spot.state ? `${spot.state}, ` : ''}{spot.country || 'Worldwide destination'}
                           </div>
                         </div>
+                        <ArrowRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-[#2D5A3D] dark:group-hover:text-emerald-400 shrink-0 transition-colors" />
                       </button>
                     );
                   })}
+
+                  {isSearching && suggestions.length === 0 && (
+                    <div className="px-4 py-4 text-center text-xs text-[#57685D] dark:text-slate-400 flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#2D5A3D] dark:text-emerald-400" />
+                      <span>Searching destinations worldwide...</span>
+                    </div>
+                  )}
+
+                  {!isSearching && suggestions.length === 0 && destination.trim().length >= 2 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowFloatingDropdown(false);
+                        onQuickPlan({
+                          destination: destination.trim(),
+                          duration,
+                          travelers,
+                          budget,
+                          budgetMode,
+                        });
+                      }}
+                      className="w-full px-4 py-3.5 text-left hover:bg-[#E8EFE7]/60 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-3 cursor-pointer group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-[#2D5A3D]/10 dark:bg-emerald-950/40 text-[#2D5A3D] dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold text-[#152A1C] dark:text-slate-100 truncate">
+                          Plan trip for "{destination.trim()}"
+                        </div>
+                        <div className="text-xs text-[#57685D] dark:text-slate-400">
+                          AI will craft a custom itinerary for any destination worldwide
+                        </div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
+                    </button>
+                  )}
                 </div>
               )}
             </form>
@@ -634,16 +797,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <form onSubmit={handleSubmit} className="space-y-5">
 
               {/* Field 1: Destination with Precision Autocomplete */}
-              <div className="relative">
+              <div ref={plannerSearchRef} className="relative">
                 <label 
                   htmlFor="hero-planner-destination-input"
-                  className="block text-xs font-bold uppercase tracking-wider text-[#152A1C] mb-1.5 flex items-center justify-between"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#152A1C] dark:text-slate-300 mb-1.5 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#2D5A3D]" />
+                    <MapPin className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400" />
                     <span>{t('hero.destinationLabel')}</span>
                   </div>
-                  <span className="text-[11px] font-bold text-[#2D5A3D] bg-[#EAF0E9] px-2.5 py-0.5 rounded-full border border-[#DCE7DB]">
+                  <span className="text-[11px] font-bold text-[#2D5A3D] dark:text-emerald-400 bg-[#EAF0E9] dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-[#DCE7DB] dark:border-emerald-800/50">
                     {t('hero.anySpotWorldwide')}
                   </span>
                 </label>
@@ -654,23 +817,25 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     value={destination}
                     onChange={(e) => {
                       setDestination(e.target.value);
-                      setShowDropdown(true);
+                      setShowPlannerDropdown(true);
                     }}
-                    onFocus={() => setShowDropdown(true)}
+                    onFocus={() => setShowPlannerDropdown(true)}
                     placeholder={t('hero.destinationPlaceholder')}
-                    className="w-full pl-4 pr-10 py-3 sm:py-3.5 min-h-[44px] rounded-2xl bg-[#F4F6F2] border border-[#DCE7DB] text-[#152A1C] font-semibold placeholder:text-[#57685D] focus:bg-white focus:outline-none focus:border-[#2D5A3D] focus:ring-4 focus:ring-[#2D5A3D]/10 transition-all text-sm sm:text-base"
+                    className="w-full pl-4 pr-10 py-3 sm:py-3.5 min-h-[44px] rounded-2xl bg-[#F4F6F2] dark:bg-slate-800/80 border border-[#DCE7DB] dark:border-slate-700 text-[#152A1C] dark:text-slate-100 font-semibold placeholder:text-[#57685D] dark:placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:border-[#2D5A3D] dark:focus:border-emerald-500 focus:ring-4 focus:ring-[#2D5A3D]/10 dark:focus:ring-emerald-500/20 transition-all text-sm sm:text-base"
+                    autoComplete="off"
                   />
                   <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                     {isSearching ? (
-                      <Loader2 className="w-4 h-4 text-[#2D5A3D] animate-spin" />
+                      <Loader2 className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400 animate-spin" />
                     ) : destination.trim().length > 0 ? (
                       <button
                         type="button"
                         onClick={() => {
                           setDestination('');
                           setSuggestions([]);
+                          setShowPlannerDropdown(false);
                         }}
-                        className="text-slate-400 hover:text-[#152A1C] p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg"
+                        className="text-slate-400 hover:text-[#152A1C] dark:hover:text-slate-200 p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg"
                         aria-label="Clear destination input"
                       >
                         <X className="w-4 h-4" />
@@ -680,11 +845,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </div>
 
                 {/* Autocomplete Dropdown */}
-                {showDropdown && suggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl border border-[#E2EBE1] shadow-2xl z-50 overflow-hidden divide-y divide-[#E2EBE1] max-h-60 overflow-y-auto animate-in fade-in">
-                    <div className="px-3 py-1.5 bg-[#F4F6F2] text-[11px] font-bold uppercase tracking-wider text-[#57685D] flex items-center justify-between">
-                      <span>Matching Spots</span>
-                      <span>Map search result</span>
+                {showPlannerDropdown && suggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-900 rounded-2xl border border-[#E2EBE1] dark:border-slate-800 shadow-2xl z-50 overflow-hidden divide-y divide-[#E2EBE1] dark:divide-slate-800 max-h-60 overflow-y-auto animate-in fade-in">
+                    <div className="px-3 py-1.5 bg-[#F4F6F2] dark:bg-slate-800/80 text-[11px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 flex items-center justify-between">
+                      <span>{t('hero.suggestedPlaces')}</span>
+                      <span>{t('hero.verifiedGeocoding')}</span>
                     </div>
                     {suggestions.map((spot) => {
                       const IconComp =
@@ -700,26 +865,35 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           type="button"
                           onClick={() => {
                             setDestination(spot.name);
-                            setShowDropdown(false);
+                            setShowPlannerDropdown(false);
                           }}
-                          className="w-full px-3.5 py-3 text-left hover:bg-[#E8EFE7] transition-colors flex items-center gap-2.5 cursor-pointer group min-h-[44px]"
+                          className="w-full px-3.5 py-3 text-left hover:bg-[#E8EFE7] dark:hover:bg-slate-800/60 transition-colors flex items-center gap-2.5 cursor-pointer group min-h-[44px]"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-[#E8EFE7] group-hover:bg-[#2D5A3D] group-hover:text-white text-[#2D5A3D] flex items-center justify-center shrink-0 transition-colors">
-                            <IconComp className="w-4 h-4" />
-                          </div>
+                          {spot.image ? (
+                            <img
+                              src={spot.image}
+                              alt={spot.name}
+                              className="w-8 h-8 rounded-lg object-cover shrink-0 border border-[#DCE7DB] dark:border-slate-700"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg bg-[#E8EFE7] dark:bg-slate-800 group-hover:bg-[#2D5A3D] group-hover:text-white text-[#2D5A3D] dark:text-emerald-400 flex items-center justify-center shrink-0 transition-colors">
+                              <IconComp className="w-4 h-4" />
+                            </div>
+                          )}
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-bold text-[#152A1C] group-hover:text-[#2D5A3D]">
+                              <span className="text-sm font-bold text-[#152A1C] dark:text-slate-100 group-hover:text-[#2D5A3D] dark:group-hover:text-emerald-400">
                                 {spot.name}
                               </span>
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#F4F6F2] text-[#57685D] border border-[#E2EBE1]">
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#F4F6F2] dark:bg-slate-800 text-[#57685D] dark:text-slate-300 border border-[#E2EBE1] dark:border-slate-700">
                                 {spot.country && spot.country !== 'India' && spot.country !== 'Worldwide' ? `${spot.country}` : spot.state}
                               </span>
-                              <span className="text-[11px] font-mono text-[#2D5A3D] bg-[#E8EFE7] px-1.5 py-0.5 rounded border border-[#DCE7DB]">
+                              <span className="text-[11px] font-mono text-[#2D5A3D] dark:text-emerald-400 bg-[#E8EFE7] dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-[#DCE7DB] dark:border-emerald-800/50">
                                 {spot.coordinates.lat.toFixed(2)}°, {spot.coordinates.lng.toFixed(2)}°
                               </span>
                             </div>
-                            <p className="text-xs text-[#57685D] truncate mt-0.5">{spot.fullName}</p>
+                            <p className="text-xs text-[#57685D] dark:text-slate-400 truncate mt-0.5">{spot.fullName}</p>
                           </div>
                         </button>
                       );
@@ -736,7 +910,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       type="button"
                       onClick={() => {
                         setDestination(item.name);
-                        setShowDropdown(false);
+                        setShowPlannerDropdown(false);
+                        setShowFloatingDropdown(false);
                       }}
                       className={`min-h-[44px] px-3.5 py-2 rounded-full border transition-all cursor-pointer inline-flex items-center gap-1.5 text-xs font-bold ${
                         destination.toLowerCase() === item.name.toLowerCase()
