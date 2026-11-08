@@ -29,9 +29,10 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
   const [initialMountTime] = useState(() => Date.now());
   const mountTimeRef = useRef(initialMountTime);
 
-  // Crisp 0.55s–1.1s total opening window: feels intentional and fluid without delaying the user
-  const MIN_DISPLAY_MS = 550;
-  const MAX_TIMEOUT_MS = 1200;
+  // Paced minimum display time for smooth, flicker-free rendering
+  const MIN_DISPLAY_MS = 600;
+  // Maximum safety timeout: only used as emergency fallback if an external script hangs
+  const MAX_TIMEOUT_MS = 6000;
 
   useEffect(() => {
     onFinishRef.current = onFinish;
@@ -109,10 +110,12 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
     return () => clearTimeout(finishTimer);
   }, [isAppReady, progress]);
 
-  // Safety ceiling timeout
+  // Safety ceiling timeout (only as extreme fallback if an external script hangs)
   useEffect(() => {
     const safetyTimer = setTimeout(() => {
-      handleFinish();
+      if (!hasFinishedRef.current) {
+        handleFinish();
+      }
     }, MAX_TIMEOUT_MS);
 
     return () => clearTimeout(safetyTimer);
@@ -127,14 +130,19 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
     <div
       role="dialog"
       aria-label="TripVerse Opening"
-      onClick={handleFinish}
+      onClick={() => {
+        // Only permit manual dismissal once app loading has genuinely finished
+        if (isAppReady && progress >= 100) {
+          handleFinish();
+        }
+      }}
       className={`fixed inset-0 z-[9999] w-full max-w-[100vw] h-full max-h-[100dvh] flex flex-col justify-between select-none overflow-hidden bg-[#070C16] text-white transition-[opacity,transform] duration-550 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-opacity motion-reduce:duration-200 ${
-        isExiting || progress >= 98
-          ? 'pointer-events-none'
+        isExiting || !isAppReady || progress < 100
+          ? 'cursor-default'
           : 'cursor-pointer'
       } ${
         isExiting
-          ? 'opacity-0 scale-[1.035] motion-reduce:scale-100'
+          ? 'opacity-0 scale-[1.035] pointer-events-none motion-reduce:scale-100'
           : 'opacity-100 scale-100'
       }`}
       style={{

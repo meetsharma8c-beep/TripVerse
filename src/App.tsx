@@ -247,7 +247,7 @@ export function App() {
   const [showSplash, setShowSplash] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get('nosplash') === 'true' || window.localStorage?.getItem('tripverse_skip_splash') === 'true' || window.sessionStorage?.getItem('tripverse_skip_splash') === 'true') {
+      if (searchParams.get('nosplash') === 'true') {
         return false;
       }
     }
@@ -264,9 +264,6 @@ export function App() {
 
   const handleFinishSplash = React.useCallback(() => {
     setShowSplash(false);
-    try {
-      window.sessionStorage?.setItem('tripverse_skip_splash', 'true');
-    } catch {}
   }, []);
 
   useEffect(() => {
@@ -398,37 +395,42 @@ export function App() {
         // Stage 1: Core local preferences and itinerary hydration
         if (!isMounted) return;
         setInitStage({
-          progress: 60,
+          progress: 50,
           message: 'Loading itineraries & profile...'
         });
 
         // Small yield so browser processes layout
-        await new Promise((r) => setTimeout(r, 40));
+        await new Promise((r) => setTimeout(r, 60));
 
         // Stage 2: Auth check & session sync
         if (!isMounted) return;
         const user = getCurrentUser();
         setInitStage({
-          progress: 90,
+          progress: 80,
           message: user ? 'Syncing traveler passport...' : 'Connecting offline intelligence...'
         });
 
-        // Stage 3: Font & critical asset readiness (bounded to 120ms max so slow font CDN never delays app)
+        // Stage 3: Font & critical asset readiness (bounded to 150ms max so slow font CDN never delays app)
         if (document.fonts && document.fonts.ready) {
           await Promise.race([
             document.fonts.ready.catch(() => {}),
-            new Promise((r) => setTimeout(r, 120))
+            new Promise((r) => setTimeout(r, 150))
           ]);
         }
 
         // Small pacing yield to ensure visual smoothness
-        await new Promise((r) => setTimeout(r, 60));
+        await new Promise((r) => setTimeout(r, 80));
 
         if (!isMounted) return;
         setInitStage({
           progress: 100,
           message: 'Welcome to TripVerse'
         });
+
+        // Ensure progress bar cleanly finishes 100%
+        await new Promise((r) => setTimeout(r, 120));
+
+        if (!isMounted) return;
         setIsAppReady(true);
       } catch {
         if (isMounted) {
@@ -1502,9 +1504,6 @@ export function App() {
 
   const handlePullRefresh = async () => {
     try {
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('tripverse_skip_splash', 'true');
-      }
       const activeUser = getCurrentUser();
       if (activeUser) {
         // Sync latest cloud data from Supabase for authenticated user
@@ -1592,7 +1591,12 @@ export function App() {
   };
 
   return (
-    <div key={language} className="min-h-screen w-full overflow-x-hidden flex flex-col bg-[#F8FAFC] dark:bg-[#070C16] text-slate-900 dark:text-slate-100 selection:bg-[#2D5A3D] selection:text-white antialiased">
+    <div
+      key={language}
+      className={`min-h-screen w-full overflow-x-hidden flex flex-col bg-[#F8FAFC] dark:bg-[#070C16] text-slate-900 dark:text-slate-100 selection:bg-[#2D5A3D] selection:text-white antialiased transition-opacity duration-300 ${
+        !isAppReady && showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      }`}
+    >
 
       {/* 0. Native iOS & Android App Opening Animation Splash Screen */}
       {showSplash && (
