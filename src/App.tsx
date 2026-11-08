@@ -1559,6 +1559,11 @@ export function App() {
         window.dispatchEvent(new CustomEvent('tripverse_visited_states_change', { detail: guestStates }));
       }
 
+      // Check for Service Worker app updates in the background
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(reg => reg?.update()).catch(() => {});
+      }
+
       // Notify child components to refresh their widgets / data
       window.dispatchEvent(new CustomEvent('tripverse_refreshed', { detail: { timestamp: Date.now() } }));
     } catch (e) {
