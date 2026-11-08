@@ -1,4 +1,4 @@
-import { CONCODE_MASTER_PROMPT } from './concodePrompt.js';
+import { CONCODE_MASTER_PROMPT, CONCODE_COMPACT_PROMPT, CONCODE_ITINERARY_PROMPT } from './concodePrompt.js';
 import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js';
 
 // Vercel Serverless Function: private TripVerse-to-CONCODE travel proxy.
@@ -6,6 +6,29 @@ import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js'
 
 const MAX_QUERY_LENGTH = 12_000;
 const UPSTREAM_TIMEOUT_MS = 45_000;
+
+// In-memory LRU / TTL Cache for cloud LLM travel responses to conserve free-tier API quotas
+const LLM_CACHE = new Map();
+const LLM_CACHE_MAX_SIZE = 300;
+const LLM_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
+
+function getFromLlmCache(key) {
+  const item = LLM_CACHE.get(key);
+  if (!item) return null;
+  if (Date.now() - item.timestamp > LLM_CACHE_TTL_MS) {
+    LLM_CACHE.delete(key);
+    return null;
+  }
+  return item.data;
+}
+
+function setToLlmCache(key, data) {
+  if (LLM_CACHE.size >= LLM_CACHE_MAX_SIZE) {
+    const oldestKey = LLM_CACHE.keys().next().value;
+    if (oldestKey) LLM_CACHE.delete(oldestKey);
+  }
+  LLM_CACHE.set(key, { data, timestamp: Date.now() });
+}
 
 function configuredConcodeUrl() {
   const value = (process.env.CONCODE_API_URL || process.env.VITE_CONCODE_API_URL || '').trim().replace(/\/$/, '');
@@ -427,6 +450,16 @@ async function callRemoteCloudLLM(query, ctx, mode) {
   const apiKey = (process.env.CONCODE_REMOTE_LLM_API_KEY || process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY || '').trim();
   if (!apiKey) return null;
 
+  // 1. Check in-memory cache to save 100% of tokens on repeated queries
+  const cacheKey = `${mode}:${(ctx.destination || '').toLowerCase()}:${ctx.duration_days || 3}:${query.trim().toLowerCase().slice(0, 160)}`;
+  const cached = getFromLlmCache(cacheKey);
+  if (cached) {
+    return {
+      ...cached,
+      source: `${cached.source} (cached)`
+    };
+  }
+
   let baseUrl = (process.env.CONCODE_REMOTE_LLM_BASE_URL || '').trim().replace(/\/+$/, '');
   let model = (process.env.CONCODE_REMOTE_LLM_MODEL || '').trim();
 
@@ -446,13 +479,37 @@ async function callRemoteCloudLLM(query, ctx, mode) {
     }
   }
 
+  // 2. Token-Optimized System Prompts: Saves ~3,500 input tokens per call
   const systemPrompt = mode === 'itinerary'
-    ? `${CONCODE_MASTER_PROMPT} Return strictly a valid JSON object matching this exact schema and nothing else: {"itinerary":[{"dayNumber":1,"title":"...","theme":"...","activities":[{"time":"...","title":"...","type":"attraction|food|viewpoint|nightlife|rest","location":"...","description":"...","estimatedCost":0,"preferenceMatch":"...","durationMin":60}]}]}. Return exactly ${ctx.duration_days || 3} days with 3-4 activities per day with realistic costs for the whole group in ${ctx.currency || 'INR'}.`
+    ? `${CONCODE_ITINERARY_PROMPT} Duration: exactly ${ctx.duration_days || 3} days for ${ctx.destination || 'the destination'}. Group size: ${ctx.travelers_count || 1}. Currency: ${ctx.currency || 'INR'}.`
     : mode === 'budget'
-      ? `${CONCODE_MASTER_PROMPT} Provide a realistic, categorized budget allocation with contingency buffer and clear assumptions in ${ctx.currency || 'INR'}.`
+      ? `${CONCODE_COMPACT_PROMPT} You are TripVerse AI Budget Specialist. Provide a realistic categorized budget breakdown with contingency buffer and clear assumptions in ${ctx.currency || 'INR'}. Keep it concise and practical.`
       : mode === 'safety'
-        ? `${CONCODE_MASTER_PROMPT} Provide practical local safety precautions, emergency contacts, and seasonal travel advice.`
-        : `${CONCODE_MASTER_PROMPT} Assist the traveler directly with actionable advice and hospitality.`;
+        ? `${CONCODE_COMPACT_PROMPT} You are TripVerse AI Safety Advisor. Provide local safety precautions, emergency contacts, and seasonal travel advice for ${ctx.destination || 'the destination'}. Keep it concise and actionable.`
+        : `${CONCODE_COMPACT_PROMPT} Assist the traveler directly with concise, practical advice and genuine local insights.`;
+
+  // 3. Compact Context: Strip unnecessary bulky deal arrays to save ~1,000 input tokens
+  const compactContext = {
+    destination: ctx.destination,
+    origin: ctx.origin || undefined,
+    duration_days: ctx.duration_days || undefined,
+    budget: ctx.total_budget ? `${ctx.currency || 'INR'} ${ctx.total_budget}` : undefined,
+    travelers: ctx.travelers_count || 1,
+    food_preference: ctx.food_preference || undefined,
+    preferences: Array.isArray(ctx.preferences) && ctx.preferences.length > 0 ? ctx.preferences.slice(0, 4) : undefined,
+    ...(mode === 'itinerary' && Array.isArray(ctx.known_destination_highlights) && ctx.known_destination_highlights.length > 0
+      ? { highlights: ctx.known_destination_highlights.slice(0, 6) }
+      : {})
+  };
+
+  // 4. Dynamic max_tokens: scale output token reservation based on query mode
+  const maxTokens = mode === 'itinerary'
+    ? Math.min(1800, Math.max(650, (ctx.duration_days || 3) * 350))
+    : mode === 'budget'
+      ? 700
+      : mode === 'safety'
+        ? 600
+        : 500;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 6500);
@@ -469,10 +526,10 @@ async function callRemoteCloudLLM(query, ctx, mode) {
         model,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Traveler Request: ${query}\nTrip Context: ${JSON.stringify(ctx)}` }
+          { role: 'user', content: `Request: ${query}\nContext: ${JSON.stringify(compactContext)}` }
         ],
         temperature: 0.3,
-        max_tokens: 2048,
+        max_tokens: maxTokens,
         ...(mode === 'itinerary' && !baseUrl.includes('openrouter') ? { response_format: { type: 'json_object' } } : {})
       }),
       signal: controller.signal
@@ -500,7 +557,7 @@ async function callRemoteCloudLLM(query, ctx, mode) {
       } catch {}
     }
 
-    return {
+    const result = {
       ok: true,
       source: `cloud_llm (${model})`,
       reply: replyText,
@@ -512,6 +569,11 @@ async function callRemoteCloudLLM(query, ctx, mode) {
       criticScore: 94,
       criticFixes: ['Cloud GPU high-speed inference verified', 'Itinerary and budget allocation validated']
     };
+
+    // Cache successful response to save tokens on repeat queries
+    setToLlmCache(cacheKey, result);
+
+    return result;
   } catch {
     return null;
   } finally {

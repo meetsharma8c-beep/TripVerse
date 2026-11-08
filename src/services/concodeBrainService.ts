@@ -482,8 +482,7 @@ async function tryQueryServerlessAPI(
           query,
           tripContext: tripContextPayload,
           sessionState: session,
-          mode,
-          system_prompt: CONCODE_MASTER_PROMPT
+          mode
         });
 
     const res = await fetch(targetUrl, {

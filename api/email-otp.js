@@ -5,6 +5,11 @@ import { applyCorsHeaders, checkRateLimit, escapeHtml, getClientIp } from './rat
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const HMAC_SECRET = process.env.AUTH_SECRET || 'REDACTED_DEV_HMAC_SALT';
 
+// Per-email dispatch cooldown map (prevents burning Resend API quota on rapid re-requests)
+const emailDispatchCooldowns = new Map();
+const activeEmailOtpTokens = new Map();
+const EMAIL_COOLDOWN_MS = 60 * 1000; // 60 seconds minimum cooldown per email
+
 function signOtp(email, code, expiresAt) {
   const normalized = String(email).trim().toLowerCase();
   return crypto.createHmac('sha256', HMAC_SECRET)
@@ -51,8 +56,29 @@ export default async function handler(req, res) {
   // ACTION: SEND OTP EMAIL VIA RESEND
   // -------------------------------------------------------------
   if (action === 'send') {
+    const now = Date.now();
+    const lastSent = emailDispatchCooldowns.get(emailNorm) || 0;
+    if (now - lastSent < EMAIL_COOLDOWN_MS) {
+      const waitSec = Math.ceil((EMAIL_COOLDOWN_MS - (now - lastSent)) / 1000);
+      const active = activeEmailOtpTokens.get(emailNorm);
+      if (active && active.expiresAt > now) {
+        return res.status(200).json({
+          success: true,
+          message: `A verification code was already dispatched recently. Please check your inbox or wait ${waitSec}s to resend.`,
+          email: emailNorm,
+          token: active.token,
+          expiresAt: active.expiresAt,
+          cooldownRemainingSec: waitSec
+        });
+      }
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${waitSec} seconds before requesting a new verification code.`
+      });
+    }
+
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const expiresAt = now + 10 * 60 * 1000; // 10 minutes
     const signature = signOtp(emailNorm, otpCode, expiresAt);
     const verificationToken = `${expiresAt}.${signature}`;
 
@@ -131,29 +157,15 @@ export default async function handler(req, res) {
         console.error('[Resend Error]', resendData);
         // If Resend free tier restricts to owner (meet.sharma8c@gmail.com):
         if (typeof resendData.message === 'string' && resendData.message.includes('You can only send testing emails to your own email address')) {
-          console.warn(`[Resend Notice] Free tier owner restriction. Forwarding genuine 2FA verification copy to meet.sharma8c@gmail.com for recipient ${emailNorm}.`);
-          try {
-            await fetch('https://api.resend.com/emails', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${RESEND_API_KEY}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                from: 'TripVerse <onboarding@resend.dev>',
-                to: 'meet.sharma8c@gmail.com',
-                subject: `${otpCode} is your TripVerse verification code (for ${emailNorm})`,
-                html: htmlContent
-              })
-            });
-          } catch (forwardErr) {
-            console.error('[Resend Forwarding Error]', forwardErr);
-          }
+          console.warn(`[Resend Notice] Free tier owner restriction for ${emailNorm}. Storing token securely without double-burning outbound email tokens.`);
+          emailDispatchCooldowns.set(emailNorm, now);
+          activeEmailOtpTokens.set(emailNorm, { token: verificationToken, expiresAt });
 
           res.setHeader('Set-Cookie', `tripverse_email_otp=${encodeURIComponent(verificationToken)}; Path=/; Max-Age=600; SameSite=Lax; Secure; HttpOnly`);
           return res.status(200).json({
             success: true,
-            message: `Verification code dispatched to ${emailNorm}.`,
+            isSandboxNotice: true,
+            message: `Free-tier sandbox mode: verification code registered for ${emailNorm}.`,
             email: emailNorm,
             token: verificationToken,
             expiresAt
@@ -166,6 +178,8 @@ export default async function handler(req, res) {
       }
 
       console.log(`[Resend] Genuine OTP email dispatched to ${emailNorm}, id: ${resendData.id}`);
+      emailDispatchCooldowns.set(emailNorm, now);
+      activeEmailOtpTokens.set(emailNorm, { token: verificationToken, expiresAt });
       res.setHeader('Set-Cookie', `tripverse_email_otp=${encodeURIComponent(verificationToken)}; Path=/; Max-Age=600; SameSite=Lax; Secure; HttpOnly`);
       return res.status(200).json({
         success: true,

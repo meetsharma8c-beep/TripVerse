@@ -573,6 +573,26 @@ Provide the recommendation with the appropriate evidence, route details, and act
 CONCODE must behave like a reliable travel decision engine, NOT like a text generator that fills gaps with plausible-sounding information.
 `;
 
+/**
+ * Compact, token-optimized system prompt for free-tier Cloud LLMs (Gemini, Groq, OpenRouter).
+ * Reduces input tokens by ~94% (from ~4,000 down to ~80 tokens) to stay well within free-tier TPM/RPD limits.
+ */
+export const CONCODE_COMPACT_PROMPT = `You are TripVerse AI, the intelligent, realistic travel decision engine.
+Core Principles:
+1. Never hallucinate transport routes or unrealistic schedules. Destination != Station (e.g. flights land at the nearest regional airport; mountain passes may close seasonally).
+2. Prioritize traveler feasibility, honest timing, and realistic local costs in the traveler's currency.
+3. Be concise, direct, helpful, and culturally respectful. Use clear markdown formatting.`;
+
+/**
+ * Compact, token-optimized system prompt for itinerary JSON generation.
+ * Strips 15KB of background doctrine to focus strictly on schema adherence and local realism.
+ */
+export const CONCODE_ITINERARY_PROMPT = `You are TripVerse AI Itinerary Engine.
+Generate a realistic, geographically sequenced day-by-day travel itinerary.
+Return strictly a valid JSON object matching:
+{"itinerary":[{"dayNumber":1,"title":"...","theme":"...","activities":[{"time":"...","title":"...","type":"attraction|food|viewpoint|nightlife|rest","location":"...","description":"...","estimatedCost":0,"preferenceMatch":"...","durationMin":60}]}]}
+Ensure 3-4 activities per day with genuine local sights, realistic timing, and authentic regional dining. No markdown fences around the JSON.`;
+
 export default function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   return res.status(200).json({ ok: true, version: '1.0.0', length: CONCODE_MASTER_PROMPT.length });

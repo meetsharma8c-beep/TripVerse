@@ -1411,26 +1411,28 @@ export async function resendEmailConfirmation(email: string, name?: string): Pro
     console.warn('[Resend] Email dispatch notice:', err);
   }
 
-  // 2. Also trigger Supabase email confirmation
-  const supabase = getSupabaseClient();
-  if (supabase) {
-    const redirectUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/?tab=profile`
-      : 'https://trip-verse.com/?tab=profile';
+  // 2. Only trigger Supabase email confirmation if Resend was not dispatched (conserves free-tier email quotas)
+  if (!resendDispatched) {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const redirectUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/?tab=profile`
+        : 'https://trip-verse.com/?tab=profile';
 
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email: emailNorm,
-      options: {
-        emailRedirectTo: redirectUrl
-      }
-    });
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: emailNorm,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
+      });
 
-    if (error && !resendDispatched) {
-      if ((error as any).code === 'over_email_send_rate_limit' || error.message.toLowerCase().includes('rate limit')) {
-        throw new Error('Email dispatch rate limit reached. Please wait a few moments before requesting another code.');
+      if (error) {
+        if ((error as any).code === 'over_email_send_rate_limit' || error.message.toLowerCase().includes('rate limit')) {
+          throw new Error('Email dispatch rate limit reached. Please wait a few moments before requesting another code.');
+        }
+        throw new Error(error.message || 'Failed to dispatch confirmation email.');
       }
-      throw new Error(error.message || 'Failed to dispatch confirmation email.');
     }
   }
 }

@@ -3,6 +3,33 @@ const ROUTING_URL = 'https://api.geoapify.com/v1/routing';
 const PLACES_URL = 'https://api.geoapify.com/v2/places';
 const requestCounts = new Map();
 
+// In-Memory Multi-Tier Caches to conserve Geoapify Free Tier API Credits (3,000/day limit)
+const geocodeCache = new Map();
+const placesCache = new Map();
+const routeFeatureCache = new Map();
+
+const GEOCODE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const PLACES_TTL_MS = 6 * 60 * 60 * 1000;   // 6 hours
+const ROUTE_TTL_MS = 6 * 60 * 60 * 1000;    // 6 hours
+
+function getCached(cache, key, ttl) {
+  const item = cache.get(key);
+  if (!item) return null;
+  if (Date.now() - item.ts > ttl) {
+    cache.delete(key);
+    return null;
+  }
+  return item.data;
+}
+
+function setCached(cache, key, data, maxSize = 500) {
+  if (cache.size >= maxSize) {
+    const oldest = cache.keys().next().value;
+    if (oldest) cache.delete(oldest);
+  }
+  cache.set(key, { data, ts: Date.now() });
+}
+
 function isSameSiteRequest(req) {
   const origin = req.headers.origin;
   if (!origin || !req.headers.host) return false;
@@ -41,6 +68,10 @@ async function resolveLocation(value, apiKey) {
   if (coordinates) return coordinates;
   if (typeof value !== 'string' || !value.trim() || value.length > 200) return null;
 
+  const cacheKey = value.trim().toLowerCase();
+  const cached = getCached(geocodeCache, cacheKey, GEOCODE_TTL_MS);
+  if (cached) return cached;
+
   const url = new URL(GEOCODE_URL);
   url.searchParams.set('text', value.trim());
   url.searchParams.set('format', 'json');
@@ -53,7 +84,9 @@ async function resolveLocation(value, apiKey) {
   const result = await response.json();
   const location = result.results?.[0];
   if (!location || !Number.isFinite(location.lat) || !Number.isFinite(location.lon)) return null;
-  return { lat: location.lat, lon: location.lon };
+  const resolved = { lat: location.lat, lon: location.lon };
+  setCached(geocodeCache, cacheKey, resolved, 1000);
+  return resolved;
 }
 
 function providerError(response, fallbackCode) {
@@ -176,6 +209,10 @@ function pointAtRouteDistance(points, targetDistanceKm) {
 }
 
 async function searchPlaces(apiKey, point, categories, radiusMeters) {
+  const cacheKey = `${point.lat.toFixed(4)},${point.lon.toFixed(4)}:${(categories || []).slice().sort().join(',')}:${radiusMeters}`;
+  const cached = getCached(placesCache, cacheKey, PLACES_TTL_MS);
+  if (cached) return cached;
+
   const url = new URL(PLACES_URL);
   url.searchParams.set('apiKey', apiKey);
   const response = await fetch(url, {
@@ -197,7 +234,9 @@ async function searchPlaces(apiKey, point, categories, radiusMeters) {
     throw await providerError(response, 'GEOAPIFY_PLACES_UNAVAILABLE');
   }
   const result = await response.json();
-  return mapPlaceFeatures(result.features || []);
+  const mapped = mapPlaceFeatures(result.features || []);
+  setCached(placesCache, cacheKey, mapped, 500);
+  return mapped;
 }
 
 function mapPlaceFeatures(features) {
@@ -338,6 +377,14 @@ export default async function handler(req, res) {
              routeDestination.lon === initialRouteDestination.lon)) continue;
       }
 
+      const routeCacheKey = `${routeOrigin.lat.toFixed(4)},${routeOrigin.lon.toFixed(4)}|${routeDestination.lat.toFixed(4)},${routeDestination.lon.toFixed(4)}`;
+      const cachedRoute = getCached(routeFeatureCache, routeCacheKey, ROUTE_TTL_MS);
+      if (cachedRoute) {
+        routeFeature = cachedRoute.feature;
+        routePoints = cachedRoute.points;
+        break;
+      }
+
       const routingUrl = new URL(ROUTING_URL);
       routingUrl.searchParams.set('waypoints',
         `${routeOrigin.lat},${routeOrigin.lon}|${routeDestination.lat},${routeDestination.lon}`);
@@ -353,7 +400,10 @@ export default async function handler(req, res) {
         const routeData = await routeResponse.json();
         routeFeature = routeData.features?.[0];
         routePoints = getRoutePoints(routeFeature?.geometry);
-        if (routeFeature && routePoints.length >= 2) break;
+        if (routeFeature && routePoints.length >= 2) {
+          setCached(routeFeatureCache, routeCacheKey, { feature: routeFeature, points: routePoints }, 300);
+          break;
+        }
         lastRouteError = Object.assign(new Error('GEOAPIFY_ROUTE_NOT_FOUND'), {
           code: 'GEOAPIFY_ROUTE_NOT_FOUND'
         });

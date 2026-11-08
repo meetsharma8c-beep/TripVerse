@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { checkRateLimit, getClientIp } from '../api/rateLimiter.js';
+import { CONCODE_MASTER_PROMPT, CONCODE_COMPACT_PROMPT, CONCODE_ITINERARY_PROMPT } from '../api/concodePrompt.js';
 
 describe('Serverless Rate Limiter Unit Tests', () => {
   it('allows requests within limit', () => {
@@ -38,5 +39,12 @@ describe('Serverless Rate Limiter Unit Tests', () => {
       headers: { 'x-real-ip': '198.51.100.22' }
     };
     expect(getClientIp(reqWithRealIp)).toBe('198.51.100.22');
+  });
+
+  it('verifies token optimization in compact system prompts for free-tier LLMs', () => {
+    expect(CONCODE_COMPACT_PROMPT.length).toBeLessThan(CONCODE_MASTER_PROMPT.length * 0.1);
+    expect(CONCODE_ITINERARY_PROMPT.length).toBeLessThan(CONCODE_MASTER_PROMPT.length * 0.1);
+    expect(CONCODE_COMPACT_PROMPT).toContain('TripVerse AI');
+    expect(CONCODE_ITINERARY_PROMPT).toContain('itinerary');
   });
 });
