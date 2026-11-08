@@ -164,7 +164,7 @@ export function App() {
 
   // Modals & Drawers
   const [isPlannerOpen, setIsPlannerOpen] = useState(() => Boolean(initialRoute.openPlanner && !isGuestUser(getCurrentUser())));
-  const [isGuestPlannerRestrictedOpen, setIsGuestPlannerRestrictedOpen] = useState(() => Boolean(initialRoute.openPlanner && isGuestUser(getCurrentUser())));
+  const [isGuestPlannerRestrictedOpen, setIsGuestPlannerRestrictedOpen] = useState(false);
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -284,6 +284,9 @@ export function App() {
       setCurrentUser(user);
       if (user) {
         setIsAuthModalOpen(false);
+        if (!isGuestUser(user)) {
+          setIsGuestPlannerRestrictedOpen(false);
+        }
         const localProfile = toUserProfile(user);
         setUserProfile(localProfile);
 
@@ -715,10 +718,11 @@ export function App() {
         setIsBookingModalOpen(true);
       }
       if (route.openPlanner) {
-        if (isGuestUser(currentUser)) {
-          setIsGuestPlannerRestrictedOpen(true);
+        const activeUser = currentUser ?? getCurrentUser();
+        if (isGuestUser(activeUser)) {
+          setIsGuestPlannerRestrictedOpen(false);
         } else {
-          const quota = getUserSubscriptionQuota(currentUser);
+          const quota = getUserSubscriptionQuota(activeUser);
           if (!quota.canCreateTrip) {
             setIsProModalOpen(true);
           } else {
@@ -1089,11 +1093,12 @@ export function App() {
         budgetMode: params.budgetMode ?? prev.budgetMode ?? 'total'
       }));
     }
-    if (isGuestUser(currentUser)) {
+    const activeUser = currentUser ?? getCurrentUser();
+    if (isGuestUser(activeUser)) {
       setIsGuestPlannerRestrictedOpen(true);
       return;
     }
-    const quota = getUserSubscriptionQuota(currentUser);
+    const quota = getUserSubscriptionQuota(activeUser);
     if (!quota.canCreateTrip) {
       setIsProModalOpen(true);
       return;
@@ -1109,7 +1114,8 @@ export function App() {
     budget?: number;
     budgetMode?: 'per_person' | 'total';
   }) => {
-    if (isGuestUser(currentUser)) {
+    const activeUser = currentUser ?? getCurrentUser();
+    if (isGuestUser(activeUser)) {
       setPlannerPrefill({
         destination: params.destination?.trim() || 'Udaipur',
         duration: params.duration || 3,
@@ -1121,7 +1127,7 @@ export function App() {
       return;
     }
 
-    const quota = getUserSubscriptionQuota(currentUser);
+    const quota = getUserSubscriptionQuota(activeUser);
     if (!quota.canCreateTrip) {
       setIsProModalOpen(true);
       return;
@@ -1211,10 +1217,11 @@ export function App() {
   };
 
   const handleTripGenerated = async (input: PlannerInput) => {
-    const quota = getUserSubscriptionQuota(currentUser);
+    const activeUser = currentUser ?? getCurrentUser();
+    const quota = getUserSubscriptionQuota(activeUser);
     if (!quota.canCreateTrip) {
       setIsPlannerOpen(false);
-      if (isGuestUser(currentUser)) {
+      if (isGuestUser(activeUser)) {
         setIsGuestPlannerRestrictedOpen(true);
       } else {
         setIsProModalOpen(true);
@@ -1326,26 +1333,30 @@ export function App() {
             if (action.payload?.prefill) {
               setPlannerPrefill(prev => ({ ...prev, ...action.payload.prefill }));
             }
-            if (isGuestUser(currentUser)) {
-              setIsGuestPlannerRestrictedOpen(true);
-            } else {
-              const quota = getUserSubscriptionQuota(currentUser);
-              if (!quota.canCreateTrip) {
-                setIsProModalOpen(true);
+            {
+              const activeUser = currentUser ?? getCurrentUser();
+              if (isGuestUser(activeUser)) {
+                setIsGuestPlannerRestrictedOpen(true);
               } else {
-                setIsPlannerOpen(true);
+                const quota = getUserSubscriptionQuota(activeUser);
+                if (!quota.canCreateTrip) {
+                  setIsProModalOpen(true);
+                } else {
+                  setIsPlannerOpen(true);
+                }
               }
             }
             break;
         }
         break;
       case 'GENERATE_NEW_TRIP':
-        if (isGuestUser(currentUser)) {
-          setIsGuestPlannerRestrictedOpen(true);
-          break;
-        }
         {
-          const quota = getUserSubscriptionQuota(currentUser);
+          const activeUser = currentUser ?? getCurrentUser();
+          if (isGuestUser(activeUser)) {
+            setIsGuestPlannerRestrictedOpen(true);
+            break;
+          }
+          const quota = getUserSubscriptionQuota(activeUser);
           if (!quota.canCreateTrip) {
             setIsProModalOpen(true);
             break;
