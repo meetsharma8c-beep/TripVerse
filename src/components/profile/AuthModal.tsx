@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   Check, 
@@ -728,100 +729,112 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div 
       role="dialog"
       aria-modal="true"
       aria-label="Sign in or create account"
       onClick={handleModalClose}
-      className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overscroll-contain overflow-y-auto animate-in fade-in duration-200"
+      style={{
+        minHeight: '100dvh',
+        paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+        paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
+        paddingRight: 'max(0.75rem, env(safe-area-inset-right))'
+      }}
     >
-      
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
+        className="relative bg-white dark:bg-[#0C1523] rounded-2xl sm:rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col min-h-0 overflow-hidden my-auto animate-in zoom-in-95 duration-200"
+        style={{
+          maxHeight: 'min(92dvh, calc(100dvh - 1.5rem))'
+        }}
       >
-        
         {/* Modal Top Bar */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
+        <div className="px-5 py-3 sm:px-6 sm:py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-[#0C1523] shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#2D5A3D]/10 text-[#2D5A3D] flex items-center justify-center font-black text-sm">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#2D5A3D]/10 text-[#2D5A3D] flex items-center justify-center font-black text-sm">
               <Compass className="w-4 h-4" />
             </div>
-            <span className="text-xl font-black font-display text-[#0B2545]">
+            <span className="text-lg sm:text-xl font-black font-display text-[#0B2545] dark:text-white">
               Trip<span className="text-[#2D5A3D]">Verse</span>
             </span>
           </div>
 
           <button
             onClick={handleModalClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
-        {/* Navigation / Header */}
-        {is2FaStep ? (
-          <div className="px-6 py-3 bg-emerald-50/80 border-b border-emerald-100 flex items-center justify-between text-xs text-emerald-900 font-semibold">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Step 2 of 2: Security Verification</span>
-            </span>
-            <span className="text-[10px] uppercase tracking-wider bg-emerald-100/90 text-emerald-900 px-2 py-0.5 rounded-full font-bold">
-              2FA Active
-            </span>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50/70">
-            <button
-              type="button"
-              onClick={() => switchAuthTab('google')}
-              className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-                authMethod === 'google'
-                  ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-              </svg>
-              <span>Google</span>
-            </button>
+        {/* Navigation / Header - Sub-header */}
+        <div className="shrink-0">
+          {is2FaStep ? (
+            <div className="px-5 py-2.5 sm:px-6 sm:py-3 bg-emerald-50/80 dark:bg-emerald-950/40 border-b border-emerald-100 dark:border-emerald-900/50 flex items-center justify-between text-xs text-emerald-900 dark:text-emerald-200 font-semibold">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Step 2 of 2: Security Verification</span>
+              </span>
+              <span className="text-[10px] uppercase tracking-wider bg-emerald-100/90 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                2FA Active
+              </span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50">
+              <button
+                type="button"
+                onClick={() => switchAuthTab('google')}
+                className={`py-2.5 sm:py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
+                  authMethod === 'google'
+                    ? 'border-[#2D5A3D] text-[#0B2545] dark:text-white bg-white dark:bg-[#0C1523] shadow-2xs'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                </svg>
+                <span>Google</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => switchAuthTab('email')}
-              className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-                authMethod === 'email'
-                  ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Mail className="w-3.5 h-3.5 text-[#2D5A3D]" />
-              <span>Email</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => switchAuthTab('email')}
+                className={`py-2.5 sm:py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
+                  authMethod === 'email'
+                    ? 'border-[#2D5A3D] text-[#0B2545] dark:text-white bg-white dark:bg-[#0C1523] shadow-2xs'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <Mail className="w-3.5 h-3.5 text-[#2D5A3D]" />
+                <span>Email</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => switchAuthTab('guest')}
-              className={`py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-                authMethod === 'guest'
-                  ? 'border-[#2D5A3D] text-[#0B2545] bg-white shadow-2xs'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Quick Guest</span>
-            </button>
-          </div>
-        )}
+              <button
+                type="button"
+                onClick={() => switchAuthTab('guest')}
+                className={`py-2.5 sm:py-3 text-[11px] sm:text-xs font-bold transition-all border-b-2 flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
+                  authMethod === 'guest'
+                    ? 'border-[#2D5A3D] text-[#0B2545] dark:text-white bg-white dark:bg-[#0C1523] shadow-2xs'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Quick Guest</span>
+              </button>
+            </div>
+          )}
+        </div>
 
-        <div className="p-6 sm:p-7 space-y-4 max-h-[82vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-3.5 sm:space-y-4 overflow-y-auto overscroll-contain flex-1 min-h-0">
           {is2FaStep ? (
             <div className="space-y-4 animate-in fade-in">
               <div className="text-center space-y-1.5">
@@ -1412,34 +1425,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">Password</label>
+                        <label className="block text-[10px] sm:text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Password</label>
                         <div className="relative">
-                          <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                           <input
                             type={showPassword ? 'text' : 'password'}
                             autoComplete="new-password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Min 6 chars"
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
+                            className="w-full pl-8.5 pr-2.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                             required
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">Confirm Password</label>
+                        <label className="block text-[10px] sm:text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Confirm Password</label>
                         <div className="relative">
-                          <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                           <input
                             type={showPassword ? 'text' : 'password'}
                             autoComplete="new-password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="Repeat password"
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
+                            className="w-full pl-8.5 pr-2.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-medium focus:outline-hidden focus:border-[#2D5A3D]"
                             required
                           />
                         </div>
@@ -1448,19 +1461,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                     {/* Traveler Persona selection */}
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1.5">
+                      <label className="block text-[10px] sm:text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
                         Your Travel Style
                       </label>
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap gap-1 sm:gap-1.5">
                         {TRAVELER_STYLES.map((style) => (
                           <button
                             key={style.id}
                             type="button"
                             onClick={() => setEmailTravelerStyle(style.id)}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                            className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                               emailTravelerStyle === style.id
                                 ? 'bg-[#2D5A3D] text-white shadow-2xs scale-102'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
                             }`}
                           >
                             {style.label}
@@ -1472,7 +1485,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full py-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+                      className="w-full py-2.5 sm:py-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1"
                     >
                       {isLoading ? (
                         <>
@@ -1695,6 +1708,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       </div>
 
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -159,23 +159,33 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
     <>
       <div 
         onClick={onClose}
-        className="fixed inset-0 z-[120] bg-black/65 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
+        className="fixed inset-0 z-[120] bg-black/65 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+        style={{
+          minHeight: '100dvh',
+          paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
+          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+          paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
+          paddingRight: 'max(0.75rem, env(safe-area-inset-right))'
+        }}
       >
       
       {/* 
         Outer modal card:
-        - overflow-hidden strictly guarantees rounded-[30px] sm:rounded-[36px] without native scrollbars breaking corners!
+        - overflow-hidden strictly guarantees rounded-[24px] sm:rounded-[36px] without native scrollbars breaking corners!
         - my-auto ensures centered floating on large screens and smooth complete scrolling on tiny viewports.
       */}
       <div 
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[480px] rounded-[30px] sm:rounded-[36px] overflow-hidden bg-white dark:bg-[#0E1726] shadow-[0_30px_100px_rgba(21,42,28,0.32),0_0_0_1px_rgba(226,235,225,0.7)] dark:shadow-[0_30px_100px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] flex flex-col font-sans transition-all my-auto"
+        className="relative w-full max-w-[480px] rounded-[24px] sm:rounded-[36px] overflow-hidden bg-white dark:bg-[#0E1726] shadow-[0_30px_100px_rgba(21,42,28,0.32),0_0_0_1px_rgba(226,235,225,0.7)] dark:shadow-[0_30px_100px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)] flex flex-col min-h-0 font-sans transition-all my-auto"
+        style={{
+          maxHeight: 'min(92dvh, calc(100dvh - 1.5rem))'
+        }}
       >
 
         {/* ─── HERO HEADER: Emerald & Deep Pine Horizon ─── */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#112316] via-[#1A3824] to-[#2D5A3D] text-white p-6 sm:p-7">
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#112316] via-[#1A3824] to-[#2D5A3D] text-white p-5 sm:p-7 shrink-0">
           
           {/* Subtle Ambient Decorative Glows */}
           <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-emerald-400/15 blur-2xl pointer-events-none" />
@@ -202,7 +212,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
             </div>
 
             {/* Editorial Headline */}
-            <h2 className="text-2xl sm:text-[26px] font-display font-extrabold tracking-tight text-white leading-tight">
+            <h2 className="text-xl sm:text-[26px] font-display font-extrabold tracking-tight text-white leading-tight">
               {t(title)} <span className="font-serif italic font-normal text-emerald-300">TripVerse Pro</span>
             </h2>
 
@@ -213,7 +223,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
         </div>
 
         {/* ─── MODAL BODY: Compact, Single-Fold Luxury Experience ─── */}
-        <div className="p-5 sm:p-6 space-y-4 bg-[#F8FAF7] dark:bg-[#0E1726]">
+        <div className="p-4 sm:p-6 space-y-3.5 sm:space-y-4 bg-[#F8FAF7] dark:bg-[#0E1726] overflow-y-auto overscroll-contain flex-1 min-h-0">
 
           {/* Success Notification */}
           {successMessage && (
@@ -409,7 +419,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
         </div>
 
         {/* ─── MODAL FOOTER: Crisp, Clean Security Lock ─── */}
-        <div className="px-6 py-3 bg-white dark:bg-slate-900 border-t border-[#E2EBE1] dark:border-slate-800 flex items-center justify-between text-xs text-[#5A7362] dark:text-slate-400">
+        <div className="px-5 py-2.5 sm:px-6 sm:py-3 bg-white dark:bg-slate-900 border-t border-[#E2EBE1] dark:border-slate-800 flex items-center justify-between text-xs text-[#5A7362] dark:text-slate-400 shrink-0">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400" />
             <span className="text-[11px]">{t('Bank-grade 256-bit encryption')}</span>
