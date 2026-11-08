@@ -350,7 +350,7 @@ export const SafetyEmergency: React.FC<SafetyEmergencyProps> = ({ destination })
           </div>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold flex items-center gap-1">
             <Lock className="w-2.5 h-2.5" />
-            <span>{t('Guild: security')} 🛡️</span>
+            <span>{t('Guild: security')}</span>
           </span>
         </div>
 

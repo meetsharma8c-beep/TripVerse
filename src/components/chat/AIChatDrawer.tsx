@@ -9,7 +9,7 @@ import {
 } from '../../services/concodeBrainService';
 import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/concodeSession';
 import { Landmark3DViewer } from '../common/Landmark3DViewer';
-import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Settings, Crown } from 'lucide-react';
+import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Settings, Crown, Shield, Users, Compass } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { ConcodeBrainConfigModal } from './ConcodeBrainConfigModal';
 import { getUserSubscriptionQuota, consumeAssistantMinute } from '../../services/authService';
@@ -590,11 +590,11 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   });
 
   const scenarioChips = [
-    { label: '✨ 3D Landmark Tour', prompt: 'Show me an interactive 3D WebGL tour of the landmark' },
-    { label: '🛡️ Safety Radar', prompt: 'What are the tourist scams and safety tips for my destination?' },
-    { label: '⏱️ Flight Delayed', prompt: 'My flight was delayed 3 hours, please replan Day 1' },
-    { label: '🐝 Group Consensus', prompt: 'Plan a group trip with mixed preferences (adventure and food)' },
-    { label: '🧠 Memory Ring', prompt: 'What do you remember in my travel profile memory ring?' },
+    { label: '3D Landmark Tour', icon: Sparkles, prompt: 'Show me an interactive 3D WebGL tour of the landmark' },
+    { label: 'Safety Radar', icon: Shield, prompt: 'What are the tourist scams and safety tips for my destination?' },
+    { label: 'Flight Delayed', icon: Clock, prompt: 'My flight was delayed 3 hours, please replan Day 1' },
+    { label: 'Group Consensus', icon: Users, prompt: 'Plan a group trip with mixed preferences (adventure and food)' },
+    { label: 'Memory Ring', icon: Compass, prompt: 'What do you remember in my travel profile memory ring?' },
     { label: '5-Day Dubai', prompt: 'Plan a 5-day trip to Dubai' },
     { label: `Budget ${formatCurrency(100000)}`, prompt: `I have a budget of ${formatCurrency(100000)}` },
     { label: 'Food & Arch', prompt: 'I like food and architecture' },
@@ -738,8 +738,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               key={chip.label}
               type="button"
               onClick={() => handleSendMessage(chip.prompt)}
-              className="text-[11px] px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 font-semibold whitespace-nowrap hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition-all flex items-center gap-1 flex-shrink-0 shadow-2xs cursor-pointer active:scale-95"
+              className="text-[11px] px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 font-semibold whitespace-nowrap hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition-all flex items-center gap-1.5 flex-shrink-0 shadow-2xs cursor-pointer active:scale-95"
             >
+              {chip.icon && <chip.icon className="w-3 h-3 text-emerald-600 shrink-0" />}
               <span>{chip.label}</span>
             </button>
           ))}

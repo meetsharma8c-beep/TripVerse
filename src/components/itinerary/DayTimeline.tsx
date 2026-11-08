@@ -4,7 +4,7 @@ import { getActiveCurrency, formatCurrency } from '../../services/currencyServic
 import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError, DEFAULT_TRAVEL_FALLBACK_IMAGE } from '../../utils/destinationImages';
 import { fetchOriginalPhoto, getInstantPhoto } from '../../services/originalPhotoService';
-import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, Info, ShieldCheck, Zap } from 'lucide-react';
+import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, Info, ShieldCheck, Zap, Activity, Building2, Moon } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { Landmark3DViewer } from '../common/Landmark3DViewer';
 import { toggleDayWeatherMode } from '../../services/smartTravelEngine';
@@ -259,9 +259,9 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                             {day.circadianAdvice.melatoninResetSlot.scientificRationale}
                           </p>
                           <div className="flex items-center gap-3 text-[11px] font-semibold text-amber-800 flex-wrap pt-0.5">
-                            <span>☀️ Outdoor Light Window: {day.circadianAdvice.melatoninResetSlot.startTime} – {day.circadianAdvice.melatoninResetSlot.endTime}</span>
+                            <span className="inline-flex items-center gap-1.5"><Sun className="w-3.5 h-3.5 text-amber-600 shrink-0" /> Outdoor Light Window: {day.circadianAdvice.melatoninResetSlot.startTime} – {day.circadianAdvice.melatoninResetSlot.endTime}</span>
                             <span>•</span>
-                            <span>🚶 Max Pacing Cap: {day.circadianAdvice.recommendedMaxStepsDay1.toLocaleString()} steps</span>
+                            <span className="inline-flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-amber-700 shrink-0" /> Max Pacing Cap: {day.circadianAdvice.recommendedMaxStepsDay1.toLocaleString()} steps</span>
                           </div>
                         </div>
                       </div>
@@ -395,23 +395,27 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                                 )}
 
                                 {act.queueSlot === 'early_morning_low_crowd' && (
-                                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-md shrink-0">
-                                    🌅 {t('Low-Queue Slot')}
+                                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-md shrink-0 inline-flex items-center gap-1">
+                                    <Sunrise className="w-3 h-3 text-emerald-600 shrink-0 inline" />
+                                    <span>{t('Low-Queue Slot')}</span>
                                   </span>
                                 )}
                                 {act.queueSlot === 'midday_timed_indoor' && (
-                                  <span className="text-[10px] font-bold text-indigo-800 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded-md shrink-0">
-                                    🏛️ {t('Timed Indoor')}
+                                  <span className="text-[10px] font-bold text-indigo-800 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded-md shrink-0 inline-flex items-center gap-1">
+                                    <Building2 className="w-3 h-3 text-indigo-600 shrink-0 inline" />
+                                    <span>{t('Timed Indoor')}</span>
                                   </span>
                                 )}
                                 {act.queueSlot === 'evening_vibrant' && (
-                                  <span className="text-[10px] font-bold text-purple-800 bg-purple-50 border border-purple-200 px-1.5 py-0.2 rounded-md shrink-0">
-                                    🌃 {t('Nightlife Peak')}
+                                  <span className="text-[10px] font-bold text-purple-800 bg-purple-50 border border-purple-200 px-1.5 py-0.2 rounded-md shrink-0 inline-flex items-center gap-1">
+                                    <Moon className="w-3 h-3 text-purple-600 shrink-0 inline" />
+                                    <span>{t('Nightlife Peak')}</span>
                                   </span>
                                 )}
                                 {act.isIndoorSwapped && (
-                                  <span className="text-[10px] font-bold text-sky-800 bg-sky-100 border border-sky-300 px-1.5 py-0.2 rounded-md shrink-0">
-                                    🌧️ {t('Indoor Mirror')}
+                                  <span className="text-[10px] font-bold text-sky-800 bg-sky-100 border border-sky-300 px-1.5 py-0.2 rounded-md shrink-0 inline-flex items-center gap-1">
+                                    <CloudRain className="w-3 h-3 text-sky-600 shrink-0 inline" />
+                                    <span>{t('Indoor Mirror')}</span>
                                   </span>
                                 )}
                               </div>
@@ -534,8 +538,9 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                                   </div>
                                 )}
                                 {act.culturalTip.tippingRule === 'strictly_no_tipping' && (
-                                  <div className="flex items-center gap-1 text-emerald-700 font-bold">
-                                    <span>🚫 Strictly Zero Tipping: Omotenashi hospitality is included in full.</span>
+                                  <div className="flex items-center gap-1.5 text-emerald-700 font-semibold text-xs">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 inline" />
+                                    <span>{t('Strictly Zero Tipping: Omotenashi hospitality is included in full.')}</span>
                                   </div>
                                 )}
                               </div>

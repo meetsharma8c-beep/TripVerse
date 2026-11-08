@@ -1012,7 +1012,7 @@ export async function queryConcodeBrain(
 
     return {
       guild: 'system_architect',
-      guildIcon: '🏛️',
+      guildIcon: '',
       confidence: 0.99,
       response: `**Transit Delay Successfully Absorbed for Day 1 in ${dest}!**\n\n` +
         `CONCODE Brain's \`planner.py\` and \`repair.py\` cognitive engines have recalculated your Day 1 schedule:\n\n` +
@@ -1070,7 +1070,7 @@ export async function queryConcodeBrain(
 
     return {
       guild: 'system_architect',
-      guildIcon: '🏛️',
+      guildIcon: '',
       confidence: 0.99,
       response: `**ConCode Disruption Protocol Activated for ${cleanDest}!**\n\n` +
         `Per ConCode Reliability Section 19, when a cancellation or disruption occurs, we prioritize safety, location, and viable alternatives over assumptions:\n\n` +
@@ -1112,7 +1112,7 @@ export async function queryConcodeBrain(
 
     return {
       guild: 'webgl',
-      guildIcon: '✨',
+      guildIcon: '',
       confidence: 0.99,
       response: `**Interactive 3D WebGL Landmark Explorer & Virtual View for ${dest} (${landmark})**\n\n` +
         `TripVerse connects directly to Google Earth 3D and Street View 360° photogrammetry, plus live architectural records from Wikimedia:\n\n` +
@@ -1142,7 +1142,7 @@ export async function queryConcodeBrain(
     const dest = session.destination || currentDest || 'your destination';
     return {
       guild: 'security',
-      guildIcon: '🛡️',
+      guildIcon: '',
       confidence: 0.99,
       response: `**CONCODE Security Sentinel: Safety & Scam Radar for ${dest}**\n\n` +
         `CONCODE Brain's \`security\` guild tracks active tourist traps, neighborhood safety ratings, and verified hotlines:\n\n` +
@@ -1171,7 +1171,7 @@ export async function queryConcodeBrain(
     const dest = session.destination || currentDest || 'Manali';
     return {
       guild: 'research_scientist',
-      guildIcon: '🔬',
+      guildIcon: '',
       confidence: 0.99,
       response: `**Multi-Agent Swarm Consensus Activated for ${dest}!**\n\n` +
         `When planning group travel with conflicting interests (e.g. 1 Thrill-Seeker, 1 Foodie, 1 Relaxed Explorer), CONCODE Brain's \`swarm.py\` negotiates a balanced compromise:\n\n` +
@@ -1205,7 +1205,7 @@ export async function queryConcodeBrain(
 
     return {
       guild: 'conversational',
-      guildIcon: '🧠',
+      guildIcon: '',
       confidence: 0.99,
       response: `**CONCODE Brain Memory Ring Status (memory.py):**\n\n` +
         `Here are the persistent traveler traits currently stored in your active cognitive memory ring:\n\n` +

@@ -44,6 +44,7 @@ import {
   ShieldCheck,
   Calendar,
   Lock,
+  Info,
   LucideIcon
 } from 'lucide-react';
 import { TravelPreference, TravelerType, TransportMode, AccommodationType, FoodPreference, Priority, Coordinates } from '../../types/trip';
@@ -1087,7 +1088,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
               {/* Geographic Feasibility Notice Banner */}
               {transportFeasibility.transitNotice && (
                 <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-xs sm:text-sm flex items-start gap-2.5">
-                  <span className="text-base shrink-0 leading-none mt-0.5">ℹ️</span>
+                  <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold block text-amber-900">{t(transportFeasibility.transitNotice)}</span>
                     <span className="text-[11px] text-amber-700/90 mt-0.5 block">

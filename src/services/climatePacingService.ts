@@ -53,7 +53,7 @@ export function evaluateClimatePacing(
     return {
       protocol: 'extreme_heat',
       title: 'Extreme Heat Daytime Pacing Active',
-      badge: '☀️ Desert Summer Protocol',
+      badge: 'Desert Summer Protocol',
       advisoryNote: 'Temperatures frequently exceed 40°C midday. Outdoor activities shifted to early morning and post-sunset golden hours; midday dedicated to air-conditioned halls and shaded dining.',
       recommendedSlotShifts: {
         morningSightseeingTime: '7:30 AM', // Beat the heat
@@ -84,7 +84,7 @@ export function evaluateClimatePacing(
     return {
       protocol: 'alpine_winter',
       title: 'Alpine Winter Daylight Compression Active',
-      badge: '❄️ Sub-Zero Winter Protocol',
+      badge: 'Sub-Zero Winter Protocol',
       advisoryNote: 'Daylight is condensed to 4–7 hours with temperatures below freezing. Key outdoor sights scheduled between 10:30 AM and 3:00 PM; evenings centered around thermal springs, fireside dining, and night sky viewing.',
       recommendedSlotShifts: {
         morningSightseeingTime: '10:00 AM', // Wait for morning frost to thaw
@@ -106,7 +106,7 @@ export function evaluateClimatePacing(
     return {
       protocol: 'monsoon_rain',
       title: 'Monsoon Dynamic Weather Protocol Active',
-      badge: '🌧️ Monsoon Shield Protocol',
+      badge: 'Monsoon Shield Protocol',
       advisoryNote: 'High likelihood of heavy afternoon showers. Outdoor landscapes and viewpoints scheduled in fresh clear mornings; afternoons prepared with indoor cultural and covered market alternatives.',
       recommendedSlotShifts: {
         morningSightseeingTime: '8:30 AM',
@@ -123,7 +123,7 @@ export function evaluateClimatePacing(
   return {
     protocol: 'temperate_standard',
     title: 'Standard Optimal Pacing Active',
-    badge: '🌤️ Optimal Climate Conditions',
+    badge: 'Optimal Climate Conditions',
     advisoryNote: 'Favorable seasonal weather conditions throughout travel dates.',
     recommendedSlotShifts: {
       morningSightseeingTime: '9:30 AM',

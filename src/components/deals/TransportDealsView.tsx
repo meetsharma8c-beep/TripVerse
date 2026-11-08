@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bus, Car, ExternalLink, Plane, Train, Bike, QrCode, CloudSun, CheckCircle2, Circle, Download, ChevronRight, Ticket, Sparkles, Luggage } from 'lucide-react';
+import { Bus, Car, ExternalLink, Plane, Train, Bike, QrCode, CloudSun, CheckCircle2, Circle, Download, ChevronRight, Ticket, Sparkles, Luggage, Info } from 'lucide-react';
 import { Trip, TransportMode, PackingItem, WeatherForecast } from '../../types/trip';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
 import { fetchLiveDestinationWeather, getDestinationWeather } from '../../services/weatherService';
@@ -425,7 +425,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
 
         {feasibility.transitNotice && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-950 flex items-start gap-2.5">
-            <span className="text-base shrink-0 leading-none mt-0.5">ℹ️</span>
+            <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold block text-amber-900">{feasibility.transitNotice}</span>
               <span className="text-[11px] text-amber-700/90 mt-0.5 block">

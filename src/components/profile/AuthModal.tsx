@@ -945,8 +945,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               {/* Security info note */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-center text-[11px] text-slate-500">
-                🔒 Protected by Two-Factor Authentication (2FA) with 256-bit encryption.
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>{t('Protected by Two-Factor Authentication (2FA) with 256-bit encryption.')}</span>
               </div>
             </div>
           ) : (

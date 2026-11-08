@@ -349,7 +349,8 @@ export const DigitalPassport: React.FC = () => {
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span>🌍 {t('World Explorer')}</span>
+              <Globe className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{t('World Explorer')}</span>
             </button>
             <button
               type="button"
@@ -360,7 +361,8 @@ export const DigitalPassport: React.FC = () => {
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span>🇮🇳 {t('India Regional')}</span>
+              <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{t('India Regional')}</span>
             </button>
           </div>
 

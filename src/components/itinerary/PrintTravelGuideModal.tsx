@@ -21,7 +21,8 @@ import {
   ArrowRight,
   Globe,
   CreditCard,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 
 interface PrintTravelGuideModalProps {
@@ -274,8 +275,9 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
                       </div>
                     ))}
                     {trip.borderSecuritySentinel.transitVisaWarning?.appliesToSelfTransfer && (
-                      <div className="text-[10px] text-amber-800 font-semibold pt-0.5">
-                        ⚠️ {trip.borderSecuritySentinel.transitVisaWarning.warningText}
+                      <div className="text-[10px] text-amber-800 font-semibold pt-0.5 flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 inline" />
+                        <span>{trip.borderSecuritySentinel.transitVisaWarning.warningText}</span>
                       </div>
                     )}
                   </div>

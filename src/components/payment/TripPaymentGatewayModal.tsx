@@ -22,7 +22,8 @@ import {
   ExternalLink,
   ChevronRight,
   AlertCircle,
-  Globe
+  Globe,
+  Coins
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Trip, CurrencyCode } from '../../types/trip';
@@ -1160,7 +1161,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                     onClick={() => initiatePayment(`Apple Pay (${currency})`)}
                     className="w-full py-3.5 px-4 rounded-xl bg-black hover:bg-slate-900 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
                   >
-                    <span className="text-base font-serif font-black leading-none">Pay</span>
+                    <span className="text-sm font-semibold tracking-tight">Apple Pay</span>
                     <span>• Pay {formatCurrency(finalPayableINR, currency)}</span>
                   </button>
 
@@ -1318,8 +1319,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50/40 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm">
-                          🪙
+                        <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                          <Coins className="w-4 h-4 text-white" />
                         </div>
                         <div>
                           <span className="text-xs font-bold text-amber-950 block">TripVerse Travel Cash</span>

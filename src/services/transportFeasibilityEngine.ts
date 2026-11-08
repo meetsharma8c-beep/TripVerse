@@ -952,19 +952,19 @@ export function getFeasibleTransportModes(
   if (isInternational) {
     routeType = 'international_overseas';
     recommendedDefaultMode = 'flight';
-    transitNotice = `✈️ Overseas route: ${cleanOrigin} → ${cleanDest} requires international air travel. Road, rail, and bus travel are unavailable.`;
+    transitNotice = `Overseas route: ${cleanOrigin} → ${cleanDest} requires international air travel. Road, rail, and bus travel are unavailable.`;
   } else if (isIsland) {
     routeType = 'domestic_island';
     recommendedDefaultMode = 'flight';
-    transitNotice = `🏝️ Island destination: ${cleanDest} is separated by sea. Direct air travel is the only commercial passenger transit.`;
+    transitNotice = `Island destination: ${cleanDest} is separated by sea. Direct air travel is the only commercial passenger transit.`;
   } else if (isNoTrain) {
     routeType = 'domestic_mountain';
     recommendedDefaultMode = flightAvailable && distanceKm > 600 ? 'flight' : 'car';
-    transitNotice = `🏔️ Mountain destination: No direct railway reaches ${cleanDest}. Road transit (Car, Bike, Bus)${flightAvailable ? ' or regional flight' : ''} available.`;
+    transitNotice = `Mountain destination: No direct railway reaches ${cleanDest}. Road transit (Car, Bike, Bus)${flightAvailable ? ' or regional flight' : ''} available.`;
   } else if (isShortCommute) {
     routeType = 'short_commute';
     recommendedDefaultMode = trainAvailable ? 'train' : 'car';
-    transitNotice = `🛣️ Short corridor (~${distanceKm} km): Road and rail travel recommended; direct commercial flights are not operated.`;
+    transitNotice = `Short corridor (~${distanceKm} km): Road and rail travel recommended; direct commercial flights are not operated.`;
   } else {
     routeType = 'domestic_standard';
     recommendedDefaultMode = distanceKm > 800 ? 'flight' : distanceKm > 400 ? 'train' : 'car';
