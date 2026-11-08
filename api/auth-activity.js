@@ -234,10 +234,12 @@ export default async function handler(req, res) {
     const isTestEmail = 
       activityRecord.email?.startsWith('ci_') ||
       activityRecord.email?.startsWith('test_') ||
+      activityRecord.email?.startsWith('e2e_') ||
       activityRecord.email?.endsWith('@tripverse.app') ||
       activityRecord.email?.endsWith('@example.com') ||
       activityRecord.email?.endsWith('@test.com') ||
-      activityRecord.email?.endsWith('@invalid');
+      activityRecord.email?.endsWith('@invalid') ||
+      activityRecord.email?.endsWith('.test');
 
     const shouldDispatchEmail = process.env.ENABLE_AUTH_ACTIVITY_EMAILS === 'true' && !isTestEmail && Boolean(RESEND_API_KEY) && (Date.now() - lastAlertTime > 2 * 60 * 1000);
 

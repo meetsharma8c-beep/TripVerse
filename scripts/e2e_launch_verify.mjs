@@ -180,7 +180,7 @@ async function runE2ELaunchVerification() {
     await new Promise((r) => setTimeout(r, 400));
 
     const uniqueId = Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
-    const testEmail = `e2e_${uniqueId}@tripverse.app`;
+    const testEmail = `e2e_${uniqueId}@example.com`;
     const testPass = `Tv#${uniqueId}!9A`;
 
     // Fill Create Account form

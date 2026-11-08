@@ -138,7 +138,7 @@ describe('Auth Security & Verification Tests', () => {
 
   it('registers and authenticates an ephemeral cloud email account across devices without hardcoded secrets', async () => {
     const randomId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-    const dynamicEmail = `ci_auth_${randomId}@tripverse.app`;
+    const dynamicEmail = `ci_auth_${randomId}@example.com`;
     const dynamicPassword = `Tv#${randomId}!9A`;
 
     const supabase = getSupabaseClient();

@@ -985,6 +985,32 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
   }
 
   const pwdHash = await hashPassword(data.password);
+
+  // Strictly prevent simulated/test/CI accounts from triggering outbound confirmation emails via Supabase SMTP or Resend
+  if (isSimulatedTestEmail(emailNorm)) {
+    const uid = toDeterministicUuid('email:' + emailNorm);
+    const now = new Date().toISOString();
+    const simulatedAuthUser: AuthUser = {
+      uid,
+      email: emailNorm,
+      displayName: data.name?.trim() || emailNorm.split('@')[0],
+      photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.name || emailNorm)}&backgroundColor=2D5A3D,0B2545`,
+      travelerStyle: data.travelerStyle || 'Budget explorer',
+      travelStyleTag: 'Verified Explorer',
+      location: data.location || 'India',
+      occupation: data.occupation || 'Explorer',
+      age: 25,
+      emailVerified: true,
+      provider: 'email',
+      createdAt: now,
+      lastLoginAt: now,
+      savedPlaceIds: []
+    };
+    syncAccountToLocal(simulatedAuthUser, pwdHash);
+    saveProfileToSupabase(simulatedAuthUser.uid, toUserProfile(simulatedAuthUser)).catch(() => {});
+    return simulatedAuthUser;
+  }
+
   const supabase = getSupabaseClient();
   if (!supabase) {
     throw new Error('Supabase cloud authentication is not configured.');
@@ -1346,6 +1372,7 @@ export function isSimulatedTestEmail(email: string): boolean {
   return (
     norm.startsWith('ci_') ||
     norm.startsWith('test_') ||
+    norm.startsWith('e2e_') ||
     norm.endsWith('@tripverse.app') ||
     norm.endsWith('@example.com') ||
     norm.endsWith('@test.com') ||

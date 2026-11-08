@@ -264,10 +264,12 @@ function emailOtpDevPlugin(resendKey?: string): Plugin {
               const isSimulatedTestDomain = 
                 emailNorm.startsWith('ci_') ||
                 emailNorm.startsWith('test_') ||
+                emailNorm.startsWith('e2e_') ||
                 emailNorm.endsWith('@tripverse.app') ||
                 emailNorm.endsWith('@example.com') ||
                 emailNorm.endsWith('@test.com') ||
-                emailNorm.endsWith('@invalid');
+                emailNorm.endsWith('@invalid') ||
+                emailNorm.endsWith('.test');
 
               const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
               const expiresAt = Date.now() + 10 * 60 * 1000;

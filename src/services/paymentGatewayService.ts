@@ -374,7 +374,7 @@ TOTAL PAID      : ${formatCurrency(booking.amount, currency)}
 
 
 100% Refundable if canceled 24 hours prior to departure.
-TripVerse 24/7 Traveler Helpdesk: support@tripverse.app
+TripVerse 24/7 Traveler Helpdesk: support@trip-verse.com
 Thank you for exploring the world with TripVerse!
 ======================================================
 `;

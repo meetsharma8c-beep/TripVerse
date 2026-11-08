@@ -95,7 +95,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
   const handleVote = async (activityId: string, vote: 'up' | 'down') => {
     const userToUse: AuthUser = currentUser || {
       uid: 'guest-explorer',
-      email: 'explorer@tripverse.app',
+      email: 'explorer@example.com',
       displayName: 'You (Explorer)',
       photoURL: 'https://api.dicebear.com/7.x/initials/svg?seed=You',
       travelerStyle: 'Budget explorer',
@@ -128,7 +128,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
     setIsSubmittingSuggest(true);
     const userToUse: AuthUser = currentUser || {
       uid: 'guest-explorer',
-      email: 'explorer@tripverse.app',
+      email: 'explorer@example.com',
       displayName: 'You (Explorer)',
       photoURL: 'https://api.dicebear.com/7.x/initials/svg?seed=You',
       travelerStyle: 'Budget explorer',

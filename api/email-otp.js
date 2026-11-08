@@ -93,10 +93,14 @@ export default async function handler(req, res) {
 
     // Safely bypass outbound delivery for simulated test domains (prevents SMTP delivery failure bounces)
     const isSimulatedTestDomain = 
+      emailNorm.startsWith('ci_') ||
+      emailNorm.startsWith('test_') ||
+      emailNorm.startsWith('e2e_') ||
       emailNorm.endsWith('@tripverse.app') || 
       emailNorm.endsWith('@example.com') || 
       emailNorm.endsWith('@test.com') ||
-      emailNorm.endsWith('@invalid');
+      emailNorm.endsWith('@invalid') ||
+      emailNorm.endsWith('.test');
 
     if (isSimulatedTestDomain) {
       return res.status(200).json({
