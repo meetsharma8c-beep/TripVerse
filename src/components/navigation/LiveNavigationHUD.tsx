@@ -13,14 +13,15 @@ export const LiveNavigationHUD: React.FC<LiveNavigationHUDProps> = ({ trip, isOp
   const { t } = useLanguage();
   if (!isOpen) return null;
 
+  const rawOrigin = trip.origin || 'Current Location';
   const destination = trip.routeDetails?.destinationCoordinates
     ? `${trip.routeDetails.destinationCoordinates.lat},${trip.routeDetails.destinationCoordinates.lng}`
-    : trip.destination;
+    : (trip.destination || 'Destination');
   const origin = trip.routeDetails?.originCoordinates
     ? `${trip.routeDetails.originCoordinates.lat},${trip.routeDetails.originCoordinates.lng}`
-    : trip.origin.toLowerCase().startsWith('current location')
+    : rawOrigin.toLowerCase().startsWith('current location')
       ? undefined
-      : trip.origin;
+      : rawOrigin;
   const travelMode = trip.transportMode === 'bike' ? 'two-wheeler' : 'driving';
   const googleDirections = new URLSearchParams({
     api: '1',

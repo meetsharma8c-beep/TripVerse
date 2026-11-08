@@ -952,6 +952,11 @@ export async function sendPasswordResetCode(email: string): Promise<{ code: stri
     throw new Error('Please enter a valid email address.');
   }
 
+  // Safely bypass simulated or test domains to prevent SMTP delivery bounces
+  if (isSimulatedTestEmail(emailNorm)) {
+    return { code: 'test_bypassed', expiresAt: Date.now() + 15 * 60 * 1000 };
+  }
+
   const supabase = getSupabaseClient();
   if (!supabase) {
     throw new Error('Supabase authentication is not configured. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable genuine password resets.');

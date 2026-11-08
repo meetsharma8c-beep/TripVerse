@@ -136,7 +136,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [prevProfile, setPrevProfile] = useState(userProfile);
   if (userProfile !== prevProfile) {
     setPrevProfile(userProfile);
-    setFormData(userProfile);
+    if (!isEditing) {
+      setFormData(userProfile);
+    }
   }
 
   useEffect(() => {

@@ -192,6 +192,18 @@ export function deleteTrip(id: string, userId?: string | null): void {
   const uid = userId !== undefined ? userId : getCurrentUser()?.uid;
   const trips = loadTrips(uid).filter(t => t.id !== id);
   saveTrips(trips, uid);
+
+  // If the deleted trip was the active trip, reset active trip cleanly
+  const key = getUserStorageKey('tripverse_active_trip_id', uid);
+  const currentActiveId = getStorageItem(key, uid);
+  if (currentActiveId === id) {
+    const nextActiveId = trips[0]?.id || '';
+    safeStorageSet(key, nextActiveId, uid);
+    if (uid) {
+      saveUserActiveTripToSupabase(uid, nextActiveId).catch(() => {});
+    }
+  }
+
   if (uid) {
     deleteTripFromSupabase(uid, id).catch(() => {});
   }
@@ -199,19 +211,24 @@ export function deleteTrip(id: string, userId?: string | null): void {
 
 /**
  * Get active trip ID for the specified user account.
- * Returns empty string if no trip exists.
- */
-/**
- * Get active trip ID for the specified user account.
- * Returns empty string if no trip exists.
+ * Returns empty string if no trip exists, ensuring zombie IDs are sanitized.
  */
 export function getActiveTripId(userId?: string | null): string {
   const uid = userId !== undefined ? userId : getCurrentUser()?.uid;
   const key = getUserStorageKey('tripverse_active_trip_id', uid);
   const stored = getStorageItem(key, uid);
-  if (stored) return stored;
   const trips = loadTrips(uid);
-  return trips[0]?.id || '';
+
+  // Verify stored ID actually exists in the user's trips
+  if (stored && trips.some(t => t.id === stored)) {
+    return stored;
+  }
+
+  const fallbackId = trips[0]?.id || '';
+  if (stored !== fallbackId) {
+    safeStorageSet(key, fallbackId, uid);
+  }
+  return fallbackId;
 }
 
 /**

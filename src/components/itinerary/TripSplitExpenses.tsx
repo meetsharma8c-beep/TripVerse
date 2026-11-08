@@ -86,16 +86,22 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
   const [paidBy, setPaidBy] = useState(travelers[0]);
   const [splitAmong, setSplitAmong] = useState<string[]>(travelers);
 
+  // Synchronize group members and trip parameters when active trip or collaborators change
   useEffect(() => {
-    if (trip.collaboration?.collaborators && trip.collaboration.collaborators.length > 0) {
-      const names = trip.collaboration.collaborators.map(c => c.name);
-      setTravelers(names);
-      setSplitAmong(prev => {
-        const filtered = prev.filter(p => names.includes(p));
-        return filtered.length > 0 ? filtered : names;
-      });
-    }
-  }, [trip.collaboration]);
+    const members = (trip.collaboration?.collaborators && trip.collaboration.collaborators.length > 0)
+      ? trip.collaboration.collaborators.map(c => c.name)
+      : (trip.travelersCount <= 1 ? ['You'] : ['You', ...Array.from({ length: Math.max(1, trip.travelersCount - 1) }, (_, i) => `Traveler ${i + 2}`)]);
+    
+    setTravelers(members);
+    setPaidBy(prev => members.includes(prev) ? prev : (members[0] || 'You'));
+    setSplitAmong(prev => {
+      const filtered = prev.filter(p => members.includes(p));
+      return filtered.length > 0 ? filtered : members;
+    });
+
+    const calculatedDist = (trip.itinerary || []).reduce((acc, d) => acc + (d.activities || []).reduce((s, a) => s + (a.distanceKm || 0), 0), 0) * 2;
+    setTripDistanceKm(calculatedDist || 680);
+  }, [trip.id, trip.travelersCount, trip.collaboration, trip.itinerary]);
 
   // Fuel & Toll Calculator State
   const [vehicleType, setVehicleType] = useState<VehicleType>('petrol_hatchback');
@@ -153,7 +159,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
       id: `exp-${Date.now()}`,
       tripId: trip.id,
       title: title.trim(),
-      amount: Math.round(parsedAmount),
+      amount: Math.round(parsedAmount * 100) / 100,
       category,
       paidBy,
       splitAmong: splitAmong.length > 0 ? splitAmong : travelers,

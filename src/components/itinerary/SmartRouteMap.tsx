@@ -93,6 +93,51 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
         ? decodePolyline(trip.routeDetails.encodedPolyline)
         : [];
       if (realRoute.length < 2) {
+        // Fallback: Plot destination center, activity spots, and break stops cleanly
+        const fallbackPoints: L.LatLngTuple[] = [];
+
+        if (trip.destinationDetails?.coordinates) {
+          const lat = Number(trip.destinationDetails.coordinates.lat);
+          const lng = Number(trip.destinationDetails.coordinates.lng);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            const destPt: L.LatLngTuple = [lat, lng];
+            fallbackPoints.push(destPt);
+            L.circleMarker(destPt, { radius: 9, color: '#fff', weight: 3, fillColor: '#2D5A3D', fillOpacity: 1 })
+              .bindPopup(makePopup(trip.destination || 'Destination', 'Trip destination center'))
+              .addTo(layers);
+          }
+        }
+
+        (trip.itinerary || []).forEach(day => {
+          (day.activities || []).forEach(act => {
+            if (act.coordinates && Number.isFinite(act.coordinates.lat) && Number.isFinite(act.coordinates.lng)) {
+              const pt: L.LatLngTuple = [Number(act.coordinates.lat), Number(act.coordinates.lng)];
+              fallbackPoints.push(pt);
+              L.circleMarker(pt, { radius: 6, color: '#fff', weight: 2, fillColor: '#0284C7', fillOpacity: 1 })
+                .bindPopup(makePopup(act.title || 'Activity', `Day ${day.dayNumber} · ${act.time || ''}`))
+                .addTo(layers);
+            }
+          });
+        });
+
+        (trip.breakStops || []).forEach(stop => {
+          if (stop?.coordinates && Number.isFinite(stop.coordinates.lat) && Number.isFinite(stop.coordinates.lng)) {
+            const pt: L.LatLngTuple = [Number(stop.coordinates.lat), Number(stop.coordinates.lng)];
+            fallbackPoints.push(pt);
+            L.circleMarker(pt, { radius: 6, color: '#fff', weight: 2, fillColor: '#F59E0B', fillOpacity: 1 })
+              .bindPopup(makePopup(stop.name || 'Stop', 'Suggested break stop'))
+              .addTo(layers);
+          }
+        });
+
+        if (fallbackPoints.length > 0) {
+          map.invalidateSize();
+          const bounds = L.latLngBounds(fallbackPoints);
+          routeBoundsRef.current = bounds;
+          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+          return;
+        }
+
         routeBoundsRef.current = null;
         map.setView([20, 0], 2);
         return;

@@ -52,6 +52,10 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
     onTripUpdatedRef.current = onTripUpdated;
   });
 
+  useEffect(() => {
+    setSession(getOrInitializeCollaborationSession(trip, currentUser));
+  }, [trip.id, currentUser]);
+
   // Real-time synchronization subscription
   useEffect(() => {
     if (!isOpen) return;

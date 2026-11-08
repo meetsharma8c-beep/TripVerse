@@ -73,6 +73,10 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
   );
   const [isWireframe, setIsWireframe] = useState<boolean>(false);
   const [isAutoRotate, setIsAutoRotate] = useState<boolean>(true);
+  const isAutoRotateRef = useRef<boolean>(isAutoRotate);
+  useEffect(() => {
+    isAutoRotateRef.current = isAutoRotate;
+  }, [isAutoRotate]);
   const [webglSupported, setWebglSupported] = useState<boolean>(true);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -249,11 +253,26 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
     dom.addEventListener('touchmove', onPointerMove, { passive: true });
     window.addEventListener('touchend', onPointerUp);
 
+    // Responsive container resize observer
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0 && camera && renderer) {
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+          renderer.setSize(width, height);
+        }
+      }
+    });
+    if (mountRef.current) {
+      resizeObserver.observe(mountRef.current);
+    }
+
     // 6. Animation loop
     const animate = () => {
       animFrameIdRef.current = requestAnimationFrame(animate);
 
-      if (isAutoRotate && !isDragging && rootGroup) {
+      if (isAutoRotateRef.current && !isDragging && rootGroup) {
         rootGroup.rotation.y += 0.005;
       }
 
@@ -268,6 +287,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
     // 7. Cleanup
     return () => {
       if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
+      resizeObserver.disconnect();
       dom.removeEventListener('mousedown', onPointerDown);
       dom.removeEventListener('mousemove', onPointerMove);
       window.removeEventListener('mouseup', onPointerUp);
@@ -277,7 +297,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
       renderer.dispose();
       materials.forEach(m => m.dispose());
     };
-  }, [isOpen, viewMode, landmarkDetails, isAutoRotate]);
+  }, [isOpen, viewMode, landmarkDetails]);
 
   // Handle Time of Day lighting shifts
   useEffect(() => {
