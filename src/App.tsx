@@ -26,7 +26,7 @@ import {
 import { type PlannerInput } from './services/plannerEngine';
 import { generatePersonalizedTrip } from './services/aiTripPlanner';
 import { applyGeoapifyTravelData, fetchGeoapifyTravelData, getBreakStopSection } from './services/travelDataService';
-import { getStoredCurrency, setActiveCurrency, Currency } from './services/currencyService';
+import { getStoredCurrency, setActiveCurrency, Currency, syncLiveExchangeRates } from './services/currencyService';
 import { generateNotifications } from './services/notificationService';
 import { AIAppAction } from './services/aiAssistant';
 import { triggerHaptic } from './services/deviceService';
@@ -387,52 +387,137 @@ export function App() {
     return unsub;
   }, []);
 
+  // Helper to preload critical visual assets before revealing the UI
+  const preloadVisualAsset = (src: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined') return resolve(true);
+      const img = new Image();
+      img.src = src;
+      if (img.complete) {
+        resolve(true);
+      } else {
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+      }
+    });
+  };
+
   useEffect(() => {
     let isMounted = true;
 
     async function bootstrapApp() {
       try {
-        // Stage 1: Core local preferences and itinerary hydration
+        // Step 1: Storage & Initial Session Verification (25% progress)
+        if (!isMounted) return;
+        setInitStage({
+          progress: 25,
+          message: 'Verifying session & travel profile...'
+        });
+
+        const activeUser = getCurrentUser();
+        if (activeUser?.uid) {
+          const localUserTrips = loadTrips(activeUser.uid);
+          setTrips(localUserTrips);
+          const userActiveId = getActiveTripId(activeUser.uid);
+          setActiveTripIdState(userActiveId);
+          const userSaved = loadSavedItemIds(activeUser.uid);
+          setSavedItemIds(userSaved);
+        } else {
+          const guestProfile = loadUserProfile(null);
+          setUserProfile(guestProfile);
+          const guestTrips = loadTrips(null);
+          setTrips(guestTrips);
+        }
+
+        // Step 2: Live FX & Exchange Rates Synchronization (50% progress)
         if (!isMounted) return;
         setInitStage({
           progress: 50,
-          message: 'Loading itineraries & profile...'
+          message: 'Synchronizing real-time exchange rates...'
         });
 
-        // Small yield so browser processes layout
-        await new Promise((r) => setTimeout(r, 60));
+        // Genuine network FX fetch with 1.2s timeout ceiling so offline or slow connections never block launch
+        await Promise.race([
+          syncLiveExchangeRates(),
+          new Promise((r) => setTimeout(r, 1200))
+        ]).catch(() => {});
 
-        // Stage 2: Auth check & session sync
+        // Step 3: Auth & Cloud Data Sync (75% progress)
         if (!isMounted) return;
-        const user = getCurrentUser();
         setInitStage({
-          progress: 80,
-          message: user ? 'Syncing traveler passport...' : 'Connecting offline intelligence...'
+          progress: 75,
+          message: activeUser?.uid ? 'Syncing cloud itineraries...' : 'Connecting travel intelligence...'
         });
 
-        // Stage 3: Font & critical asset readiness (bounded to 150ms max so slow font CDN never delays app)
-        if (document.fonts && document.fonts.ready) {
-          await Promise.race([
-            document.fonts.ready.catch(() => {}),
-            new Promise((r) => setTimeout(r, 150))
-          ]);
+        if (activeUser?.uid) {
+          try {
+            const [cloudTrips, cloudProfile, cloudStates, cloudSavedItems] = await Promise.race([
+              Promise.all([
+                loadUserTripsFromSupabase(activeUser.uid).catch(() => null),
+                loadUserProfileFromSupabase(activeUser.uid).catch(() => null),
+                loadUserPassportFromSupabase(activeUser.uid).catch(() => null),
+                loadUserSavedItemsFromSupabase(activeUser.uid).catch(() => null)
+              ]),
+              new Promise<any[]>((r) => setTimeout(() => r([null, null, null, null]), 1500))
+            ]);
+
+            if (cloudTrips && cloudTrips.length > 0 && isMounted) {
+              setTrips(cloudTrips);
+              saveTrips(cloudTrips, activeUser.uid);
+            }
+            if (cloudProfile && isMounted) {
+              const merged = { ...toUserProfile(activeUser), ...cloudProfile };
+              setUserProfile(merged);
+              saveUserProfile(merged, activeUser.uid);
+            }
+            if (cloudSavedItems && cloudSavedItems.length > 0 && isMounted) {
+              setSavedItemIds(cloudSavedItems);
+              saveSavedItemIds(cloudSavedItems, activeUser.uid);
+            }
+            if (cloudStates && cloudStates.length > 0 && isMounted) {
+              saveUserVisitedStates(cloudStates, activeUser.uid);
+              window.dispatchEvent(new CustomEvent('tripverse_visited_states_change', { detail: cloudStates }));
+            }
+          } catch (e) {
+            console.warn('[Bootstrap] Cloud sync notice:', e);
+          }
         }
 
-        // Small pacing yield to ensure visual smoothness
-        await new Promise((r) => setTimeout(r, 80));
+        // Step 4: Font & Critical Visual Assets Preloading (95% progress)
+        if (!isMounted) return;
+        setInitStage({
+          progress: 95,
+          message: 'Preloading typography & visuals...'
+        });
 
+        const fontPromise = (typeof document !== 'undefined' && document.fonts && document.fonts.ready)
+          ? document.fonts.ready.catch(() => {})
+          : Promise.resolve();
+
+        const assetsPromise = Promise.all([
+          preloadVisualAsset('/tripverse-mark.png?v=10'),
+          preloadVisualAsset('/images/ai-robot-mascot.jpg')
+        ]);
+
+        await Promise.race([
+          Promise.all([fontPromise, assetsPromise]),
+          new Promise((r) => setTimeout(r, 1000))
+        ]).catch(() => {});
+
+        // Step 5: Ready Handover (100% progress)
         if (!isMounted) return;
         setInitStage({
           progress: 100,
           message: 'Welcome to TripVerse'
         });
 
-        // Ensure progress bar cleanly finishes 100%
-        await new Promise((r) => setTimeout(r, 120));
+        // Smooth transition pacing
+        await new Promise((r) => setTimeout(r, 150));
 
         if (!isMounted) return;
         setIsAppReady(true);
-      } catch {
+      } catch (err) {
+        console.warn('[Bootstrap] Error during bootstrap:', err);
         if (isMounted) {
           setIsAppReady(true);
         }
