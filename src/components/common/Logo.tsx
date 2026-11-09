@@ -28,8 +28,8 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   if (!imgFailed) {
     return (
       <img
-        src="/tripverse-mark.png?v=14"
-        srcSet="/tripverse-mark.png?v=14 1x, /tripverse-mark@2x.png?v=14 2x, /tripverse-mark@3x.png?v=14 3x"
+        src="/tripverse-mark.png?v=16"
+        srcSet="/tripverse-mark.png?v=16 1x, /tripverse-mark@2x.png?v=16 2x, /tripverse-mark@3x.png?v=16 3x"
         alt="TripVerse Logo"
         onError={() => setImgFailed(true)}
         style={{ imageRendering: '-webkit-optimize-contrast' }}
