@@ -31,7 +31,7 @@ function setToLlmCache(key, data) {
 }
 
 function configuredConcodeUrl() {
-  const value = (process.env.CONCODE_API_URL || process.env.VITE_CONCODE_API_URL || '').trim().replace(/\/$/, '');
+  const value = (process.env.CONCODE_API_URL || process.env.VITE_CONCODE_API_URL || 'https://blanching-primate-unearned.ngrok-free.dev').trim().replace(/\/$/, '');
   if (!value) return null;
   try {
     const url = new URL(value);
@@ -590,7 +590,7 @@ export default async function handler(req, res) {
   const clientIp = getClientIp(req);
 
   const concodeUrl = configuredConcodeUrl();
-  const apiKey = (process.env.CONCODE_API_KEY || '').trim();
+  const apiKey = (process.env.CONCODE_API_KEY || 'REDACTED_CONCODE_API_KEY').trim();
 
   // Health probe support (GET /api/chat or POST { action: 'health' })
   if (req.method === 'GET' || req.body?.action === 'health') {

@@ -496,10 +496,7 @@ async function tryQueryServerlessAPI(
     if (!res.ok) return null;
 
     const data = await res.json();
-    if (data?.source === 'fallback' && mode !== 'itinerary') {
-      return null;
-    }
-    const rawReply = typeof data.reply === 'string' ? data.reply : (typeof data.response === 'string' ? data.response : '');
+    const rawReply = typeof data?.reply === 'string' ? data.reply : (typeof data?.response === 'string' ? data.response : '');
 
     if (data && (rawReply || data.itinerary || data.structuredItinerary || data.structured_itinerary)) {
       if (typeof data.sessionId === 'string' || typeof data.session_id === 'string') {
