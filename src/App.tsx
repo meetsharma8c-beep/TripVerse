@@ -143,6 +143,7 @@ import {
 import confetti from 'canvas-confetti';
 
 import { resolveRouteFromBrowser } from './utils/routeResolver';
+import { POPULAR_DESTINATIONS } from './data/destinations';
 
 export function App() {
   const { language, t } = useLanguage();
@@ -639,36 +640,36 @@ export function App() {
   // URL Pathname, Dynamic Document Title & SEO Meta Sync for Browser, Crawler & History Navigation
   useEffect(() => {
     let targetPath = '/';
-    let targetTitle = 'TripVerse — Free AI Trip Planner, Smart Travel Itineraries & Road Trips';
-    let targetDesc = 'Plan your perfect trip in seconds with TripVerse — the premier AI Trip Planner. Generate personalized day-wise trip itineraries, road trip routes, highway stops, live weather, budget tracker, and hotels across 10,000+ destinations worldwide.';
+    let targetTitle = 'Trip — Free AI Trip Planner, Road Trip Routes & Travel Itineraries | TripVerse';
+    let targetDesc = 'Plan any trip in seconds with TripVerse — the #1 free AI Trip Planner. Build custom day-by-day trip itineraries, road trip routes, highway stops, hotel picks, live weather & group trip budgets across 10,000+ destinations worldwide.';
 
     if (selectedDestinationForDetails) {
       targetPath = `/destination/${selectedDestinationForDetails.id}`;
-      targetTitle = `${selectedDestinationForDetails.name} Travel Guide & AI Itinerary — TripVerse`;
-      targetDesc = selectedDestinationForDetails.description || `Plan a custom AI itinerary to ${selectedDestinationForDetails.name} (${selectedDestinationForDetails.state}) with smart road routes, best time to visit (${selectedDestinationForDetails.bestTime}), and curated local highlights on TripVerse.`;
+      targetTitle = `${selectedDestinationForDetails.name} Trip Itinerary & Travel Guide — TripVerse AI Trip Planner`;
+      targetDesc = selectedDestinationForDetails.description || `Plan a custom AI trip itinerary to ${selectedDestinationForDetails.name} (${selectedDestinationForDetails.state}) with smart road trip routes, best time to visit (${selectedDestinationForDetails.bestTime}), and curated local highlights on TripVerse.`;
     } else if (currentTab === 'trip-detail') {
       const active = trips.find(t => t.id === activeTripIdState) || trips[0];
       if (active) {
         targetPath = `/trip/${active.id}`;
-        targetTitle = `${active.name} (${active.durationDays} Days) — TripVerse Itinerary`;
-        targetDesc = `Explore this ${active.durationDays}-day ${active.destination} travel itinerary from ${active.origin} with day-wise stops, route map, and budget breakdown on TripVerse.`;
+        targetTitle = `${active.name} (${active.durationDays} Days) — Trip Itinerary | TripVerse`;
+        targetDesc = `Explore this ${active.durationDays}-day ${active.destination} trip itinerary from ${active.origin} with day-wise stops, route map, and budget breakdown on TripVerse.`;
       } else {
-        targetPath = '/mytrips';
-        targetTitle = 'My Trips & Itineraries — TripVerse';
+        targetPath = '/trips';
+        targetTitle = 'My Trips & Travel Itineraries — TripVerse AI Trip Planner';
       }
     } else if (currentTab === 'explore') {
       targetPath = '/explore';
-      targetTitle = 'Explore Destinations & Hidden Gems — TripVerse';
-      targetDesc = 'Browse curated destinations, scenic road trips, mountain getaways, heritage cities, and coastal escapes worldwide on TripVerse.';
+      targetTitle = 'Explore Trip Destinations, Road Trips & Travel Guides — TripVerse';
+      targetDesc = 'Browse curated trip destinations, scenic road trips, mountain getaways, heritage cities, and coastal escapes worldwide on TripVerse.';
     } else if (currentTab === 'trips') {
-      targetPath = '/mytrips';
-      targetTitle = 'My Trips & Itineraries — TripVerse';
+      targetPath = '/trips';
+      targetTitle = 'My Trips & Travel Itineraries — TripVerse AI Trip Planner';
     } else if (currentTab === 'saved') {
       targetPath = '/saved';
-      targetTitle = 'Saved Places & Pitstops — TripVerse';
+      targetTitle = 'Saved Trip Places & Pitstops — TripVerse';
     } else if (currentTab === 'profile') {
       targetPath = '/profile';
-      targetTitle = 'Traveler Profile & Passport — TripVerse';
+      targetTitle = 'Traveler Profile & Trip Passport — TripVerse';
     }
 
     document.title = targetTitle;
@@ -1929,6 +1930,75 @@ export function App() {
                 onToggleSaved={handleToggleSaved}
                 onViewAllExplore={() => setCurrentTab('explore')}
               />
+
+              {/* Semantic SEO Authority Hub: Trip Planning Guide, Popular Trip Routes & FAQ */}
+              <section
+                aria-labelledby="seo-trip-guide-heading"
+                className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4"
+              >
+                <div className="rounded-3xl bg-white/85 dark:bg-slate-900/75 border border-[#E2EBE1] dark:border-slate-800/80 p-6 sm:p-8 shadow-2xs">
+                  <div className="max-w-3xl">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#15803D] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-200/70 dark:border-emerald-800/40 mb-3">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      AI Trip Planner &amp; Global Travel Directory
+                    </span>
+                    <h2
+                      id="seo-trip-guide-heading"
+                      className="text-xl sm:text-2xl font-display font-extrabold text-[#152A1C] dark:text-white tracking-tight"
+                    >
+                      Plan Any Trip in Seconds — From Weekend Road Trips to Global Expeditions
+                    </h2>
+                    <p className="mt-2 text-xs sm:text-sm text-[#4A6352] dark:text-slate-300 leading-relaxed">
+                      Whether you are searching for a quick weekend <strong>trip</strong>, a scenic highway <strong>road trip</strong>, a family holiday itinerary, or an international backpacking adventure, <strong>TripVerse</strong> builds complete day-by-day travel schedules with verified attractions, highway pitstops, live weather, and multi-currency group expense splitting.
+                    </p>
+                  </div>
+
+                  {/* Quick Crawl & User Links for Top Global & Indian Trip Destinations */}
+                  <div className="mt-6 pt-5 border-t border-[#E8EFE7] dark:border-slate-800">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#2D5A3D] dark:text-emerald-400 mb-3">
+                      Popular Trip Itineraries &amp; Road Trip Guides
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {POPULAR_DESTINATIONS.slice(0, 20).map((dest) => (
+                        <a
+                          key={dest.id}
+                          href={`/destination/${dest.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setSelectedDestinationForDetails(dest);
+                          }}
+                          className="text-xs font-semibold text-[#152A1C] dark:text-slate-200 bg-[#F4F7F3] dark:bg-slate-800/80 hover:bg-[#EAF0E9] dark:hover:bg-emerald-950/60 hover:text-[#15803D] dark:hover:text-emerald-300 px-3 py-1.5 rounded-xl border border-[#DCE7DB] dark:border-slate-700/70 transition-colors"
+                        >
+                          {dest.name} Trip
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* FAQ Accordion for High-Intent "Trip" Search Queries */}
+                  <div className="mt-6 pt-5 border-t border-[#E8EFE7] dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <details className="group rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/50 border border-[#E2EBE1] dark:border-slate-800 px-4 py-3">
+                      <summary className="flex cursor-pointer list-none items-center justify-between text-xs sm:text-sm font-bold text-[#152A1C] dark:text-white [&::-webkit-details-marker]:hidden">
+                        <span>How do I plan a trip for free with TripVerse AI?</span>
+                        <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180 shrink-0 ml-2" />
+                      </summary>
+                      <p className="mt-2 text-xs text-[#4A6352] dark:text-slate-300 leading-relaxed">
+                        Enter your starting city, destination, trip duration, travel companions, and budget in the TripVerse AI Trip Planner. Within seconds, TripVerse generates a personalized day-by-day trip itinerary with verified sightseeing times, ticket costs, hotel areas, and route maps.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/50 border border-[#E2EBE1] dark:border-slate-800 px-4 py-3">
+                      <summary className="flex cursor-pointer list-none items-center justify-between text-xs sm:text-sm font-bold text-[#152A1C] dark:text-white [&::-webkit-details-marker]:hidden">
+                        <span>What makes TripVerse the best road trip planner?</span>
+                        <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180 shrink-0 ml-2" />
+                      </summary>
+                      <p className="mt-2 text-xs text-[#4A6352] dark:text-slate-300 leading-relaxed">
+                        Unlike generic travel blogs, TripVerse calculates real driving routes between your origin and destination, automatically discovering highway rest stops, scenic viewpoints, EV charging stations, fuel pumps, and family dining along the way.
+                      </p>
+                    </details>
+                  </div>
+                </div>
+              </section>
             </div>
           )}
 

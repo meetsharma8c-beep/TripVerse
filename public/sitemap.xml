@@ -3,40 +3,80 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://trip-verse.com/</loc>
-    <lastmod>2026-11-07</lastmod>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://trip-verse.com/og-banner.png</image:loc>
-      <image:title>TripVerse — Free AI Trip Planner and Road Trip Guide</image:title>
+      <image:title>Trip — Free AI Trip Planner, Road Trip Routes &amp; Travel Itineraries | TripVerse</image:title>
     </image:image>
     <image:image>
-      <image:loc>https://trip-verse.com/tripverse-mark@3x.png</image:loc>
-      <image:title>TripVerse Official Brand Mark</image:title>
+      <image:loc>https://trip-verse.com/favicon-512x512.png?v=12</image:loc>
+      <image:title>TripVerse Official Logo</image:title>
     </image:image>
   </url>
   <url>
-    <loc>https://trip-verse.com/?action=plan</loc>
-    <lastmod>2026-11-07</lastmod>
+    <loc>https://trip-verse.com/explore</loc>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://trip-verse.com/?tab=explore</loc>
-    <lastmod>2026-11-07</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://trip-verse.com/?tab=trips</loc>
-    <lastmod>2026-11-07</lastmod>
+    <loc>https://trip-verse.com/trips</loc>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://trip-verse.com/?tab=profile</loc>
-    <lastmod>2026-11-07</lastmod>
+    <loc>https://trip-verse.com/saved</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/profile</loc>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+  <url><loc>https://trip-verse.com/destination/paris</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/tokyo</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/rome</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/new-york</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/dubai</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/barcelona</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/santorini</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/sydney</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/bangkok</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/singapore</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/london</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/bali</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/kyoto</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/swiss-alps</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/udaipur</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/manali</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/goa</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/poicha</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/jaipur</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/kashmir</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/mumbai</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/rishikesh</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/meghalaya</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/kerala</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/ladakh</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://trip-verse.com/destination/varanasi</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/andaman</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/ooty</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/agra</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/darjeeling</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/hampi</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/jodhpur</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/pondicherry</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/coorg</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/spiti</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/shimla</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/sikkim</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/mount-abu</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/amritsar</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://trip-verse.com/destination/jaisalmer</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
 </urlset>
