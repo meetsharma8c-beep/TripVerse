@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { DayPlan, ItineraryActivity, TransportDeal, CurrencyCode, Coordinates } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
@@ -7,7 +7,7 @@ import { fetchOriginalPhoto, getInstantPhoto } from '../../services/originalPhot
 import { getDestinationHighlights, calculateTransitBetween, resolveLandmarkCoordinates } from '../../services/landmarkAtlasService';
 import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, Info, ShieldCheck, Zap, Activity, Building2, Moon, RotateCcw, CalendarPlus } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
-import { Landmark3DViewer } from '../common/Landmark3DViewer';
+const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
 import { toggleDayWeatherMode } from '../../services/smartTravelEngine';
 
 interface DayTimelineProps {
@@ -1074,12 +1074,16 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
       </div>
 
       {/* Interactive 3D WebGL Landmark Viewer */}
-      <Landmark3DViewer
-        landmarkName={selected3DLandmark || 'Heritage Landmark'}
-        destination={destination || 'Your Destination'}
-        isOpen={is3DOpen}
-        onClose={() => setIs3DOpen(false)}
-      />
+      {is3DOpen && (
+        <Suspense fallback={null}>
+          <Landmark3DViewer
+            landmarkName={selected3DLandmark || 'Heritage Landmark'}
+            destination={destination || 'Your Destination'}
+            isOpen={is3DOpen}
+            onClose={() => setIs3DOpen(false)}
+          />
+        </Suspense>
+      )}
 
     </div>
   );

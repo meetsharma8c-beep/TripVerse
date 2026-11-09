@@ -67,12 +67,12 @@ import { ActivityModal } from './components/itinerary/ActivityModal';
 // Transport Deals & Views
 const TransportDealsView = lazy(() => import('./components/deals/TransportDealsView').then(m => ({ default: m.TransportDealsView })));
 
-// Trips & Explore Views
-import { MyTripsView } from './components/trips/MyTripsView';
-import { ExploreView } from './components/explore/ExploreView';
+// Trips & Explore Views (Lazy-loaded for faster initial paint)
+const MyTripsView = lazy(() => import('./components/trips/MyTripsView').then(m => ({ default: m.MyTripsView })));
+const ExploreView = lazy(() => import('./components/explore/ExploreView').then(m => ({ default: m.ExploreView })));
 import { DestinationDetailModal } from './components/explore/DestinationDetailModal';
-import { SavedItemsView } from './components/saved/SavedItemsView';
-import { ProfileView } from './components/profile/ProfileView';
+const SavedItemsView = lazy(() => import('./components/saved/SavedItemsView').then(m => ({ default: m.SavedItemsView })));
+const ProfileView = lazy(() => import('./components/profile/ProfileView').then(m => ({ default: m.ProfileView })));
 import { AuthModal } from './components/profile/AuthModal';
 import { GuestPlannerRestrictedModal } from './components/planner/GuestPlannerRestrictedModal';
 import { 

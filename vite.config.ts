@@ -467,6 +467,9 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
               return 'vendor-react';
             }
+            if (id.includes('node_modules/three/')) {
+              return 'vendor-three';
+            }
             if (id.includes('node_modules/@supabase/')) {
               return 'vendor-supabase';
             }
@@ -484,6 +487,9 @@ export default defineConfig(({ mode }) => {
             }
             if (id.includes('node_modules/canvas-confetti/')) {
               return 'vendor-confetti';
+            }
+            if (id.includes('/src/services/languageService')) {
+              return 'service-i18n';
             }
           },
         }

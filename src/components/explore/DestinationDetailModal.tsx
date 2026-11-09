@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { Destination, CurrencyCode } from '../../types/trip';
 import { X, Sparkles, MapPin, Wallet, Star, Bookmark, Check, Car, Utensils, Share2, ShieldCheck, Compass } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 import { triggerHaptic } from '../../services/deviceService';
-import { Landmark3DViewer } from '../common/Landmark3DViewer';
+const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
 
 interface DestinationDetailModalProps {
   destination: Destination | null;
@@ -393,12 +393,14 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
 
       {/* Interactive 3D WebGL Landmark Viewport */}
       {is3DViewerOpen && (
-        <Landmark3DViewer
-          landmarkName={destination.popularActivities?.[0] || destination.name}
-          destination={destination.name}
-          isOpen={is3DViewerOpen}
-          onClose={() => setIs3DViewerOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <Landmark3DViewer
+            landmarkName={destination.popularActivities?.[0] || destination.name}
+            destination={destination.name}
+            isOpen={is3DViewerOpen}
+            onClose={() => setIs3DViewerOpen(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

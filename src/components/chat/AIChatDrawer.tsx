@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, Suspense, lazy } from 'react';
 import { Trip, ChatMessage } from '../../types/trip';
 import { processTravelCoPilotQuery, AIAppAction } from '../../services/aiAssistant';
 import { 
@@ -8,7 +8,7 @@ import {
   resetBrainSession 
 } from '../../services/concodeBrainService';
 import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/concodeSession';
-import { Landmark3DViewer } from '../common/Landmark3DViewer';
+const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
 import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Settings, Crown, Shield, Users, Compass } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { ConcodeBrainConfigModal } from './ConcodeBrainConfigModal';
@@ -1022,12 +1022,16 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         />
 
         {/* Interactive 3D WebGL Landmark Viewer */}
-        <Landmark3DViewer
-          landmarkName={viewer3DLandmark}
-          destination={cleanTripDest}
-          isOpen={is3DViewerOpen}
-          onClose={() => setIs3DViewerOpen(false)}
-        />
+        {is3DViewerOpen && (
+          <Suspense fallback={null}>
+            <Landmark3DViewer
+              landmarkName={viewer3DLandmark}
+              destination={cleanTripDest}
+              isOpen={is3DViewerOpen}
+              onClose={() => setIs3DViewerOpen(false)}
+            />
+          </Suspense>
+        )}
 
       </div>
     </div>
