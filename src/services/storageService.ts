@@ -139,12 +139,12 @@ export function loadTrips(userId?: string | null): Trip[] {
 /**
  * Save all trips for the specified user account (sessionStorage for guest, localStorage + Supabase for user)
  */
-export function saveTrips(trips: Trip[], userId?: string | null): void {
+export function saveTrips(trips: Trip[], userId?: string | null, options?: { skipCloudSync?: boolean }): void {
   try {
     const uid = userId !== undefined ? userId : getCurrentUser()?.uid;
     const key = getUserStorageKey('tripverse_trips', uid);
     safeStorageSet(key, JSON.stringify(trips), uid);
-    if (uid) {
+    if (uid && !options?.skipCloudSync) {
       // Sync to Supabase PostgreSQL cloud database
       saveAllUserTripsToSupabase(uid, trips).catch(() => {});
     }

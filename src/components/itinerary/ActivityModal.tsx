@@ -4,7 +4,8 @@ import { ItineraryActivity } from '../../types/trip';
 import { triggerHaptic } from '../../services/deviceService';
 import { getStoredCurrency, Currency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
-import { getDestinationHighlights } from '../../services/landmarkAtlasService';
+import { getDestinationHighlights, resolveLandmarkCoordinates } from '../../services/landmarkAtlasService';
+import { resolvePreciseLocationSync } from '../../services/locationService';
 import { Clock, MapPin, Check, Coins, X, Sparkles } from 'lucide-react';
 
 interface ActivityModalProps {
@@ -88,6 +89,12 @@ export function ActivityModal({
     e.preventDefault();
     if (!title.trim() || !location.trim()) return;
 
+    const baseCoords = existingActivity?.coordinates
+      || (destination ? resolvePreciseLocationSync(destination).coordinates : { lat: 28.6139, lng: 77.2090 });
+    const resolvedCoords = existingActivity && existingActivity.title === title.trim() && existingActivity.coordinates
+      ? existingActivity.coordinates
+      : resolveLandmarkCoordinates(title.trim(), baseCoords);
+
     triggerHaptic('success');
     onSave(dayNumber, {
       id: existingActivity ? existingActivity.id : `act-custom-${Date.now()}`,
@@ -99,6 +106,7 @@ export function ActivityModal({
       estimatedCost: parseFloat(cost) || 0,
       description: description.trim() || 'Custom planned waypoint added by traveler.',
       tag,
+      coordinates: resolvedCoords,
       isCustom: true
     });
     onClose();

@@ -65,7 +65,10 @@ export async function saveTripToSupabase(userId: string, trip: Trip): Promise<bo
       return false;
     }
 
-    // Save Itinerary Days & Items if present
+    // Save Itinerary Days & Items if present, cleaning up removed days/items first
+    await supabase.from('itinerary_items').delete().eq('trip_id', trip.id);
+    await supabase.from('itinerary_days').delete().eq('trip_id', trip.id);
+
     if (trip.itinerary && trip.itinerary.length > 0) {
       const daysPayload = trip.itinerary.map(d => ({
         id: `day-${trip.id}-${d.dayNumber}`,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
-import { Trip, Destination, BreakStop, BudgetBreakdown, UserProfile, ItineraryActivity, Coordinates, DayPlan } from './types/trip';
+import { Trip, Destination, BreakStop, BudgetBreakdown, UserProfile, ItineraryActivity, DayPlan } from './types/trip';
 import {
   loadTrips,
   saveTrips,
@@ -23,8 +23,10 @@ import {
   saveTripPacking,
   resetGuestStorage
 } from './services/storageService';
-import { type PlannerInput } from './services/plannerEngine';
+import { generateAITrip, type PlannerInput } from './services/plannerEngine';
 import { generatePersonalizedTrip } from './services/aiTripPlanner';
+import { resolveLandmarkCoordinates } from './services/landmarkAtlasService';
+import { resolvePreciseLocationSync } from './services/locationService';
 import { applyGeoapifyTravelData, fetchGeoapifyTravelData, getBreakStopSection } from './services/travelDataService';
 import { getStoredCurrency, setActiveCurrency, Currency, syncLiveExchangeRates } from './services/currencyService';
 import { generateNotifications } from './services/notificationService';
@@ -51,7 +53,6 @@ import { FeaturePillars } from './components/home/FeaturePillars';
 import { PopularDestinations } from './components/home/PopularDestinations';
 import { PublicLaunchSpotlight } from './components/home/PublicLaunchSpotlight';
 import { AIGenerationSkeleton } from './components/common/AIGenerationSkeleton';
-import { POPULAR_DESTINATIONS, parseDurationDays } from './data/destinations';
 
 // Itinerary Components
 import { TripHeader } from './components/itinerary/TripHeader';
@@ -266,6 +267,60 @@ export function App() {
     setShowSplash(false);
   }, []);
 
+  // Merge cloud trips with local rich metadata (coordinates, completion state, routeDetails) so cloud sync never strips local precision
+  const mergeCloudTripsWithLocal = (cloudList: Trip[], localList: Trip[]): Trip[] => {
+    const localMap = new Map(localList.map(t => [t.id, t]));
+    return cloudList.map(cloudTrip => {
+      const localTrip = localMap.get(cloudTrip.id);
+      if (!localTrip) {
+        return {
+          ...cloudTrip,
+          bestTransportDeal: undefined,
+          transportDeals: []
+        };
+      }
+      const localActsById = new Map<string, ItineraryActivity>();
+      for (const d of localTrip.itinerary || []) {
+        for (const a of d.activities || []) {
+          if (a.id) localActsById.set(a.id, a);
+        }
+      }
+      const mergedItinerary = (cloudTrip.itinerary || []).map(day => ({
+        ...day,
+        activities: (day.activities || []).map(act => {
+          const localAct = act.id ? localActsById.get(act.id) : undefined;
+          return localAct
+            ? {
+                ...act,
+                coordinates: localAct.coordinates || act.coordinates,
+                completed: localAct.completed ?? act.completed,
+                tag: localAct.tag || act.tag,
+                isCustom: localAct.isCustom ?? act.isCustom
+              }
+            : act;
+        })
+      }));
+      const mergedDestDetails = cloudTrip.destinationDetails || localTrip.destinationDetails;
+      return {
+        ...localTrip,
+        ...cloudTrip,
+        originCoordinates: cloudTrip.originCoordinates || localTrip.originCoordinates,
+        destinationDetails: mergedDestDetails
+          ? {
+              ...mergedDestDetails,
+              coordinates: cloudTrip.destinationDetails?.coordinates || localTrip.destinationDetails?.coordinates || mergedDestDetails.coordinates
+            }
+          : undefined,
+        routeDetails: cloudTrip.routeDetails || localTrip.routeDetails,
+        travelDataStatus: localTrip.travelDataStatus || cloudTrip.travelDataStatus,
+        currency: cloudTrip.currency || localTrip.currency,
+        itinerary: mergedItinerary,
+        bestTransportDeal: undefined,
+        transportDeals: []
+      };
+    });
+  };
+
   useEffect(() => {
     // Process pending redirect authentication (e.g. returning from Google Sign-In redirect on mobile/Safari)
     checkAndProcessFirebaseRedirectResult()
@@ -311,17 +366,13 @@ export function App() {
           ]);
 
           if (cloudTrips && cloudTrips.length > 0) {
-            // User has cloud trips for their account: display and cache locally
-            const tripsWithoutUnverifiedDeals = cloudTrips.map(trip => ({
-              ...trip,
-              bestTransportDeal: undefined,
-              transportDeals: []
-            }));
-            setTrips(tripsWithoutUnverifiedDeals);
-            saveTrips(tripsWithoutUnverifiedDeals, user.uid);
-            if (!tripsWithoutUnverifiedDeals.some(t => t.id === userActiveId)) {
-              setActiveTripIdState(tripsWithoutUnverifiedDeals[0].id);
-              setActiveTripId(tripsWithoutUnverifiedDeals[0].id, user.uid);
+            // User has cloud trips for their account: merge with local metadata and cache locally without re-uploading
+            const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips, localUserTrips);
+            setTrips(mergedCloudTrips);
+            saveTrips(mergedCloudTrips, user.uid, { skipCloudSync: true });
+            if (!mergedCloudTrips.some(t => t.id === userActiveId)) {
+              setActiveTripIdState(mergedCloudTrips[0].id);
+              setActiveTripId(mergedCloudTrips[0].id, user.uid);
             }
           } else {
             // User has no cloud trips yet.
@@ -477,8 +528,10 @@ export function App() {
             ]);
 
             if (cloudTrips && cloudTrips.length > 0 && isMounted) {
-              setTrips(cloudTrips);
-              saveTrips(cloudTrips, activeUser.uid);
+              const localCurrent = loadTrips(activeUser.uid);
+              const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips, localCurrent);
+              setTrips(mergedCloudTrips);
+              saveTrips(mergedCloudTrips, activeUser.uid, { skipCloudSync: true });
             }
             if (cloudProfile && isMounted) {
               const merged = { ...toUserProfile(activeUser), ...cloudProfile };
@@ -651,6 +704,7 @@ export function App() {
     isGuestPlannerRestrictedOpen ||
     isAIChatOpen ||
     isLiveNavOpen ||
+    selectedDestinationForDetails !== null ||
     isShareModalOpen ||
     isNotificationCenterOpen ||
     isPhotoJournalOpen ||
@@ -659,6 +713,7 @@ export function App() {
     isProModalOpen ||
     isOnboardingOpen ||
     activityModalState.isOpen ||
+    isReplanningOpen ||
     legalModalState.isOpen ||
     isBestDealModalOpen ||
     isPrintModalOpen ||
@@ -696,7 +751,7 @@ export function App() {
         setIsGlobalSearchOpen(false);
         return;
       }
-      if (isPlannerOpen) {
+      if (isPlannerOpen || isGuestPlannerRestrictedOpen) {
         setIsPlannerOpen(false);
         setIsGuestPlannerRestrictedOpen(false);
         return;
@@ -745,6 +800,10 @@ export function App() {
         setActivityModalState(prev => ({ ...prev, isOpen: false }));
         return;
       }
+      if (isReplanningOpen) {
+        setIsReplanningOpen(false);
+        return;
+      }
       if (legalModalState.isOpen) {
         setLegalModalState(prev => ({ ...prev, isOpen: false }));
         return;
@@ -755,6 +814,10 @@ export function App() {
       }
       if (isPrintModalOpen) {
         setIsPrintModalOpen(false);
+        return;
+      }
+      if (isCollabModalOpen) {
+        setIsCollabModalOpen(false);
         return;
       }
 
@@ -806,6 +869,7 @@ export function App() {
         isProModalOpen ||
         isOnboardingOpen ||
         activityModalState.isOpen ||
+        isReplanningOpen ||
         legalModalState.isOpen ||
         isBestDealModalOpen ||
         isPrintModalOpen ||
@@ -827,6 +891,7 @@ export function App() {
         setIsProModalOpen(false);
         setIsOnboardingOpen(false);
         setActivityModalState(prev => ({ ...prev, isOpen: false }));
+        setIsReplanningOpen(false);
         setLegalModalState(prev => ({ ...prev, isOpen: false }));
         setIsBestDealModalOpen(false);
         setIsPrintModalOpen(false);
@@ -864,6 +929,7 @@ export function App() {
     isGuestPlannerRestrictedOpen,
     isOnboardingOpen,
     activityModalState.isOpen,
+    isReplanningOpen,
     legalModalState.isOpen,
     isBestDealModalOpen,
     isPrintModalOpen,
@@ -1163,17 +1229,6 @@ export function App() {
     setIsPlannerOpen(true);
   };
 
-  // Guide the user directly into the authentic step-by-step Trip Planner flow prefilled with their searched destination
-  const handleQuickPlanDirect = (params: {
-    destination?: string;
-    duration?: number;
-    travelers?: number;
-    budget?: number;
-    budgetMode?: 'per_person' | 'total';
-  }) => {
-    handleOpenPlannerWithPrefill(params);
-  };
-
   const handleTripGenerated = async (input: PlannerInput) => {
     const activeUser = currentUser ?? getCurrentUser();
     const quota = getUserSubscriptionQuota(activeUser);
@@ -1198,7 +1253,13 @@ export function App() {
     triggerHaptic('success');
     setIsGeneratingTrip(true);
     try {
-      const newTrip = await generatePersonalizedTrip(input);
+      let newTrip: Trip;
+      try {
+        newTrip = await generatePersonalizedTrip(input);
+      } catch (err) {
+        console.warn('[TripGeneration] Cloud AI generation fallback triggered:', err);
+        newTrip = generateAITrip(input);
+      }
       if (currentUser?.uid) {
         newTrip.userId = currentUser.uid;
         newTrip.isUserCreated = true;
@@ -1247,16 +1308,21 @@ export function App() {
     }
     saveOrUpdateTrip(updated, currentUser?.uid);
     setTrips(prev => prev.map(t => t.id === updated.id ? updated : t));
+    setPhotoJournalTrip(prev => (prev && prev.id === updated.id ? updated : prev));
+    setReviewTrip(prev => (prev && prev.id === updated.id ? updated : prev));
   };
 
   const handleAIAppAction = (action: AIAppAction) => {
     switch (action.type) {
       case 'SWITCH_TAB':
-        if (action.payload?.tab && ['home', 'trips', 'explore', 'profile'].includes(action.payload.tab)) {
-          setCurrentTab(action.payload.tab);
+        if (action.payload?.tab && ['home', 'trips', 'explore', 'saved', 'profile', 'trip-detail'].includes(action.payload.tab)) {
+          setCurrentTab(action.payload.tab as any);
         }
         if (action.payload?.subTab) {
           setTripSubTab(action.payload.subTab);
+          if (!action.payload?.tab) {
+            setCurrentTab('trip-detail');
+          }
         }
         setIsAIChatOpen(false);
         break;
@@ -1330,8 +1396,16 @@ export function App() {
         }
         if (action.payload?.trip) {
           const tripCandidate = action.payload.trip;
-          if (tripCandidate.id && Array.isArray(tripCandidate.days)) {
-            const trip = { ...tripCandidate };
+          const candidateDays = Array.isArray(tripCandidate.itinerary)
+            ? tripCandidate.itinerary
+            : Array.isArray(tripCandidate.days)
+              ? tripCandidate.days
+              : null;
+          if (tripCandidate.id && candidateDays) {
+            const trip: Trip = {
+              ...tripCandidate,
+              itinerary: candidateDays
+            };
             if (currentUser?.uid) {
               trip.userId = currentUser.uid;
               trip.isUserCreated = true;
@@ -1357,9 +1431,9 @@ export function App() {
         if (action.payload?.tripId) {
           const found = trips.find(t => t.id === action.payload.tripId);
           if (found) {
-            setActiveTripId(found.id);
+            setActiveTripId(found.id, currentUser?.uid);
             setActiveTripIdState(found.id);
-            setCurrentTab('trips');
+            setCurrentTab('trip-detail');
           }
         }
         break;
@@ -1371,14 +1445,16 @@ export function App() {
         break;
       case 'ADD_EXPENSE':
         if (action.payload?.expense && activeTrip) {
-          const currentExp = loadTripExpenses(activeTrip.id);
-          saveTripExpenses(activeTrip.id, [action.payload.expense, ...currentExp]);
+          const currentExp = loadTripExpenses(activeTrip.id, currentUser?.uid);
+          saveTripExpenses(activeTrip.id, [action.payload.expense, ...currentExp], currentUser?.uid);
+          window.dispatchEvent(new CustomEvent('tripverse_expenses_updated'));
         }
         break;
       case 'ADD_PACKING_ITEM':
         if (action.payload?.items && activeTrip) {
-          const currentPack = loadTripPacking(activeTrip.id) || [];
-          saveTripPacking(activeTrip.id, [...currentPack, ...action.payload.items]);
+          const currentPack = loadTripPacking(activeTrip.id, currentUser?.uid) || [];
+          saveTripPacking(activeTrip.id, [...currentPack, ...action.payload.items], currentUser?.uid);
+          window.dispatchEvent(new CustomEvent('tripverse_packing_updated'));
         }
         break;
     }
@@ -1448,8 +1524,22 @@ export function App() {
     downloadAnchor.remove();
   };
 
+  const computeUpdatedEstimatedTotal = (trip: Trip, newActivitiesTotal: number) => {
+    const bd = trip.budgetBreakdown;
+    const nonActivityTotal =
+      (bd?.transportation || 0) +
+      (bd?.accommodation || 0) +
+      (bd?.food || 0) +
+      (bd?.miscellaneous || 0);
+    return Math.max(500, newActivitiesTotal + nonActivityTotal);
+  };
+
   const handleAddOrUpdateActivity = (dayNumber: number, activityData: Partial<ItineraryActivity>) => {
     if (!activeTrip) return;
+    const baseDestCoords =
+      activeTrip.destinationDetails?.coordinates ||
+      activeTrip.routeDetails?.destinationCoordinates ||
+      resolvePreciseLocationSync(activeTrip.destination).coordinates;
     const updatedDays = activeTrip.itinerary.map(day => {
       if (day.dayNumber === dayNumber) {
         const existingIndex = day.activities.findIndex(a => a.id === activityData.id);
@@ -1458,18 +1548,19 @@ export function App() {
           updatedActivities = [...day.activities];
           updatedActivities[existingIndex] = { ...updatedActivities[existingIndex], ...activityData } as ItineraryActivity;
         } else {
+          const actTitle = activityData.title || 'Custom Activity';
           const newAct: ItineraryActivity = {
             id: activityData.id || `act-custom-${Date.now()}`,
             dayNumber,
             time: activityData.time || '11:00 AM',
-            title: activityData.title || 'Custom Activity',
+            title: actTitle,
             type: activityData.type || 'attraction',
             location: activityData.location || activeTrip.destination,
             estimatedCost: activityData.estimatedCost || 0,
             travelTimeMin: activityData.travelTimeMin || 15,
             distanceKm: activityData.distanceKm || 2,
             description: activityData.description || '',
-            coordinates: activityData.coordinates || { lat: 24.5854, lng: 73.7125 },
+            coordinates: activityData.coordinates || resolveLandmarkCoordinates(actTitle, baseDestCoords),
             tag: activityData.tag || 'Custom',
             completed: false,
             isCustom: true
@@ -1490,7 +1581,7 @@ export function App() {
     const updatedTrip: Trip = {
       ...activeTrip,
       itinerary: updatedDays,
-      estimatedTotal: Math.max(1500, newActivitiesTotal + activeTrip.budgetBreakdown.transportation + activeTrip.budgetBreakdown.accommodation),
+      estimatedTotal: computeUpdatedEstimatedTotal(activeTrip, newActivitiesTotal),
       budgetBreakdown: {
         ...activeTrip.budgetBreakdown,
         activities: newActivitiesTotal
@@ -1514,7 +1605,7 @@ export function App() {
     handleUpdateTrip({
       ...activeTrip,
       itinerary: updatedDays,
-      estimatedTotal: Math.max(1500, newActivitiesTotal + activeTrip.budgetBreakdown.transportation + activeTrip.budgetBreakdown.accommodation),
+      estimatedTotal: computeUpdatedEstimatedTotal(activeTrip, newActivitiesTotal),
       budgetBreakdown: {
         ...activeTrip.budgetBreakdown,
         activities: newActivitiesTotal
@@ -1568,7 +1659,7 @@ export function App() {
     handleUpdateTrip({
       ...activeTrip,
       itinerary: updatedDays,
-      estimatedTotal: Math.max(500, newActivitiesTotal + (activeTrip.budgetBreakdown?.transportation || 0) + (activeTrip.budgetBreakdown?.accommodation || 0)),
+      estimatedTotal: computeUpdatedEstimatedTotal(activeTrip, newActivitiesTotal),
       budgetBreakdown: {
         ...activeTrip.budgetBreakdown,
         activities: newActivitiesTotal
@@ -1611,7 +1702,7 @@ export function App() {
       ...activeTrip,
       durationDays: remaining.length,
       itinerary: remaining,
-      estimatedTotal: Math.max(500, newActivitiesTotal + (activeTrip.budgetBreakdown?.transportation || 0) + (activeTrip.budgetBreakdown?.accommodation || 0)),
+      estimatedTotal: computeUpdatedEstimatedTotal(activeTrip, newActivitiesTotal),
       budgetBreakdown: {
         ...activeTrip.budgetBreakdown,
         activities: newActivitiesTotal
@@ -1635,6 +1726,7 @@ export function App() {
     isBookingModalOpen ||
     isGeneratingTrip ||
     isPlannerOpen ||
+    isGuestPlannerRestrictedOpen ||
     isGlobalSearchOpen ||
     isAIChatOpen ||
     isShareModalOpen ||
@@ -1642,6 +1734,7 @@ export function App() {
     isLiveNavOpen ||
     isBestDealModalOpen ||
     isPrintModalOpen ||
+    isCollabModalOpen ||
     selectedDestinationForDetails !== null ||
     activityModalState.isOpen ||
     isReplanningOpen ||
@@ -1667,8 +1760,10 @@ export function App() {
         ]);
 
         if (cloudTrips && cloudTrips.length > 0) {
-          setTrips(cloudTrips);
-          saveTrips(cloudTrips, activeUser.uid);
+          const localCurrent = loadTrips(activeUser.uid);
+          const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips, localCurrent);
+          setTrips(mergedCloudTrips);
+          saveTrips(mergedCloudTrips, activeUser.uid, { skipCloudSync: true });
         } else {
           setTrips(loadTrips(activeUser.uid));
         }

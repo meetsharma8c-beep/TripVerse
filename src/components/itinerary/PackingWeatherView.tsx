@@ -21,6 +21,10 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
 
   useEffect(() => {
+    setSelectedDayIndex(0);
+  }, [trip.id, trip.durationDays]);
+
+  useEffect(() => {
     let isMounted = true;
     fetchLiveDestinationWeather(
       trip.destination,
@@ -46,14 +50,19 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
   const [copiedShare, setCopiedShare] = useState(false);
 
   useEffect(() => {
-    const saved = loadTripPacking(trip.id);
-    if (saved && saved.length > 0) {
-      setPackingItems(saved);
-    } else {
-      const generated = generateSmartPackingList(trip);
-      setPackingItems(generated);
-      saveTripPacking(trip.id, generated);
-    }
+    const refreshPacking = () => {
+      const saved = loadTripPacking(trip.id);
+      if (saved && saved.length > 0) {
+        setPackingItems(saved);
+      } else {
+        const generated = generateSmartPackingList(trip);
+        setPackingItems(generated);
+        saveTripPacking(trip.id, generated);
+      }
+    };
+    refreshPacking();
+    window.addEventListener('tripverse_packing_updated', refreshPacking);
+    return () => window.removeEventListener('tripverse_packing_updated', refreshPacking);
   }, [trip.id]);
 
   const handleToggleItem = (id: string) => {
@@ -225,7 +234,18 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
     ? packingItems 
     : packingItems.filter(i => i.category === activeCategory);
 
-  const selectedDay: WeatherDay = weather.forecastDays[selectedDayIndex] || weather.forecastDays[0];
+  const selectedDay: WeatherDay = weather.forecastDays[selectedDayIndex] || weather.forecastDays[0] || {
+    dayNumber: 1,
+    dateLabel: 'Day 1',
+    condition: 'Sunny',
+    maxTempC: 26,
+    minTempC: 18,
+    humidityPercent: 50,
+    windKmh: 12,
+    rainProbPercent: 10,
+    uvIndex: 5,
+    advisory: 'Pleasant weather conditions expected.'
+  };
 
   // Dynamic tourist wardrobe & sightseeing recommendation
   const getTravelerAdvice = (day: WeatherDay) => {

@@ -99,25 +99,33 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
       return filtered.length > 0 ? filtered : members;
     });
 
+    const routeRoundTripDist = trip.routeDetails?.distanceKm
+      ? Math.round(trip.routeDetails.distanceKm * 2)
+      : 0;
     const calculatedDist = (trip.itinerary || []).reduce((acc, d) => acc + (d.activities || []).reduce((s, a) => s + (a.distanceKm || 0), 0), 0) * 2;
-    setTripDistanceKm(calculatedDist || 680);
-  }, [trip.id, trip.travelersCount, trip.collaboration, trip.itinerary]);
+    setTripDistanceKm(routeRoundTripDist || calculatedDist || 680);
+  }, [trip.id, trip.travelersCount, trip.collaboration, trip.itinerary, trip.routeDetails]);
 
   // Fuel & Toll Calculator State
   const [vehicleType, setVehicleType] = useState<VehicleType>('petrol_hatchback');
-  const [tripDistanceKm, setTripDistanceKm] = useState(
-    trip.itinerary.reduce((acc, d) => acc + d.activities.reduce((s, a) => s + (a.distanceKm || 0), 0), 0) * 2 || 680
-  );
+  const [tripDistanceKm, setTripDistanceKm] = useState(() => {
+    const routeRoundTripDist = trip.routeDetails?.distanceKm
+      ? Math.round(trip.routeDetails.distanceKm * 2)
+      : 0;
+    const localDist = (trip.itinerary || []).reduce((acc, d) => acc + (d.activities || []).reduce((s, a) => s + (a.distanceKm || 0), 0), 0) * 2;
+    return routeRoundTripDist || localDist || 680;
+  });
   const [customMileage, setCustomMileage] = useState<number>(VEHICLE_CONFIGS.petrol_hatchback.defaultMileage);
 
-  // Load expenses strictly from stored real data
+  // Load expenses strictly from stored real data and stay synced with AI Assistant additions
   useEffect(() => {
-    const saved = loadTripExpenses(trip.id);
-    if (saved && saved.length > 0) {
-      setExpenses(saved);
-    } else {
-      setExpenses([]);
-    }
+    const refreshExpenses = () => {
+      const saved = loadTripExpenses(trip.id);
+      setExpenses(saved && saved.length > 0 ? saved : []);
+    };
+    refreshExpenses();
+    window.addEventListener('tripverse_expenses_updated', refreshExpenses);
+    return () => window.removeEventListener('tripverse_expenses_updated', refreshExpenses);
   }, [trip.id]);
 
   // Compute split summary
