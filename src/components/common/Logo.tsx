@@ -28,8 +28,8 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   if (!imgFailed) {
     return (
       <img
-        src="/tripverse-mark.png?v=13"
-        srcSet="/tripverse-mark.png?v=13 1x, /tripverse-mark@2x.png?v=13 2x, /tripverse-mark@3x.png?v=13 3x"
+        src="/tripverse-mark.png?v=14"
+        srcSet="/tripverse-mark.png?v=14 1x, /tripverse-mark@2x.png?v=14 2x, /tripverse-mark@3x.png?v=14 3x"
         alt="TripVerse Logo"
         onError={() => setImgFailed(true)}
         style={{ imageRendering: '-webkit-optimize-contrast' }}
@@ -265,8 +265,8 @@ export const Logo: React.FC<LogoProps> = ({
             {/* Light Mode Wordmark: Dark Navy 'Trip' + Forest Green 'Verse' (hidden in night mode) */}
             {(variant === 'dark' || isAuto) && (
               <img
-                src="/tripverse-title.png?v=13"
-                srcSet="/tripverse-title.png?v=13 1x, /tripverse-title@2x.png?v=13 2x"
+                src="/tripverse-title.png?v=14"
+                srcSet="/tripverse-title.png?v=14 1x, /tripverse-title@2x.png?v=14 2x"
                 alt="TripVerse"
                 onError={() => setTitleImgFailed(true)}
                 style={{ imageRendering: '-webkit-optimize-contrast' }}
@@ -282,8 +282,8 @@ export const Logo: React.FC<LogoProps> = ({
             {/* Night / Dark Mode Wordmark: Crisp Luminous Pearl 'Trip' + Vibrant Emerald 'Verse' (visible in night mode) */}
             {(variant === 'light' || isAuto) && (
               <img
-                src="/tripverse-title-dark.png?v=13"
-                srcSet="/tripverse-title-dark.png?v=13 1x, /tripverse-title-dark@2x.png?v=13 2x"
+                src="/tripverse-title-dark.png?v=14"
+                srcSet="/tripverse-title-dark.png?v=14 1x, /tripverse-title-dark@2x.png?v=14 2x"
                 alt="TripVerse"
                 onError={() => setTitleImgFailed(true)}
                 style={{ imageRendering: '-webkit-optimize-contrast' }}
