@@ -231,11 +231,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                 e.preventDefault();
                 triggerHaptic('light');
                 onClose();
-                if (matchingDestinations.length > 0) {
-                  onSelectDestination(matchingDestinations[0]);
-                } else {
-                  onSelectDestination(synthesizeDestination(query.trim()));
-                }
+                onOpenPlanner({ destination: query.trim() });
               }
             }}
             placeholder={t('Search trips, destinations, or quick actions (⌘K)...')}

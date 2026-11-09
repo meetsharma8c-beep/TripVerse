@@ -24,7 +24,6 @@ import { useLanguage } from '../../services/languageService';
 import { searchLocations, PreciseLocation } from '../../services/locationService';
 import { Trip, Destination } from '../../types/trip';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
-import { synthesizeDestination } from '../../utils/destinationImages';
 import { InteractivePhoneDevice } from './InteractivePhoneDevice';
 import { ScrollReveal } from '../common/ScrollReveal';
 
@@ -267,13 +266,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     setShowFloatingDropdown(false);
     setShowPlannerDropdown(false);
     setHighlightedIndex(-1);
-    if (onSelectDestination) {
-      const catalogMatch = POPULAR_DESTINATIONS.find(
-        (d) => d.name.toLowerCase() === spot.name.toLowerCase()
-      );
-      onSelectDestination(catalogMatch || synthesizeDestination(spot.name, spot));
-      return;
-    }
     const planParams = {
       destination: spot.name,
       duration,
@@ -349,28 +341,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const handleFloatingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const matchedSpot =
+    const targetDest =
       showFloatingDropdown && highlightedIndex >= 0 && suggestions[highlightedIndex]
-        ? suggestions[highlightedIndex]
-        : suggestions[0];
-    const targetDest = matchedSpot ? matchedSpot.name : destination.trim();
+        ? suggestions[highlightedIndex].name
+        : destination.trim();
 
     if (targetDest) {
       setDestination(targetDest);
     }
     setShowFloatingDropdown(false);
     setHighlightedIndex(-1);
-    if (targetDest && onSelectDestination) {
-      const catalogMatch = POPULAR_DESTINATIONS.find(
-        (d) => d.name.toLowerCase() === targetDest.toLowerCase()
-      );
-      onSelectDestination(catalogMatch || synthesizeDestination(targetDest, matchedSpot));
-      return;
-    }
-    if (!targetDest) {
-      onExplore();
-      return;
-    }
     const planParams = {
       destination: targetDest || undefined,
       duration,
@@ -566,79 +546,50 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                               MapPin;
 
                     return (
-                      <div
+                      <button
                         key={spot.id}
+                        type="button"
                         role="option"
                         aria-selected={isSelected}
                         onMouseEnter={() => setHighlightedIndex(index)}
-                        className={`w-full px-4 py-3 text-left transition-colors flex items-center justify-between gap-3 group min-h-[52px] ${
+                        onClick={() => handleSelectFloatingSuggestion(spot)}
+                        className={`w-full px-4 py-3 text-left transition-colors flex items-center gap-3 cursor-pointer group min-h-[52px] ${
                           isSelected
                             ? 'bg-[#E8EFE7] dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400'
                             : 'hover:bg-[#E8EFE7]/60 dark:hover:bg-slate-800/50'
                         }`}
                       >
-                        <button
-                          type="button"
-                          onClick={() => handleSelectFloatingSuggestion(spot)}
-                          className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer"
-                        >
-                          {spot.image ? (
-                            <img
-                              src={spot.image}
-                              alt={spot.name}
-                              className="w-10 h-10 rounded-xl object-cover shrink-0 border border-[#DCE7DB] dark:border-slate-700"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                              isSelected
-                                ? 'bg-[#2D5A3D] text-white'
-                                : 'bg-[#E8EFE7] dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400 group-hover:bg-[#2D5A3D] group-hover:text-white'
-                            }`}>
-                              <IconComp className="w-5 h-5" />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-bold text-[#152A1C] dark:text-slate-100 truncate flex items-center gap-2">
-                              <span>{spot.name}</span>
-                              {spot.category && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8EFE7] dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400 font-medium capitalize shrink-0">
-                                  {spot.category}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-[#57685D] dark:text-slate-400 truncate">
-                              {spot.state ? `${spot.state}, ` : ''}{spot.country || 'Worldwide destination'}
-                            </div>
+                        {spot.image ? (
+                          <img
+                            src={spot.image}
+                            alt={spot.name}
+                            className="w-10 h-10 rounded-xl object-cover shrink-0 border border-[#DCE7DB] dark:border-slate-700"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                            isSelected
+                              ? 'bg-[#2D5A3D] text-white'
+                              : 'bg-[#E8EFE7] dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400 group-hover:bg-[#2D5A3D] group-hover:text-white'
+                          }`}>
+                            <IconComp className="w-5 h-5" />
                           </div>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDestination(spot.name);
-                            setShowFloatingDropdown(false);
-                            setHighlightedIndex(-1);
-                            const planParams = {
-                              destination: spot.name,
-                              duration,
-                              travelers,
-                              budget,
-                              budgetMode,
-                            };
-                            if (onOpenPlanner) {
-                              onOpenPlanner(planParams);
-                            } else if (onQuickPlan) {
-                              onQuickPlan(planParams);
-                            }
-                          }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#2D5A3D]/10 hover:bg-[#2D5A3D] text-[#2D5A3D] dark:text-emerald-400 hover:text-white text-xs font-bold transition-all shrink-0 cursor-pointer"
-                          title={`Plan AI trip to ${spot.name}`}
-                        >
-                          <Sparkles className="w-3 h-3" />
-                          <span>Plan</span>
-                        </button>
-                      </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-bold text-[#152A1C] dark:text-slate-100 truncate flex items-center gap-2">
+                            <span>{spot.name}</span>
+                            {spot.category && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8EFE7] dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400 font-medium capitalize shrink-0">
+                                {spot.category}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-[#57685D] dark:text-slate-400 truncate">
+                            {spot.state ? `${spot.state}, ` : ''}{spot.country || 'Worldwide destination'}
+                          </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-[#2D5A3D] dark:group-hover:text-emerald-400 shrink-0 transition-colors" />
+                      </button>
                     );
                   })}
 
