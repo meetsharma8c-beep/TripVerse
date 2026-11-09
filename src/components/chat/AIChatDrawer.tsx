@@ -9,9 +9,8 @@ import {
 } from '../../services/concodeBrainService';
 import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/concodeSession';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
-import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Settings, Crown, Shield, Users, Compass } from 'lucide-react';
+import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
-import { ConcodeBrainConfigModal } from './ConcodeBrainConfigModal';
 import { getUserSubscriptionQuota, consumeAssistantMinute } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import { formatCurrency, getActiveCurrency, CURRENCIES } from '../../services/currencyService';
@@ -288,7 +287,6 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 }) => {
   const [brainStatus, setBrainStatus] = useState<BrainStatus>({ online: false });
   const [isCheckingBrain, setIsCheckingBrain] = useState(false);
-  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
   const [viewer3DLandmark, setViewer3DLandmark] = useState('Heritage Landmark');
 
@@ -668,14 +666,6 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setIsConfigModalOpen(true)}
-              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-              title={t('Configure Kaggle GPU Brain Endpoint')}
-            >
-              <Settings className="w-3.5 h-3.5" />
-            </button>
-
-            <button
               onClick={handleClearChat}
               className="p-1.5 rounded-lg text-slate-300 hover:text-red-300 hover:bg-white/10 transition-colors cursor-pointer"
               title={t('Clear Conversation History')}
@@ -702,33 +692,20 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           </div>
         </div>
 
-        {/* CONCODE model status */}
-        <div className="px-3 py-1.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 text-[11px]">
-          <div className="flex items-center gap-1.5 text-slate-400 font-medium">
+        {/* AI Model Status */}
+        <div className="px-3.5 py-1.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 text-[11px]">
+          <div className="flex items-center gap-1.5 text-slate-300 font-medium">
             <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span>AI Engine:</span>
-            <span className="text-slate-300 font-mono text-[10px]">
-              {brainStatus.online ? (brainStatus.gpu || 'Kaggle GPU') : 'Offline Rules Fallback'}
+            <span>{t('AI Co-Pilot')}</span>
+            <span className="text-slate-500">•</span>
+            <span className="text-slate-400 text-[10px]">
+              {t('Live Travel Intelligence')}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsConfigModalOpen(true)}
-            className={`px-2 py-0.5 rounded-md font-semibold text-[10px] flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
-              brainStatus.online 
-                ? 'bg-[#2D5A3D] hover:bg-[#244931] text-white' 
-                : 'bg-amber-600/90 hover:bg-amber-500 text-white'
-            }`}
-            title="Click to configure or test Kaggle GPU connection"
-          >
-            <span className={`w-1.5 h-1.5 rounded-full bg-white ${brainStatus.online ? 'animate-pulse' : ''}`} />
-            <span>
-              {brainStatus.online 
-                ? `ConCode Online ${brainStatus.latencyMs ? `(${brainStatus.latencyMs}ms)` : ''}` 
-                : 'Configure GPU'}
-            </span>
-            <Settings className="w-2.5 h-2.5 opacity-80" />
-          </button>
+          <div className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold text-[10px] flex items-center gap-1.5 border border-emerald-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>{brainStatus.latencyMs ? `Online (${brainStatus.latencyMs}ms)` : 'Online'}</span>
+          </div>
         </div>
 
         {/* Quick Scenario Chips */}
@@ -1013,13 +990,6 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             <Send className="w-4 h-4" />
           </button>
         </div>
-
-        {/* Kaggle Brain Configuration Modal */}
-        <ConcodeBrainConfigModal
-          isOpen={isConfigModalOpen}
-          onClose={() => setIsConfigModalOpen(false)}
-          onSaved={refreshBrainHealth}
-        />
 
         {/* Interactive 3D WebGL Landmark Viewer */}
         {is3DViewerOpen && (
