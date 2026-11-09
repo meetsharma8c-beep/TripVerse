@@ -645,8 +645,8 @@ export function App() {
   // URL Pathname, Dynamic Document Title & SEO Meta Sync for Browser, Crawler & History Navigation
   useEffect(() => {
     let targetPath = '/';
-    let targetTitle = 'Trip — Free AI Trip Planner, Road Trip Routes & Travel Itineraries | TripVerse';
-    let targetDesc = 'Plan any trip in seconds with TripVerse — the #1 free AI Trip Planner. Build custom day-by-day trip itineraries, road trip routes, highway stops, hotel picks, live weather & group trip budgets across 10,000+ destinations worldwide.';
+    let targetTitle = 'TripVerse (Trip Verse) — Free AI Trip Planner, Road Trip Routes & Itineraries';
+    let targetDesc = 'TripVerse (trip-verse.com) is the #1 free AI Trip Planner. Plan any trip in seconds with custom day-by-day trip itineraries, road trip routes, highway stops, hotel picks, live weather & group trip budgets across 10,000+ destinations worldwide.';
 
     if (selectedDestinationForDetails) {
       targetPath = `/destination/${selectedDestinationForDetails.id}`;
