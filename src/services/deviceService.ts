@@ -193,12 +193,62 @@ export function openExternalUrl(url: string): void {
   window.open(targetUrl.toString(), '_blank', 'noopener,noreferrer');
 }
 
+export function syncThemeStatusBar(isDark?: boolean): void {
+  if (typeof document === 'undefined' || !document.documentElement) return;
+  const darkActive = typeof isDark === 'boolean'
+    ? isDark
+    : document.documentElement.classList.contains('dark');
+
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) {
+    metaTheme.setAttribute('content', darkActive ? '#070C16' : '#2D5A3D');
+  }
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      StatusBar.setStyle({ style: darkActive ? Style.Dark : Style.Light }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: darkActive ? '#070C16' : '#FFFFFF' }).catch(() => {});
+    } catch {
+      // Ignore on unsupported platforms
+    }
+  }
+}
+
 export function initDeviceServices(onBackPress?: () => boolean) {
   // 0. Synchronize responsive & OS capability classes on document
   applyDeviceClassesToDom();
+  syncThemeStatusBar();
+
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', applyDeviceClassesToDom, { passive: true });
     window.addEventListener('orientationchange', applyDeviceClassesToDom, { passive: true });
+
+    // Observe dark mode class changes on <html> to keep native StatusBar and meta theme-color in sync
+    if (typeof MutationObserver !== 'undefined' && document.documentElement) {
+      const themeObserver = new MutationObserver(() => {
+        syncThemeStatusBar();
+      });
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
+
+    // Track visualViewport for iOS Safari & mobile virtual keyboard safe-area adjustment
+    if (window.visualViewport && document.documentElement) {
+      const updateVisualViewportVars = () => {
+        const vv = window.visualViewport;
+        if (!vv) return;
+        const root = document.documentElement;
+        root.style.setProperty('--visual-viewport-height', `${Math.round(vv.height)}px`);
+        const keyboardInset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+        root.style.setProperty('--keyboard-inset-bottom', `${keyboardInset}px`);
+        root.classList.toggle('keyboard-open', keyboardInset > 100);
+      };
+      updateVisualViewportVars();
+      window.visualViewport.addEventListener('resize', updateVisualViewportVars, { passive: true });
+      window.visualViewport.addEventListener('scroll', updateVisualViewportVars, { passive: true });
+    }
   }
 
   // 1. Native Capacitor initialization
@@ -218,8 +268,7 @@ export function initDeviceServices(onBackPress?: () => boolean) {
     }, true);
 
     try {
-      StatusBar.setStyle({ style: Style.Light }).catch(() => {});
-      StatusBar.setBackgroundColor({ color: '#FFFFFF' }).catch(() => {});
+      syncThemeStatusBar();
       StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
     } catch (e) {
       console.warn('Status bar configuration error:', e);

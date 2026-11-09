@@ -1,4 +1,5 @@
-const CACHE_NAME = 'tripverse-cache-v64';
+const CACHE_NAME = 'tripverse-cache-v65';
+const TILE_CACHE_NAME = 'tripverse-map-tiles-v1';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -11,8 +12,12 @@ const PRECACHE_ASSETS = [
   '/tripverse-title@2x.png',
   '/tripverse-title-dark.png',
   '/tripverse-title-dark@2x.png',
+  '/favicon.ico',
   '/favicon.svg',
-  '/favicon-32x32.png',
+  '/favicon-48x48.png',
+  '/favicon-96x96.png',
+  '/favicon-144x144.png',
+  '/favicon-192x192.png',
   '/apple-splash-screen.png',
   '/favicon.png',
   '/apple-touch-icon.png',
@@ -21,6 +26,9 @@ const PRECACHE_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS).catch(() => {}))
+  );
   self.skipWaiting();
 });
 
@@ -28,7 +36,9 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys
+          .filter((key) => key !== CACHE_NAME && key !== TILE_CACHE_NAME)
+          .map((key) => caches.delete(key))
       );
     })
   );
@@ -38,8 +48,32 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  // Never intercept cross-origin requests (Supabase, Firebase, Geoapify, Nominatim) or serverless API routes
   const url = new URL(event.request.url);
+
+  // Cache OpenStreetMap & Carto map tiles for offline highway/itinerary navigation
+  if (
+    url.hostname.endsWith('tile.openstreetmap.org') ||
+    url.hostname.endsWith('basemaps.cartocdn.com')
+  ) {
+    event.respondWith(
+      caches.open(TILE_CACHE_NAME).then((cache) =>
+        cache.match(event.request).then((cachedTile) => {
+          if (cachedTile) return cachedTile;
+          return fetch(event.request)
+            .then((networkRes) => {
+              if (networkRes && networkRes.status === 200) {
+                cache.put(event.request, networkRes.clone());
+              }
+              return networkRes;
+            })
+            .catch(() => cachedTile);
+        })
+      )
+    );
+    return;
+  }
+
+  // Never intercept other cross-origin requests (Supabase, Firebase, Geoapify, Nominatim) or serverless API routes
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
 
   // For HTML navigation requests, ALWAYS use Network-First to guarantee instant updates
@@ -62,11 +96,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For static assets, try cache, then network
+  // Immutable content-hashed bundles (/assets/*): pure Cache-First without redundant background re-fetch
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(event.request).then((response) => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Other static public assets (icons, manifest, images): Stale-While-Revalidate
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Return cached, but refresh cache in background
         fetch(event.request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => {

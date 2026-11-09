@@ -68,6 +68,18 @@ export default async function handler(req, res) {
       }
     }
   }
+
+  // Server-side integrity guard for TripVerse Pro subscription orders (prevents ₹1 price spoofing)
+  if (safeNotes.packageType === 'pro_subscription' && cleanCurrency === 'INR') {
+    const minProAmountINR = safeNotes.billingCycle === 'annual' ? 800 : 100; // Accounts for valid promo codes (e.g. PRO50, EARLYBIRD)
+    if (numAmount < minProAmountINR) {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_SUBSCRIPTION_AMOUNT',
+        message: 'Subscription order amount is below the authorized plan tier threshold.'
+      });
+    }
+  }
   const safeReceipt = String(receipt || `rcpt_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || `rcpt_${Date.now()}`;
 
   try {

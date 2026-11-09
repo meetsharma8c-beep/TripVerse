@@ -70,6 +70,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     const video = heroVideoRef.current;
     if (!video || heroVideoError) return;
 
+    // Respect Data Saver (cellular roaming) and Reduced Motion accessibility settings
+    const conn = (navigator as any)?.connection;
+    const isDataSaver = Boolean(conn?.saveData || /^(?:slow-2g|2g)$/i.test(conn?.effectiveType || ''));
+    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (isDataSaver || prefersReducedMotion) {
+      setHeroVideoPlaying(false);
+      return;
+    }
+
     video.muted = true;
     video.defaultMuted = true;
     video.playsInline = true;

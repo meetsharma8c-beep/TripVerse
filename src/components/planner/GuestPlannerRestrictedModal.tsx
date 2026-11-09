@@ -121,6 +121,27 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
             </p>
           </div>
 
+          {/* Instant AI Blueprint Preview Card when a destination is selected */}
+          {prefilledDestination && (
+            <div className="rounded-xl bg-gradient-to-r from-[#2D5A3D]/10 via-emerald-500/5 to-amber-500/10 border border-[#2D5A3D]/25 dark:border-[#68B684]/30 p-2.5 sm:p-3 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#2D5A3D] dark:text-[#68B684] flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 shrink-0" />
+                  <span>{t('AI Blueprint Ready')}: {prefilledDestination}</span>
+                </span>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#2D5A3D] text-white">
+                  {t('3 Free Credits')}
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-700 dark:text-slate-300 grid grid-cols-2 gap-1 pt-0.5">
+                <span className="truncate">• {t('Day-wise landmark timeline')}</span>
+                <span className="truncate">• {t('Highway & transit stops')}</span>
+                <span className="truncate">• {t('Live weather & packing')}</span>
+                <span className="truncate">• {t('Smart budget breakdown')}</span>
+              </div>
+            </div>
+          )}
+
           {/* Feature Matrix Comparison Card */}
           <div className="rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 p-3 space-y-2.5">
             <div className="space-y-1">

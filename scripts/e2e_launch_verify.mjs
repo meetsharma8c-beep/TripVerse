@@ -247,6 +247,16 @@ async function runE2ELaunchVerification() {
       }
     });
 
+    // Wait briefly for lazy-loaded PlannerWizard to mount and click Instant Generate if opened
+    await new Promise((r) => setTimeout(r, 800));
+    await page.evaluate(() => {
+      const instantBtn = document.querySelector('[data-testid="planner-instant-generate"]') ||
+        Array.from(document.querySelectorAll('button')).find((b) =>
+          b.innerText?.includes('Instant Generate')
+        );
+      if (instantBtn) instantBtn.click();
+    });
+
     // Wait for AI generation (geolocation race + landmark discovery + itinerary compilation)
     await page.waitForFunction(() => {
       const bodyText = document.body.innerText || '';

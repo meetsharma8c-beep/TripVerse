@@ -583,19 +583,22 @@ export function App() {
     return () => window.removeEventListener('tripverse_currency_change', handleCurrency);
   }, [currentUser, userProfile]);
 
-  // URL Pathname & Dynamic Document Title Sync for Browser & History Navigation
+  // URL Pathname, Dynamic Document Title & SEO Meta Sync for Browser, Crawler & History Navigation
   useEffect(() => {
     let targetPath = '/';
-    let targetTitle = 'TripVerse — AI Trip Planner';
+    let targetTitle = 'TripVerse — Free AI Trip Planner, Smart Travel Itineraries & Road Trips';
+    let targetDesc = 'Plan your perfect trip in seconds with TripVerse — the premier AI Trip Planner. Generate personalized day-wise trip itineraries, road trip routes, highway stops, live weather, budget tracker, and hotels across 10,000+ destinations worldwide.';
 
     if (selectedDestinationForDetails) {
       targetPath = `/destination/${selectedDestinationForDetails.id}`;
-      targetTitle = `${selectedDestinationForDetails.name} — TripVerse`;
+      targetTitle = `${selectedDestinationForDetails.name} Travel Guide & AI Itinerary — TripVerse`;
+      targetDesc = selectedDestinationForDetails.description || `Plan a custom AI itinerary to ${selectedDestinationForDetails.name} (${selectedDestinationForDetails.state}) with smart road routes, best time to visit (${selectedDestinationForDetails.bestTime}), and curated local highlights on TripVerse.`;
     } else if (currentTab === 'trip-detail') {
       const active = trips.find(t => t.id === activeTripIdState) || trips[0];
       if (active) {
         targetPath = `/trip/${active.id}`;
-        targetTitle = `${active.name} — TripVerse Itinerary`;
+        targetTitle = `${active.name} (${active.durationDays} Days) — TripVerse Itinerary`;
+        targetDesc = `Explore this ${active.durationDays}-day ${active.destination} travel itinerary from ${active.origin} with day-wise stops, route map, and budget breakdown on TripVerse.`;
       } else {
         targetPath = '/mytrips';
         targetTitle = 'My Trips & Itineraries — TripVerse';
@@ -603,6 +606,7 @@ export function App() {
     } else if (currentTab === 'explore') {
       targetPath = '/explore';
       targetTitle = 'Explore Destinations & Hidden Gems — TripVerse';
+      targetDesc = 'Browse curated destinations, scenic road trips, mountain getaways, heritage cities, and coastal escapes worldwide on TripVerse.';
     } else if (currentTab === 'trips') {
       targetPath = '/mytrips';
       targetTitle = 'My Trips & Itineraries — TripVerse';
@@ -612,12 +616,22 @@ export function App() {
     } else if (currentTab === 'profile') {
       targetPath = '/profile';
       targetTitle = 'Traveler Profile & Passport — TripVerse';
-    } else {
-      targetPath = '/';
-      targetTitle = 'TripVerse — AI Trip Planner';
     }
 
     document.title = targetTitle;
+
+    // Synchronize SEO meta description, Open Graph tags, and Canonical URL dynamically
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', targetDesc);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', targetTitle);
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', targetDesc);
+    const canonicalUrl = `https://trip-verse.com${targetPath === '/' ? '/' : targetPath}`;
+    const canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (canonicalLink) canonicalLink.setAttribute('href', canonicalUrl);
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) ogUrl.setAttribute('content', canonicalUrl);
 
     // Only update if path changed
     if (window.location.pathname !== targetPath) {

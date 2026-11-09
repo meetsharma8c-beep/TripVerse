@@ -626,6 +626,21 @@ export default async function handler(req, res) {
           details: pingData
         });
       }
+      const cloudLLMKey = (process.env.CONCODE_REMOTE_LLM_API_KEY || process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY || '').trim();
+      if (cloudLLMKey) {
+        const cloudEngineName = process.env.GROQ_API_KEY || cloudLLMKey.startsWith('gsk_')
+          ? 'Groq Cloud Engine (Llama-3.3-70B)'
+          : (process.env.GEMINI_API_KEY || cloudLLMKey.startsWith('AIza')
+            ? 'Google Gemini Cloud Engine'
+            : (process.env.OPENROUTER_API_KEY ? 'OpenRouter Cloud Engine' : 'High-Speed Cloud LLM'));
+        return res.status(200).json({
+          ok: true,
+          status: 'online',
+          gpu: cloudEngineName,
+          reason: 'ACTIVE_CLOUD_LLM',
+          latencyMs: Date.now() - start
+        });
+      }
       return res.status(200).json({
         ok: true,
         status: 'online',

@@ -78,12 +78,15 @@ export default async function handler(req, res) {
       });
     }
 
+    const verifiedAt = new Date().toISOString();
+
     return res.status(200).json({
       ok: true,
       verified: true,
       mode: 'live',
       orderId: orderIdStr,
-      paymentId: paymentIdStr
+      paymentId: paymentIdStr,
+      verifiedAt
     });
   } catch (error) {
     console.error('Error in verify-razorpay-payment:', error);

@@ -1481,12 +1481,12 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         </div>
 
         {/* Bottom Navigation Controls */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2 shrink-0">
           <button
             type="button"
             onClick={handlePrev}
             disabled={currentStep === 1}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${currentStep === 1
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${currentStep === 1
               ? 'text-slate-300 cursor-not-allowed opacity-50'
               : 'text-slate-700 hover:bg-slate-200/70'
               }`}
@@ -1495,34 +1495,79 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
             <span>{t('planner.back')}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={!quota.canCreateTrip && onOpenProModal ? onOpenProModal : handleNext}
-            className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-white font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer shrink-0 ${
-              !quota.canCreateTrip && currentStep === totalSteps
-                ? 'bg-gradient-to-r from-amber-500 via-[#2D5A3D] to-[#1E3E2A] hover:opacity-95 shadow-amber-500/20'
-                : 'bg-trip-gradient hover:bg-trip-gradient-hover shadow-emerald-500/20'
-            }`}
-          >
-            {currentStep === totalSteps ? (
-              !quota.canCreateTrip ? (
-                <>
-                  <Crown className="w-4 h-4 text-amber-300 fill-amber-300" />
-                  <span>{t('planner.upgradeToPro')}</span>
-                </>
+          <div className="flex items-center gap-2">
+            {currentStep < totalSteps && quota.canCreateTrip && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!destination.trim()) {
+                    setDestination('Udaipur');
+                  }
+                  const finalDest = destination.trim() || 'Udaipur';
+                  const finalTransportMode = transportFeasibility.availableModes.includes(transportMode)
+                    ? transportMode
+                    : transportFeasibility.recommendedDefaultMode;
+                  onTripGenerated({
+                    origin,
+                    originCoords,
+                    destinationName: finalDest,
+                    durationDays: duration,
+                    travelersCount,
+                    travelerType,
+                    budgetMode,
+                    budgetAmount,
+                    preferences,
+                    specialRequests: specialRequests.trim(),
+                    transportMode: finalTransportMode,
+                    accommodationType,
+                    foodPreference,
+                    priorities,
+                    destinationCoords: selectedPreciseSpot?.coordinates,
+                    preciseLocation: selectedPreciseSpot || resolvePreciseLocationSync(finalDest),
+                    startDate,
+                    pacing,
+                    itineraryStyle,
+                    selectedActivities: selectedSights
+                  });
+                }}
+                data-testid="planner-instant-generate"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-[#2D5A3D]/30 bg-emerald-50/80 hover:bg-emerald-100/80 text-[#2D5A3D] font-bold text-xs transition-all cursor-pointer active:scale-95"
+                title="Skip remaining steps and generate immediately with smart AI defaults"
+              >
+                <Zap className="w-3.5 h-3.5 shrink-0" />
+                <span>{t('Instant Generate')}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={!quota.canCreateTrip && onOpenProModal ? onOpenProModal : handleNext}
+              className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-white font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer shrink-0 ${
+                !quota.canCreateTrip && currentStep === totalSteps
+                  ? 'bg-gradient-to-r from-amber-500 via-[#2D5A3D] to-[#1E3E2A] hover:opacity-95 shadow-amber-500/20'
+                  : 'bg-trip-gradient hover:bg-trip-gradient-hover shadow-emerald-500/20'
+              }`}
+            >
+              {currentStep === totalSteps ? (
+                !quota.canCreateTrip ? (
+                  <>
+                    <Crown className="w-4 h-4 text-amber-300 fill-amber-300" />
+                    <span>{t('planner.upgradeToPro')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>{t('planner.generate')}</span>
+                  </>
+                )
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>{t('planner.generate')}</span>
+                  <span>{t('planner.next')}</span>
+                  <ArrowRight className="w-4 h-4" />
                 </>
-              )
-            ) : (
-              <>
-                <span>{t('planner.next')}</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
+              )}
+            </button>
+          </div>
         </div>
 
       </div>
