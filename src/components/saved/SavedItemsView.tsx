@@ -3,9 +3,10 @@ import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { HIGHWAY_BREAK_STOPS } from '../../data/highwayFacilities';
 import { Trip, Destination } from '../../types/trip';
 import { Bookmark, Trash2, Sparkles, Star, Compass } from 'lucide-react';
-import { handleImageError } from '../../utils/destinationImages';
+import { handleImageError, synthesizeDestination } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
+import { resolveGlobalDestination } from '../../services/globalLocationResolver';
 
 interface SavedItemsViewProps {
   savedItemIds: string[];
@@ -36,8 +37,62 @@ export const SavedItemsView: React.FC<SavedItemsViewProps> = ({
     return () => window.removeEventListener('tripverse_currency_change' as any, handleCurrencyChange);
   }, []);
 
-  const savedDestinations = POPULAR_DESTINATIONS.filter(d => savedItemIds.includes(d.id));
+  const [enrichedCustomDestinations, setEnrichedCustomDestinations] = useState<Record<string, Destination>>({});
+
   const savedBreakStops = HIGHWAY_BREAK_STOPS.filter(bs => savedItemIds.includes(bs.id));
+  const savedCatalogDestinations = POPULAR_DESTINATIONS.filter(d => savedItemIds.includes(d.id));
+
+  // Reconstruct any saved worldwide/custom destination ID (e.g., dest-reykjavik, dest-queenstown)
+  const customDestinationIds = savedItemIds.filter(
+    id =>
+      !POPULAR_DESTINATIONS.some(d => d.id === id) &&
+      !HIGHWAY_BREAK_STOPS.some(bs => bs.id === id)
+  );
+
+  React.useEffect(() => {
+    let cancelled = false;
+    customDestinationIds.forEach(id => {
+      if (enrichedCustomDestinations[id]) return;
+      const rawName = id
+        .replace(/^(dest|custom|osm|wiki)-/i, '')
+        .split('-')
+        .filter(Boolean)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+      if (!rawName) return;
+      resolveGlobalDestination(rawName)
+        .then(resolved => {
+          if (cancelled || !resolved) return;
+          setEnrichedCustomDestinations(prev => ({
+            ...prev,
+            [id]: {
+              ...synthesizeDestination(resolved.name, resolved),
+              id
+            }
+          }));
+        })
+        .catch(() => {});
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [savedItemIds.join(',')]);
+
+  const savedCustomDestinations: Destination[] = customDestinationIds.map(id => {
+    if (enrichedCustomDestinations[id]) return enrichedCustomDestinations[id];
+    const rawName = id
+      .replace(/^(dest|custom|osm|wiki)-/i, '')
+      .split('-')
+      .filter(Boolean)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    return {
+      ...synthesizeDestination(rawName || id),
+      id
+    };
+  });
+
+  const savedDestinations = [...savedCatalogDestinations, ...savedCustomDestinations];
 
   const totalSaved = savedDestinations.length + savedBreakStops.length;
 

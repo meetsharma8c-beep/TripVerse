@@ -169,7 +169,18 @@ export function resolveDestinationImage(name: string, category?: string): string
 
 export function synthesizeDestination(
   query: string,
-  customCoords?: { lat: number; lng: number },
+  customCoordsOrMeta?:
+    | { lat: number; lng: number }
+    | {
+        coordinates?: { lat: number; lng: number };
+        category?: Destination['category'];
+        state?: string;
+        country?: string;
+        tagline?: string;
+        description?: string;
+        image?: string;
+        highlights?: string[];
+      },
   customCategory?: Destination['category'],
   customState?: string
 ): Destination {
@@ -177,35 +188,60 @@ export function synthesizeDestination(
   const lower = cleanName.toLowerCase();
   const id = `dest-${lower.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
 
+  const isRawCoords =
+    customCoordsOrMeta &&
+    'lat' in customCoordsOrMeta &&
+    typeof customCoordsOrMeta.lat === 'number';
+  const customCoords = isRawCoords
+    ? (customCoordsOrMeta as { lat: number; lng: number })
+    : (customCoordsOrMeta as { coordinates?: { lat: number; lng: number } } | undefined)?.coordinates;
+  const meta = !isRawCoords
+    ? (customCoordsOrMeta as {
+        category?: Destination['category'];
+        state?: string;
+        country?: string;
+        tagline?: string;
+        description?: string;
+        image?: string;
+        highlights?: string[];
+      } | undefined)
+    : undefined;
+
   // Try precise location resolution
   const resolved = resolvePreciseLocationSync(cleanName);
 
-  let category: Destination['category'] = customCategory || resolved.category || 'roadtrip';
-  let state = customState || resolved.state || 'India';
-  let tagline = resolved.tagline || 'Scenic Getaway • Road Trip • Authentic Culture';
-  const isInternational = resolved.country && resolved.country !== 'India' && resolved.country !== 'Worldwide';
+  let category: Destination['category'] = customCategory || meta?.category || resolved.category || 'roadtrip';
+  const country = meta?.country || resolved.country || 'Worldwide';
+  let state = customState || meta?.state || (resolved.state && resolved.state !== 'Worldwide Destination' ? resolved.state : country);
+  let tagline = meta?.tagline || resolved.tagline || 'Scenic Getaway • Global Travel • Authentic Culture';
+  const isInternational = country !== 'India';
   const isHighCostInternational = isInternational && (
-    resolved.country === 'France' ||
-    resolved.country === 'United States' ||
-    resolved.country === 'United Kingdom' ||
-    resolved.country === 'Japan' ||
-    resolved.country === 'Switzerland' ||
-    resolved.country === 'Italy' ||
-    resolved.country === 'Australia' ||
-    resolved.country === 'Spain' ||
-    resolved.country === 'Germany' ||
-    resolved.country === 'Netherlands'
+    country === 'France' ||
+    country === 'United States' ||
+    country === 'United Kingdom' ||
+    country === 'Japan' ||
+    country === 'Switzerland' ||
+    country === 'Italy' ||
+    country === 'Australia' ||
+    country === 'Spain' ||
+    country === 'Germany' ||
+    country === 'Netherlands' ||
+    country === 'Iceland' ||
+    country === 'Norway' ||
+    country === 'New Zealand' ||
+    country === 'Canada'
   );
 
-  let startBudget = 8500;
-  let recommendedDuration = '2 - 3 Days';
-  let popularActivities = resolved.highlights && resolved.highlights.length > 0 
-    ? [...resolved.highlights]
+  let startBudget = 12000;
+  let recommendedDuration = '3 - 4 Days';
+  const rawHighlights = meta?.highlights && meta.highlights.length > 0 ? meta.highlights : resolved.highlights;
+  let popularActivities = rawHighlights && rawHighlights.length > 0 
+    ? [...rawHighlights]
     : [
-        `${resolved.name} Sightseeing & Cultural Tour`,
-        'Local Street Food & Bazaars',
-        'Scenic Viewpoint Exploration',
-        'Evening Leisure Stroll'
+        `${resolved.name} Iconic Landmarks & Cultural Tour`,
+        `${resolved.name} Historic Quarter & Local Markets`,
+        `${resolved.name} Panoramic Horizon Viewpoint`,
+        `${resolved.name} Regional Gastronomy & Evening Stroll`
       ];
 
   if (isHighCostInternational) {
@@ -228,21 +264,23 @@ export function synthesizeDestination(
     recommendedDuration = '2 - 3 Days';
   }
 
-  const image = resolveDestinationImage(cleanName, category);
-  const coordinates = customCoords || resolved.coordinates || { lat: 21.9348, lng: 73.5521 };
+  const image = meta?.image || resolved.image || resolveDestinationImage(cleanName, category);
+  const coordinates = customCoords || resolved.coordinates || { lat: 48.8566, lng: 2.3522 };
+  const bestTime = coordinates.lat > 40 ? 'May to September' : coordinates.lat < -15 ? 'November to March' : 'October to March';
 
   return {
     id,
     name: resolved.name || cleanName,
     state,
+    country,
     category,
     tagline,
-    description: `TripVerse draft itinerary for ${resolved.name || cleanName}, with estimated budgeting and suggested local experiences. Verify places and travel details before booking.`,
+    description: meta?.description || `Plan a personalized trip to ${resolved.name || cleanName}${country && country !== 'Worldwide' ? ` (${country})` : ''} with verified attractions, smart routes, weather forecasts, and custom day-by-day budgeting on TripVerse.`,
     image,
     startBudget,
     rating: 4.8,
     recommendedDuration,
-    bestTime: 'October to March',
+    bestTime,
     popularActivities,
     coordinates
   };

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, MapPin, Compass, Sparkles, Navigation, ArrowRight, Star } from 'lucide-react';
+import { Search, X, MapPin, Compass, Sparkles, Navigation, ArrowRight, Star, Globe } from 'lucide-react';
 import { Trip, Destination } from '../../types/trip';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { triggerHaptic } from '../../services/deviceService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import { useLanguage } from '../../services/languageService';
+import { searchLocations, PreciseLocation } from '../../services/locationService';
+import { synthesizeDestination, handleImageError } from '../../utils/destinationImages';
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -31,6 +33,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 }) => {
   const { t } = useLanguage();
   const [query, setQuery] = useState('');
+  const [globalSuggestions, setGlobalSuggestions] = useState<PreciseLocation[]>([]);
+  const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useModalBehavior(isOpen, onClose);
@@ -40,8 +44,39 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       setTimeout(() => inputRef.current?.focus(), 50);
     } else {
       setQuery('');
+      setGlobalSuggestions([]);
     }
   }, [isOpen]);
+
+  // Live worldwide location search (Wikipedia + Nominatim + Local Registry)
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!isOpen || trimmed.length < 2) {
+      setGlobalSuggestions([]);
+      setIsSearchingGlobal(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsSearchingGlobal(true);
+    const timer = setTimeout(async () => {
+      try {
+        const results = await searchLocations(trimmed);
+        if (!cancelled) {
+          setGlobalSuggestions(results.slice(0, 6));
+        }
+      } catch {
+        if (!cancelled) setGlobalSuggestions([]);
+      } finally {
+        if (!cancelled) setIsSearchingGlobal(false);
+      }
+    }, 240);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -66,14 +101,31 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
   const normalizedQuery = query.trim().toLowerCase();
 
-  // Filter destinations
-  const matchingDestinations = normalizedQuery
+  // Filter destinations + merge live global search results
+  const catalogMatches = normalizedQuery
     ? POPULAR_DESTINATIONS.filter(d => 
         d.name.toLowerCase().includes(normalizedQuery) ||
         d.state.toLowerCase().includes(normalizedQuery) ||
         d.tagline.toLowerCase().includes(normalizedQuery)
       ).slice(0, 4)
     : POPULAR_DESTINATIONS.slice(0, 3);
+
+  const globalSynthesizedMatches: Destination[] = normalizedQuery
+    ? globalSuggestions
+        .filter(loc => !catalogMatches.some(c => c.name.toLowerCase() === loc.name.toLowerCase()))
+        .map(loc => synthesizeDestination(loc.name, loc))
+        .slice(0, 4)
+    : [];
+
+  // Always offer an instant synthesized destination option for the exact typed query if not already listed
+  const allCombinedMatches = [...catalogMatches, ...globalSynthesizedMatches];
+  if (
+    normalizedQuery.length >= 2 &&
+    !allCombinedMatches.some(d => d.name.toLowerCase() === normalizedQuery)
+  ) {
+    allCombinedMatches.push(synthesizeDestination(query.trim()));
+  }
+  const matchingDestinations = allCombinedMatches.slice(0, 6);
 
   // Filter user trips
   const matchingTrips = normalizedQuery
@@ -136,9 +188,9 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     },
     {
       id: 'explore_places',
-      label: t('Explore Curated Indian Getaways'),
-      desc: t('Royal palaces, hill stations & beaches'),
-      icon: Compass,
+      label: t('Explore Worldwide & Local Destinations'),
+      desc: t('Search any city, island, mountain town, or landmark on Earth'),
+      icon: Globe,
       iconColor: 'text-amber-500',
       action: () => {
         onClose();
@@ -244,9 +296,16 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {/* Destinations */}
           {matchingDestinations.length > 0 && (
             <div className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 block">
-                {t('Destinations')}
-              </span>
+              <div className="flex items-center justify-between px-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  {t('Worldwide & Curated Destinations')}
+                </span>
+                {isSearchingGlobal && (
+                  <span className="text-[10px] font-semibold text-emerald-600 animate-pulse">
+                    {t('Searching globally...')}
+                  </span>
+                )}
+              </div>
               <div className="space-y-1">
                 {matchingDestinations.map(dest => (
                   <button
@@ -261,7 +320,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                     <div className="flex items-center gap-3 min-w-0">
                       <img 
                         src={dest.image} 
-                        alt={dest.name} 
+                        alt={dest.name}
+                        onError={(e) => handleImageError(e, dest.name)}
                         className="w-10 h-10 rounded-xl object-cover shrink-0"
                         loading="lazy"
                       />
@@ -271,7 +331,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                             {dest.name}
                           </h4>
                           <span className="text-[10px] font-medium text-slate-400 shrink-0">
-                            • {dest.state}
+                            • {dest.state}{dest.country && dest.country !== dest.state ? `, ${dest.country}` : ''}
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-500 truncate">{dest.tagline}</p>

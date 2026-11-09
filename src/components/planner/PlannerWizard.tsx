@@ -54,6 +54,7 @@ import { TravelPreference, TravelerType, TransportMode, AccommodationType, FoodP
 import { PlannerInput } from '../../services/plannerEngine';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { searchLocations, resolvePreciseLocationSync, PreciseLocation } from '../../services/locationService';
+import { resolveGlobalDestination } from '../../services/globalLocationResolver';
 import { getDestinationHighlights } from '../../services/landmarkAtlasService';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { AuthUser } from '../../types/auth';
@@ -336,7 +337,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   const [selectedSights, setSelectedSights] = useState<string[]>([]);
   const [customSightInput, setCustomSightInput] = useState('');
 
-  // Dynamically populate genuine sights whenever destination or selected spot changes
+  // Dynamically populate genuine sights whenever destination or selected spot changes (including live worldwide Wikipedia + Geosearch sights)
   useEffect(() => {
     const rawDest = (selectedPreciseSpot?.name || destination || '').trim();
     if (!rawDest) {
@@ -355,8 +356,53 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
       ...atlasHighlights
     ].filter(Boolean)));
     setAvailableSights(combined);
-    // Pre-select top 4 genuine sights so the user starts with curated choices they can modify
     setSelectedSights(prev => prev.length > 0 ? prev : combined.slice(0, 5));
+
+    // If the user typed any global destination not in our local catalog, fetch live Wikimedia Geosearch sights & exact coordinates
+    if (!matched && rawDest.length >= 2) {
+      let cancelled = false;
+      const timer = setTimeout(async () => {
+        try {
+          const globalLoc = await resolveGlobalDestination(rawDest);
+          if (cancelled || !globalLoc) return;
+          if (globalLoc.highlights && globalLoc.highlights.length > 0) {
+            setAvailableSights(prev => {
+              const merged = Array.from(new Set([...globalLoc.highlights, ...prev].filter(Boolean)));
+              return merged;
+            });
+            setSelectedSights(prev => {
+              if (prev.length === 0) return globalLoc.highlights.slice(0, 5);
+              return prev;
+            });
+          }
+          // Also enrich selectedPreciseSpot if none was chosen from dropdown so transport feasibility & coordinates are exact
+          setSelectedPreciseSpot(prev => {
+            if (prev && prev.name.toLowerCase() === rawDest.toLowerCase()) return prev;
+            return {
+              id: `global-${globalLoc.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+              name: globalLoc.name,
+              fullName: globalLoc.fullName || `${globalLoc.name}, ${globalLoc.country}`,
+              state: globalLoc.state,
+              country: globalLoc.country,
+              category: 'roadtrip',
+              spotType: 'city',
+              tagline: globalLoc.description
+                ? globalLoc.description.slice(0, 88)
+                : `Discover ${globalLoc.name}, ${globalLoc.country}`,
+              coordinates: globalLoc.coordinates,
+              highlights: globalLoc.highlights,
+              image: globalLoc.image
+            };
+          });
+        } catch {
+          // Graceful fallback if offline
+        }
+      }, 300);
+      return () => {
+        cancelled = true;
+        clearTimeout(timer);
+      };
+    }
   }, [destination, selectedPreciseSpot]);
 
   const toggleSight = (sight: string) => {

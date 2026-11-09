@@ -5,6 +5,7 @@ import { Search, Compass, Star, Sparkles, Bookmark } from 'lucide-react';
 import { handleImageError, synthesizeDestination } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
+import { resolveGlobalDestination } from '../../services/globalLocationResolver';
 import { DestinationDetailModal } from './DestinationDetailModal';
 import { ScrollReveal } from '../common/ScrollReveal';
 
@@ -25,7 +26,62 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('all');
   const [activeModalDest, setActiveModalDest] = useState<Destination | null>(null);
+  const [liveResolvedDest, setLiveResolvedDest] = useState<Destination | null>(null);
+  const [isResolvingGlobal, setIsResolvingGlobal] = useState(false);
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
+
+  useEffect(() => {
+    let isCurrent = true;
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) {
+      setLiveResolvedDest(null);
+      setIsResolvingGlobal(false);
+      return;
+    }
+
+    const hasExactCatalog = POPULAR_DESTINATIONS.some(
+      d => d.name.toLowerCase().includes(trimmed.toLowerCase()) ||
+           d.state.toLowerCase().includes(trimmed.toLowerCase())
+    );
+    if (hasExactCatalog) {
+      setLiveResolvedDest(null);
+      setIsResolvingGlobal(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsResolvingGlobal(true);
+      try {
+        const globalInfo = await resolveGlobalDestination(trimmed);
+        if (!isCurrent) return;
+        const baseSynth = synthesizeDestination(
+          globalInfo.name || trimmed,
+          globalInfo.coordinates,
+          undefined,
+          globalInfo.state !== 'Region' ? globalInfo.state : globalInfo.country
+        );
+        setLiveResolvedDest({
+          ...baseSynth,
+          name: globalInfo.name || baseSynth.name,
+          state: globalInfo.state !== 'Region' ? globalInfo.state : baseSynth.state,
+          country: globalInfo.country || baseSynth.country,
+          description: globalInfo.description || baseSynth.description,
+          image: globalInfo.image || baseSynth.image,
+          coordinates: globalInfo.coordinates || baseSynth.coordinates,
+          popularActivities: globalInfo.highlights?.length > 0 ? globalInfo.highlights : baseSynth.popularActivities
+        });
+      } catch {
+        // Fallback to synchronous synthesis
+      } finally {
+        if (isCurrent) setIsResolvingGlobal(false);
+      }
+    }, 280);
+
+    return () => {
+      isCurrent = false;
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
 
   useEffect(() => {
     const handleCurrencyChange = (e: CustomEvent<SupportedCurrency>) => {
@@ -355,30 +411,49 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
         })}
 
         {filtered.length === 0 && searchQuery.trim().length > 0 && (() => {
-          const synthesized = synthesizeDestination(searchQuery);
+          const synthesized = liveResolvedDest || synthesizeDestination(searchQuery);
+          const isSaved = savedItemIds.includes(synthesized.id);
           return (
             <div className="col-span-full bg-gradient-to-br from-emerald-50/80 via-white to-slate-50 rounded-3xl p-6 sm:p-8 border border-emerald-200/80 shadow-md">
               <div className="flex flex-col md:flex-row items-center gap-6">
-                <div className="relative w-full md:w-72 h-48 rounded-2xl overflow-hidden flex-shrink-0 shadow-md">
+                <div 
+                  onClick={() => setActiveModalDest(synthesized)}
+                  className="relative w-full md:w-72 h-52 rounded-2xl overflow-hidden flex-shrink-0 shadow-md cursor-pointer group"
+                >
                   <img
                     src={synthesized.image}
                     alt={synthesized.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     onError={handleImageError}
                   />
-                  <div className="absolute top-2 left-2 bg-[#2D5A3D] text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs">
+                  <div className="absolute top-2.5 left-2.5 bg-[#2D5A3D] text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs">
                     <Sparkles className="w-3 h-3" />
-                    <span>AI Tailored Destination</span>
+                    <span>{isResolvingGlobal ? 'Discovering Global Spot...' : 'Global AI Destination'}</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleSaved(synthesized.id);
+                    }}
+                    className={`absolute top-2.5 right-2.5 p-2 rounded-full backdrop-blur-md transition-all shadow-xs ${
+                      isSaved ? 'bg-[#2D5A3D] text-white' : 'bg-white/90 text-slate-700 hover:bg-white'
+                    }`}
+                    title={isSaved ? 'Saved' : 'Save Destination'}
+                  >
+                    <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-white' : ''}`} />
+                  </button>
                 </div>
 
                 <div className="space-y-3 flex-1 text-left">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">
-                      Precise Location Detected
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
+                      {synthesized.country && synthesized.country !== 'Worldwide'
+                        ? `${synthesized.state ? `${synthesized.state}, ` : ''}${synthesized.country}`
+                        : 'Worldwide Destination Detected'}
                     </span>
                     <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                      {synthesized.coordinates.lat.toFixed(4)}°N, {synthesized.coordinates.lng.toFixed(4)}°E
+                      {synthesized.coordinates.lat.toFixed(4)}°, {synthesized.coordinates.lng.toFixed(4)}°
                     </span>
                     <span className="text-xs text-slate-400 font-medium">Ready for AI Itinerary</span>
                   </div>
@@ -386,14 +461,14 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                   <h3 className="text-2xl font-display font-black text-[#0B2545]">
                     Plan a Trip to {synthesized.name}
                   </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-3">
                     {synthesized.description}
                   </p>
 
                   {/* Spot Highlights */}
                   {synthesized.popularActivities && synthesized.popularActivities.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {synthesized.popularActivities.slice(0, 3).map((act, idx) => (
+                      {synthesized.popularActivities.slice(0, 5).map((act, idx) => (
                         <span key={idx} className="text-[11px] font-semibold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs">
                           {act}
                         </span>
@@ -407,8 +482,16 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                     <span>Best Season: <strong>{synthesized.bestTime}</strong></span>
                   </div>
 
-                  <div className="pt-2">
+                  <div className="pt-2 flex flex-wrap items-center gap-3">
                     <button
+                      type="button"
+                      onClick={() => setActiveModalDest(synthesized)}
+                      className="px-5 py-3 rounded-xl bg-white hover:bg-slate-100 text-[#152A1C] border border-slate-300 font-bold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer"
+                    >
+                      Explore {synthesized.name} Guide
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => onPlanTripForDestination(synthesized.name)}
                       className="px-6 py-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
                     >

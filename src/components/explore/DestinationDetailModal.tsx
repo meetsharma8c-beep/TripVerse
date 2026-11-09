@@ -5,6 +5,7 @@ import { handleImageError } from '../../utils/destinationImages';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 import { triggerHaptic } from '../../services/deviceService';
+import { resolveGlobalDestination, ResolvedGlobalLocation } from '../../services/globalLocationResolver';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
 
 interface DestinationDetailModalProps {
@@ -72,6 +73,23 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
   const [copiedLink, setCopiedLink] = useState(false);
   const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
+  const [liveGlobalInfo, setLiveGlobalInfo] = useState<ResolvedGlobalLocation | null>(null);
+
+  useEffect(() => {
+    let isCurrent = true;
+    setLiveGlobalInfo(null);
+    if (!isOpen || !destination) return;
+    if (destination.id.startsWith('dest-') || destination.id.startsWith('custom-') || destination.id.startsWith('osm-') || destination.id.startsWith('wiki-')) {
+      resolveGlobalDestination(destination.name)
+        .then(res => {
+          if (isCurrent) setLiveGlobalInfo(res);
+        })
+        .catch(() => {});
+    }
+    return () => {
+      isCurrent = false;
+    };
+  }, [isOpen, destination]);
 
   useEffect(() => {
     const handleCurrency = () => setCurrency(getActiveCurrency());
@@ -92,18 +110,33 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
 
   if (!isOpen || !destination) return null;
 
-  const insider = DESTINATION_INSIDER_HIGHLIGHTS[destination.id.toLowerCase()] || {
-    food: ['Local regional thali', 'Street food specialties', 'Authentic culinary treats'],
-    highway: 'National Highway connectivity with wayside amenities',
-    vibe: destination.tagline
+  const effectiveDest: Destination = liveGlobalInfo ? {
+    ...destination,
+    name: liveGlobalInfo.name || destination.name,
+    state: liveGlobalInfo.state !== 'Region' ? liveGlobalInfo.state : destination.state,
+    country: liveGlobalInfo.country || destination.country,
+    description: liveGlobalInfo.description || destination.description,
+    image: liveGlobalInfo.image || destination.image,
+    popularActivities: liveGlobalInfo.highlights?.length > 0 ? liveGlobalInfo.highlights : destination.popularActivities
+  } : destination;
+
+  const isIndiaDest = (effectiveDest.country || '').toLowerCase() === 'india' || DESTINATION_INSIDER_HIGHLIGHTS[effectiveDest.id.toLowerCase()] !== undefined;
+  const insider = DESTINATION_INSIDER_HIGHLIGHTS[effectiveDest.id.toLowerCase()] || {
+    food: isIndiaDest
+      ? ['Local regional thali', 'Street food specialties', 'Authentic culinary treats']
+      : [`Authentic ${effectiveDest.name} regional cuisine`, 'Artisan local cafés & markets', 'Chef signature culinary specialties'],
+    highway: isIndiaDest
+      ? 'National Highway connectivity with wayside amenities'
+      : `International airport, regional rail & scenic highway corridors serving ${effectiveDest.name}`,
+    vibe: effectiveDest.tagline
   };
 
   const handleShare = () => {
     triggerHaptic('light');
-    const shareText = `Explore ${destination.name}, ${destination.state} on TripVerse: ${destination.tagline}. Estimated budget from ${formatCurrency(destination.startBudget, currency)}/person.`;
+    const shareText = `Explore ${effectiveDest.name}, ${effectiveDest.state} on TripVerse: ${effectiveDest.tagline}. Estimated budget from ${formatCurrency(effectiveDest.startBudget, currency)}/person.`;
     if (navigator.share) {
       navigator.share({
-        title: `${destination.name} - TripVerse`,
+        title: `${effectiveDest.name} - TripVerse`,
         text: shareText,
         url: window.location.href
       }).catch(() => {});
@@ -127,8 +160,8 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
         {/* Hero Header Media */}
         <div className="relative h-64 sm:h-72 w-full overflow-hidden shrink-0">
           <img
-            src={destination.image}
-            alt={destination.name}
+            src={effectiveDest.image}
+            alt={effectiveDest.name}
             className="w-full h-full object-cover"
             onError={handleImageError}
           />
@@ -139,12 +172,12 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black text-slate-800 shadow-sm">
                 <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                <span>{destination.rating} / 5.0</span>
+                <span>{effectiveDest.rating} / 5.0</span>
                 <span className="text-[10px] text-slate-500 font-semibold">(Curated Index)</span>
               </span>
 
               <span className="bg-emerald-500/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider backdrop-blur-md">
-                {destination.category}
+                {effectiveDest.category}
               </span>
             </div>
 
@@ -167,7 +200,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
                   type="button"
                   onClick={() => {
                     triggerHaptic('medium');
-                    onToggleSaved(destination.id);
+                    onToggleSaved(effectiveDest.id);
                   }}
                   className={`p-2.5 rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer ${
                     isSaved 
@@ -204,13 +237,13 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
           <div className="absolute bottom-4 left-5 right-5 text-white z-10">
             <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-1">
               <MapPin className="w-3.5 h-3.5" />
-              <span>{destination.state ? `${destination.state}, ` : ''}{destination.country || 'World'}</span>
+              <span>{effectiveDest.state && effectiveDest.state !== effectiveDest.country ? `${effectiveDest.state}, ` : ''}{effectiveDest.country || 'World'}</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-black font-display tracking-tight text-balance drop-shadow-md">
-              {destination.name}
+              {effectiveDest.name}
             </h2>
             <p className="text-xs sm:text-sm text-slate-200 mt-1 line-clamp-1 font-medium drop-shadow-sm">
-              {destination.tagline}
+              {effectiveDest.tagline}
             </p>
           </div>
         </div>
@@ -223,7 +256,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
             <div className="min-w-0">
               <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Typical Cost</span>
               <span className="text-sm sm:text-base font-black text-[#2D5A3D] font-display truncate block">
-                {formatCurrency(destination.startBudget, currency)}
+                {formatCurrency(effectiveDest.startBudget, currency)}
               </span>
               <span className="text-[10px] text-slate-500">per person (ground)</span>
             </div>
@@ -231,7 +264,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
             <div className="min-w-0 border-x border-slate-200 px-2">
               <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Suggested Time</span>
               <span className="text-sm sm:text-base font-extrabold text-slate-800 font-display truncate block">
-                {destination.recommendedDuration}
+                {effectiveDest.recommendedDuration}
               </span>
               <span className="text-[10px] text-[#2D5A3D] font-semibold">customizable</span>
             </div>
@@ -239,7 +272,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
             <div className="min-w-0">
               <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Best Season</span>
               <span className="text-sm sm:text-base font-extrabold text-[#0B2545] font-display truncate block">
-                {destination.bestTime}
+                {effectiveDest.bestTime}
               </span>
               <span className="text-[10px] text-slate-500">pleasant weather</span>
             </div>
@@ -251,7 +284,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
               About This Destination
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed text-pretty">
-              {destination.description}
+              {effectiveDest.description}
             </p>
           </div>
 
@@ -311,12 +344,12 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
                 <span className="text-[10px] text-slate-400 font-medium">100% flexible — pick your favorites when planning</span>
               </div>
               <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                {destination.popularActivities.length} Curated Options
+                {effectiveDest.popularActivities.length} Curated Options
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {destination.popularActivities.map((activity, idx) => (
+              {effectiveDest.popularActivities.map((activity, idx) => (
                 <div 
                   key={idx}
                   className="p-3 rounded-2xl bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-xs transition-all flex items-center gap-2.5"
@@ -378,7 +411,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
             type="button"
             onClick={() => {
               triggerHaptic('success');
-              const destName = destination.name;
+              const destName = effectiveDest.name;
               onClose();
               onPlanTrip(destName);
             }}
@@ -395,8 +428,8 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
       {is3DViewerOpen && (
         <Suspense fallback={null}>
           <Landmark3DViewer
-            landmarkName={destination.popularActivities?.[0] || destination.name}
-            destination={destination.name}
+            landmarkName={effectiveDest.popularActivities?.[0] || effectiveDest.name}
+            destination={effectiveDest.name}
             isOpen={is3DViewerOpen}
             onClose={() => setIs3DViewerOpen(false)}
           />

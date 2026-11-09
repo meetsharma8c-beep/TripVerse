@@ -1,5 +1,14 @@
 import { Trip, Destination } from '../types/trip';
 import { POPULAR_DESTINATIONS } from '../data/destinations';
+import { synthesizeDestination } from './destinationImages';
+
+function formatSlugToTitle(slug: string): string {
+  return decodeURIComponent(slug)
+    .replace(/^dest-/i, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+}
 
 export interface ResolvedRoute {
   tab: string;
@@ -34,6 +43,11 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
       );
       if (match) {
         return { tab: 'explore', dest: match, tripId: null, openBooking: false, openPlanner: false };
+      }
+      const readableTitle = formatSlugToTitle(slug);
+      if (readableTitle.length >= 2) {
+        const dynamicDest = synthesizeDestination(readableTitle);
+        return { tab: 'explore', dest: dynamicDest, tripId: null, openBooking: false, openPlanner: false };
       }
     }
     return { tab: 'explore', dest: null, tripId: null, openBooking: false, openPlanner: false };

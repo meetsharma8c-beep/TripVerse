@@ -138,12 +138,14 @@ import {
   QrCode,
   ArrowLeft,
   Bookmark,
-  MoreVertical
+  MoreVertical,
+  Search
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 import { resolveRouteFromBrowser } from './utils/routeResolver';
 import { POPULAR_DESTINATIONS } from './data/destinations';
+import { synthesizeDestination } from './utils/destinationImages';
 
 export function App() {
   const { language, t } = useLanguage();
@@ -1946,18 +1948,28 @@ export function App() {
                       id="seo-trip-guide-heading"
                       className="text-xl sm:text-2xl font-display font-extrabold text-[#152A1C] dark:text-white tracking-tight"
                     >
-                      Plan Any Trip in Seconds — From Weekend Road Trips to Global Expeditions
+                      Plan Any Trip to Any Destination on Earth — 195+ Countries, Cities, Islands &amp; Hidden Towns
                     </h2>
                     <p className="mt-2 text-xs sm:text-sm text-[#4A6352] dark:text-slate-300 leading-relaxed">
-                      Whether you are searching for a quick weekend <strong>trip</strong>, a scenic highway <strong>road trip</strong>, a family holiday itinerary, or an international backpacking adventure, <strong>TripVerse</strong> builds complete day-by-day travel schedules with verified attractions, highway pitstops, live weather, and multi-currency group expense splitting.
+                      Your destination can be <strong>anywhere in the world</strong>. Whether you are searching for a quick weekend <strong>trip</strong>, a scenic highway <strong>road trip</strong>, an alpine village in Europe, a tropical island in Southeast Asia, or a hidden mountain hamlet, <strong>TripVerse</strong> resolves live coordinates, encyclopedic sights, authentic photography, weather forecasts, and multi-currency group expense splitting for every corner of the planet.
                     </p>
                   </div>
 
-                  {/* Quick Crawl & User Links for Top Global & Indian Trip Destinations */}
+                  {/* Quick Crawl & User Links for Top Global & Indian Trip Destinations + Universal Custom Destination Pill */}
                   <div className="mt-6 pt-5 border-t border-[#E8EFE7] dark:border-slate-800">
-                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#2D5A3D] dark:text-emerald-400 mb-3">
-                      Popular Trip Itineraries &amp; Road Trip Guides
-                    </h3>
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#2D5A3D] dark:text-emerald-400">
+                        Worldwide &amp; Regional Trip Guides (Or Search Any Place on Earth)
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setIsGlobalSearchOpen(true)}
+                        className="text-xs font-bold text-[#15803D] dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Search className="w-3.5 h-3.5" />
+                        <span>Search Any Global Destination (⌘K)</span>
+                      </button>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {POPULAR_DESTINATIONS.slice(0, 20).map((dest) => (
                         <a
@@ -1970,6 +1982,19 @@ export function App() {
                           className="text-xs font-semibold text-[#152A1C] dark:text-slate-200 bg-[#F4F7F3] dark:bg-slate-800/80 hover:bg-[#EAF0E9] dark:hover:bg-emerald-950/60 hover:text-[#15803D] dark:hover:text-emerald-300 px-3 py-1.5 rounded-xl border border-[#DCE7DB] dark:border-slate-700/70 transition-colors"
                         >
                           {dest.name} Trip
+                        </a>
+                      ))}
+                      {['Reykjavik', 'Queenstown', 'Interlaken', 'Amalfi Coast', 'Machu Picchu', 'Banff', 'Santorini', 'Petra'].map((worldPlace) => (
+                        <a
+                          key={worldPlace}
+                          href={`/destination/${worldPlace.toLowerCase().replace(/\s+/g, '-')}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setSelectedDestinationForDetails(synthesizeDestination(worldPlace));
+                          }}
+                          className="text-xs font-semibold text-[#152A1C] dark:text-slate-200 bg-emerald-50/70 dark:bg-emerald-950/40 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/60 hover:text-[#15803D] dark:hover:text-emerald-300 px-3 py-1.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 transition-colors"
+                        >
+                          {worldPlace} Trip
                         </a>
                       ))}
                     </div>
