@@ -151,7 +151,7 @@ export const SavedItemsView: React.FC<SavedItemsViewProps> = ({
             </p>
           </div>
           <button
-            onClick={() => onPlanTripForDestination('Udaipur')}
+            onClick={() => onPlanTripForDestination('Paris')}
             className="px-6 py-2.5 rounded-2xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-bold text-xs shadow-md shadow-[#2D5A3D]/20 active:scale-95 transition-all inline-flex items-center gap-2 cursor-pointer"
           >
             <Compass className="w-4 h-4 text-emerald-300" />

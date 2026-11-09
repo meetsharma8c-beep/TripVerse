@@ -61,6 +61,15 @@ function haversineDistKm(c1: Coordinates, c2: Coordinates): number {
  */
 function resolveOriginCoords(originName: string): Coordinates {
   const lower = (originName || '').toLowerCase().trim();
+  if (lower.includes('new york')) return { lat: 40.7128, lng: -74.0060 };
+  if (lower.includes('london')) return { lat: 51.5074, lng: -0.1278 };
+  if (lower.includes('paris')) return { lat: 48.8566, lng: 2.3522 };
+  if (lower.includes('tokyo')) return { lat: 35.6762, lng: 139.6503 };
+  if (lower.includes('dubai')) return { lat: 25.2048, lng: 55.2708 };
+  if (lower.includes('singapore')) return { lat: 1.3521, lng: 103.8198 };
+  if (lower.includes('sydney')) return { lat: -33.8688, lng: 151.2093 };
+  if (lower.includes('toronto')) return { lat: 43.6532, lng: -79.3832 };
+  if (lower.includes('los angeles')) return { lat: 34.0522, lng: -118.2437 };
   if (lower.includes('ahmedabad')) return { lat: 23.0225, lng: 72.5714 };
   if (lower.includes('vadodara') || lower.includes('baroda')) return { lat: 22.3072, lng: 73.1812 };
   if (lower.includes('surat')) return { lat: 21.1702, lng: 72.8311 };
@@ -74,7 +83,7 @@ function resolveOriginCoords(originName: string): Coordinates {
 
   // Fallback to offline geocoder
   const resolved = resolvePreciseLocationSync(originName);
-  return resolved.coordinates || { lat: 23.0225, lng: 72.5714 };
+  return resolved.coordinates || { lat: 48.8566, lng: 2.3522 };
 }
 
 /**

@@ -250,13 +250,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   }, [destination]);
 
   const quickDests: { name: string; label: string; isHighlight?: boolean }[] = [
-    { name: 'Polo Forest', label: 'Polo Forest' },
-    { name: 'Chopta', label: 'Chopta', isHighlight: true },
-    { name: 'Dhanushkodi', label: 'Dhanushkodi' },
-    { name: 'Gokarna', label: 'Gokarna', isHighlight: true },
-    { name: 'Spiti Valley', label: 'Spiti Valley' },
+    { name: 'Paris', label: 'Paris', isHighlight: true },
+    { name: 'Tokyo', label: 'Tokyo', isHighlight: true },
+    { name: 'Santorini', label: 'Santorini' },
+    { name: 'Bali', label: 'Bali' },
+    { name: 'New York City', label: 'New York' },
+    { name: 'Swiss Alps', label: 'Swiss Alps', isHighlight: true },
+    { name: 'Dubai', label: 'Dubai' },
     { name: 'Udaipur', label: 'Udaipur' },
-    { name: 'Manali', label: 'Manali' },
     { name: 'Goa', label: 'Goa' }
   ];
 

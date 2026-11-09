@@ -69,27 +69,27 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
   const isFlight = trip.transportMode === 'flight';
   const isTrain = trip.transportMode === 'train';
   const country = (trip.destinationDetails?.country || '').toLowerCase();
-  const isIntl = Boolean(country && country !== 'india' && country !== 'worldwide') ||
-    ['tokyo', 'japan', 'paris', 'london', 'bali', 'maldives', 'singapore', 'dubai', 'bangkok'].some(k => trip.destination.toLowerCase().includes(k));
+  const isIndiaTrip = country === 'india' || ['udaipur', 'goa', 'manali', 'jaipur', 'kerala', 'ladakh', 'rishikesh', 'varanasi', 'mumbai', 'delhi'].some(k => trip.destination.toLowerCase().includes(k));
+  const isIntl = Boolean(country && country !== 'india' && country !== 'worldwide') || !isIndiaTrip;
 
   const mandatoryDocuments = (isFlight || isIntl) ? [
     { label: 'International Passport', desc: 'Original Passport with at least 6 months remaining validity from entry date', checked: true },
-    { label: 'Visa / Entry Clearance', desc: 'Approved eVisa / Visa Sticker or Tourist Declaration QR (e.g. Visit Japan Web)', checked: true },
-    { label: 'Confirmed Flight Tickets', desc: 'Round-trip airline e-tickets & digital boarding pass references saved offline', checked: true },
-    { label: 'Travel Medical Insurance', desc: 'Comprehensive international policy covering emergency medical care & flight disruption', checked: true },
-    { label: 'Forex Card & Local Currency', desc: 'Zero-markup international travel card with primary local currency cash reserve', checked: true },
+    { label: 'Visa / Entry Clearance', desc: 'Approved eVisa / Visa Sticker or Electronic Travel Authorization (ESTA / ETIAS / QR)', checked: true },
+    { label: 'Confirmed Flight / Rail Tickets', desc: 'Round-trip carrier e-tickets & digital boarding pass references saved offline', checked: true },
+    { label: 'Travel Medical Insurance', desc: 'Comprehensive international policy covering emergency medical care & trip disruption', checked: true },
+    { label: 'Multi-Currency Card & Cash Reserve', desc: 'Zero-markup international travel card with primary local currency cash reserve', checked: true },
   ] : isTrain ? [
-    { label: 'Government Photo ID', desc: 'Original Aadhaar / Voter ID / Passport (Mandatory for IRCTC ticket inspection by TTE)', checked: true },
-    { label: 'IRCTC Train E-Ticket', desc: 'Confirmed digital reservation SMS or printout with valid PNR and coach number', checked: true },
-    { label: 'Luggage Chain & Padlock', desc: 'Sturdy wire chain for securing heavy baggage to under-berth clamps', checked: true },
-    { label: 'Station Cash Buffer', desc: 'Cash in small denominations (₹100/₹200) for station porters and pantry orders', checked: true },
+    { label: 'Government Photo ID', desc: 'Original Passport / National ID (Mandatory for rail ticket inspection)', checked: true },
+    { label: 'Confirmed Rail E-Ticket', desc: 'Confirmed digital reservation or printout with valid PNR and coach/seat number', checked: true },
+    { label: 'Luggage Security Lock', desc: 'Compact TSA lock or cable lock for securing heavy baggage on overnight trains', checked: true },
+    { label: 'Station Cash Buffer', desc: 'Small-denomination local currency notes for station transfers and onboard dining', checked: true },
     { label: 'Medical Essentials', desc: 'First aid, motion sickness tablets, personal prescriptions & sanitizing wipes', checked: true },
   ] : [
-    { label: 'Govt Photo ID', desc: 'Original Aadhaar / Driving License (Mandatory for Hotel Check-ins & Highway Verification)', checked: true },
-    { label: 'Vehicle Documentation', desc: 'Original Vehicle RC, Valid Insurance Policy & Pollution (PUC) Certificate', checked: true },
-    { label: 'Highway FASTag', desc: 'Pre-activated FASTag with min ₹500 balance for automatic toll plaza clearance', checked: true },
-    { label: 'Offline Cash Buffer', desc: '₹2,000–₹5,000 physical cash for highway dhabas with poor digital signal', checked: true },
-    { label: 'Medical Essentials', desc: 'First aid, motion sickness tablets, personal prescriptions & ORS packets', checked: true },
+    { label: 'Government Photo ID & Driver License', desc: 'Original Driving License / International Driving Permit (IDP) & ID for hotel check-ins', checked: true },
+    { label: 'Vehicle & Rental Documentation', desc: 'Vehicle registration, valid comprehensive insurance policy & roadside assistance number', checked: true },
+    { label: 'Electronic Toll Transponder / Vignette', desc: 'Active highway toll pass (E-ZPass / Telepass / FASTag / Vignette) for expressway clearance', checked: true },
+    { label: 'Offline Cash & Card Buffer', desc: 'Emergency physical cash reserve for remote mountain passes or rural service stations', checked: true },
+    { label: 'Medical & Roadside Kit', desc: 'First aid kit, motion sickness tablets, personal prescriptions & hydration packs', checked: true },
   ];
 
   return (
@@ -224,11 +224,11 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
             </p>
           </div>
 
-          {/* Mandatory Indian Travel Documents Checklist */}
+          {/* Mandatory Travel Documents Checklist */}
           <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 print-avoid-break break-inside-avoid">
             <h2 className="text-sm font-black uppercase tracking-wider text-slate-800 border-b border-slate-200 pb-2 mb-3 flex items-center gap-1.5">
               <FileText className="w-4 h-4 text-[#2D5A3D]" />
-              <span>Mandatory Indian Travel Documents Checklist</span>
+              <span>{isIntl ? 'Mandatory International Travel Documents Checklist' : 'Mandatory Travel & Route Documents Checklist'}</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               {mandatoryDocuments.map((doc, i) => (

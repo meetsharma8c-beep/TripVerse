@@ -53,6 +53,8 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
   const destination = trip.destination.split(',')[0].trim();
   const origin = (trip.origin || 'City Center').split(',')[0].trim();
   const travelers = Math.max(1, trip.travelersCount || 1);
+  const tripCountry = (trip.destinationDetails?.country || '').toLowerCase();
+  const isIndiaRoute = tripCountry === 'india' || ['udaipur', 'goa', 'manali', 'jaipur', 'kerala', 'ladakh', 'rishikesh', 'varanasi', 'mumbai', 'delhi'].some(k => destination.toLowerCase().includes(k));
 
   // Compute travel dates
   const today = new Date();
@@ -613,8 +615,12 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     <div className="flex items-center gap-2.5">
                       <Train className="w-5 h-5 text-indigo-600 shrink-0" />
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">IRCTC Indian Railways</span>
-                        <span className="text-[11px] text-slate-500">Live seat quota & tatkal booking</span>
+                        <span className="text-xs font-bold text-slate-800 block">
+                          {isIndiaRoute ? 'IRCTC Indian Railways' : 'Global Rail & High-Speed Trains'}
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          {isIndiaRoute ? 'Live seat quota & tatkal booking' : 'Trainline / Eurail / JR Pass / Amtrak reservations'}
+                        </span>
                       </div>
                     </div>
                     <ExternalLink className="w-4 h-4 text-slate-400 shrink-0" />
@@ -629,8 +635,12 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     <div className="flex items-center gap-2.5">
                       <Bus className="w-5 h-5 text-rose-600 shrink-0" />
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">redBus Sleeper & Express</span>
-                        <span className="text-[11px] text-slate-500">Overnight air-conditioned buses</span>
+                        <span className="text-xs font-bold text-slate-800 block">
+                          {isIndiaRoute ? 'redBus Sleeper & Express' : 'FlixBus & Intercity Coaches'}
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          {isIndiaRoute ? 'Overnight air-conditioned buses' : 'Direct intercity express coach tickets'}
+                        </span>
                       </div>
                     </div>
                     <ExternalLink className="w-4 h-4 text-slate-400 shrink-0" />
@@ -645,8 +655,10 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     <div className="flex items-center gap-2.5">
                       <Car className="w-5 h-5 text-amber-600 shrink-0" />
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">Zoomcar Self-Drive</span>
-                        <span className="text-[11px] text-slate-500">Keyless vehicle rental in {destination}</span>
+                        <span className="text-xs font-bold text-slate-800 block">
+                          {isIndiaRoute ? 'Zoomcar Self-Drive' : 'Rentalcars.com & Self-Drive'}
+                        </span>
+                        <span className="text-[11px] text-slate-500">Self-drive vehicle rental in {destination}</span>
                       </div>
                     </div>
                     <ExternalLink className="w-4 h-4 text-slate-400 shrink-0" />

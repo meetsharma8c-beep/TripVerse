@@ -63,6 +63,30 @@ import { getFeasibleTransportModes } from '../../services/transportFeasibilityEn
 import { useLanguage } from '../../services/languageService';
 import { loadUserProfile } from '../../services/storageService';
 
+function detectDefaultOriginHub(): string {
+  try {
+    const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').toLowerCase();
+    if (tz.includes('calcutta') || tz.includes('kolkata') || tz.includes('asia/colombo')) return 'Mumbai, India';
+    if (tz.includes('london')) return 'London, United Kingdom';
+    if (tz.includes('paris')) return 'Paris, France';
+    if (tz.includes('berlin')) return 'Berlin, Germany';
+    if (tz.includes('rome')) return 'Rome, Italy';
+    if (tz.includes('madrid')) return 'Madrid, Spain';
+    if (tz.includes('zurich')) return 'Zurich, Switzerland';
+    if (tz.includes('tokyo')) return 'Tokyo, Japan';
+    if (tz.includes('singapore')) return 'Singapore';
+    if (tz.includes('dubai')) return 'Dubai, UAE';
+    if (tz.includes('bangkok')) return 'Bangkok, Thailand';
+    if (tz.includes('sydney') || tz.includes('melbourne')) return 'Sydney, Australia';
+    if (tz.includes('auckland')) return 'Auckland, New Zealand';
+    if (tz.includes('toronto') || tz.includes('vancouver') || tz.includes('montreal')) return 'Toronto, Canada';
+    if (tz.includes('los_angeles')) return 'Los Angeles, USA';
+    if (tz.includes('chicago')) return 'Chicago, USA';
+    if (tz.includes('america') || tz.includes('new_york')) return 'New York, USA';
+  } catch {}
+  return 'New York, USA';
+}
+
 interface PlannerWizardProps {
   currentUser?: AuthUser | null;
   initialDestination?: string;
@@ -104,7 +128,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   const totalSteps = 9;
 
   // Step 1: Destination
-  const [origin, setOrigin] = useState(() => loadUserProfile(currentUser?.uid)?.location || 'Ahmedabad, Gujarat');
+  const [origin, setOrigin] = useState(() => {
+    const savedLoc = loadUserProfile(currentUser?.uid)?.location;
+    if (savedLoc && savedLoc !== 'Worldwide' && savedLoc !== 'India') return savedLoc;
+    return detectDefaultOriginHub();
+  });
   const [originCoords, setOriginCoords] = useState<Coordinates | undefined>();
   const [destination, setDestination] = useState(initialDestination);
 
@@ -196,7 +224,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         },
         () => {
           setIsDetectingOrigin(false);
-          setOrigin('Ahmedabad, Gujarat');
+          setOrigin(detectDefaultOriginHub());
         },
         { timeout: 8000 }
       );
@@ -661,7 +689,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                         setOrigin(e.target.value);
                         setOriginCoords(undefined);
                       }}
-                      placeholder="e.g. Ahmedabad, Gujarat"
+                      placeholder="e.g. London, New York, Tokyo, Mumbai, Paris..."
                       className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 font-semibold text-sm focus:bg-white focus:outline-none focus:border-[#2D5A3D] focus:ring-4 focus:ring-[#2D5A3D]/15"
                     />
                   </div>
@@ -690,7 +718,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                         setShowDestDropdown(true);
                       }}
                       onFocus={() => setShowDestDropdown(true)}
-                      placeholder="Type any spot (e.g. Mansarovar in Jaipur, Polo Forest, Chopta)..."
+                      placeholder="Type any destination on Earth (e.g. Paris, Kyoto, Santorini, Reykjavik, Goa)..."
                       className="w-full pl-10 pr-10 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm focus:bg-white focus:outline-none focus:border-[#2D5A3D] focus:ring-4 focus:ring-[#2D5A3D]/15 text-slate-900 shadow-xs"
                     />
                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -817,24 +845,23 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
 
                 {/* Popular Quick Select */}
                 <div>
-                  <span className="text-xs font-semibold text-slate-400 block mb-2">Featured Hotspots & Micro-Destinations:</span>
+                  <span className="text-xs font-semibold text-slate-400 block mb-2">Featured Worldwide & Regional Destinations:</span>
                   <div className="flex flex-wrap gap-2">
                     {(
                       [
-                        { name: 'Polo Forest', label: 'Polo Forest' },
-                        { name: 'Chopta', label: 'Chopta (Tungnath)', highlight: true },
-                        { name: 'Dhanushkodi', label: 'Dhanushkodi' },
-                        { name: 'Gokarna', label: 'Gokarna', highlight: true },
-                        { name: 'Statue of Unity', label: 'Statue of Unity' },
-                        { name: 'Modhera', label: 'Modhera Sun Temple' },
-                        { name: 'Mount Abu', label: 'Mount Abu' },
-                        { name: 'Kasol', label: 'Kasol' },
-                        { name: 'Spiti Valley', label: 'Spiti Valley' },
-                        { name: 'Hampi', label: 'Hampi' },
-                        { name: 'Varkala', label: 'Varkala' },
-                        { name: 'Udaipur', label: 'Udaipur' },
-                        { name: 'Manali', label: 'Manali' },
-                        { name: 'Goa', label: 'Goa' }
+                        { name: 'Paris', label: 'Paris, France', highlight: true },
+                        { name: 'Tokyo', label: 'Tokyo, Japan', highlight: true },
+                        { name: 'Santorini', label: 'Santorini, Greece' },
+                        { name: 'Swiss Alps', label: 'Swiss Alps' },
+                        { name: 'Bali', label: 'Bali, Indonesia', highlight: true },
+                        { name: 'New York City', label: 'New York, USA' },
+                        { name: 'Dubai', label: 'Dubai, UAE' },
+                        { name: 'Rome', label: 'Rome, Italy' },
+                        { name: 'Queenstown', label: 'Queenstown, NZ' },
+                        { name: 'Reykjavik', label: 'Reykjavik, Iceland' },
+                        { name: 'Udaipur', label: 'Udaipur, India' },
+                        { name: 'Goa', label: 'Goa, India' },
+                        { name: 'Manali', label: 'Manali, Himalayas' }
                       ] as { name: string; label: string; highlight?: boolean }[]
                     ).map(item => (
                       <button

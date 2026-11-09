@@ -127,9 +127,9 @@ export const PublicLaunchSpotlight: React.FC<PublicLaunchSpotlightProps> = ({
               <div className="w-10 h-10 rounded-xl bg-blue-400/20 text-blue-300 flex items-center justify-center font-bold">
                 <Radio className="w-5 h-5 text-blue-400" />
               </div>
-              <h3 className="font-bold text-white text-base">Emergency information</h3>
+              <h3 className="font-bold text-white text-base">Global Emergency Reference</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Emergency contacts vary by location. The app provides a small set of India helpline references; it does not locate or verify nearby services.
+                Provides regional emergency and consular helpline references (112, 911, 999, 110) tailored to your destination country.
               </p>
               <span className="text-[10px] font-bold text-blue-300 uppercase tracking-wider block pt-1">
                 Check local official guidance

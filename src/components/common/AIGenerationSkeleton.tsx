@@ -20,22 +20,22 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
 
   const steps = [
     {
-      title: 'Synthesizing Optimal Highway Corridor',
-      desc: `Evaluating NH expressway lanes, speed limits, and scenic passes to ${destination}...`,
+      title: 'Synthesizing Optimal Global Route & Transit',
+      desc: `Evaluating flight corridors, rail links, and scenic drives to ${destination}...`,
       icon: Car
     },
     {
-      title: 'Pre-calculating FastTag Toll Plazas',
-      desc: 'Retrieving official NHAI toll tariffs and vehicle mileage estimates...',
+      title: 'Resolving Local Landmarks & Geographic Coordinates',
+      desc: 'Retrieving verified sightseeing highlights, operating hours, and regional transit...',
       icon: ShieldCheck
     },
     {
-      title: 'Selecting High-Hygiene Pitstops & Dhabas',
-      desc: 'Preparing a draft itinerary and route lookup...',
+      title: 'Curating Authentic Dining & Scenic Pitstops',
+      desc: 'Selecting top-rated local culinary experiences and rest stops along your route...',
       icon: Coffee
     },
     {
-      title: 'Locking Partner Stays & Day Itinerary',
+      title: 'Optimizing Stays & Multi-Currency Day Itinerary',
       desc: `Ensuring total spend fits comfortably within your ${formatCurrency(budget, currency)} budget...`,
       icon: Bed
     }

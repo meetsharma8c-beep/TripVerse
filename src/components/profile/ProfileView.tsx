@@ -356,7 +356,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-slate-600 pt-1 font-sans">
               <span className="flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                <span>{currentUser ? (userProfile.location || 'India') : 'India'}</span>
+                <span>{currentUser ? (userProfile.location || 'Worldwide') : 'Worldwide'}</span>
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
@@ -720,7 +720,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/70 flex items-start gap-3 text-xs text-slate-700">
             <Sparkles className="w-4 h-4 text-[#2D5A3D] flex-shrink-0 mt-0.5" />
             <p className="leading-relaxed">
-              <strong>Personalized Recommendation Rule:</strong> Because you frequently choose budget havelis and road trips from Ahmedabad, TripVerse prioritizes NH-48 rest stops with top 5-star washroom ratings and cost-effective group room packages.
+              <strong>Personalized Recommendation Rule:</strong> Based on your travel profile ({userProfile.location || 'Worldwide'}), TripVerse automatically adapts routes, local transit options, multi-currency budgets, and verified dining stops for any destination on Earth.
             </p>
           </div>
         </div>
