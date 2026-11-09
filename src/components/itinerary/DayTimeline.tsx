@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { DayPlan, ItineraryActivity, TransportDeal, CurrencyCode } from '../../types/trip';
+import { DayPlan, ItineraryActivity, TransportDeal, CurrencyCode, Coordinates } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError, DEFAULT_TRAVEL_FALLBACK_IMAGE } from '../../utils/destinationImages';
 import { fetchOriginalPhoto, getInstantPhoto } from '../../services/originalPhotoService';
-import { getDestinationHighlights } from '../../services/landmarkAtlasService';
+import { getDestinationHighlights, calculateTransitBetween, resolveLandmarkCoordinates } from '../../services/landmarkAtlasService';
 import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, Info, ShieldCheck, Zap, Activity, Building2, Moon, RotateCcw, CalendarPlus } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { Landmark3DViewer } from '../common/Landmark3DViewer';
@@ -93,6 +93,37 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
   const [selected3DLandmark, setSelected3DLandmark] = useState('');
   const [weatherSwappedDays, setWeatherSwappedDays] = useState<Record<number, boolean>>({});
   const [isFlexiblePacing, setIsFlexiblePacing] = useState(false);
+  const [userCoords, setUserCoords] = useState<Coordinates | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  const requestLiveLocation = () => {
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      setLocationError('Geolocation is not supported by your browser.');
+      setTimeout(() => setLocationError(null), 4000);
+      return;
+    }
+    setIsLocating(true);
+    setLocationError(null);
+    triggerHaptic('medium');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserCoords({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        });
+        setIsLocating(false);
+        triggerHaptic('success');
+      },
+      (err) => {
+        setIsLocating(false);
+        setLocationError(err.code === 1 ? 'Location access was denied in browser settings.' : 'Unable to determine GPS location.');
+        setTimeout(() => setLocationError(null), 4500);
+        triggerHaptic('warning');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
 
   const destinationHighlights = useMemo(() => {
     if (!destination) return [];
@@ -163,18 +194,42 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
   return (
     <div className="space-y-6 font-sans pb-28 md:pb-8">
       
-      {/* Itinerary Control Bar: Advisory & Flexibility Switch */}
+      {/* Itinerary Control Bar: Advisory, Live GPS & Flexibility Switch */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-[#E8EFE7]/70 border border-[#8EA78D]/30">
         <div className="flex items-center gap-2 text-xs text-[#2D5A3D]">
           <Compass className="w-4 h-4 text-[#2D5A3D] shrink-0" />
           <span className="font-semibold">
-            {isFlexiblePacing 
-              ? 'Flexible Exploration Mode: Day goals without rigid hour-by-hour locks' 
-              : t('itinerary.smartItineraryAdvisory')}
+            {userCoords
+              ? t('Live GPS Active: Real-time distance and ETA calculated from your current location')
+              : isFlexiblePacing 
+                ? 'Flexible Exploration Mode: Day goals without rigid hour-by-hour locks' 
+                : t('itinerary.smartItineraryAdvisory')}
           </span>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 flex-wrap">
+          {/* Live GPS Mode Toggle */}
+          <button
+            type="button"
+            onClick={userCoords ? () => { triggerHaptic('light'); setUserCoords(null); } : requestLiveLocation}
+            disabled={isLocating}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              userCoords
+                ? 'bg-emerald-700 text-white shadow-xs hover:bg-emerald-800'
+                : 'bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50'
+            }`}
+            title={userCoords ? t('Click to turn off live GPS mode') : t('Detect your GPS location to calculate real-time distance to every activity')}
+          >
+            <Navigation className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
+            <span>
+              {isLocating 
+                ? t('Locating...') 
+                : userCoords 
+                  ? t('Live GPS Connected') 
+                  : t('Live GPS Mode')}
+            </span>
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -192,6 +247,13 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
           </button>
         </div>
       </div>
+
+      {locationError && (
+        <div className="px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-medium flex items-center justify-between animate-fadeIn">
+          <span>{locationError}</span>
+          <button type="button" onClick={() => setLocationError(null)} className="text-amber-600 hover:text-amber-800 font-bold ml-2">×</button>
+        </div>
+      )}
 
       {/* Screen 2: Vertical Day Timeline Stream */}
       <div className="relative space-y-5">
@@ -451,6 +513,8 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
 
                       {activeDay.activities.map((act, idx) => {
                         const Icon = getActivityIcon(act.type);
+                        const actCoords: Coordinates = act.coordinates || resolveLandmarkCoordinates(act.location || act.title, { lat: 25.5, lng: 91.5 });
+                        const liveTransit = userCoords && actCoords ? calculateTransitBetween(userCoords, actCoords) : null;
 
                         return (
                           <div
@@ -603,7 +667,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                               {act.travelTimeMin > 0 && (
                                 <>
                                   <span className="text-slate-300">•</span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex items-center gap-1" title={t('Planned transit from previous stop')}>
                                     <Clock className="w-3.5 h-3.5 text-[#8EA78D]" />
                                     <span>{act.travelTimeMin} min transit</span>
                                   </span>
@@ -613,11 +677,36 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                               {act.distanceKm > 0 && (
                                 <>
                                   <span className="text-slate-300">•</span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex items-center gap-1" title={t('Planned distance from previous stop')}>
                                     <Car className="w-3.5 h-3.5 text-[#8EA78D]" />
                                     <span>{act.distanceKm} km</span>
                                   </span>
                                 </>
+                              )}
+
+                              {/* Real-time GPS distance when user has live mode active */}
+                              {liveTransit && (
+                                <>
+                                  <span className="text-slate-300">•</span>
+                                  <span className="inline-flex items-center gap-1 font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full text-[11px]">
+                                    <Compass className="w-3 h-3 text-emerald-600 animate-pulse" />
+                                    <span>{liveTransit.distanceKm} km from you ({liveTransit.travelTimeMin}m live)</span>
+                                  </span>
+                                </>
+                              )}
+
+                              {/* Quick GPS live check button */}
+                              {!userCoords && (
+                                <button
+                                  type="button"
+                                  onClick={requestLiveLocation}
+                                  disabled={isLocating}
+                                  className="text-[10px] text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200/60 px-1.5 py-0.5 rounded-md font-semibold transition-colors flex items-center gap-1 cursor-pointer ml-auto sm:ml-0"
+                                  title={t('Calculate real-time distance and ETA from your current GPS location')}
+                                >
+                                  <Navigation className={`w-2.5 h-2.5 text-emerald-600 ${isLocating ? 'animate-spin' : ''}`} />
+                                  <span>{isLocating ? t('Locating...') : t('Live ETA')}</span>
+                                </button>
                               )}
                             </div>
 
@@ -653,6 +742,23 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                             {/* External Links (Maps, Zomato, Stays) */}
                             <div className="mt-2 pt-2 border-t border-[#E2EBE1] flex items-center justify-between gap-2 flex-wrap">
                               <div className="flex items-center gap-2 flex-wrap">
+                                {/* Direct Turn-by-Turn GPS Navigation from User's Current Location */}
+                                <a
+                                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                                    act.coordinates 
+                                      ? `${act.coordinates.lat},${act.coordinates.lng}` 
+                                      : `${act.title}, ${act.location}`
+                                  )}&travelmode=driving`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 text-[11px] font-bold text-white bg-[#2D5A3D] hover:bg-[#23462f] shadow-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                                  title={t('Start turn-by-turn navigation in Google Maps from your current location')}
+                                >
+                                  <Navigation className="w-3 h-3 text-emerald-200 fill-current" />
+                                  <span>{t('Navigate')}</span>
+                                  <ExternalLink className="w-2.5 h-2.5 text-emerald-200" />
+                                </a>
+
                                 <a
                                   href={act.mapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(act.location || act.title)}`}
                                   target="_blank"
