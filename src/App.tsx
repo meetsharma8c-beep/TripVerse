@@ -247,11 +247,14 @@ export function App() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewTrip, setReviewTrip] = useState<Trip | null>(null);
 
+  // Detect search engine crawlers / preview bots so they immediately render full content without splash screens or onboarding modals
+  const isSearchCrawler = typeof navigator !== 'undefined' && /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebot|ia_archiver|twitterbot|linkedinbot|whatsapp|applebot|semrushbot|ahrefsbot|lighthouse|chrome-lighthouse|pagespeed|gtmetrix|headlesschrome/i.test(navigator.userAgent || '');
+
   // Native & PWA App Opening Animation Screen State
   const [showSplash, setShowSplash] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get('nosplash') === 'true') {
+      if (searchParams.get('nosplash') === 'true' || isSearchCrawler) {
         return false;
       }
     }
@@ -260,7 +263,7 @@ export function App() {
   const [splashPlatform, setSplashPlatform] = useState<'ios' | 'android' | undefined>(undefined);
 
   // Genuine App Initialization Tracking
-  const [isAppReady, setIsAppReady] = useState<boolean>(false);
+  const [isAppReady, setIsAppReady] = useState<boolean>(() => isSearchCrawler);
   const [initStage, setInitStage] = useState<{ progress: number; message: string }>({
     progress: 25,
     message: 'Initializing travel intelligence...'
@@ -1137,14 +1140,14 @@ export function App() {
     currentUser?.uid
   ]);
 
-  // Auto-launch Onboarding Tour strictly for first-time ever visitors once
+  // Auto-launch Onboarding Tour strictly for first-time ever visitors once (never for search crawlers)
   useEffect(() => {
-    if (!hasCompletedOnboarding() && !showSplash) {
+    if (!hasCompletedOnboarding() && !showSplash && !isSearchCrawler) {
       setOnboardingCompleted(true);
       const timer = setTimeout(() => setIsOnboardingOpen(true), 600);
       return () => clearTimeout(timer);
     }
-  }, [showSplash]);
+  }, [showSplash, isSearchCrawler]);
 
   // Update notification counts in real-time & sync App Badging (Windows Taskbar & Android Launcher)
   useEffect(() => {
