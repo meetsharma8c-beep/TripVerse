@@ -121,7 +121,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
       // safe fallback
     }
     onClose();
-    onStartPlanning();
   };
 
   const handleSkip = () => {

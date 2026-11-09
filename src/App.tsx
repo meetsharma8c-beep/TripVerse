@@ -168,7 +168,7 @@ export function App() {
 
   // Modals & Drawers
   const [isPlannerOpen, setIsPlannerOpen] = useState(() => Boolean(initialRoute.openPlanner && !isGuestUser(getCurrentUser())));
-  const [isGuestPlannerRestrictedOpen, setIsGuestPlannerRestrictedOpen] = useState(false);
+  const [isGuestPlannerRestrictedOpen, setIsGuestPlannerRestrictedOpen] = useState(() => Boolean(initialRoute.openPlanner && isGuestUser(getCurrentUser())));
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -844,7 +844,7 @@ export function App() {
       if (route.openPlanner) {
         const activeUser = currentUser ?? getCurrentUser();
         if (isGuestUser(activeUser)) {
-          setIsGuestPlannerRestrictedOpen(false);
+          setIsGuestPlannerRestrictedOpen(true);
         } else {
           const quota = getUserSubscriptionQuota(activeUser);
           if (!quota.canCreateTrip) {
