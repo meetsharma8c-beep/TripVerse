@@ -873,12 +873,9 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                         }}
                         className={`text-xs px-3 py-1.5 rounded-full border transition-all font-semibold whitespace-nowrap cursor-pointer flex items-center gap-1 ${destination.toLowerCase() === item.name.toLowerCase()
                           ? 'bg-[#2D5A3D] text-white border-[#2D5A3D] shadow-xs'
-                          : item.highlight
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-400 font-bold'
-                            : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'
                           }`}
                       >
-                        {item.highlight && <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />}
                         <span>{item.label}</span>
                       </button>
                     ))}

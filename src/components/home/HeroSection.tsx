@@ -250,13 +250,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     };
   }, [destination]);
 
-  const quickDests: { name: string; label: string; isHighlight?: boolean }[] = [
-    { name: 'Paris', label: 'Paris', isHighlight: true },
-    { name: 'Tokyo', label: 'Tokyo', isHighlight: true },
+  const quickDests: { name: string; label: string }[] = [
+    { name: 'Paris', label: 'Paris' },
+    { name: 'Tokyo', label: 'Tokyo' },
     { name: 'Santorini', label: 'Santorini' },
     { name: 'Bali', label: 'Bali' },
     { name: 'New York City', label: 'New York' },
-    { name: 'Swiss Alps', label: 'Swiss Alps', isHighlight: true },
+    { name: 'Swiss Alps', label: 'Swiss Alps' },
     { name: 'Dubai', label: 'Dubai' },
     { name: 'Udaipur', label: 'Udaipur' },
     { name: 'Goa', label: 'Goa' }
@@ -1089,12 +1089,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       className={`min-h-[44px] px-3.5 py-2 rounded-full border transition-all cursor-pointer inline-flex items-center gap-1.5 text-xs font-bold ${
                         destination.toLowerCase() === item.name.toLowerCase()
                           ? 'bg-[#2D5A3D] text-white border-[#2D5A3D] shadow-xs'
-                          : item.isHighlight
-                            ? 'bg-[#E8EFE7] text-[#2D5A3D] border-[#DCE7DB] hover:border-[#2D5A3D]'
-                            : 'bg-white text-slate-700 border-[#DCE7DB] hover:border-[#2D5A3D] hover:bg-[#F4F6F2]'
+                          : 'bg-white text-slate-700 border-[#DCE7DB] hover:border-[#2D5A3D] hover:bg-[#F4F6F2]'
                       }`}
                     >
-                      {item.isHighlight && <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
                       <span>{item.label}</span>
                     </button>
                   ))}
