@@ -206,7 +206,7 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
     Boolean(trip.routeDetails.encodedPolyline);
 
   return (
-    <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-4">
+    <div id="smart-route-map" className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-4 scroll-mt-24">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Driving route')}</span>

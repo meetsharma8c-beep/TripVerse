@@ -2110,7 +2110,19 @@ export function App() {
                 onOptimizeBudget={() => setTripSubTab('budget')}
                 onExportTrip={handleExportTrip}
                 onOpenLiveNav={() => setIsLiveNavOpen(true)}
-                onNavigateToRoute={() => setTripSubTab('route')}
+                onNavigateToRoute={() => {
+                  if (tripSubTab === 'route') {
+                    setIsLiveNavOpen(true);
+                  } else {
+                    setTripSubTab('route');
+                    setTimeout(() => {
+                      const el = document.getElementById('smart-route-map');
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }, 120);
+                  }
+                }}
                 onOpenDeals={() => setIsBestDealModalOpen(true)}
                 onOpenPrintDossier={() => setIsPrintModalOpen(true)}
                 onOpenBooking={() => setIsBookingModalOpen(true)}
@@ -2170,13 +2182,14 @@ export function App() {
 
                 return (
                   <div className="space-y-3">
-                    {/* Screen 2: Mobile 4-pill Sub-Navigation Bar */}
-                    <div className="lg:hidden flex items-center justify-between gap-1.5 p-1 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] shadow-2xs">
+                    {/* Screen 2: Mobile Sub-Navigation Bar with Route Map */}
+                    <div className="lg:hidden flex items-center justify-between gap-1 p-1 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] shadow-2xs overflow-x-auto scrollbar-none">
                       {[
                         { id: 'itinerary', label: 'Itinerary' },
+                        { id: 'route', label: 'Route' },
                         { id: 'deals', label: 'Transport' },
                         { id: 'hub', label: 'Stay' },
-                        { id: 'gems', label: 'Recommendations' }
+                        { id: 'gems', label: 'Places' }
                       ].map(tab => {
                         const isActive = tripSubTab === tab.id;
                         return (
@@ -2187,7 +2200,7 @@ export function App() {
                               triggerHaptic('light');
                               setTripSubTab(tab.id as any);
                             }}
-                            className={`flex-1 py-2 px-1 rounded-full text-xs font-bold transition-all text-center cursor-pointer ${
+                            className={`flex-1 py-2 px-1 rounded-full text-[11px] sm:text-xs font-bold transition-all text-center cursor-pointer whitespace-nowrap ${
                               isActive
                                 ? 'bg-[#2D5A3D] text-white shadow-xs'
                                 : 'text-[#57685D] hover:text-[#152A1C]'

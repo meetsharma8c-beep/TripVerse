@@ -201,9 +201,17 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
 
           {/* Interactive Route Vector with Pins */}
           <button
-            onClick={onNavigateToRoute || onOpenLiveNav}
-            className="flex items-center gap-1.5 p-2 rounded-2xl hover:bg-[#F4F6F2] transition-colors text-[#2D5A3D] cursor-pointer shrink-0 group"
+            type="button"
+            onClick={() => {
+              if (onNavigateToRoute) {
+                onNavigateToRoute();
+              } else if (onOpenLiveNav) {
+                onOpenLiveNav();
+              }
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl bg-[#F8FAF7] hover:bg-[#E8EFE7] border border-[#E2EBE1] hover:border-[#8EA78D]/60 active:scale-95 transition-all text-[#2D5A3D] cursor-pointer shrink-0 group shadow-2xs"
             title="View Route Map and Directions"
+            aria-label="View Route Map and Directions"
           >
             <div className="relative w-16 h-8 sm:w-20 sm:h-9 flex items-center justify-center">
               {/* Dotted bezier curve */}
