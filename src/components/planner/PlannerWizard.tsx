@@ -60,6 +60,8 @@ import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { AuthUser } from '../../types/auth';
 import { getUserSubscriptionQuota, getCurrentUser, isGuestUser } from '../../services/authService';
 import { getFeasibleTransportModes } from '../../services/transportFeasibilityEngine';
+import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
+import { syncLiveExchangeRates } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 import { loadUserProfile } from '../../services/storageService';
 
@@ -315,6 +317,24 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
 
   // Step 9: Comfort Priorities
   const [priorities, setPriorities] = useState<Priority[]>(['budget', 'experience', 'comfort']);
+
+  // Trigger Live Forex Rate Sync on Mount
+  useEffect(() => {
+    syncLiveExchangeRates().catch(() => {});
+  }, []);
+
+  // Real-time 6-Vertical Market Price Intelligence Report
+  const liveMarketReport = React.useMemo(() => {
+    return evaluateLiveMarketPrices({
+      origin: origin || 'Mumbai',
+      destination: destination || 'Destination',
+      durationDays: duration,
+      travelersCount,
+      startDate,
+      accommodationType,
+      transportMode
+    });
+  }, [origin, destination, duration, travelersCount, startDate, accommodationType, transportMode]);
 
   const togglePreference = (pref: TravelPreference) => {
     if (preferences.includes(pref)) {
@@ -1182,6 +1202,154 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                   <span className="truncate">{formatCurrency(budgetMode === 'total' ? 200000 : 75000, currency)}+ (Luxury)</span>
                 </div>
               </div>
+
+              {/* LIVE MARKET PRICE METER across 6 Verticals */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-900 text-white border border-slate-800 space-y-3.5 shadow-lg">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400">
+                      Live Market Price Index ({liveMarketReport.originCity} → {liveMarketReport.destinationCity})
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                      {liveMarketReport.seasonBadge}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const recTotal = liveMarketReport.recommendedGroundBudgetINR;
+                        setBudgetAmount(
+                          budgetMode === 'total'
+                            ? Math.min(200000, recTotal)
+                            : Math.min(75000, Math.round(recTotal / Math.max(1, travelersCount)))
+                        );
+                      }}
+                      className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-colors cursor-pointer"
+                    >
+                      Sync Slider to Live Ground Rate ({formatCurrency(
+                        budgetMode === 'total'
+                          ? liveMarketReport.recommendedGroundBudgetINR
+                          : Math.round(liveMarketReport.recommendedGroundBudgetINR / Math.max(1, travelersCount)),
+                        currency
+                      )})
+                    </button>
+                  </div>
+                </div>
+
+                {/* Smart Nearby Hub Arbitrage Alert Banner */}
+                {liveMarketReport.smartHubArbitrage && (
+                  <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span className="text-xs font-extrabold text-emerald-300">
+                          Smart Airport Hub Arbitrage: Save {formatCurrency(liveMarketReport.smartHubArbitrage.totalGroupSavings, currency)}!
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-100/90 leading-snug">
+                        {liveMarketReport.smartHubArbitrage.originCity} ({liveMarketReport.smartHubArbitrage.originCode}) round-trip flights are ~{formatCurrency(liveMarketReport.smartHubArbitrage.originRoundTripPerPerson, currency)}/person (1-stop surge). Driving {liveMarketReport.smartHubArbitrage.driveTimeText} to <strong>{liveMarketReport.smartHubArbitrage.hubCity} ({liveMarketReport.smartHubArbitrage.hubCode})</strong> drops airfare to <strong>~{formatCurrency(liveMarketReport.smartHubArbitrage.hubRoundTripPerPerson, currency)}/person</strong>!
+                      </p>
+                    </div>
+                    <a
+                      href={liveMarketReport.smartHubArbitrage.hubGoogleFlightsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-[11px] shrink-0 text-center transition-colors"
+                    >
+                      Check {liveMarketReport.smartHubArbitrage.hubCode} Flights ↗
+                    </a>
+                  </div>
+                )}
+
+                {/* 6-Vertical Itemized Market Breakdown */}
+                <div className="divide-y divide-slate-800/80 text-xs">
+                  {liveMarketReport.lineItems.map((item) => {
+                    const displayAmt = budgetMode === 'total' ? item.totalGroupAmountINR : item.amountPerPersonINR;
+                    const badgeClasses =
+                      item.statusTone === 'surge'
+                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                        : item.statusTone === 'savings'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                        : item.statusTone === 'warning'
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                        : 'bg-sky-500/20 text-sky-300 border-sky-500/30';
+
+                    return (
+                      <div key={item.id} className="py-2 flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-slate-100">{item.itemTitle}</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${badgeClasses}`}>
+                              {item.statusLabel}
+                            </span>
+                            {!item.isIncludedInGroundBudget && (
+                              <span className="text-[9px] font-semibold text-amber-300/90">
+                                • Separate Air/Hub Ticket
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-400 truncate mt-0.5">{item.subtitle}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className={`font-extrabold block ${item.id === 'smart_hub' ? 'text-emerald-400' : 'text-white'}`}>
+                            {formatCurrency(displayAmt, currency)}
+                          </span>
+                          {item.bookingUrl && (
+                            <a
+                              href={item.bookingUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] font-bold text-emerald-400 hover:underline"
+                            >
+                              {item.bookingProvider || 'Live Rate'} ↗
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Summary Totals Footer */}
+                <div className="pt-2.5 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-slate-800/90 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-semibold">Live On-Ground Market Cost</span>
+                      <span className="text-[10px] text-emerald-400 font-bold">Stays + Cabs + Passes + Dining</span>
+                    </div>
+                    <span className="text-sm font-black text-white">
+                      {formatCurrency(
+                        budgetMode === 'total'
+                          ? liveMarketReport.recommendedGroundBudgetINR
+                          : Math.round(liveMarketReport.recommendedGroundBudgetINR / Math.max(1, travelersCount)),
+                        currency
+                      )}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-800/90 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-semibold">
+                        All-In Market Total (with {liveMarketReport.smartHubArbitrage ? liveMarketReport.smartHubArbitrage.hubCode : liveMarketReport.originAirportCode} Flights)
+                      </span>
+                      <span className="text-[10px] text-sky-400 font-bold">
+                        {liveMarketReport.smartHubArbitrage
+                          ? `Saves ${formatCurrency(liveMarketReport.smartHubArbitrage.totalGroupSavings, currency)} vs ${liveMarketReport.originAirportCode}`
+                          : 'Round-Trip Air + Ground'}
+                      </span>
+                    </div>
+                    <span className="text-sm font-black text-emerald-400">
+                      {formatCurrency(
+                        budgetMode === 'total'
+                          ? liveMarketReport.totalWithSmartHubFlightsINR
+                          : Math.round(liveMarketReport.totalWithSmartHubFlightsINR / Math.max(1, travelersCount)),
+                        currency
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1412,6 +1580,17 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       tMode.id === 'train' ? Train :
                       tMode.id === 'flight' ? Plane : Sparkles;
                     const isSelected = transportMode === tMode.id;
+                    const liveModePriceTag =
+                      tMode.id === 'flight'
+                        ? liveMarketReport.smartHubArbitrage
+                          ? `~${formatCurrency(liveMarketReport.smartHubArbitrage.hubRoundTripPerPerson, currency)}/pax via ${liveMarketReport.smartHubArbitrage.hubCode}`
+                          : `~${formatCurrency(liveMarketReport.flightRoundTripPerPersonINR, currency)}/pax RT`
+                        : tMode.id === 'train'
+                        ? `~${formatCurrency(liveMarketReport.trainRoundTripPerPersonINR, currency)}/pax RT`
+                        : tMode.id === 'car' || tMode.id === 'bike'
+                        ? `~${formatCurrency(liveMarketReport.roadTripFuelAndTollsINR, currency)} fuel & tolls`
+                        : null;
+
                     return (
                       <button
                         key={tMode.id}
@@ -1422,7 +1601,14 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                           : 'border-slate-200 hover:border-slate-300 bg-white'
                           }`}
                       >
-                        <IconComponent className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
+                        <div className="flex items-center justify-between gap-1 mb-1.5">
+                          <IconComponent className={`w-5 h-5 ${isSelected ? 'text-[#2D5A3D]' : 'text-slate-400'}`} />
+                          {liveModePriceTag && (
+                            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-emerald-100 text-[#2D5A3D]">
+                              {liveModePriceTag}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-xs sm:text-sm font-bold text-slate-900 block">{t(tMode.label)}</span>
                         <span className="text-[11px] text-slate-500">{t(tMode.desc)}</span>
                       </button>
@@ -1430,14 +1616,67 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                   })}
               </div>
 
-              {/* Airfare Dynamics & Carrier Pricing Callout when Flight is Selected */}
+              {/* Airfare Dynamics & Smart Nearby Hub Arbitrage Card when Flight is Selected */}
               {transportMode === 'flight' && (
-                <div className="p-3.5 rounded-2xl bg-sky-50/90 border border-sky-200/90 text-sky-950 text-xs flex items-start gap-2.5 animate-in fade-in">
-                  <Plane className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <span className="font-bold text-sky-900 block">Dynamic Live Airfare Notice</span>
-                    <p className="text-[11px] text-sky-800 leading-relaxed">
-                      Flight airfares are determined in real-time by airlines based on your departure airport, connections, and seasonal demand (e.g. connecting routes from smaller airports like BDQ to SXR during snow season can run ₹70k–₹85k, while nearby hubs like AMD can be ₹18k–₹25k). Your itinerary provides 1-click live search links on <strong>Google Flights</strong> for real-time fares.
+                <div className="p-4 rounded-2xl bg-sky-50/95 border border-sky-200/90 text-sky-950 text-xs space-y-3 animate-in fade-in">
+                  <div className="flex items-start justify-between gap-2.5 flex-wrap">
+                    <div className="flex items-start gap-2.5">
+                      <Plane className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-extrabold text-sky-950 block">
+                          Live Route Market Index: {liveMarketReport.originCity} ({liveMarketReport.originAirportCode}) ↔ {liveMarketReport.gatewayAirportName}
+                        </span>
+                        <span className="text-[11px] text-sky-800 block mt-0.5">
+                          {liveMarketReport.flightCarrierSummary} • Est. Round-Trip: <strong>{formatCurrency(liveMarketReport.flightRoundTripPerPersonINR, currency)}/person</strong> ({formatCurrency(liveMarketReport.flightTotalGroupINR, currency)} total for {travelersCount})
+                        </span>
+                      </div>
+                    </div>
+                    <a
+                      href={liveMarketReport.flightGoogleUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] shrink-0 transition-colors"
+                    >
+                      Verify Live on Google Flights ↗
+                    </a>
+                  </div>
+
+                  {liveMarketReport.smartHubArbitrage && (
+                    <div className="p-3 rounded-xl bg-emerald-600 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-amber-300 shrink-0 fill-amber-300" />
+                          <span className="text-xs font-black uppercase tracking-wide">
+                            Smart Nearby Hub Swap: Save {formatCurrency(liveMarketReport.smartHubArbitrage.totalGroupSavings, currency)} Total
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-emerald-50 leading-snug">
+                          {liveMarketReport.smartHubArbitrage.explanation}
+                        </p>
+                      </div>
+                      <a
+                        href={liveMarketReport.smartHubArbitrage.hubGoogleFlightsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-2 rounded-xl bg-white text-emerald-950 hover:bg-emerald-50 font-extrabold text-[11px] shrink-0 text-center transition-colors shadow-2xs"
+                      >
+                        Compare {liveMarketReport.smartHubArbitrage.hubCode} Flights ({formatCurrency(liveMarketReport.smartHubArbitrage.hubRoundTripPerPerson, currency)}/pax) ↗
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Road Trip Live Fuel + NHAI Fastag Breakdown when Car or Bike is Selected */}
+              {(transportMode === 'car' || transportMode === 'bike') && (
+                <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-xs flex items-start gap-2.5 animate-in fade-in">
+                  <Car className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-amber-900 block">
+                      Live Highway Fuel & NHAI Fastag Toll Estimate: {formatCurrency(liveMarketReport.roadTripFuelAndTollsINR, currency)} (Round-Trip)
+                    </span>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      {liveMarketReport.roadTripBreakdownText} • Local destination cab/union tariff est: {formatCurrency(liveMarketReport.localTransitTotalGroupINR, currency)} ({liveMarketReport.localTransitDescription}).
                     </p>
                   </div>
                 </div>

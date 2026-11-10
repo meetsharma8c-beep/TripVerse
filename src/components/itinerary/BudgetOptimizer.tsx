@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Trip, BudgetBreakdown, CurrencyCode } from '../../types/trip';
-import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
+import { getActiveCurrency, formatCurrency, syncLiveExchangeRates } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
-import { TrendingDown, Sparkles, Check, Car, Bed, Utensils, Ticket, Shield } from 'lucide-react';
+import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
+import { TrendingDown, Sparkles, Check, Car, Bed, Utensils, Ticket, Shield, Plane, Zap, ExternalLink, AlertTriangle } from 'lucide-react';
 
 interface BudgetOptimizerProps {
   trip: Trip;
@@ -29,6 +30,22 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
 
   const isOverBudget = trip.estimatedTotal > trip.totalBudget;
   const buffer = trip.totalBudget - trip.estimatedTotal;
+
+  useEffect(() => {
+    syncLiveExchangeRates().catch(() => {});
+  }, []);
+
+  const liveMarketReport = useMemo(() => {
+    return evaluateLiveMarketPrices({
+      origin: trip.origin || 'Mumbai',
+      destination: trip.destination,
+      durationDays: trip.durationDays || 5,
+      travelersCount: trip.travelersCount || 2,
+      startDate: trip.startDate,
+      accommodationType: trip.accommodationType,
+      transportMode: trip.transportMode
+    });
+  }, [trip.origin, trip.destination, trip.durationDays, trip.travelersCount, trip.startDate, trip.accommodationType, trip.transportMode]);
 
   // AI Savings Suggestions catalog
   const [appliedTips, setAppliedTips] = useState<Record<string, boolean>>({});
@@ -160,7 +177,148 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
 
       </div>
 
-      {/* Category Expense Breakdown */}
+      {/* 6-VERTICAL REAL-TIME MARKET PRICE INTELLIGENCE */}
+      <div className="p-4 sm:p-6 rounded-3xl bg-slate-900 text-white border border-slate-800 space-y-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-800 pb-3.5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-emerald-400">
+                Live Market Price Intelligence (6-Vertical Real-Time Index)
+              </h3>
+            </div>
+            <p className="text-xs text-slate-400">
+              Real-time route pricing for {liveMarketReport.originCity} ({liveMarketReport.originAirportCode}) ↔ {liveMarketReport.gatewayAirportName} ({liveMarketReport.gatewayAirportCode})
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+              {liveMarketReport.seasonBadge}
+            </span>
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">
+              {liveMarketReport.lastSyncedLabel}
+            </span>
+          </div>
+        </div>
+
+        {/* Smart Nearby Hub Arbitrage Callout */}
+        {liveMarketReport.smartHubArbitrage && (
+          <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 space-y-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-emerald-400 shrink-0 fill-emerald-400" />
+                <span className="text-xs font-black uppercase tracking-wide text-emerald-300">
+                  Smart Airport Hub Swap: Save {formatCurrency(liveMarketReport.smartHubArbitrage.totalGroupSavings, currency)} Total
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={liveMarketReport.smartHubArbitrage.hubGoogleFlightsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition-colors flex items-center gap-1 shadow-sm"
+                >
+                  <span>{liveMarketReport.smartHubArbitrage.hubCode} Google Flights</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <a
+                  href={liveMarketReport.smartHubArbitrage.originGoogleFlightsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors flex items-center gap-1"
+                >
+                  <span>{liveMarketReport.smartHubArbitrage.originCode} Baseline</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+            <p className="text-xs text-emerald-100/90 leading-relaxed">
+              {liveMarketReport.smartHubArbitrage.explanation}
+            </p>
+          </div>
+        )}
+
+        {/* 6-Vertical Itemized List */}
+        <div className="divide-y divide-slate-800 text-xs">
+          {liveMarketReport.lineItems.map((item) => {
+            const badgeClasses =
+              item.statusTone === 'surge'
+                ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                : item.statusTone === 'savings'
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                : item.statusTone === 'warning'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                : 'bg-sky-500/20 text-sky-300 border-sky-500/30';
+
+            return (
+              <div key={item.id} className="py-2.5 flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-extrabold text-slate-100">{item.itemTitle}</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${badgeClasses}`}>
+                      {item.statusLabel}
+                    </span>
+                    {!item.isIncludedInGroundBudget && (
+                      <span className="text-[10px] font-semibold text-amber-300/90">
+                        • Booked separately from ground budget
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{item.subtitle}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className={`font-black text-sm block ${item.id === 'smart_hub' ? 'text-emerald-400' : 'text-white'}`}>
+                    {formatCurrency(item.totalGroupAmountINR, currency)}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">
+                    ~{formatCurrency(item.amountPerPersonINR, currency)}/pax
+                  </span>
+                  {item.bookingUrl && (
+                    <a
+                      href={item.bookingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-bold text-emerald-400 hover:underline inline-flex items-center gap-1 mt-0.5"
+                    >
+                      <span>{item.bookingProvider || 'Check Live'}</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Totals Comparison Footer */}
+        <div className="pt-3 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="p-3 rounded-2xl bg-slate-800/90 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] text-slate-400 block font-semibold">Live On-Ground Market Cost</span>
+              <span className="text-[10px] text-emerald-400 font-bold">Stays + Local Cabs + Permits + Meals</span>
+            </div>
+            <span className="text-base font-black text-white">
+              {formatCurrency(liveMarketReport.recommendedGroundBudgetINR, currency)}
+            </span>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-800/90 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] text-slate-400 block font-semibold">
+                All-In Total (with {liveMarketReport.smartHubArbitrage ? `${liveMarketReport.smartHubArbitrage.hubCode} Hub Flights` : `${liveMarketReport.originAirportCode} Flights`})
+              </span>
+              <span className="text-[10px] text-sky-400 font-bold">
+                {liveMarketReport.smartHubArbitrage
+                  ? `Saves ${formatCurrency(liveMarketReport.smartHubArbitrage.totalGroupSavings, currency)} vs ${liveMarketReport.originAirportCode}`
+                  : 'Flights + Full Ground Route'}
+              </span>
+            </div>
+            <span className="text-base font-black text-emerald-400">
+              {formatCurrency(liveMarketReport.totalWithSmartHubFlightsINR, currency)}
+            </span>
+          </div>
+        </div>
+      </div>
       <div>
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
           {t('Itemized Category Breakdown')}

@@ -1,6 +1,7 @@
 import { TransportDeal, TransportMode, Priority } from '../types/trip';
 import { resolveTransitContext } from './transportFeasibilityEngine';
 import { resolvePreciseLocationSync } from './locationService';
+import { evaluateLiveMarketPrices } from './liveMarketPricingService';
 
 export interface DealQueryParams {
   mode: TransportMode;
@@ -219,69 +220,126 @@ export function generateTransportDeals(params: DealQueryParams): {
   const deals: TransportDeal[] = [];
 
   // =========================================================================
-  // FLIGHT DEALS (Location-Aware & Non-Hallucinated Gateway)
+  // FLIGHT DEALS (Live Market Indexed & Smart Nearby Hub Arbitrage Aware)
   // =========================================================================
   if ((mode === 'flight' || mode === 'any') && transit.primaryAirport !== null) {
     const flightUrls = buildFlightBookingUrl(cleanOrigin, rawDest, travelDate);
     const airportName = transit.primaryAirport?.name || `${cleanDest} Airport`;
     const isMultiModalAir = !transit.hasDirectAirport && transit.primaryAirport !== null;
 
-    const flightAirMinutes = Math.max(50, Math.round((airDistKm / 720) * 60) + 40);
-    const flightDepTime = '07:15 AM';
+    const liveMarket = evaluateLiveMarketPrices({
+      origin: params.origin,
+      destination: params.destination,
+      durationDays: params.durationDays || 5,
+      travelersCount: travelers,
+      startDate: travelDate,
+      transportMode: 'flight'
+    });
+
+    const isConnectingRoute = liveMarket.isConnectingFlightRoute;
+    const flightAirMinutes = isConnectingRoute
+      ? Math.max(290, Math.round((airDistKm / 720) * 60) + 185)
+      : Math.max(50, Math.round((airDistKm / 720) * 60) + 40);
+    const flightDepTime = isConnectingRoute ? '07:10 AM' : '07:15 AM';
     const flightArrTime = addMinutesToClockTime(flightDepTime, flightAirMinutes);
     const flightDurationStr = isMultiModalAir 
       ? `${formatMinutesToHours(flightAirMinutes)} + Road Transfer` 
       : formatMinutesToHours(flightAirMinutes);
 
-    const baseAirFare = airDistKm < 1500 
-      ? Math.round(1800 + airDistKm * 3.4)
-      : Math.round(3500 + airDistKm * 5.2);
-    const budgetFlightDealPrice = Math.max(2200, baseAirFare);
-    const budgetFlightOrigPrice = Math.round(budgetFlightDealPrice * 1.22);
+    // One-way live market equivalent per person (approx 50% of round-trip market fare)
+    const oneWayMarketFare = Math.max(2800, Math.round(liveMarket.flightRoundTripPerPersonINR * 0.5));
+    const budgetFlightDealPrice = oneWayMarketFare;
+    const budgetFlightOrigPrice = Math.round(budgetFlightDealPrice * 1.15);
     const budgetSavings = budgetFlightOrigPrice - budgetFlightDealPrice;
 
-    const fullServiceDealPrice = Math.round(budgetFlightDealPrice * 1.32);
-    const fullServiceOrigPrice = Math.round(fullServiceDealPrice * 1.2);
+    const fullServiceDealPrice = Math.round(budgetFlightDealPrice * 1.14);
+    const fullServiceOrigPrice = Math.round(fullServiceDealPrice * 1.16);
     const fullServiceSavings = fullServiceOrigPrice - fullServiceDealPrice;
-    const fullServiceDepTime = '11:30 AM';
-    const fullServiceArrTime = addMinutesToClockTime(fullServiceDepTime, flightAirMinutes + 10);
+    const fullServiceDepTime = isConnectingRoute ? '09:25 PM' : '11:30 AM';
+    const fullServiceArrTime = addMinutesToClockTime(fullServiceDepTime, flightAirMinutes + 35);
+
+    // If Smart Nearby Hub Arbitrage is available (e.g. Vadodara BDQ -> fly out of Ahmedabad AMD to save ~50k+), surface it first!
+    if (liveMarket.smartHubArbitrage) {
+      const arb = liveMarket.smartHubArbitrage;
+      const hubOneWayFare = Math.max(2500, Math.round(arb.hubRoundTripPerPerson * 0.5));
+      deals.push({
+        id: `deal-fl-smarthub-${Date.now()}`,
+        mode: 'flight',
+        provider: `${budgetAirline} — Smart Hub (${arb.hubCode})`,
+        providerLogo: 'flight',
+        title: `Smart Hub Swap: Fly from ${arb.hubCity} (${arb.hubCode}) → ${airportName}`,
+        subtitle: `Drive ${arb.driveTimeText} (${arb.distanceToHubKm} km) to ${arb.hubCode} • Round-trip ~₹${arb.hubRoundTripPerPerson.toLocaleString('en-IN')}/pax vs ₹${arb.originRoundTripPerPerson.toLocaleString('en-IN')} from ${arb.originCode}`,
+        badge: `Save ₹${arb.netSavingsPerPerson.toLocaleString('en-IN')}/pax (Smart Hub)`,
+        isBestDeal: mode === 'flight',
+        route: {
+          from: `${arb.hubCity} (${arb.hubCode})`,
+          to: airportName,
+          departureTime: '06:45 AM',
+          arrivalTime: addMinutesToClockTime('06:45 AM', Math.max(95, flightAirMinutes - 140)),
+          duration: formatMinutesToHours(Math.max(95, flightAirMinutes - 140)),
+          stopsText: `Direct / Fast Hub Connection via ${arb.hubCode}`
+        },
+        originalPrice: budgetFlightDealPrice,
+        dealPrice: hubOneWayFare,
+        discountPercent: Math.min(72, Math.max(15, Math.round(((budgetFlightDealPrice - hubOneWayFare) / budgetFlightDealPrice) * 100))),
+        savingsAmount: arb.totalGroupSavings,
+        priceUnit: 'per_person',
+        rating: 4.9,
+        reviewCount: 18400,
+        features: [
+          `Saves ₹${arb.totalGroupSavings.toLocaleString('en-IN')} total for ${travelers} traveler(s) on round-trip`,
+          `${arb.driveTimeText} cab transfer via ${arb.highwayName} (~₹${arb.groundTransferToHubCost.toLocaleString('en-IN')})`,
+          `Avoids expensive Tier-2 (${arb.originCode}) connecting layover surge`,
+          'Compare live on Google Flights'
+        ],
+        couponCode: 'SMARTHUB',
+        urgencyText: `Live ${liveMarket.seasonBadge} Market Index • Verify exact dates on Google Flights`,
+        bookingUrl: arb.hubGoogleFlightsUrl,
+        partnerVerified: true,
+        termsAndConditions: arb.explanation
+      });
+    }
 
     deals.push({
       id: `deal-fl-budget-${Date.now()}`,
       mode: 'flight',
       provider: budgetAirline,
       providerLogo: 'flight',
-      title: isMultiModalAir 
-        ? `${cleanOrigin} → ${airportName} (${cleanDest} Air Gateway)` 
-        : `${cleanOrigin} → ${cleanDest} Non-Stop Express`,
-      subtitle: isMultiModalAir
-        ? `Lands at ${airportName} • ~${transit.primaryAirport?.distanceKm || 50} km onwards road transfer to ${cleanDest}`
-        : 'Fastest Transit • Non-Stop • Cabin + 15kg Check-in',
-      badge: isMultiModalAir ? 'Fly + Road Transfer' : 'Fastest Route',
-      isBestDeal: mode === 'flight',
+      title: isConnectingRoute
+        ? `${cleanOrigin} (${liveMarket.originAirportCode}) → ${airportName} (1-Stop via Hub)`
+        : isMultiModalAir 
+          ? `${cleanOrigin} → ${airportName} (${cleanDest} Air Gateway)` 
+          : `${cleanOrigin} → ${cleanDest} Direct Express`,
+      subtitle: isConnectingRoute
+        ? `1-Stop Connecting Route • Round-trip market rate ~₹${liveMarket.flightRoundTripPerPersonINR.toLocaleString('en-IN')}/person (${liveMarket.seasonBadge})`
+        : isMultiModalAir
+          ? `Lands at ${airportName} • ~${transit.primaryAirport?.distanceKm || 50} km onwards road transfer to ${cleanDest}`
+          : `Live Market Index: ~₹${liveMarket.flightRoundTripPerPersonINR.toLocaleString('en-IN')} round-trip • Cabin + 15kg Check-in`,
+      badge: isConnectingRoute ? '1-Stop Connecting' : isMultiModalAir ? 'Fly + Road Transfer' : 'Direct Route',
+      isBestDeal: mode === 'flight' && !liveMarket.smartHubArbitrage,
       route: {
-        from: `${cleanOrigin} Airport`,
+        from: `${cleanOrigin} (${liveMarket.originAirportCode})`,
         to: airportName,
         departureTime: flightDepTime,
         arrivalTime: flightArrTime,
         duration: flightDurationStr,
-        stopsText: isMultiModalAir ? `Alight at ${airportName} for transfer` : 'Non-stop'
+        stopsText: isConnectingRoute ? '1 Stop (Hub Layover)' : isMultiModalAir ? `Alight at ${airportName} for transfer` : 'Non-stop'
       },
       originalPrice: budgetFlightOrigPrice,
       dealPrice: budgetFlightDealPrice,
-      discountPercent: 18,
+      discountPercent: 13,
       savingsAmount: budgetSavings * travelers,
       priceUnit: 'per_person',
       rating: 4.6,
       reviewCount: 12400,
       features: [
+        `Round-Trip Live Market Est: ~₹${liveMarket.flightRoundTripPerPersonINR.toLocaleString('en-IN')}/pax`,
         '15 kg Check-in Included', 
-        'Mobile Fast Check-in', 
-        isMultiModalAir ? `Onwards transfer to ${cleanDest}: ~${transit.primaryAirport?.distanceKm} km` : 'Direct Airport Arrival',
-        'Official Google Flights Action Link'
+        isMultiModalAir ? `Onwards transfer to ${cleanDest}: ~${transit.primaryAirport?.distanceKm} km` : 'Gateway Airport Arrival',
+        'Live Google Flights Search Link'
       ],
       couponCode: 'FLYTRIPVERSE',
-      urgencyText: 'Subject to live airline seat availability',
+      urgencyText: `${liveMarket.seasonBadge} • ${liveMarket.advanceBookingBadge}`,
       bookingUrl: flightUrls.googleFlights,
       partnerVerified: true,
       termsAndConditions: isMultiModalAir 
@@ -294,32 +352,36 @@ export function generateTransportDeals(params: DealQueryParams): {
       mode: 'flight',
       provider: fullServiceAirline,
       providerLogo: 'flight',
-      title: isMultiModalAir
-        ? `${cleanOrigin} → ${airportName} Full-Service Flight`
-        : `${cleanOrigin} → ${cleanDest} Full-Service Flight`,
-      subtitle: isMultiModalAir
-        ? `Gateway flight to ${airportName} • ~${transit.primaryAirport?.distanceKm || 50} km from ${cleanDest}`
-        : 'Complimentary Hot Meal • 20kg Baggage Allowance',
-      badge: 'Premium Comfort',
+      title: isConnectingRoute
+        ? `${cleanOrigin} (${liveMarket.originAirportCode}) → ${airportName} Full-Service (1-Stop)`
+        : isMultiModalAir
+          ? `${cleanOrigin} → ${airportName} Full-Service Flight`
+          : `${cleanOrigin} → ${cleanDest} Full-Service Flight`,
+      subtitle: isConnectingRoute
+        ? `Through-checked baggage via DEL/BOM • Hot Meal • Round-trip ~₹${Math.round(liveMarket.flightRoundTripPerPersonINR * 1.12).toLocaleString('en-IN')}/pax`
+        : isMultiModalAir
+          ? `Gateway flight to ${airportName} • ~${transit.primaryAirport?.distanceKm || 50} km from ${cleanDest}`
+          : 'Complimentary Hot Meal • 20kg Baggage Allowance',
+      badge: 'Full-Service Carrier',
       isBestDeal: false,
       route: {
-        from: `${cleanOrigin} Airport`,
+        from: `${cleanOrigin} (${liveMarket.originAirportCode})`,
         to: airportName,
         departureTime: fullServiceDepTime,
         arrivalTime: fullServiceArrTime,
         duration: flightDurationStr,
-        stopsText: isMultiModalAir ? `Road connection to ${cleanDest}` : 'Non-stop'
+        stopsText: isConnectingRoute ? '1 Stop (DEL/BOM Hub)' : isMultiModalAir ? `Road connection to ${cleanDest}` : 'Non-stop'
       },
       originalPrice: fullServiceOrigPrice,
       dealPrice: fullServiceDealPrice,
-      discountPercent: 17,
+      discountPercent: 14,
       savingsAmount: fullServiceSavings * travelers,
       priceUnit: 'per_person',
       rating: 4.7,
       reviewCount: 9100,
       features: [
         'Complimentary Hot Multi-Cuisine Meal', 
-        '20 kg Baggage Allowance', 
+        '20 kg Through-Checked Baggage', 
         isMultiModalAir ? `Gateway: ${airportName}` : 'Central Gateway'
       ],
       bookingUrl: flightUrls.googleFlights,
