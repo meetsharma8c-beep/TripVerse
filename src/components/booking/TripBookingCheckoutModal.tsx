@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Trip, CurrencyCode } from '../../types/trip';
 import { ArrowRight, Bed, Bus, Car, ExternalLink, Plane, Train, X, Star, CheckCircle2, Clock, Tag, Ticket, MapPin, ShieldCheck, Sparkles, CreditCard, QrCode, Download } from 'lucide-react';
 import { formatCurrency } from '../../services/currencyService';
@@ -8,6 +8,7 @@ import { TripPaymentGatewayModal } from '../payment/TripPaymentGatewayModal';
 import { getBookingForTrip, BookingRecord, generateTicketReceiptText } from '../../services/paymentGatewayService';
 import { triggerHaptic } from '../../services/deviceService';
 import { useLanguage } from '../../services/languageService';
+import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
 
 interface TripBookingCheckoutModalProps {
   trip: Trip;
@@ -77,12 +78,51 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
   // Best Deal
   const bestTransport = trip.bestTransportDeal || trip.transportDeals?.[0];
 
+  // Evaluate genuine real-time market pricing index across all verticals
+  const liveMarket = useMemo(() => {
+    return evaluateLiveMarketPrices({
+      origin: trip.origin || 'Mumbai',
+      destination: trip.destination,
+      durationDays: trip.durationDays || 3,
+      travelersCount: travelers,
+      startDate: trip.startDate,
+      accommodationType: trip.accommodationType,
+      transportMode: trip.transportMode
+    });
+  }, [trip.origin, trip.destination, trip.durationDays, travelers, trip.startDate, trip.accommodationType, trip.transportMode]);
+
+  const nights = Math.max(1, trip.durationDays - 1);
+  const rooms = Math.ceil(travelers / 2);
+
+  // Calibrated real-time market amounts
+  const effectiveStayCost = hotel?.nightlyRate
+    ? hotel.nightlyRate * nights * rooms
+    : (liveMarket.hotelTotalGroupINR || trip.budgetBreakdown?.accommodation || 9500);
+
+  const effectiveTransportCost = bestTransport
+    ? (bestTransport.priceUnit === 'per_person' ? bestTransport.dealPrice * travelers : bestTransport.dealPrice)
+    : trip.transportMode === 'flight'
+    ? (liveMarket.smartHubArbitrage
+        ? liveMarket.smartHubArbitrage.hubRoundTripPerPerson * travelers + liveMarket.smartHubArbitrage.groundTransferToHubCost
+        : liveMarket.flightTotalGroupINR)
+    : trip.transportMode === 'train'
+    ? liveMarket.trainTotalGroupINR
+    : trip.transportMode === 'car' || trip.transportMode === 'bike'
+    ? liveMarket.roadTripFuelAndTollsINR
+    : (liveMarket.localTransitTotalGroupINR || trip.budgetBreakdown?.transportation || 6500);
+
+  const effectiveDiningCost = liveMarket.diningTotalGroupINR || trip.budgetBreakdown?.food || 4200;
+  const effectiveActivitiesCost = liveMarket.attractionsTotalGroupINR || trip.budgetBreakdown?.activities || 3200;
+  const effectiveBufferCost = Math.round((effectiveTransportCost + effectiveStayCost + effectiveDiningCost + effectiveActivitiesCost) * 0.05);
+
+  const effectiveLiveTotal = effectiveTransportCost + effectiveStayCost + effectiveDiningCost + effectiveActivitiesCost + effectiveBufferCost;
+
   const estimateItems = [
-    { label: 'Transport', amount: trip.budgetBreakdown?.transportation ?? 0, icon: Plane, color: 'text-sky-600 bg-sky-50' },
-    { label: 'Stays & Lodging', amount: trip.budgetBreakdown?.accommodation ?? 0, icon: Bed, color: 'text-indigo-600 bg-indigo-50' },
-    { label: 'Local Dining', amount: trip.budgetBreakdown?.food ?? 0, icon: Tag, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Activities & Entry', amount: trip.budgetBreakdown?.activities ?? 0, icon: Ticket, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Safety Buffer', amount: trip.budgetBreakdown?.miscellaneous ?? 0, icon: ShieldCheck, color: 'text-slate-600 bg-slate-100' }
+    { label: 'Transport', amount: effectiveTransportCost, icon: Plane, color: 'text-sky-600 bg-sky-50' },
+    { label: 'Stays & Lodging', amount: effectiveStayCost, icon: Bed, color: 'text-indigo-600 bg-indigo-50' },
+    { label: 'Local Dining', amount: effectiveDiningCost, icon: Tag, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Activities & Entry', amount: effectiveActivitiesCost, icon: Ticket, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Safety Buffer', amount: effectiveBufferCost, icon: ShieldCheck, color: 'text-slate-600 bg-slate-100' }
   ];
 
   // Open Gateway with specific package
@@ -158,7 +198,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
               <div className="text-right hidden xs:block">
                 <span className="text-[10px] text-slate-400 uppercase font-semibold block leading-tight">Total</span>
                 <span className="text-xs sm:text-sm font-black text-emerald-300 font-mono">
-                  {formatCurrency(trip.estimatedTotal || trip.totalBudget, currency)}
+                  {formatCurrency(effectiveLiveTotal, currency)}
                 </span>
               </div>
               <button
@@ -294,12 +334,12 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                       <div className="text-left sm:text-right">
                         <span className="text-[10px] uppercase font-bold text-slate-300 block">Total Est. Cost</span>
                         <span className="text-xl sm:text-2xl font-black text-emerald-300 font-mono">
-                          {formatCurrency(trip.estimatedTotal || trip.totalBudget, currency)}
+                          {formatCurrency(effectiveLiveTotal, currency)}
                         </span>
                       </div>
                       <button
                         type="button"
-                        onClick={() => openGateway('full_package', trip.estimatedTotal || trip.totalBudget, `Complete ${destination} Trip Package`)}
+                        onClick={() => openGateway('full_package', effectiveLiveTotal, `Complete ${destination} Trip Package`)}
                         className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black text-xs px-4 py-2.5 transition-all shadow-md cursor-pointer active:scale-98"
                       >
                         <CreditCard className="w-3.5 h-3.5 text-emerald-950" />
@@ -342,9 +382,9 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                             <Bed className="w-4 h-4 text-emerald-700" />
                             {hotel.name}
                           </span>
-                          <span className="text-emerald-800 font-mono font-black">₹{hotel.nightlyRate}/night</span>
+                          <span className="text-emerald-800 font-mono font-black">{formatCurrency(effectiveStayCost, currency)}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 truncate">{hotel.address || hotel.neighborhood}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{hotel.address || hotel.neighborhood} • {nights}N / {rooms}R</p>
                       </div>
                       <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                         <button
@@ -356,10 +396,10 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                         </button>
                         <button
                           type="button"
-                          onClick={() => openGateway('hotel_only', trip.budgetBreakdown.accommodation, `Stay at ${hotel.name}`)}
+                          onClick={() => openGateway('hotel_only', effectiveStayCost, `Stay at ${hotel.name}`)}
                           className="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[11px] transition-colors cursor-pointer"
                         >
-                          Book Stay
+                          Book Stay ({formatCurrency(effectiveStayCost, currency)})
                         </button>
                       </div>
                     </div>
@@ -374,9 +414,9 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                             <Plane className="w-4 h-4 text-emerald-700" />
                             {bestTransport.title}
                           </span>
-                          <span className="text-emerald-800 font-mono font-black">₹{bestTransport.dealPrice.toLocaleString('en-IN')}</span>
+                          <span className="text-emerald-800 font-mono font-black">{formatCurrency(effectiveTransportCost, currency)}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 truncate">{origin} → {destination} • {bestTransport.route.duration}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{origin} → {destination} • {travelers} Pax</p>
                       </div>
                       <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                         <button
@@ -388,10 +428,10 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                         </button>
                         <button
                           type="button"
-                          onClick={() => openGateway('transit_only', bestTransport.dealPrice, `${bestTransport.title} Transit`)}
+                          onClick={() => openGateway('transit_only', effectiveTransportCost, `${bestTransport.title} Transit`)}
                           className="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[11px] transition-colors cursor-pointer"
                         >
-                          Book Seats
+                          Book Seats ({formatCurrency(effectiveTransportCost, currency)})
                         </button>
                       </div>
                     </div>
@@ -415,16 +455,16 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                           {hotel.name}
                         </h3>
                         <p className="text-xs text-slate-200">
-                          {trip.durationDays - 1} Nights • Stay Budget: {formatCurrency(trip.budgetBreakdown.accommodation, currency)}
+                          {trip.durationDays - 1} Nights • Stay Total: {formatCurrency(effectiveStayCost, currency)}
                         </p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => openGateway('hotel_only', trip.budgetBreakdown.accommodation, `Stay at ${hotel.name}`)}
+                        onClick={() => openGateway('hotel_only', effectiveStayCost, `Stay at ${hotel.name}`)}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 px-4 py-2 text-xs font-black transition-all shadow-sm cursor-pointer shrink-0"
                       >
                         <CreditCard className="w-3.5 h-3.5" />
-                        <span>Instant Book Stay ({formatCurrency(trip.budgetBreakdown.accommodation, currency)})</span>
+                        <span>Instant Book Stay ({formatCurrency(effectiveStayCost, currency)})</span>
                       </button>
                     </div>
 
@@ -558,7 +598,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         type="button"
-                        onClick={() => openGateway('transit_only', bestTransport.dealPrice, `${bestTransport.title} Transit`)}
+                        onClick={() => openGateway('transit_only', effectiveTransportCost, `${bestTransport.title} Transit`)}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-900 transition-colors cursor-pointer shadow-2xs"
                       >
                         <CreditCard className="w-3.5 h-3.5 text-emerald-300" />
@@ -679,16 +719,16 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                       Skip-The-Line Sightseeing in {destination}
                     </h3>
                     <p className="text-xs text-slate-200">
-                      Activities Budget: {formatCurrency(trip.budgetBreakdown.activities, currency)}
+                      Activities Total: {formatCurrency(effectiveActivitiesCost, currency)}
                     </p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => openGateway('full_package', trip.budgetBreakdown.activities, `${destination} Entry Passes & Tours`)}
+                    onClick={() => openGateway('full_package', effectiveActivitiesCost, `${destination} Entry Passes & Tours`)}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 px-4 py-2 text-xs font-black transition-all shadow-sm cursor-pointer shrink-0"
                   >
                     <Ticket className="w-3.5 h-3.5" />
-                    <span>Book Passes ({formatCurrency(trip.budgetBreakdown.activities, currency)})</span>
+                    <span>Book Passes ({formatCurrency(effectiveActivitiesCost, currency)})</span>
                   </button>
                 </div>
 
@@ -754,11 +794,13 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                 type="button"
                 onClick={() => {
                   if (activeTab === 'hotels' && hotel) {
-                    openGateway('hotel_only', trip.budgetBreakdown.accommodation, `Stay at ${hotel.name}`);
+                    openGateway('hotel_only', effectiveStayCost, `Stay at ${hotel.name}`);
                   } else if (activeTab === 'transport' && bestTransport) {
-                    openGateway('transit_only', bestTransport.dealPrice, `${bestTransport.title} Transit`);
+                    openGateway('transit_only', effectiveTransportCost, `${bestTransport.title} Transit`);
+                  } else if (activeTab === 'activities') {
+                    openGateway('full_package', effectiveActivitiesCost, `${destination} Entry Passes & Tours`);
                   } else {
-                    openGateway('full_package');
+                    openGateway('full_package', effectiveLiveTotal, `Complete ${destination} Trip Package`);
                   }
                 }}
                 className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-900 transition-colors shadow-sm cursor-pointer active:scale-98"
@@ -767,6 +809,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                 <span>
                   {activeTab === 'hotels' ? 'Checkout Stay' :
                    activeTab === 'transport' ? 'Checkout Transport' :
+                   activeTab === 'activities' ? 'Checkout Passes' :
                    'Proceed to Gateway'}
                 </span>
                 <ArrowRight className="h-3.5 w-3.5" />

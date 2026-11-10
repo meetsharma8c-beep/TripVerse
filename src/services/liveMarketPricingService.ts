@@ -1,4 +1,4 @@
-import { AccommodationType, TransportMode } from '../types/trip';
+import { AccommodationType, TransportMode, Trip } from '../types/trip';
 import { resolveTransitContext } from './transportFeasibilityEngine';
 import { resolvePreciseLocationSync } from './locationService';
 import { CURRENCIES, syncLiveExchangeRates } from './currencyService';
@@ -803,3 +803,61 @@ export function evaluateLiveMarketPrices(params: {
     lastSyncedLabel: `Live Market Synced • 1 USD = ₹${inrPerUsd}`
   };
 }
+
+/**
+ * Calibrates any trip's estimatedTotal and budgetBreakdown to match real-time live market pricing.
+ * Reconciles flights/trains/cabs, hotel rates x nights, dining, attraction passes, and safety buffer.
+ */
+export function calibrateTripWithLiveMarket(trip: Trip): Trip {
+  if (!trip) return trip;
+  const travelers = Math.max(1, trip.travelersCount || 1);
+  const duration = Math.max(1, trip.durationDays || 3);
+  const nights = duration <= 1 ? 0 : duration - 1;
+  const rooms = Math.ceil(travelers / 2);
+
+  const live = evaluateLiveMarketPrices({
+    origin: trip.origin || 'Mumbai',
+    destination: trip.destination,
+    durationDays: duration,
+    travelersCount: travelers,
+    startDate: trip.startDate,
+    accommodationType: trip.accommodationType,
+    transportMode: trip.transportMode
+  });
+
+  const isFlight = trip.transportMode === 'flight';
+  const transportCost = isFlight
+    ? (live.smartHubArbitrage
+        ? live.smartHubArbitrage.hubRoundTripPerPerson * travelers + live.smartHubArbitrage.groundTransferToHubCost
+        : live.flightTotalGroupINR)
+    : trip.transportMode === 'train'
+    ? live.trainTotalGroupINR
+    : trip.transportMode === 'car' || trip.transportMode === 'bike'
+    ? live.roadTripFuelAndTollsINR
+    : live.localTransitTotalGroupINR;
+
+  const stayCost = duration <= 1
+    ? 0
+    : (trip.selectedHotel?.nightlyRate
+        ? trip.selectedHotel.nightlyRate * nights * rooms
+        : live.hotelTotalGroupINR);
+
+  const foodCost = live.diningTotalGroupINR;
+  const actCost = live.attractionsTotalGroupINR;
+  const miscCost = Math.round((transportCost + stayCost + foodCost + actCost) * 0.05);
+
+  const calibratedTotal = transportCost + stayCost + foodCost + actCost + miscCost;
+
+  return {
+    ...trip,
+    estimatedTotal: calibratedTotal,
+    budgetBreakdown: {
+      transportation: transportCost,
+      accommodation: stayCost,
+      food: foodCost,
+      activities: actCost,
+      miscellaneous: miscCost
+    }
+  };
+}
+

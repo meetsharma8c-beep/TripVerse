@@ -28,6 +28,7 @@ import {
 import confetti from 'canvas-confetti';
 import { Trip, CurrencyCode } from '../../types/trip';
 import { formatCurrency, CURRENCIES, convertFromINR } from '../../services/currencyService';
+import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
 import { triggerHaptic } from '../../services/deviceService';
 import { getCurrentUser } from '../../services/authService';
 import { 
@@ -135,22 +136,55 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   const origin = (trip?.origin || 'City Center').split(',')[0].trim();
   const travelers = Math.max(1, trip?.travelersCount || 1);
   const durationDays = trip?.durationDays || 3;
+  const nights = Math.max(1, durationDays - 1);
+  const rooms = Math.ceil(travelers / 2);
 
-  // Base raw amounts in INR
-  const baseTransport = trip?.budgetBreakdown?.transportation || 6500;
-  const baseAccommodation = trip?.budgetBreakdown?.accommodation || 9500;
-  const baseActivities = trip?.budgetBreakdown?.activities || 3200;
+  // Evaluate real-time live market prices
+  const liveMarket = useMemo(() => {
+    if (!trip) return null;
+    return evaluateLiveMarketPrices({
+      origin: trip.origin || 'Mumbai',
+      destination: trip.destination,
+      durationDays: durationDays,
+      travelersCount: travelers,
+      startDate: trip.startDate,
+      accommodationType: trip.accommodationType,
+      transportMode: trip.transportMode
+    });
+  }, [trip, durationDays, travelers]);
 
-  let initialBaseAmount = trip?.estimatedTotal || (baseTransport + baseAccommodation + baseActivities);
-  if (customAmount && customAmount > 0) {
-    initialBaseAmount = customAmount;
-  } else if (packageType === 'hotel_only') {
-    initialBaseAmount = baseAccommodation;
-  } else if (packageType === 'transit_only') {
-    initialBaseAmount = baseTransport;
-  } else if (packageType === 'pro_subscription') {
-    initialBaseAmount = customAmount || 999;
-  }
+  // Base live market calibrated amounts in INR
+  const baseAccommodation = trip?.selectedHotel?.nightlyRate
+    ? trip.selectedHotel.nightlyRate * nights * rooms
+    : (liveMarket?.hotelTotalGroupINR || trip?.budgetBreakdown?.accommodation || 9500);
+
+  const baseTransport = liveMarket
+    ? (trip?.transportMode === 'flight'
+        ? (liveMarket.smartHubArbitrage
+            ? liveMarket.smartHubArbitrage.hubRoundTripPerPerson * travelers + liveMarket.smartHubArbitrage.groundTransferToHubCost
+            : liveMarket.flightTotalGroupINR)
+        : trip?.transportMode === 'train'
+        ? liveMarket.trainTotalGroupINR
+        : trip?.transportMode === 'car' || trip?.transportMode === 'bike'
+        ? liveMarket.roadTripFuelAndTollsINR
+        : liveMarket.localTransitTotalGroupINR)
+    : (trip?.budgetBreakdown?.transportation || 6500);
+
+  const baseActivities = liveMarket?.attractionsTotalGroupINR || trip?.budgetBreakdown?.activities || 3200;
+  const baseDining = liveMarket?.diningTotalGroupINR || trip?.budgetBreakdown?.food || 4200;
+  const baseBuffer = Math.round((baseTransport + baseAccommodation + baseActivities + baseDining) * 0.05);
+
+  const currentPackageLiveTotal = baseTransport + baseAccommodation + baseActivities + baseDining + baseBuffer;
+
+  let initialBaseAmount = customAmount && customAmount > 0
+    ? customAmount
+    : packageType === 'hotel_only'
+    ? baseAccommodation
+    : packageType === 'transit_only'
+    ? baseTransport
+    : packageType === 'pro_subscription'
+    ? (customAmount || 999)
+    : currentPackageLiveTotal;
 
   const isProSub = packageType === 'pro_subscription';
 
@@ -506,11 +540,16 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
       : `TRV-BKG-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
     const effectiveTxnId = customTxnId || txnRef;
 
-    const items = [
-      { title: `Stay in ${destination} (${durationDays} Nights)`, category: 'Accommodation', amount: baseAccommodation },
-      { title: `Transit: ${origin} ⇄ ${destination}`, category: 'Transport', amount: baseTransport },
-      { title: 'Skip-The-Line Experience Passes', category: 'Activities', amount: baseActivities }
-    ];
+    const items = packageType === 'hotel_only'
+      ? [{ title: `Stay at ${trip?.selectedHotel?.name || destination} (${nights} Nights, ${rooms} Room${rooms > 1 ? 's' : ''})`, category: 'Accommodation', amount: initialBaseAmount }]
+      : packageType === 'transit_only'
+      ? [{ title: `Transit: ${origin} ⇄ ${destination} (${travelers} Traveler${travelers > 1 ? 's' : ''})`, category: 'Transport', amount: initialBaseAmount }]
+      : [
+          { title: `Stay in ${destination} (${nights} Nights, ${rooms} Room${rooms > 1 ? 's' : ''})`, category: 'Accommodation', amount: baseAccommodation },
+          { title: `Transit: ${origin} ⇄ ${destination}`, category: 'Transport', amount: baseTransport },
+          { title: 'Skip-The-Line Experience Passes', category: 'Activities', amount: baseActivities },
+          { title: `Local Dining & Buffer (${durationDays} Days)`, category: 'Dining & Buffer', amount: baseDining + baseBuffer }
+        ];
 
     const newBooking: BookingRecord = {
       id: bookingId,

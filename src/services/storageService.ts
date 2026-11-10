@@ -1,6 +1,7 @@
 import { Trip, UserProfile, TripPhotoMemory, TripReview, ExpenseItem, PackingItem } from '../types/trip';
 import { DEFAULT_USER_PROFILE } from '../data/initialTrips';
 import { getCurrentUser, toUserProfile } from './authService';
+import { calibrateTripWithLiveMarket } from './liveMarketPricingService';
 import { saveTripToSupabase, loadTripsFromSupabase, deleteTripFromSupabase, saveAllUserTripsToSupabase, saveProfileToSupabase, loadProfileFromSupabase, savePassportToSupabase, loadPassportFromSupabase, saveSavedPlaceToSupabase, deleteSavedPlaceFromSupabase, loadSavedPlacesFromSupabase, saveUserSavedItemsToSupabase, saveUserActiveTripToSupabase, loadUserActiveTripFromSupabase, saveExpenseToSupabase, saveReviewToSupabase, savePhotoToSupabase, deletePhotoFromSupabase, savePackingToSupabase } from './supabaseSyncService';
 
 /**
@@ -125,11 +126,18 @@ export function loadTrips(userId?: string | null): Trip[] {
       trips = JSON.parse(raw);
     }
 
-    return trips.map(trip => ({
-      ...trip,
-      bestTransportDeal: undefined,
-      transportDeals: []
-    }));
+    return trips.map(trip => {
+      const isLegacyPricing = !trip.estimatedTotal || 
+        trip.estimatedTotal === Math.round(trip.totalBudget * 0.94) ||
+        !trip.budgetBreakdown?.transportation;
+      const calibrated = isLegacyPricing ? calibrateTripWithLiveMarket(trip) : trip;
+
+      return {
+        ...calibrated,
+        bestTransportDeal: undefined,
+        transportDeals: []
+      };
+    });
   } catch (e) {
     console.error('Error loading trips from storage', e);
     return [];

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Trip, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
+import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
 import { Users, Wallet, Sparkles, Share2, Download, AlertTriangle, CheckCircle2, MessageSquareQuote, TrendingDown, Navigation, RotateCcw, Camera, Star, Leaf, ChevronRight, Edit3, Bed, Clock, Ticket, ShieldCheck } from 'lucide-react';
 
 interface TripHeaderProps {
@@ -52,9 +53,50 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
     return () => window.removeEventListener('tripverse_currency_change', handleCurrencyEvent);
   }, []);
 
-  const isOverBudget = trip.estimatedTotal > trip.totalBudget;
-  const difference = Math.abs(trip.totalBudget - trip.estimatedTotal);
-  const budgetUsagePercent = Math.min(100, Math.round((trip.estimatedTotal / Math.max(1, trip.totalBudget)) * 100));
+  const liveMarket = useMemo(() => {
+    return evaluateLiveMarketPrices({
+      origin: trip.origin || 'Mumbai',
+      destination: trip.destination,
+      durationDays: trip.durationDays || 3,
+      travelersCount: Math.max(1, trip.travelersCount || 1),
+      startDate: trip.startDate,
+      accommodationType: trip.accommodationType,
+      transportMode: trip.transportMode
+    });
+  }, [trip.origin, trip.destination, trip.durationDays, trip.travelersCount, trip.startDate, trip.accommodationType, trip.transportMode]);
+
+  const effectiveEstimatedTotal = useMemo(() => {
+    const isLegacy = !trip.estimatedTotal || trip.estimatedTotal === Math.round(trip.totalBudget * 0.94);
+    if (!isLegacy && trip.estimatedTotal > 0) return trip.estimatedTotal;
+
+    const travelers = Math.max(1, trip.travelersCount || 1);
+    const nights = Math.max(1, trip.durationDays - 1);
+    const rooms = Math.ceil(travelers / 2);
+
+    const stayCost = trip.selectedHotel?.nightlyRate
+      ? trip.selectedHotel.nightlyRate * nights * rooms
+      : liveMarket.hotelTotalGroupINR;
+
+    const transportCost = trip.transportMode === 'flight'
+      ? (liveMarket.smartHubArbitrage
+          ? liveMarket.smartHubArbitrage.hubRoundTripPerPerson * travelers + liveMarket.smartHubArbitrage.groundTransferToHubCost
+          : liveMarket.flightTotalGroupINR)
+      : trip.transportMode === 'train'
+      ? liveMarket.trainTotalGroupINR
+      : trip.transportMode === 'car' || trip.transportMode === 'bike'
+      ? liveMarket.roadTripFuelAndTollsINR
+      : liveMarket.localTransitTotalGroupINR;
+
+    const foodCost = liveMarket.diningTotalGroupINR;
+    const actCost = liveMarket.attractionsTotalGroupINR;
+    const miscCost = Math.round((transportCost + stayCost + foodCost + actCost) * 0.05);
+
+    return transportCost + stayCost + foodCost + actCost + miscCost;
+  }, [trip, liveMarket]);
+
+  const isOverBudget = effectiveEstimatedTotal > trip.totalBudget;
+  const difference = Math.abs(trip.totalBudget - effectiveEstimatedTotal);
+  const budgetUsagePercent = Math.min(100, Math.round((effectiveEstimatedTotal / Math.max(1, trip.totalBudget)) * 100));
 
   // Calculate total distance in km from itinerary activities or default estimate
   const calculatedDistance = trip.itinerary?.reduce((acc, day) => {
@@ -260,7 +302,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
             <div className="min-w-0">
               <span className="text-[10px] text-[#5A7362] block leading-tight font-medium">{t('Est. Cost')}</span>
               <span className="text-xs sm:text-sm font-bold text-[#152A1C] truncate block">
-                {formatCurrency(trip.estimatedTotal, currency)}
+                {formatCurrency(effectiveEstimatedTotal, currency)}
               </span>
             </div>
           </div>
@@ -413,7 +455,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
                 </span>
                 <span className="text-xs font-bold text-slate-300 hidden sm:inline">|</span>
                 <span className="text-xs font-bold text-[#5A7362]">
-                  Estimated: <strong className="text-[#152A1C]">{formatCurrency(trip.estimatedTotal, currency)}</strong>
+                  Estimated: <strong className="text-[#152A1C]">{formatCurrency(effectiveEstimatedTotal, currency)}</strong>
                 </span>
               </div>
 

@@ -9,6 +9,7 @@ import { getActiveCurrency, formatCurrency, CURRENCIES } from './currencyService
 import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
 import { resolveCanonicalDestination } from './canonicalCityService';
 import { getDestinationHighlights, resolveLandmarkCoordinates, calculateTransitBetween } from './landmarkAtlasService';
+import { evaluateLiveMarketPrices } from './liveMarketPricingService';
 import { calculateSolarTimes } from './solarTimeService';
 import { verifyVenueFeasibility } from './venueOperatingHoursService';
 import { evaluateClimatePacing } from './climatePacingService';
@@ -481,28 +482,38 @@ export function generateAITrip(input: PlannerInput): Trip {
   const avgSpeed = effectiveTransportMode === 'flight' ? 450 : effectiveTransportMode === 'bike' ? 55 : 68;
   const routeHours = Math.max(1, Math.round((routeDistKm / avgSpeed) * 10) / 10);
 
-  // Calculate budget allocation percentages (1-day trip needs 0 overnight stay budget)
+  // Calculate budget allocation and live market calibration
   const isSingleDay = daysCount === 1;
-  let transportPct = isSingleDay ? 0.42 : 0.25;
-  let stayPct = isSingleDay ? 0 : 0.32;
-  let foodPct = isSingleDay ? 0.28 : 0.20;
-  let actPct = isSingleDay ? 0.22 : 0.16;
+  const nightsCount = isSingleDay ? 0 : Math.max(1, daysCount - 1);
+  const roomsCount = Math.ceil(safeTravelers / 2);
 
-  if (!isSingleDay) {
-    if (effectiveTransportMode === 'flight') { transportPct = 0.36; stayPct = 0.28; }
-    if (effectiveTransportMode === 'bike' || effectiveTransportMode === 'bus') transportPct = 0.18;
-    if (input.accommodationType === '5star' || input.accommodationType === '4star') { stayPct = 0.38; transportPct = Math.min(transportPct, 0.25); }
-    if (input.accommodationType === 'hostel') stayPct = 0.20;
-  }
+  // Evaluate real-time market pricing index across 6 verticals (Flights, Smart Hub, Hotels, Cabs/Tolls, Passes, Dining)
+  const liveMarket = evaluateLiveMarketPrices({
+    origin: input.origin || 'Ahmedabad, Gujarat',
+    destination: spotName,
+    durationDays: daysCount,
+    travelersCount: safeTravelers,
+    startDate: input.startDate,
+    accommodationType: input.accommodationType,
+    transportMode: effectiveTransportMode
+  });
 
-  // Respect user's budget constraint without exceeding totalBudget
-  const estimatedTotal = Math.max(Math.min(totalBudget, 500), Math.round(totalBudget * 0.94));
+  const transportCost = effectiveTransportMode === 'flight'
+    ? (liveMarket.smartHubArbitrage
+        ? liveMarket.smartHubArbitrage.hubRoundTripPerPerson * safeTravelers + liveMarket.smartHubArbitrage.groundTransferToHubCost
+        : liveMarket.flightTotalGroupINR)
+    : effectiveTransportMode === 'train'
+    ? liveMarket.trainTotalGroupINR
+    : effectiveTransportMode === 'car' || effectiveTransportMode === 'bike'
+    ? liveMarket.roadTripFuelAndTollsINR
+    : liveMarket.localTransitTotalGroupINR;
 
-  const transportCost = Math.round(estimatedTotal * transportPct);
-  const stayCost = Math.round(estimatedTotal * stayPct);
-  const foodCost = Math.round(estimatedTotal * foodPct);
-  const actCost = Math.round(estimatedTotal * actPct);
-  const miscCost = Math.max(0, estimatedTotal - (transportCost + stayCost + foodCost + actCost));
+  const stayCost = isSingleDay ? 0 : liveMarket.hotelTotalGroupINR;
+  const foodCost = liveMarket.diningTotalGroupINR;
+  const actCost = liveMarket.attractionsTotalGroupINR;
+  const miscCost = Math.round((transportCost + stayCost + foodCost + actCost) * 0.05);
+
+  const estimatedTotal = transportCost + stayCost + foodCost + actCost + miscCost;
 
   // Regional cuisine and activity metadata
   const foodPref = input.foodPreference || 'veg';
@@ -1283,6 +1294,11 @@ export function generateAITrip(input: PlannerInput): Trip {
     safeStartDate = new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
   }
 
+  const fineStayCost = isSingleDay
+    ? 0
+    : (recommendedHotel?.nightlyRate ? recommendedHotel.nightlyRate * nightsCount * roomsCount : stayCost);
+  const fineEstimatedTotal = transportCost + fineStayCost + foodCost + actCost + miscCost;
+
   const rawTrip: Trip = {
     id: `trip-${Date.now()}`,
     name: `${input.origin || 'Origin'} → ${spotName} | ${daysCount} ${daysCount === 1 ? 'Day' : 'Days'}`,
@@ -1318,16 +1334,16 @@ export function generateAITrip(input: PlannerInput): Trip {
     isSample: false,
     createdAt: new Date().toISOString(),
     startDate: safeStartDate,
-    aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state ? `${state}, ` : ''}${country}) for ${safeTravelers} traveler(s).${isSingleDay ? '' : ` Selected stay: ${recommendedHotel.name} (${recommendedHotel.starRating}★).`} Pacing: ${pacing.replace('_', ' ')}. Total budget calibrated to regional prices. Buffer estimate: ${formatCurrency(Math.max(0, totalBudget - estimatedTotal), activeCurrency)}.${climateProfile.protocol !== 'temperate_standard' ? ` Climate Protocol: ${climateProfile.title} — ${climateProfile.advisoryNote}` : ''} Astronomical Solar Day: Sunrise ${solarTimes.sunrise}, Sunset ${solarTimes.sunset} (${solarTimes.daylightHours}h daylight).${circuit.isMultiCity ? ` Multi-City Circuit: ${circuit.summary}.` : ''}`,
+    aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state ? `${state}, ` : ''}${country}) for ${safeTravelers} traveler(s).${isSingleDay ? '' : ` Selected stay: ${recommendedHotel.name} (${recommendedHotel.starRating}★).`} Pacing: ${pacing.replace('_', ' ')}. Total budget calibrated to real-time regional market prices. Buffer estimate: ${formatCurrency(Math.max(0, totalBudget - fineEstimatedTotal), activeCurrency)}.${climateProfile.protocol !== 'temperate_standard' ? ` Climate Protocol: ${climateProfile.title} — ${climateProfile.advisoryNote}` : ''} Astronomical Solar Day: Sunrise ${solarTimes.sunrise}, Sunset ${solarTimes.sunset} (${solarTimes.daylightHours}h daylight).${circuit.isMultiCity ? ` Multi-City Circuit: ${circuit.summary}.` : ''}`,
     breakStops: [],
     budgetBreakdown: {
       transportation: transportCost,
-      accommodation: stayCost,
+      accommodation: fineStayCost,
       food: foodCost,
       activities: actCost,
       miscellaneous: miscCost
     },
-    estimatedTotal: estimatedTotal,
+    estimatedTotal: fineEstimatedTotal,
     routeType: routeType,
     itinerary: days,
     selectedHotel: isSingleDay ? undefined : recommendedHotel,

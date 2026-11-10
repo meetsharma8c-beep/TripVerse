@@ -28,9 +28,6 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
     return () => window.removeEventListener('tripverse_currency_change', handleCurrencyEvent);
   }, []);
 
-  const isOverBudget = trip.estimatedTotal > trip.totalBudget;
-  const buffer = trip.totalBudget - trip.estimatedTotal;
-
   useEffect(() => {
     syncLiveExchangeRates().catch(() => {});
   }, []);
@@ -46,6 +43,34 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
       transportMode: trip.transportMode
     });
   }, [trip.origin, trip.destination, trip.durationDays, trip.travelersCount, trip.startDate, trip.accommodationType, trip.transportMode]);
+
+  const travelers = Math.max(1, trip.travelersCount || 1);
+  const duration = Math.max(1, trip.durationDays || 3);
+  const nights = Math.max(1, duration - 1);
+  const rooms = Math.ceil(travelers / 2);
+
+  const liveStayCost = trip.selectedHotel?.nightlyRate
+    ? trip.selectedHotel.nightlyRate * nights * rooms
+    : (liveMarketReport?.hotelTotalGroupINR || trip.budgetBreakdown?.accommodation || 9500);
+
+  const liveTransportCost = trip.transportMode === 'flight'
+    ? (liveMarketReport.smartHubArbitrage
+        ? liveMarketReport.smartHubArbitrage.hubRoundTripPerPerson * travelers + liveMarketReport.smartHubArbitrage.groundTransferToHubCost
+        : liveMarketReport.flightTotalGroupINR)
+    : trip.transportMode === 'train'
+    ? liveMarketReport.trainTotalGroupINR
+    : trip.transportMode === 'car' || trip.transportMode === 'bike'
+    ? liveMarketReport.roadTripFuelAndTollsINR
+    : (liveMarketReport.localTransitTotalGroupINR || trip.budgetBreakdown?.transportation || 6500);
+
+  const liveFoodCost = liveMarketReport.diningTotalGroupINR || trip.budgetBreakdown?.food || 4200;
+  const liveActivitiesCost = liveMarketReport.attractionsTotalGroupINR || trip.budgetBreakdown?.activities || 3200;
+  const liveBufferCost = Math.round((liveTransportCost + liveStayCost + liveFoodCost + liveActivitiesCost) * 0.05);
+
+  const liveTotalExpenses = liveTransportCost + liveStayCost + liveFoodCost + liveActivitiesCost + liveBufferCost;
+
+  const isOverBudget = liveTotalExpenses > trip.totalBudget;
+  const buffer = trip.totalBudget - liveTotalExpenses;
 
   // AI Savings Suggestions catalog
   const [appliedTips, setAppliedTips] = useState<Record<string, boolean>>({});
@@ -93,20 +118,12 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
     onApplySavings(tip.savings, tip.category, tip.title);
   };
 
-  const breakdown = trip.budgetBreakdown || {
-    transportation: 0,
-    accommodation: 0,
-    food: 0,
-    activities: 0,
-    miscellaneous: 0
-  };
-
   const categories = [
-    { key: 'transportation' as keyof BudgetBreakdown, label: t('Transportation'), amount: Number(breakdown.transportation) || 0, icon: Car, color: '#0284C7' },
-    { key: 'accommodation' as keyof BudgetBreakdown, label: t('Stay & Hotels'), amount: Number(breakdown.accommodation) || 0, icon: Bed, color: '#8B5CF6' },
-    { key: 'food' as keyof BudgetBreakdown, label: t('Food & Dining'), amount: Number(breakdown.food) || 0, icon: Utensils, color: '#2D5A3D' },
-    { key: 'activities' as keyof BudgetBreakdown, label: t('Attractions & Sightseeing'), amount: Number(breakdown.activities) || 0, icon: Ticket, color: '#F59E0B' },
-    { key: 'miscellaneous' as keyof BudgetBreakdown, label: t('Buffer & Emergency'), amount: Number(breakdown.miscellaneous) || 0, icon: Shield, color: '#64748B' },
+    { key: 'transportation' as keyof BudgetBreakdown, label: t('Transportation'), amount: liveTransportCost, icon: Car, color: '#0284C7' },
+    { key: 'accommodation' as keyof BudgetBreakdown, label: t('Stay & Hotels'), amount: liveStayCost, icon: Bed, color: '#8B5CF6' },
+    { key: 'food' as keyof BudgetBreakdown, label: t('Food & Dining'), amount: liveFoodCost, icon: Utensils, color: '#2D5A3D' },
+    { key: 'activities' as keyof BudgetBreakdown, label: t('Attractions & Sightseeing'), amount: liveActivitiesCost, icon: Ticket, color: '#F59E0B' },
+    { key: 'miscellaneous' as keyof BudgetBreakdown, label: t('Buffer & Emergency'), amount: liveBufferCost, icon: Shield, color: '#64748B' },
   ];
 
   return (
@@ -152,7 +169,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 min-w-0">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">{t('Estimated Expenses')}</span>
           <div className="text-2xl font-black text-slate-900 mt-1 font-display truncate">
-            {formatCurrency(trip.estimatedTotal, currency)}
+            {formatCurrency(liveTotalExpenses, currency)}
           </div>
           <span className="text-[11px] text-slate-500 truncate block">
             {trip.durationDays} {t('Days')} • {trip.travelersCount} {t('Travelers')}
@@ -326,7 +343,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
 
         <div className="space-y-3">
           {categories.map((c) => {
-            const pct = Math.round((c.amount / Math.max(1, trip.estimatedTotal)) * 100);
+            const pct = Math.round((c.amount / Math.max(1, liveTotalExpenses)) * 100);
             const CategoryIcon = c.icon;
 
             return (
