@@ -185,35 +185,27 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Logo 
                 size="adaptive" 
                 variant={isDarkMode ? 'light' : 'auto'}
-                taglineClassName="hidden 2xl:block"
+                showTagline={false}
+                taglineClassName="hidden"
                 onClick={() => onNavigate('home')} 
               />
-              <div 
-                className="hidden 2xl:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 text-[10px] font-bold text-[#2D5A3D] dark:text-emerald-400 shadow-2xs shrink-0"
-                title="Intelligent Travel Planning"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2D5A3D] dark:bg-emerald-400 animate-pulse" />
-                <span>AI Travelverse</span>
-              </div>
             </div>
 
             {/* Desktop Navigation Links */}
             <nav className="flex items-center space-x-0.5 xl:space-x-1 shrink-0" aria-label="Main Navigation">
               {desktopNavLinks.map((link) => {
                 const isActive = currentTab === link.id;
-                const Icon = link.icon;
 
                 return (
                   <button
                     key={link.id}
                     onClick={() => handleLinkClick(link.id)}
-                    className={`relative flex items-center gap-1 2xl:gap-1.5 px-2 xl:px-2.5 2xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-[13px] 2xl:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                    className={`relative flex items-center gap-1 px-2.5 xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-[13px] 2xl:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                       isActive 
                         ? 'text-[#2D5A3D] dark:text-emerald-400 bg-[#E8EFE7] dark:bg-emerald-950/40 shadow-xs' 
                         : 'text-slate-600 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/60'
                     }`}
                   >
-                    {Icon && <Icon className={`hidden 2xl:block w-3.5 h-3.5 shrink-0 ${isActive ? 'text-[#2D5A3D] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-400'}`} />}
                     <span>{link.label}</span>
                     {link.badge && (
                       <span className="text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-gradient-to-r from-[#386B49] to-[#2D5A3D] text-white shadow-xs">
@@ -260,19 +252,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Global Search Trigger (Responsive: Icon on < 2xl, Full Pill on 2xl) */}
+            {/* Global Search Trigger (Clean circular icon button matching Theme & Notifications) */}
             {onOpenSearch && (
               <button
+                type="button"
                 onClick={onOpenSearch}
-                className="flex items-center gap-1.5 h-8 px-2 2xl:px-2.5 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white text-xs font-semibold transition-all border border-[#DCE7DB] dark:border-slate-700 cursor-pointer shadow-2xs shrink-0"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
                 title={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
                 aria-label={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
               >
-                <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="hidden 2xl:inline">{t('Search...')}</span>
-                <kbd className="hidden 2xl:inline text-[10px] font-mono bg-[#F4F6F2] dark:bg-slate-900 px-1 py-0.5 rounded border border-[#DCE7DB] dark:border-slate-700 text-slate-500 dark:text-slate-400 shadow-2xs">
-                  {isMac ? '⌘K' : 'Ctrl+K'}
-                </kbd>
+                <Search className="h-4 w-4" />
               </button>
             )}
 
