@@ -1127,10 +1127,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
               </div>
 
               {/* Budget Display Card */}
-              <div className="p-6 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-50 rounded-2xl border border-emerald-200/80 text-center">
-                <span className="badge-caps text-[#2D5A3D] block">
-                  {t(budgetMode === 'total' ? 'Total Group Budget' : 'Budget Per Person')}
-                </span>
+              <div className="p-5 sm:p-6 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-50 rounded-2xl border border-emerald-200/80 text-center">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100/90 text-[#2D5A3D] text-[11px] font-bold uppercase tracking-wider mb-1">
+                  <Wallet className="w-3.5 h-3.5" />
+                  <span>{t(budgetMode === 'total' ? 'Total On-Ground Budget' : 'On-Ground Budget Per Person')}</span>
+                </div>
                 <div className="text-4xl sm:text-5xl font-black text-[#0B2545] font-display my-2">
                   {formatCurrency(budgetAmount, currency)}
                 </div>
@@ -1139,6 +1140,28 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                     ? `Equal to approx ${formatCurrency(Math.round(budgetAmount / Math.max(1, travelersCount)), currency)} per person for ${travelersCount} travelers.`
                     : `Total for ${travelersCount} travelers: ${formatCurrency(budgetAmount * travelersCount, currency)}.`}
                 </p>
+
+                {/* Transparency Breakdown Strip: Inclusions & Flight Notice */}
+                <div className="mt-4 pt-3.5 border-t border-emerald-200/60 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-left text-xs">
+                  <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-100 flex items-start gap-2">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5 min-w-0">
+                      <span className="text-[11px] font-bold text-emerald-900 block">Included in Ground Budget:</span>
+                      <p className="text-[10px] text-slate-600 leading-tight">
+                        3★/4★ hotel stays, local cab transfers & tolls, daily regional meals, entry fees & activities.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/70 flex items-start gap-2">
+                    <Plane className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5 min-w-0">
+                      <span className="text-[11px] font-bold text-amber-900 block">Flight / Intercity Transit:</span>
+                      <p className="text-[10px] text-amber-800 leading-tight">
+                        Booked separately via live Google Flights/IRCTC as airfare varies by departure city & season.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Slider */}
@@ -1146,7 +1169,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                 <input
                   type="range"
                   min={budgetMode === 'total' ? 3000 : 1500}
-                  max={budgetMode === 'total' ? 60000 : 25000}
+                  max={budgetMode === 'total' ? 200000 : 75000}
                   step={500}
                   value={budgetAmount}
                   onChange={(e) => setBudgetAmount(Number(e.target.value))}
@@ -1154,9 +1177,9 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                 />
                 <div className="flex justify-between text-[10px] sm:text-xs font-semibold text-slate-400 gap-1 flex-wrap sm:flex-nowrap">
                   <span className="truncate">{formatCurrency(budgetMode === 'total' ? 3000 : 1500, currency)} (Budget)</span>
-                  <span className="hidden xs:inline">{formatCurrency(budgetMode === 'total' ? 15000 : 7000, currency)}</span>
-                  <span className="hidden sm:inline">{formatCurrency(budgetMode === 'total' ? 30000 : 15000, currency)}</span>
-                  <span className="truncate">{formatCurrency(budgetMode === 'total' ? 60000 : 25000, currency)}+</span>
+                  <span className="hidden xs:inline">{formatCurrency(budgetMode === 'total' ? 25000 : 10000, currency)}</span>
+                  <span className="hidden sm:inline">{formatCurrency(budgetMode === 'total' ? 75000 : 30000, currency)}</span>
+                  <span className="truncate">{formatCurrency(budgetMode === 'total' ? 200000 : 75000, currency)}+ (Luxury)</span>
                 </div>
               </div>
             </div>
@@ -1406,6 +1429,19 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                     );
                   })}
               </div>
+
+              {/* Airfare Dynamics & Carrier Pricing Callout when Flight is Selected */}
+              {transportMode === 'flight' && (
+                <div className="p-3.5 rounded-2xl bg-sky-50/90 border border-sky-200/90 text-sky-950 text-xs flex items-start gap-2.5 animate-in fade-in">
+                  <Plane className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <span className="font-bold text-sky-900 block">Dynamic Live Airfare Notice</span>
+                    <p className="text-[11px] text-sky-800 leading-relaxed">
+                      Flight airfares are determined in real-time by airlines based on your departure airport, connections, and seasonal demand (e.g. connecting routes from smaller airports like BDQ to SXR during snow season can run ₹70k–₹85k, while nearby hubs like AMD can be ₹18k–₹25k). Your itinerary provides 1-click live search links on <strong>Google Flights</strong> for real-time fares.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-3 p-3.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-200/80 rounded-2xl text-xs text-slate-700">
                 <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#2D5A3D] flex items-center justify-center shrink-0">

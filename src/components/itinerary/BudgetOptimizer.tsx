@@ -123,12 +123,12 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 min-w-0">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">{t('Total Budget')}</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">{t('On-Ground Budget')}</span>
           <div className="text-2xl font-black text-slate-900 mt-1 font-display truncate">
             {formatCurrency(trip.totalBudget, currency)}
           </div>
           <span className="text-[11px] text-slate-500 truncate block">
-            {formatCurrency(Math.round(trip.totalBudget / Math.max(1, trip.travelersCount)), currency)} {t('/person')}
+            {formatCurrency(Math.round(trip.totalBudget / Math.max(1, trip.travelersCount)), currency)} {t('/person')} (excl. flights)
           </span>
         </div>
 

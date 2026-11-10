@@ -319,6 +319,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
                   <span>Excluded from Estimate:</span>
                 </span>
                 <ul className="text-slate-500 space-y-1 pl-1 text-[11px]">
+                  <li>• Long-distance flights & intercity trains (matched via live Google Flights & IRCTC)</li>
                   <li>• Personal retail & handicraft shopping</li>
                   <li>• Fuel top-ups beyond computed route</li>
                   <li>• Optional extreme adventure sports</li>

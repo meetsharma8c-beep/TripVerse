@@ -388,7 +388,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#5A7362]">
-                  Total Budget: {formatCurrency(trip.totalBudget, currency)}
+                  On-Ground Budget: {formatCurrency(trip.totalBudget, currency)}
                 </span>
                 <span className="text-xs font-bold text-slate-300 hidden sm:inline">|</span>
                 <span className="text-xs font-bold text-[#5A7362]">
