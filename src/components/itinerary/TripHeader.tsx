@@ -3,7 +3,7 @@ import { Trip, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
-import { Users, Wallet, Sparkles, Share2, Download, AlertTriangle, CheckCircle2, MessageSquareQuote, TrendingDown, Navigation, RotateCcw, Camera, Star, Leaf, ChevronRight, Edit3, Bed, Clock, Ticket } from 'lucide-react';
+import { Users, Wallet, Sparkles, Share2, Download, AlertTriangle, CheckCircle2, MessageSquareQuote, TrendingDown, Navigation, RotateCcw, Camera, Star, Leaf, ChevronRight, Edit3, Bed, Clock, Ticket, ShieldCheck } from 'lucide-react';
 
 interface TripHeaderProps {
   trip: Trip;
@@ -20,6 +20,7 @@ interface TripHeaderProps {
   onOpenBooking?: () => void;
   onOpenCollaboration?: () => void;
   onNavigateToRoute?: () => void;
+  onOpenSafety?: () => void;
 }
 
 export const TripHeader: React.FC<TripHeaderProps> = ({
@@ -34,7 +35,8 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
   onOpenReview,
   onOpenBooking,
   onOpenCollaboration,
-  onNavigateToRoute
+  onNavigateToRoute,
+  onOpenSafety
 }) => {
   const { t } = useLanguage();
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
@@ -303,6 +305,17 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
             >
               <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
               <span>{t('itinerary.smartReplan')}</span>
+            </button>
+          )}
+
+          {onOpenSafety && (
+            <button
+              onClick={onOpenSafety}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold text-xs sm:text-sm border border-amber-200 transition-all cursor-pointer active:scale-95 shadow-2xs"
+              title="View local scams, tourist traps, and emergency hotlines"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+              <span>Scam & Safety Radar</span>
             </button>
           )}
 

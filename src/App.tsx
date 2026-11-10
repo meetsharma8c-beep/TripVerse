@@ -2133,6 +2133,7 @@ export function App() {
                 onOpenMemories={() => handleOpenMemories(activeTrip)}
                 onOpenReview={() => handleOpenReview(activeTrip)}
                 onOpenCollaboration={() => setIsCollabModalOpen(true)}
+                onOpenSafety={() => setTripSubTab('safety')}
               />
 
               {/* Sub-Navigation: Screen 2 Mobile 4-Pill Bar vs Desktop Grouped Navigation */}
@@ -2182,11 +2183,12 @@ export function App() {
 
                 return (
                   <div className="space-y-3">
-                    {/* Screen 2: Mobile Sub-Navigation Bar with Route Map */}
-                    <div className="lg:hidden flex items-center justify-between gap-1 p-1 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] shadow-2xs overflow-x-auto scrollbar-none">
+                    {/* Screen 2: Mobile Sub-Navigation Bar with Route Map & Scam Radar */}
+                    <div className="lg:hidden flex items-center gap-1 p-1 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] shadow-2xs overflow-x-auto scrollbar-none">
                       {[
                         { id: 'itinerary', label: 'Itinerary' },
                         { id: 'route', label: 'Route' },
+                        { id: 'safety', label: 'Scam Radar' },
                         { id: 'deals', label: 'Transport' },
                         { id: 'hub', label: 'Stay' },
                         { id: 'gems', label: 'Places' }
@@ -2200,7 +2202,7 @@ export function App() {
                               triggerHaptic('light');
                               setTripSubTab(tab.id as any);
                             }}
-                            className={`flex-1 py-2 px-1 rounded-full text-[11px] sm:text-xs font-bold transition-all text-center cursor-pointer whitespace-nowrap ${
+                            className={`flex-shrink-0 py-2 px-3 rounded-full text-[11px] sm:text-xs font-bold transition-all text-center cursor-pointer whitespace-nowrap ${
                               isActive
                                 ? 'bg-[#2D5A3D] text-white shadow-xs'
                                 : 'text-[#57685D] hover:text-[#152A1C]'

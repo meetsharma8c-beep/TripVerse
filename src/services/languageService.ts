@@ -14023,6 +14023,18 @@ export const UNIVERSAL_PHRASE_DICTIONARY: Record<string, Partial<Record<Language
     it: "Hub di sicurezza e contatti di emergenza",
     pt: "Central de segurança e contatos de emergência",
   },
+  "scam radar": {
+    en: "Scam Radar",
+    es: "Radar de Estafas",
+    fr: "Radar Pièges",
+    de: "Betrugsradar",
+    ja: "詐欺警戒",
+    hi: "घोटाला रडार",
+    zh: "防骗雷达",
+    ar: "رادار الاحتيال",
+    it: "Radar Truffe",
+    pt: "Radar de Golpes"
+  },
   "safety & scam radar": {
     en: "Safety & Scam Radar",
     es: "Radar de Seguridad y Estafas",
