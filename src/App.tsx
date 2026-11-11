@@ -1845,7 +1845,7 @@ export function App() {
   return (
     <div
       key={language}
-      className={`min-h-screen w-full overflow-x-hidden flex flex-col bg-[#F8FAFC] dark:bg-[#070C16] text-slate-900 dark:text-slate-100 selection:bg-[#2D5A3D] selection:text-white antialiased transition-opacity duration-300 ${
+      className={`min-h-screen w-full overflow-x-clip flex flex-col bg-[#F8FAFC] dark:bg-[#070C16] text-slate-900 dark:text-slate-100 selection:bg-[#2D5A3D] selection:text-white antialiased transition-opacity duration-300 ${
         !isAppReady && showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
