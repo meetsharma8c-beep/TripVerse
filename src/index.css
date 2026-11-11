@@ -632,15 +632,6 @@ html.dark #hero-planner-destination-input {
   color: #F8FAFC !important;
 }
 
-/* Mobile Bottom Navigation Bar */
-html.dark [class*="pb-safe"][class*="fixed"][class*="bottom-0"] {
-  background-color: rgba(11, 18, 32, 0.94) !important;
-  border-top-color: rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.6) !important;
-}
-
 /* Modern Footer in Night Mode */
 html.dark footer {
   background-color: #070C16 !important;
