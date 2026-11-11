@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import * as THREE from 'three';
 import { 
   X, 
@@ -365,7 +366,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
   const displayExtract = encyclopediaData?.extract || landmarkDetails.curatorInsight;
   const displayCoordinates = encyclopediaData?.coordinates;
 
-  return (
+  const viewerContent = (
     <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200">
       <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col relative text-slate-100 max-h-[94vh]">
         
@@ -712,4 +713,8 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(viewerContent, document.body)
+    : viewerContent;
 };

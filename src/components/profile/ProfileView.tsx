@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { UserProfile, Trip } from '../../types/trip';
 import { getStoredCurrency, formatCurrency, Currency } from '../../services/currencyService';
 import { User, MapPin, Briefcase, Mail, Phone, Sparkles, Check, RotateCcw, Edit3, ShieldCheck, Compass, LogOut, Users, X, Image as ImageIcon, Bell, Lock, FileText, MessageSquare, ChevronRight, Crown, CheckCircle2, Zap } from 'lucide-react';
@@ -727,49 +728,60 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       )}
 
       {/* Switch Account Modal */}
-      {showSwitchModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl border border-slate-200">
-            <div className="flex items-center justify-between">
-              <h4 className="font-bold text-slate-900 text-sm">Switch Explorer Account</h4>
-              <button onClick={() => setShowSwitchModal(false)} className="p-1 text-slate-400 hover:text-slate-700">
-                <X className="w-4 h-4" />
+      {showSwitchModal && (() => {
+        const switchModalContent = (
+          <div
+            className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+            onClick={() => setShowSwitchModal(false)}
+          >
+            <div
+              className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl border border-slate-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-slate-900 text-sm">Switch Explorer Account</h4>
+                <button onClick={() => setShowSwitchModal(false)} className="p-1 text-slate-400 hover:text-slate-700">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-2">
+                {savedAccounts.map(account => (
+                  <button
+                    key={account.uid}
+                    onClick={() => handleSwitchAccount(account.uid)}
+                    className={`w-full p-3 rounded-2xl border text-left flex items-center gap-3 transition-colors cursor-pointer ${
+                      currentUser?.uid === account.uid
+                        ? 'border-[#2D5A3D] bg-emerald-50/70'
+                        : 'border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <img src={account.photoURL} alt={account.displayName} className="w-9 h-9 rounded-full object-cover" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-900 truncate">{account.displayName}</p>
+                      <p className="text-[11px] text-slate-500 truncate">{account.email || account.phoneNumber || 'Phone Account'}</p>
+                    </div>
+                    {currentUser?.uid === account.uid && (
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => {
+                  setShowSwitchModal(false);
+                  onOpenAuthModal();
+                }}
+                className="w-full py-2.5 rounded-xl border border-dashed border-slate-300 hover:border-slate-400 text-slate-700 font-bold text-xs transition-colors"
+              >
+                + Add Another Account
               </button>
             </div>
-            <div className="space-y-2">
-              {savedAccounts.map(account => (
-                <button
-                  key={account.uid}
-                  onClick={() => handleSwitchAccount(account.uid)}
-                  className={`w-full p-3 rounded-2xl border text-left flex items-center gap-3 transition-colors cursor-pointer ${
-                    currentUser?.uid === account.uid
-                      ? 'border-[#2D5A3D] bg-emerald-50/70'
-                      : 'border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <img src={account.photoURL} alt={account.displayName} className="w-9 h-9 rounded-full object-cover" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-900 truncate">{account.displayName}</p>
-                    <p className="text-[11px] text-slate-500 truncate">{account.email || account.phoneNumber || 'Phone Account'}</p>
-                  </div>
-                  {currentUser?.uid === account.uid && (
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => {
-                setShowSwitchModal(false);
-                onOpenAuthModal();
-              }}
-              className="w-full py-2.5 rounded-xl border border-dashed border-slate-300 hover:border-slate-400 text-slate-700 font-bold text-xs transition-colors"
-            >
-              + Add Another Account
-            </button>
           </div>
-        </div>
-      )}
+        );
+        return typeof document !== 'undefined'
+          ? createPortal(switchModalContent, document.body)
+          : switchModalContent;
+      })()}
 
       {/* Digital Travel Passport & State Badges */}
       <DigitalPassport />

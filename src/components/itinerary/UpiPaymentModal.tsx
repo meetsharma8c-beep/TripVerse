@@ -1,5 +1,6 @@
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowRight, X, Clock, RefreshCw, Copy, Check, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatCurrency, SupportedCurrency } from '../../services/currencyService';
@@ -137,7 +138,7 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
   const timerCircumference = 2 * Math.PI * timerRadius;
   const strokeDashoffset = timerCircumference - (secondsRemaining / INITIAL_TIMER_SECONDS) * timerCircumference;
 
-  return (
+  const modalMarkup = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-3 sm:p-4 backdrop-blur-sm"
       onClick={onClose}
@@ -340,4 +341,8 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
       </section>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalMarkup, document.body)
+    : modalMarkup;
 };

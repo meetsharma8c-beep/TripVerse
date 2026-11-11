@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { Destination, UserProfile } from '../../types/trip';
 import { Search, Compass, Star, Sparkles, Bookmark } from 'lucide-react';
@@ -29,6 +29,18 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   const [liveResolvedDest, setLiveResolvedDest] = useState<Destination | null>(null);
   const [isResolvingGlobal, setIsResolvingGlobal] = useState(false);
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
+  const filterSectionRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  const handleSelectTag = (tagId: string) => {
+    setSelectedTag(tagId);
+    const gridRect = gridRef.current?.getBoundingClientRect();
+    if (gridRect && (gridRect.top < 88 || gridRect.top > window.innerHeight * 0.9)) {
+      window.requestAnimationFrame(() => {
+        filterSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  };
 
   useEffect(() => {
     let isCurrent = true;
@@ -185,12 +197,12 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       </div>
 
       {/* Filter Tabs with Clear Scroll Affordance */}
-      <div className="relative">
+      <div ref={filterSectionRef} className="relative scroll-mt-20 sm:scroll-mt-24">
         <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-none">
           {filterTabs.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setSelectedTag(tab.id)}
+              onClick={() => handleSelectTag(tab.id)}
               className={`min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center justify-center shrink-0 ${
                 selectedTag === tab.id
                   ? 'bg-[#2D5A3D] text-white shadow-xs'
@@ -289,7 +301,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       )}
 
       {/* Destination Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filtered.map((dest, idx) => {
           const isSaved = savedItemIds.includes(dest.id);
 
@@ -511,7 +523,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
             <h4 className="text-base font-bold text-slate-700">No destinations in this category</h4>
             <p className="text-xs text-slate-400">Try selecting another filter or search any destination name.</p>
             <button
-              onClick={() => setSelectedTag('all')}
+              onClick={() => handleSelectTag('all')}
               className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
             >
               Show All Places

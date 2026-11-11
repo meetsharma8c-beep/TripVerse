@@ -26,6 +26,13 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
     }
     return false;
   });
+  const [hasSettled, setHasSettled] = useState<boolean>(() => isVisible);
+
+  useEffect(() => {
+    if (!isVisible || hasSettled) return;
+    const timer = window.setTimeout(() => setHasSettled(true), 650);
+    return () => window.clearTimeout(timer);
+  }, [isVisible, hasSettled]);
 
   useEffect(() => {
     if (isVisible) return;
@@ -84,9 +91,18 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
   return (
     <div
       ref={ref}
-      style={delayMs > 0 ? { transitionDelay: `${delayMs}ms` } : undefined}
-      className={`transition-[opacity,transform] duration-600 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform] motion-reduce:transition-none motion-reduce:transform-none ${
-        isVisible ? 'opacity-100 translate-y-0 scale-100' : hiddenStyle
+      onTransitionEnd={(e) => {
+        if (e.target === ref.current && isVisible && !hasSettled) {
+          setHasSettled(true);
+        }
+      }}
+      style={delayMs > 0 && !hasSettled ? { transitionDelay: `${delayMs}ms` } : undefined}
+      className={`${
+        hasSettled
+          ? 'opacity-100'
+          : `transition-[opacity,transform] duration-600 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform] motion-reduce:transition-none motion-reduce:transform-none ${
+              isVisible ? 'opacity-100 translate-y-0 scale-100' : hiddenStyle
+            }`
       } ${className}`}
     >
       {children}

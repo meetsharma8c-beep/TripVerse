@@ -25,6 +25,8 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
   const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
+  const sectionRef = useRef<HTMLElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const filterStripRef = useRef<HTMLDivElement>(null);
   const [scrollFadeEdge, setScrollFadeEdge] = useState<'none' | 'right' | 'left'>('none');
 
@@ -84,10 +86,21 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
         }
       : undefined;
 
+  const handleCategorySelect = (catId: string) => {
+    setActiveCategory(catId);
+    const gridRect = gridRef.current?.getBoundingClientRect();
+    if (gridRect && (gridRect.top < 110 || gridRect.top > window.innerHeight * 0.9)) {
+      window.requestAnimationFrame(() => {
+        sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  };
+
   return (
     <section
+      ref={sectionRef}
       aria-labelledby="inspiring-destinations-heading"
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+      className="scroll-mt-16 sm:scroll-mt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
     >
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
@@ -135,7 +148,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                 key={cat.id}
                 type="button"
                 aria-pressed={isSelected}
-                onClick={() => setActiveCategory(cat.id)}
+                onClick={() => handleCategorySelect(cat.id)}
                 className={`min-h-[44px] py-2.5 px-4 rounded-full text-xs sm:text-sm whitespace-nowrap shrink-0 flex items-center justify-center transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4631]/40 dark:focus-visible:ring-emerald-400/50 active:scale-95 ${
                   isSelected
                     ? 'bg-[#1E4631] dark:bg-[#2A6040] text-white font-semibold shadow-xs'
@@ -150,7 +163,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
       </div>
 
       {/* Responsive Destination Grid (1 col mobile, 2 cols tablet, 3 cols laptop, 4 cols desktop) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+      <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
         {filtered.map((dest, idx) => {
           const isSaved = savedItemIds.includes(dest.id);
           const regionLabel =

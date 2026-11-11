@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   MapPin,
   Calendar,
@@ -1241,61 +1242,72 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </form>
 
             {/* Budget Guarantee Explanatory Modal */}
-            {showGuaranteeModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
-                <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-[#E2EBE1] space-y-4 animate-in zoom-in-95">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#E2EBE1]">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-2xl bg-[#E8EFE7] text-[#2D5A3D] flex items-center justify-center">
-                        <ShieldCheck className="w-6 h-6 stroke-[2.2]" />
+            {showGuaranteeModal && (() => {
+              const guaranteeModal = (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in"
+                  onClick={() => setShowGuaranteeModal(false)}
+                >
+                  <div
+                    className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-[#E2EBE1] space-y-4 animate-in zoom-in-95"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between pb-3 border-b border-[#E2EBE1]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-2xl bg-[#E8EFE7] text-[#2D5A3D] flex items-center justify-center">
+                          <ShieldCheck className="w-6 h-6 stroke-[2.2]" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-bold text-[#152A1C]">About budget estimates</h3>
+                          <p className="text-xs text-[#57685D]">Planning guidance, not a price guarantee</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-base font-bold text-[#152A1C]">About budget estimates</h3>
-                        <p className="text-xs text-[#57685D]">Planning guidance, not a price guarantee</p>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowGuaranteeModal(false)}
+                        className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                        aria-label="Close budget estimate information"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowGuaranteeModal(false)}
-                      className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-                      aria-label="Close budget estimate information"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
 
-                  <div className="space-y-3 text-xs sm:text-sm text-[#57685D] leading-relaxed">
-                    <p>
-                      TripVerse creates planning estimates from your trip details. Actual costs may differ:
-                    </p>
-                    <ul className="space-y-2 pt-1">
-                      <li className="flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2D5A3D] shrink-0 mt-0.5" />
-                        <span><strong>Road cost estimates:</strong> Toll and fuel costs are not live quotes. Check current rates on your selected route before travelling.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2D5A3D] shrink-0 mt-0.5" />
-                        <span><strong>Fuel estimates:</strong> These are not live fuel prices or vehicle-specific guarantees. Check current rates before travel.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2D5A3D] shrink-0 mt-0.5" />
-                        <span><strong>Planning estimates:</strong> Trip budgets and transport costs are estimates, not live quotes or guaranteed prices. Confirm rates with providers before booking.</span>
-                      </li>
-                    </ul>
-                  </div>
+                    <div className="space-y-3 text-xs sm:text-sm text-[#57685D] leading-relaxed">
+                      <p>
+                        TripVerse creates planning estimates from your trip details. Actual costs may differ:
+                      </p>
+                      <ul className="space-y-2 pt-1">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-[#2D5A3D] shrink-0 mt-0.5" />
+                          <span><strong>Road cost estimates:</strong> Toll and fuel costs are not live quotes. Check current rates on your selected route before travelling.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-[#2D5A3D] shrink-0 mt-0.5" />
+                          <span><strong>Fuel estimates:</strong> These are not live fuel prices or vehicle-specific guarantees. Check current rates before travel.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-[#2D5A3D] shrink-0 mt-0.5" />
+                          <span><strong>Planning estimates:</strong> Trip budgets and transport costs are estimates, not live quotes or guaranteed prices. Confirm rates with providers before booking.</span>
+                        </li>
+                      </ul>
+                    </div>
 
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowGuaranteeModal(false)}
-                      className="w-full py-3 min-h-[44px] rounded-2xl bg-[#2D5A3D] hover:bg-[#244931] text-white font-bold text-sm shadow-md transition-all cursor-pointer"
-                    >
-                      Got it, thanks!
-                    </button>
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowGuaranteeModal(false)}
+                        className="w-full py-3 min-h-[44px] rounded-2xl bg-[#2D5A3D] hover:bg-[#244931] text-white font-bold text-sm shadow-md transition-all cursor-pointer"
+                      >
+                        Got it, thanks!
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+              return typeof document !== 'undefined'
+                ? createPortal(guaranteeModal, document.body)
+                : guaranteeModal;
+            })()}
           </div>
 
           {/* Right Column: Real figure, shape and functionality of a real smartphone */}

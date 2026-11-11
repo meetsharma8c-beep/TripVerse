@@ -1,4 +1,5 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
+import { createPortal } from 'react-dom';
 import { Destination, CurrencyCode } from '../../types/trip';
 import { X, Sparkles, MapPin, Wallet, Star, Bookmark, Check, Car, Utensils, Share2, ShieldCheck, Compass } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
@@ -147,7 +148,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
     }
   };
 
-  return (
+  const modalContent = (
     <div 
       className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200"
       onClick={onClose}
@@ -438,4 +439,8 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
       )}
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 };

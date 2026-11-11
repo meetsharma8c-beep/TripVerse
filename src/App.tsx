@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { Trip, Destination, BreakStop, BudgetBreakdown, UserProfile, ItineraryActivity, DayPlan } from './types/trip';
 import {
   loadTrips,
@@ -725,14 +725,53 @@ export function App() {
     }
   }, [currentTab, activeTripIdState, selectedDestinationForDetails, trips]);
 
+  const tripSubSectionRef = useRef<HTMLDivElement>(null);
+
+  const scrollPageToTopInstant = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
+  const handleNavigateTab = useCallback((tab: string) => {
+    setCurrentTab(tab);
+    scrollPageToTopInstant();
+  }, [scrollPageToTopInstant]);
+
+  const handleSelectTripSubTab = useCallback((
+    subTab: 'itinerary' | 'hub' | 'packing' | 'expenses' | 'gems' | 'deals' | 'route' | 'breakstops' | 'budget' | 'safety',
+    options?: { scrollTargetId?: string; forceScroll?: boolean }
+  ) => {
+    setTripSubTab(subTab);
+    window.setTimeout(() => {
+      const targetEl = options?.scrollTargetId
+        ? document.getElementById(options.scrollTargetId) || tripSubSectionRef.current
+        : tripSubSectionRef.current;
+      if (!targetEl) return;
+      const rect = targetEl.getBoundingClientRect();
+      const shouldScroll = options?.forceScroll || rect.top < 56 || rect.top > 280;
+      if (shouldScroll) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 80);
+  }, []);
+
+  const handleSelectTripsViewMode = useCallback((mode: 'passes' | 'portfolio') => {
+    setTripsViewMode(mode);
+    if (typeof window !== 'undefined' && window.scrollY > 120) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
   const hasMountedTabScrollRef = useRef(false);
   useEffect(() => {
     if (!hasMountedTabScrollRef.current) {
       hasMountedTabScrollRef.current = true;
       return;
     }
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [currentTab]);
+    scrollPageToTopInstant();
+  }, [currentTab, scrollPageToTopInstant]);
 
   // Overlay modal state tracking for Android back gesture & browser history synchronization
   const isOverlayModalOpen = Boolean(
@@ -1908,7 +1947,7 @@ export function App() {
       {/* Desktop & Mobile Header */}
       <Navbar
         currentTab={currentTab}
-        onNavigate={(tab) => setCurrentTab(tab)}
+        onNavigate={handleNavigateTab}
         onOpenPlanner={() => handleOpenPlannerWithPrefill()}
         onOpenSearch={() => setIsGlobalSearchOpen(true)}
         onOpenChat={() => setIsAIChatOpen(true)}
@@ -1936,7 +1975,7 @@ export function App() {
                 onQuickPlan={(params) => {
                   handleOpenPlannerWithPrefill(params);
                 }}
-                onExplore={() => setCurrentTab('explore')}
+                onExplore={() => handleNavigateTab('explore')}
                 onOpenPlanner={(params) => handleOpenPlannerWithPrefill(params)}
                 onSelectDestination={(dest) => setSelectedDestinationForDetails(dest)}
               />
@@ -1945,7 +1984,7 @@ export function App() {
               <div className="hidden lg:block">
                 <PublicLaunchSpotlight
                   onOpenPlanner={() => handleOpenPlannerWithPrefill()}
-                  onExplore={() => setCurrentTab('explore')}
+                  onExplore={() => handleNavigateTab('explore')}
                 />
               </div>
 
@@ -1964,7 +2003,7 @@ export function App() {
                 }}
                 savedItemIds={savedItemIds}
                 onToggleSaved={handleToggleSaved}
-                onViewAllExplore={() => setCurrentTab('explore')}
+                onViewAllExplore={() => handleNavigateTab('explore')}
               />
 
               {/* Semantic SEO Authority Hub: Trip Planning Guide, Popular Trip Routes & FAQ */}
@@ -2068,7 +2107,7 @@ export function App() {
               {/* Desktop Back & AI Assistant Top Bar */}
               <div className="hidden lg:flex items-center justify-between">
                 <button
-                  onClick={() => setCurrentTab('trips')}
+                  onClick={() => handleNavigateTab('trips')}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                 >
                   <span>← {t('itinerary.backToTrips')}</span>
@@ -2087,7 +2126,7 @@ export function App() {
               <div className="flex lg:hidden items-center justify-between pt-1 pb-1">
                 <button
                   type="button"
-                  onClick={() => setCurrentTab('trips')}
+                  onClick={() => handleNavigateTab('trips')}
                   className="w-10 h-10 rounded-full bg-white border border-[#E2EBE1] text-[#2D5A3D] flex items-center justify-center shadow-2xs hover:bg-[#F8FAF7] active:scale-95 transition-all cursor-pointer"
                   title="Back"
                   aria-label="Back to trips"
@@ -2138,20 +2177,14 @@ export function App() {
                 trip={activeTrip}
                 onOpenChat={() => setIsAIChatOpen(true)}
                 onOpenShare={() => setIsShareModalOpen(true)}
-                onOptimizeBudget={() => setTripSubTab('budget')}
+                onOptimizeBudget={() => handleSelectTripSubTab('budget', { forceScroll: true })}
                 onExportTrip={handleExportTrip}
                 onOpenLiveNav={() => setIsLiveNavOpen(true)}
                 onNavigateToRoute={() => {
                   if (tripSubTab === 'route') {
                     setIsLiveNavOpen(true);
                   } else {
-                    setTripSubTab('route');
-                    setTimeout(() => {
-                      const el = document.getElementById('smart-route-map');
-                      if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }
-                    }, 120);
+                    handleSelectTripSubTab('route', { scrollTargetId: 'smart-route-map', forceScroll: true });
                   }
                 }}
                 onOpenDeals={() => setIsBestDealModalOpen(true)}
@@ -2164,7 +2197,7 @@ export function App() {
                 onOpenMemories={() => handleOpenMemories(activeTrip)}
                 onOpenReview={() => handleOpenReview(activeTrip)}
                 onOpenCollaboration={() => setIsCollabModalOpen(true)}
-                onOpenSafety={() => setTripSubTab('safety')}
+                onOpenSafety={() => handleSelectTripSubTab('safety', { forceScroll: true })}
               />
 
               {/* Sub-Navigation: Screen 2 Mobile 4-Pill Bar vs Desktop Grouped Navigation */}
@@ -2213,7 +2246,7 @@ export function App() {
                 const currentGroup = TRIP_GROUPS.find(g => g.subTabs.some(s => s.id === tripSubTab)) || TRIP_GROUPS[0];
 
                 return (
-                  <div className="space-y-3">
+                  <div ref={tripSubSectionRef} id="trip-detail-output" className="space-y-3 scroll-mt-20 sm:scroll-mt-24">
                     {/* Screen 2: Mobile Sub-Navigation Bar with Route Map & Scam Radar */}
                     <div className="lg:hidden flex items-center gap-1 p-1 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] shadow-2xs overflow-x-auto scrollbar-none">
                       {[
@@ -2231,7 +2264,7 @@ export function App() {
                             type="button"
                             onClick={() => {
                               triggerHaptic('light');
-                              setTripSubTab(tab.id as any);
+                              handleSelectTripSubTab(tab.id as any);
                             }}
                             className={`flex-shrink-0 py-2 px-3 rounded-full text-[11px] sm:text-xs font-bold transition-all text-center cursor-pointer whitespace-nowrap ${
                               isActive
@@ -2257,7 +2290,7 @@ export function App() {
                               key={group.id}
                               onClick={() => {
                                 triggerHaptic('light');
-                                setTripSubTab(group.subTabs[0].id as any);
+                                handleSelectTripSubTab(group.subTabs[0].id as any);
                               }}
                               className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${isGroupActive
                                   ? 'bg-[#2D5A3D] text-white shadow-xs scale-[1.02]'
@@ -2283,7 +2316,7 @@ export function App() {
                                 key={sub.id}
                                 onClick={() => {
                                   triggerHaptic('light');
-                                  setTripSubTab(sub.id as any);
+                                  handleSelectTripSubTab(sub.id as any);
                                 }}
                                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSubActive
                                     ? 'bg-[#2D5A3D] text-white shadow-xs'
@@ -2318,7 +2351,7 @@ export function App() {
                   onDeleteActivity={handleDeleteActivity}
                   onMoveActivity={handleMoveActivity}
                   onToggleComplete={handleToggleActivityComplete}
-                  onOptimizeWithAI={() => setTripSubTab('hub')}
+                  onOptimizeWithAI={() => handleSelectTripSubTab('hub', { forceScroll: true })}
                   onClearDay={handleClearDay}
                   onAddDay={handleAddDay}
                   onDeleteDay={handleDeleteDay}
@@ -2330,9 +2363,9 @@ export function App() {
               {tripSubTab === 'hub' && (
                 <TripPassesHubView
                   trip={activeTrip}
-                  onBack={() => setTripSubTab('itinerary')}
+                  onBack={() => handleSelectTripSubTab('itinerary')}
                   onOpenBookingModal={() => setIsBookingModalOpen(true)}
-                  onOpenPacking={() => setTripSubTab('packing')}
+                  onOpenPacking={() => handleSelectTripSubTab('packing')}
                   onExportTrip={handleExportTrip}
                   onOpenShare={() => setIsShareModalOpen(true)}
                   onOpenNotifications={() => setIsNotificationCenterOpen(true)}
@@ -2521,7 +2554,7 @@ export function App() {
                   {t('Create New Trip')}
                 </button>
                 <button
-                  onClick={() => setCurrentTab('trips')}
+                  onClick={() => handleNavigateTab('trips')}
                   className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-sm"
                 >
                   {t('View My Trips')}
@@ -2537,7 +2570,7 @@ export function App() {
                 <div className="flex items-center justify-center pt-2">
                   <div className="inline-flex p-1 rounded-full bg-white border border-[#E2EBE1] shadow-xs">
                     <button
-                      onClick={() => setTripsViewMode('passes')}
+                      onClick={() => handleSelectTripsViewMode('passes')}
                       className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                         tripsViewMode === 'passes'
                           ? 'bg-[#2D5A3D] text-white shadow-xs'
@@ -2547,7 +2580,7 @@ export function App() {
                       {t('Digital Pass & Hub')}
                     </button>
                     <button
-                      onClick={() => setTripsViewMode('portfolio')}
+                      onClick={() => handleSelectTripsViewMode('portfolio')}
                       className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                         tripsViewMode === 'portfolio'
                           ? 'bg-[#2D5A3D] text-white shadow-xs'
@@ -2563,11 +2596,11 @@ export function App() {
               {activeTrip && tripsViewMode === 'passes' ? (
                 <TripPassesHubView
                   trip={activeTrip}
-                  onBack={() => setTripsViewMode('portfolio')}
+                  onBack={() => handleSelectTripsViewMode('portfolio')}
                   onOpenBookingModal={() => setIsBookingModalOpen(true)}
                   onOpenPacking={() => {
-                    setCurrentTab('trip-detail');
-                    setTripSubTab('packing');
+                    handleNavigateTab('trip-detail');
+                    handleSelectTripSubTab('packing', { forceScroll: true });
                   }}
                   onExportTrip={handleExportTrip}
                   onOpenShare={() => setIsShareModalOpen(true)}
@@ -2664,9 +2697,9 @@ export function App() {
 
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-[#5A7362] dark:text-slate-400">
               <button onClick={() => setIsOnboardingOpen(true)} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('Interactive Tour')}</button>
-              <button onClick={() => setCurrentTab('explore')} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('Destinations')}</button>
+              <button onClick={() => handleNavigateTab('explore')} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('Destinations')}</button>
               <button onClick={() => handleOpenPlannerWithPrefill()} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('AI Engine')}</button>
-              <button onClick={() => setCurrentTab('trips')} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('My Routes')}</button>
+              <button onClick={() => handleNavigateTab('trips')} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('My Routes')}</button>
               <span className="text-[#DCE7DB] dark:text-slate-700">|</span>
               <button onClick={() => setLegalModalState({ isOpen: true, tab: 'privacy' })} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('Privacy')}</button>
               <button onClick={() => setLegalModalState({ isOpen: true, tab: 'terms' })} className="hover:text-[#2D5A3D] dark:hover:text-emerald-400 transition-colors cursor-pointer">{t('Terms')}</button>
@@ -2682,7 +2715,7 @@ export function App() {
       {/* Mobile Bottom Navigation Bar */}
       <BottomNav
         currentTab={currentTab}
-        onNavigate={(tab) => setCurrentTab(tab)}
+        onNavigate={handleNavigateTab}
         onOpenPlanner={() => handleOpenPlannerWithPrefill()}
         unreadNotificationCount={unreadNotificationCount}
       />
@@ -2779,8 +2812,8 @@ export function App() {
             onClose={() => setIsBookingModalOpen(false)}
             currency={currency}
             onNavigateToPasses={() => {
-              setCurrentTab('trip-detail');
-              setTripSubTab('hub');
+              handleNavigateTab('trip-detail');
+              handleSelectTripSubTab('hub', { forceScroll: true });
               setIsBookingModalOpen(false);
             }}
           />
@@ -2803,8 +2836,8 @@ export function App() {
             onClose={() => setIsBestDealModalOpen(false)}
             currency={currency}
             onNavigateToPasses={() => {
-              setCurrentTab('trip-detail');
-              setTripSubTab('hub');
+              handleNavigateTab('trip-detail');
+              handleSelectTripSubTab('hub', { forceScroll: true });
               setIsBestDealModalOpen(false);
             }}
           />
@@ -2836,7 +2869,10 @@ export function App() {
               setIsAIChatOpen(true);
             }}
             onViewMap={() => {
-              setTripSubTab('route');
+              if (currentTab !== 'trip-detail') {
+                setCurrentTab('trip-detail');
+              }
+              handleSelectTripSubTab('route', { scrollTargetId: 'smart-route-map', forceScroll: true });
             }}
           />
         )}
@@ -2948,9 +2984,7 @@ export function App() {
         onOpenChat={() => {
           setIsAIChatOpen(true);
         }}
-        onNavigateTab={(tab) => {
-          setCurrentTab(tab);
-        }}
+        onNavigateTab={handleNavigateTab}
       />
 
       {/* PWA Free Install Banner & iOS Guide */}
