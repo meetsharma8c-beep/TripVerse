@@ -133,6 +133,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [twoFactorCountdown, setTwoFactorCountdown] = useState(0);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [isGisRendered, setIsGisRendered] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() =>
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  );
+
+  // Sync dark mode class changes so the Google GIS button re-renders cleanly in matching theme
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    const syncTheme = () => setIsDarkTheme(root.classList.contains('dark'));
+    syncTheme();
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Status & Feedback
   const [isLoading, setIsLoading] = useState(false);
@@ -413,19 +427,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           });
 
           if (googleBtnContainerRef.current) {
-            googleBtnContainerRef.current.innerHTML = '';
+            const container = googleBtnContainerRef.current;
+            const availableWidth = container.parentElement?.clientWidth || 320;
+            const btnWidth = Math.min(320, Math.max(240, availableWidth - 8));
+
+            container.innerHTML = '';
             (window as any).google.accounts.id.renderButton(
-              googleBtnContainerRef.current,
+              container,
               {
                 type: 'standard',
-                theme: 'outline',
+                theme: isDarkTheme ? 'filled_black' : 'outline',
                 size: 'large',
                 text: 'continue_with',
-                shape: 'rectangular',
+                shape: 'pill',
                 logo_alignment: 'left',
-                width: 320
+                width: btnWidth
               }
             );
+
+            // Prevent opaque white iframe canvas box when html.dark sets color-scheme: dark
+            container.querySelectorAll('iframe').forEach((iframe) => {
+              iframe.style.colorScheme = 'light';
+              iframe.style.backgroundColor = 'transparent';
+            });
+
             if (isMounted) {
               setIsGisRendered(true);
             }
@@ -448,7 +473,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       isMounted = false;
       setIsGisRendered(false);
     };
-  }, [isOpen, authMethod, startGoogle2Fa]);
+  }, [isOpen, authMethod, isDarkTheme, startGoogle2Fa]);
 
   useEffect(() => {
     return () => {
@@ -1090,19 +1115,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               {/* Official Google Identity Services 1-Tap Widget (Direct Vercel OAuth 2.0 with 2FA) */}
               <div className="flex flex-col items-center justify-center w-full min-h-[48px] py-1 gap-2.5">
-                {/* Mount Google Official Native Widget (Direct trip-verse.com) */}
-                <div 
-                  ref={googleBtnContainerRef} 
+                {/* Isolate color-scheme: light so dark-mode root never paints a white box behind Google's iframe */}
+                <div
                   className="flex justify-center min-h-[44px] w-full"
-                  style={{ minHeight: '44px' }}
-                />
+                  style={{ minHeight: '44px', colorScheme: 'light' }}
+                >
+                  <div
+                    ref={googleBtnContainerRef}
+                    className="flex justify-center min-h-[44px]"
+                    style={{ colorScheme: 'light' }}
+                  />
+                </div>
 
                 {!isGisRendered && (
                   <button
                     type="button"
                     onClick={handleGoogleDirectFallback}
                     disabled={isLoading}
-                    className="w-[320px] max-w-full h-[44px] rounded-md border border-slate-300 bg-white hover:bg-slate-50 transition-colors flex items-center justify-center gap-2.5 text-slate-700 font-semibold text-xs shadow-2xs cursor-pointer active:scale-[0.98]"
+                    className="w-[320px] max-w-full h-[44px] rounded-full border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2.5 text-slate-700 dark:text-slate-100 font-semibold text-xs shadow-2xs cursor-pointer active:scale-[0.98]"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -1399,7 +1429,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <button
                       type="button"
                       onClick={() => switchAuthTab('google')}
-                      className="w-full py-3 px-3 rounded-xl bg-blue-50/90 border border-blue-200 hover:bg-blue-100 text-[#0B2545] font-bold text-xs flex items-center justify-center gap-2.5 transition-all shadow-2xs cursor-pointer active:scale-98"
+                      className="w-full py-3 px-3 rounded-xl bg-blue-50/90 dark:bg-slate-800/80 border border-blue-200 dark:border-slate-700 hover:bg-blue-100 dark:hover:bg-slate-700/80 text-[#0B2545] dark:text-slate-100 font-bold text-xs flex items-center justify-center gap-2.5 transition-all shadow-2xs cursor-pointer active:scale-98"
                     >
                       <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
