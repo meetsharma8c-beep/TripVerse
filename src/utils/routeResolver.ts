@@ -34,7 +34,7 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
 
   // 1. Direct pathname routing (/destination/:slug, /trip/:id, /itinerary/:id, /booking, /explore, /mytrips, /saved, /profile, /planner)
   if (pathname.startsWith('/destination/')) {
-    const slug = pathname.replace('/destination/', '').trim();
+    const slug = pathname.slice('/destination/'.length).replace(/\/+$/, '').trim();
     if (slug) {
       const match = POPULAR_DESTINATIONS.find(d =>
         d.id.toLowerCase() === slug ||
@@ -71,7 +71,13 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
     return { tab: 'trips', dest: null, tripId: null, openBooking: false, openPlanner: false };
   }
 
-  if (pathname === '/explore') {
+  if (
+    pathname === '/explore' ||
+    pathname === '/explore/' ||
+    pathname === '/destinations' ||
+    pathname === '/destinations/' ||
+    pathname === '/destination'
+  ) {
     return { tab: 'explore', dest: null, tripId: null, openBooking: false, openPlanner: false };
   }
   if (pathname === '/mytrips' || pathname === '/trips') {
@@ -130,6 +136,10 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
     }
   }
   if (rawHash === 'mytrips') return { tab: 'trips', dest: null, tripId: null, openBooking: false, openPlanner: false };
+  if (rawHash === 'destinations' || rawHash === 'destination') {
+    return { tab: 'explore', dest: null, tripId: null, openBooking: false, openPlanner: false };
+  }
+
   if (['home', 'explore', 'trips', 'saved', 'profile', 'trip-detail'].includes(rawHash)) {
     return { tab: rawHash, dest: null, tripId: null, openBooking: false, openPlanner: false };
   }

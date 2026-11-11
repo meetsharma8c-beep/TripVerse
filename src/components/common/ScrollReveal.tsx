@@ -32,6 +32,21 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
     const node = ref.current;
     if (!node) return;
 
+    const isNearViewport = () => {
+      const rect = node.getBoundingClientRect();
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.top <= window.innerHeight + 160 &&
+        rect.bottom >= -160
+      );
+    };
+
+    if (isNearViewport()) {
+      setIsVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -42,11 +57,21 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
           }
         }
       },
-      { threshold, rootMargin: '0px 0px -24px 0px' }
+      { threshold: Math.min(threshold, 0.01), rootMargin: '160px 0px 160px 0px' }
     );
 
     observer.observe(node);
-    return () => observer.disconnect();
+    const rafId = window.requestAnimationFrame(() => {
+      if (isNearViewport()) {
+        setIsVisible(true);
+        observer.disconnect();
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      observer.disconnect();
+    };
   }, [isVisible, threshold]);
 
   const hiddenStyle =

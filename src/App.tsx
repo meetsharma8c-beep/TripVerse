@@ -60,20 +60,43 @@ import { DayTimeline } from './components/itinerary/DayTimeline';
 import { BreakStopCard } from './components/itinerary/BreakStopCard';
 import { BudgetOptimizer } from './components/itinerary/BudgetOptimizer';
 import { SafetyEmergency } from './components/itinerary/SafetyEmergency';
-const PackingWeatherView = lazy(() => import('./components/itinerary/PackingWeatherView').then(m => ({ default: m.PackingWeatherView })));
-const TripSplitExpenses = lazy(() => import('./components/itinerary/TripSplitExpenses').then(m => ({ default: m.TripSplitExpenses })));
-const LocalGemsView = lazy(() => import('./components/itinerary/LocalGemsView').then(m => ({ default: m.LocalGemsView })));
+
+const CHUNK_RELOAD_COOLDOWN_MS = 15_000;
+const CHUNK_RELOAD_STORAGE_KEY = 'tripverse_chunk_reload_at';
+
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  importer: () => Promise<{ default: T }>
+): React.LazyExoticComponent<T> {
+  return lazy(() =>
+    importer().catch((error: unknown) => {
+      if (typeof window !== 'undefined') {
+        const lastReloadRaw = window.sessionStorage.getItem(CHUNK_RELOAD_STORAGE_KEY);
+        const lastReloadAt = lastReloadRaw ? Number(lastReloadRaw) : 0;
+        if (!Number.isFinite(lastReloadAt) || Date.now() - lastReloadAt > CHUNK_RELOAD_COOLDOWN_MS) {
+          window.sessionStorage.setItem(CHUNK_RELOAD_STORAGE_KEY, String(Date.now()));
+          window.location.reload();
+          return new Promise<{ default: T }>(() => {});
+        }
+      }
+      throw error;
+    })
+  );
+}
+
+const PackingWeatherView = lazyWithRetry(() => import('./components/itinerary/PackingWeatherView').then(m => ({ default: m.PackingWeatherView })));
+const TripSplitExpenses = lazyWithRetry(() => import('./components/itinerary/TripSplitExpenses').then(m => ({ default: m.TripSplitExpenses })));
+const LocalGemsView = lazyWithRetry(() => import('./components/itinerary/LocalGemsView').then(m => ({ default: m.LocalGemsView })));
 import { ActivityModal } from './components/itinerary/ActivityModal';
 
 // Transport Deals & Views
-const TransportDealsView = lazy(() => import('./components/deals/TransportDealsView').then(m => ({ default: m.TransportDealsView })));
+const TransportDealsView = lazyWithRetry(() => import('./components/deals/TransportDealsView').then(m => ({ default: m.TransportDealsView })));
 
 // Trips & Explore Views (Lazy-loaded for faster initial paint)
-const MyTripsView = lazy(() => import('./components/trips/MyTripsView').then(m => ({ default: m.MyTripsView })));
-const ExploreView = lazy(() => import('./components/explore/ExploreView').then(m => ({ default: m.ExploreView })));
+const MyTripsView = lazyWithRetry(() => import('./components/trips/MyTripsView').then(m => ({ default: m.MyTripsView })));
+const ExploreView = lazyWithRetry(() => import('./components/explore/ExploreView').then(m => ({ default: m.ExploreView })));
 import { DestinationDetailModal } from './components/explore/DestinationDetailModal';
-const SavedItemsView = lazy(() => import('./components/saved/SavedItemsView').then(m => ({ default: m.SavedItemsView })));
-const ProfileView = lazy(() => import('./components/profile/ProfileView').then(m => ({ default: m.ProfileView })));
+const SavedItemsView = lazyWithRetry(() => import('./components/saved/SavedItemsView').then(m => ({ default: m.SavedItemsView })));
+const ProfileView = lazyWithRetry(() => import('./components/profile/ProfileView').then(m => ({ default: m.ProfileView })));
 import { AuthModal } from './components/profile/AuthModal';
 import { GuestPlannerRestrictedModal } from './components/planner/GuestPlannerRestrictedModal';
 import { 
@@ -702,6 +725,15 @@ export function App() {
     }
   }, [currentTab, activeTripIdState, selectedDestinationForDetails, trips]);
 
+  const hasMountedTabScrollRef = useRef(false);
+  useEffect(() => {
+    if (!hasMountedTabScrollRef.current) {
+      hasMountedTabScrollRef.current = true;
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [currentTab]);
+
   // Overlay modal state tracking for Android back gesture & browser history synchronization
   const isOverlayModalOpen = Boolean(
     isBookingModalOpen ||
@@ -710,7 +742,6 @@ export function App() {
     isGuestPlannerRestrictedOpen ||
     isAIChatOpen ||
     isLiveNavOpen ||
-    selectedDestinationForDetails !== null ||
     isShareModalOpen ||
     isNotificationCenterOpen ||
     isPhotoJournalOpen ||
