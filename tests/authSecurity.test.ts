@@ -768,5 +768,81 @@ describe('Auth Security & Verification Tests', () => {
       expect(disabledUser.twoFactorEnabled).toBe(false);
       expect(getCurrentUser()?.twoFactorEnabled).toBe(false);
     });
+
+    it('validates serverless email-otp endpoint directly with HMAC signature verification and rejects tampering', async () => {
+      const emailOtpHandler = (await import('../api/email-otp.js')).default;
+
+      // Helper to mock serverless req/res
+      const createMockReqRes = (body: any) => {
+        let statusCode = 200;
+        let responseJson: any = null;
+        let headers: Record<string, string> = {};
+
+        const req: any = {
+          method: 'POST',
+          headers: { 'x-forwarded-for': '127.0.0.1' },
+          body
+        };
+
+        const res: any = {
+          status: (code: number) => {
+            statusCode = code;
+            return res;
+          },
+          setHeader: (name: string, val: string) => {
+            headers[name] = val;
+          },
+          json: (data: any) => {
+            responseJson = data;
+            return res;
+          },
+          end: () => res
+        };
+
+        return { req, res, getResult: () => ({ statusCode, responseJson, headers }) };
+      };
+
+      // 1. Send OTP for simulated domain
+      const { req: sendReq, res: sendRes, getResult: getSendResult } = createMockReqRes({
+        action: 'send',
+        email: 'ci_test_user@example.com',
+        name: 'CI Tester'
+      });
+      await emailOtpHandler(sendReq, sendRes);
+      const sendResult = getSendResult();
+      expect(sendResult.statusCode).toBe(200);
+      expect(sendResult.responseJson.success).toBe(true);
+      expect(sendResult.responseJson.token).toBeDefined();
+
+      const validToken = sendResult.responseJson.token;
+      const [expiresAtStr] = validToken.split('.');
+
+      // 2. Reject tampering of token signature
+      const tamperedToken = `${expiresAtStr}.deadbeef1234567890`;
+      const { req: failReq, res: failRes, getResult: getFailResult } = createMockReqRes({
+        action: 'verify',
+        email: 'ci_test_user@example.com',
+        code: '123456',
+        token: tamperedToken
+      });
+      await emailOtpHandler(failReq, failRes);
+      const failResult = getFailResult();
+      expect(failResult.statusCode).toBe(400);
+      expect(failResult.responseJson.success).toBe(false);
+
+      // 3. Reject expired token
+      const expiredTime = Date.now() - 5000;
+      const expiredToken = `${expiredTime}.somesig`;
+      const { req: expReq, res: expRes, getResult: getExpResult } = createMockReqRes({
+        action: 'verify',
+        email: 'ci_test_user@example.com',
+        code: '123456',
+        token: expiredToken
+      });
+      await emailOtpHandler(expReq, expRes);
+      const expResult = getExpResult();
+      expect(expResult.statusCode).toBe(400);
+      expect(expResult.responseJson.message).toMatch(/expired/i);
+    });
   });
 });
