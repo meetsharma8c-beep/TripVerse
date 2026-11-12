@@ -376,6 +376,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
           isOpen={isTypeformOpen}
           onClose={() => setIsTypeformOpen(false)}
           title="TripVerse Traveler Feedback"
+          formId="NT5vgVDP"
         />
 
         {/* Modal Footer */}

@@ -23,7 +23,7 @@ export const TypeformModal: React.FC<TypeformModalProps> = ({
   onSubmitted
 }) => {
   const { t } = useLanguage();
-  const effectiveFormId = formId || (import.meta as any).env?.VITE_TYPEFORM_ID || '';
+  const effectiveFormId = formId || (import.meta as any).env?.VITE_TYPEFORM_ID || 'NT5vgVDP';
 
   if (!isOpen) return null;
 
