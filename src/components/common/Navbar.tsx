@@ -6,6 +6,7 @@ import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services
 import { getActiveLanguage, setActiveLanguage, LANGUAGES, useLanguage } from '../../services/languageService';
 import { isStandalone } from '../../services/deviceService';
 import { getUserSubscriptionQuota } from '../../services/authService';
+import { useModalBehavior } from '../../hooks/useModalBehavior';
 
 interface NavbarProps {
   currentTab: string;
@@ -84,26 +85,18 @@ export const Navbar: React.FC<NavbarProps> = ({
     return true;
   });
 
-  // Lock body scroll on touch devices while mobile drawer is open to prevent awkward background jitter
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      const originalStyle = window.getComputedStyle(document.body).overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = originalStyle;
-      };
-    }
-  }, [mobileMenuOpen]);
+  // Lock background page scroll cleanly on html (keeping sticky header anchored) & handle Escape
+  useModalBehavior(mobileMenuOpen, () => setMobileMenuOpen(false));
 
-  // Accessibility: close mobile menu on Escape key press
+  // Auto-close mobile drawer if viewport crosses desktop breakpoint so scroll lock never lingers
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && mobileMenuOpen) {
-        setMobileMenuOpen(false);
-      }
+    if (!mobileMenuOpen || typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const handleViewportChange = (e: MediaQueryListEvent) => {
+      if (e.matches) setMobileMenuOpen(false);
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    mq.addEventListener?.('change', handleViewportChange);
+    return () => mq.removeEventListener?.('change', handleViewportChange);
   }, [mobileMenuOpen]);
 
   useEffect(() => {
@@ -176,25 +169,33 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header
       data-frosted-header="true"
-      className="sticky top-0 z-40 w-full transition-colors duration-200"
+      className="sticky top-0 z-[45] w-full transition-colors duration-200"
     >
-      <div className="relative pt-safe pl-safe pr-safe">
+      <div
+        className={`relative z-20 pt-safe pl-safe pr-safe transition-colors ${
+          mobileMenuOpen ? 'bg-[#F4F6F2] dark:bg-[#0E1726]' : ''
+        }`}
+      >
         {/* Smooth top-to-bottom frosted gradient shade: borderless across all screen widths */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 -bottom-5 bg-gradient-to-b from-[#ECF2EB]/96 via-[#F4F6F2]/90 via-66% to-transparent dark:from-[#070C16]/96 dark:via-[#070C16]/86 dark:via-66% dark:to-transparent backdrop-blur-md"
-          style={{
-            maskImage:
-              'linear-gradient(to bottom, rgba(0, 0, 0, 1) 66%, rgba(0, 0, 0, 0.74) 84%, rgba(0, 0, 0, 0) 100%)',
-            WebkitMaskImage:
-              'linear-gradient(to bottom, rgba(0, 0, 0, 1) 66%, rgba(0, 0, 0, 0.74) 84%, rgba(0, 0, 0, 0) 100%)',
-          }}
-        />
-        {/* Soft ambient downward shade replacing the hard bottom border */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 -bottom-5 bg-gradient-to-b from-[#152A1C]/[0.025] via-[#152A1C]/[0.06] via-74% to-transparent dark:from-black/15 dark:via-black/38 dark:via-74% dark:to-transparent"
-        />
+        {!mobileMenuOpen && (
+          <>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 -bottom-5 bg-gradient-to-b from-[#ECF2EB]/96 via-[#F4F6F2]/90 via-66% to-transparent dark:from-[#070C16]/96 dark:via-[#070C16]/86 dark:via-66% dark:to-transparent backdrop-blur-md"
+              style={{
+                maskImage:
+                  'linear-gradient(to bottom, rgba(0, 0, 0, 1) 66%, rgba(0, 0, 0, 0.74) 84%, rgba(0, 0, 0, 0) 100%)',
+                WebkitMaskImage:
+                  'linear-gradient(to bottom, rgba(0, 0, 0, 1) 66%, rgba(0, 0, 0, 0.74) 84%, rgba(0, 0, 0, 0) 100%)',
+              }}
+            />
+            {/* Soft ambient downward shade replacing the hard bottom border */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 -bottom-5 bg-gradient-to-b from-[#152A1C]/[0.025] via-[#152A1C]/[0.06] via-74% to-transparent dark:from-black/15 dark:via-black/38 dark:via-74% dark:to-transparent"
+            />
+          </>
+        )}
 
         <div className="relative z-10 max-w-[1536px] mx-auto px-3 sm:px-5 lg:px-3 xl:px-5 2xl:px-8">
         {/* DESKTOP HEADER (Responsive across lg 1024px through 2xl 1536px+ without clipping) */}
@@ -488,7 +489,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               size="sm" 
               variant={isDarkMode ? 'light' : 'auto'}
               showTagline={false}
-              onClick={() => onNavigate('home')} 
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onNavigate('home');
+              }} 
             />
           </div>
 
@@ -546,22 +550,23 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
       </div>
 
-      {/* Mobile Drawer Backdrop overlay - closes drawer on tap outside */}
+      {/* Mobile Drawer Backdrop overlay - closes drawer on tap outside & blocks touch-panning on iOS */}
       {mobileMenuOpen && (
         <div 
-          className="fixed inset-0 top-[calc(3.5rem+env(safe-area-inset-top,0px))] sm:top-[calc(4rem+env(safe-area-inset-top,0px))] bg-black/40 dark:bg-black/60 backdrop-blur-xs z-30 lg:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/45 dark:bg-black/65 backdrop-blur-xs z-10 lg:hidden touch-none animate-in fade-in duration-200"
           onClick={() => setMobileMenuOpen(false)}
           aria-hidden="true"
         />
       )}
 
-      {/* Mobile & Tablet Drawer Menu */}
+      {/* Mobile & Tablet Drawer Menu (out-of-flow beneath sticky header bar so page never shifts) */}
       {mobileMenuOpen && (
         <div 
           id="mobile-navigation-drawer"
           role="dialog"
+          aria-modal="true"
           aria-label="Mobile Navigation"
-          className="relative z-40 lg:hidden border-t border-[#E2EBE1] dark:border-slate-800 bg-[#F4F6F2] dark:bg-[#0E1726] px-4 pt-3 pb-6 space-y-1 shadow-2xl animate-in slide-in-from-top duration-200 transition-colors max-h-[calc(100vh-4.5rem)] max-h-[calc(100dvh-4.5rem)] overscroll-contain overflow-y-auto"
+          className="lg:hidden absolute top-full inset-x-0 z-30 border-t border-[#E2EBE1] dark:border-slate-800 bg-[#F4F6F2] dark:bg-[#0E1726] px-4 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] space-y-1 shadow-2xl animate-in slide-in-from-top duration-200 transition-colors max-h-[calc(100vh-3.5rem-env(safe-area-inset-top,0px))] max-h-[calc(100dvh-3.5rem-max(0.25rem,env(safe-area-inset-top,0px)))] sm:max-h-[calc(100dvh-4rem-max(0.25rem,env(safe-area-inset-top,0px)))] overscroll-contain overflow-y-auto"
         >
           {onOpenSearch && (
             <button
@@ -685,15 +690,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
 
           {/* Mobile Language selector */}
-          <div className="pt-2 pb-2 px-3 flex items-center justify-between border-t border-slate-200/60 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-semibold">
+          <div className="pt-2 pb-2 px-3 flex items-center justify-between gap-2 border-t border-slate-200/60 dark:border-slate-800">
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-semibold shrink-0">
               <Languages className="w-4 h-4 text-slate-400 dark:text-slate-500" />
               <span>{t('Language:')}</span>
             </div>
             <select
               value={language}
               onChange={(e) => handleLanguageChange(e.target.value as LanguageCode)}
-              className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
+              className="min-w-0 max-w-[66%] truncate px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
               aria-label={t('Select Mobile Language')}
             >
               {Object.values(LANGUAGES).map((l) => (
@@ -705,15 +710,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Mobile Currency selector */}
-          <div className="pt-2 pb-2 px-3 flex items-center justify-between border-t border-slate-200/60 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-semibold">
+          <div className="pt-2 pb-2 px-3 flex items-center justify-between gap-2 border-t border-slate-200/60 dark:border-slate-800">
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-semibold shrink-0">
               <Globe className="w-4 h-4 text-slate-400 dark:text-slate-500" />
               <span>{t('Currency:')}</span>
             </div>
             <select
               value={currency}
               onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
-              className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
+              className="min-w-0 max-w-[66%] truncate px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
               aria-label={t('Select Mobile Currency')}
             >
               {Object.keys(CURRENCIES).map((c) => (

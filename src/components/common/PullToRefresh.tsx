@@ -68,8 +68,23 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
     if (disabled || typeof window === 'undefined') return;
 
     const onTouchStart = (e: TouchEvent) => {
-      // Only single finger touch when not already refreshing
-      if (e.touches.length !== 1 || refreshState === 'refreshing') return;
+      // Only single finger touch when not already refreshing and no modal/drawer scroll lock is active
+      if (
+        e.touches.length !== 1 ||
+        refreshState === 'refreshing' ||
+        document.documentElement.dataset.scrollLocked === 'true'
+      ) {
+        canPullRef.current = false;
+        isPullingRef.current = false;
+        return;
+      }
+
+      const target = e.target instanceof Element ? e.target : null;
+      if (target?.closest('[aria-modal="true"], #mobile-navigation-drawer')) {
+        canPullRef.current = false;
+        isPullingRef.current = false;
+        return;
+      }
 
       if (isAtTop()) {
         startX.current = e.touches[0].clientX;
