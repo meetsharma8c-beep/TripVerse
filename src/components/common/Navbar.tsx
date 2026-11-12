@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Logo, BrandIconMark } from './Logo';
-import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, ChevronDown, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut, Bell, Languages } from 'lucide-react';
+import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, ChevronDown, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut, Bell, Languages, Home } from 'lucide-react';
 import { UserProfile, CurrencyCode, LanguageCode } from '../../types/trip';
 import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
 import { getActiveLanguage, setActiveLanguage, LANGUAGES, useLanguage } from '../../services/languageService';
@@ -153,7 +153,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   const mobileNavLinks = [
-    ...desktopNavLinks,
+    ...desktopNavLinks.map((link) =>
+      link.id === 'home' ? { ...link, icon: Home } : link
+    ),
     { id: 'profile', label: t('nav.profile'), icon: User },
   ];
 
@@ -566,66 +568,79 @@ export const Navbar: React.FC<NavbarProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label="Mobile Navigation"
-          className="lg:hidden absolute top-full inset-x-0 z-30 border-t border-[#E2EBE1] dark:border-slate-800 bg-[#F4F6F2] dark:bg-[#0E1726] px-4 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] space-y-1 shadow-2xl animate-in slide-in-from-top duration-200 transition-colors max-h-[calc(100vh-3.5rem-env(safe-area-inset-top,0px))] max-h-[calc(100dvh-3.5rem-max(0.25rem,env(safe-area-inset-top,0px)))] sm:max-h-[calc(100dvh-4rem-max(0.25rem,env(safe-area-inset-top,0px)))] overscroll-contain overflow-y-auto"
+          className="lg:hidden absolute top-full inset-x-0 z-30 border-t border-[#E2EBE1]/90 dark:border-slate-800 bg-[#F4F6F2] dark:bg-[#0B1220] rounded-b-[28px] px-4 pt-3 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] space-y-2.5 shadow-[0_24px_48px_-12px_rgba(21,42,28,0.22)] dark:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] animate-in slide-in-from-top duration-200 transition-colors max-h-[calc(100vh-3.5rem-env(safe-area-inset-top,0px))] max-h-[calc(100dvh-3.5rem-max(0.25rem,env(safe-area-inset-top,0px)))] sm:max-h-[calc(100dvh-4rem-max(0.25rem,env(safe-area-inset-top,0px)))] overscroll-contain overflow-y-auto scrollbar-none"
         >
-          {onOpenSearch && (
-            <button
-              onClick={() => {
-                onOpenSearch();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/80 transition-colors"
-            >
-              <Search className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-              <span>{t('Search destinations & trips')}</span>
-            </button>
-          )}
-
-          {onOpenNotifications && (
-            <button
-              onClick={() => {
-                onOpenNotifications();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/80 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Bell className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-                <span>{t('Notifications')}</span>
-              </div>
-              {unreadNotificationCount > 0 && (
-                <span className="bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
-                  {unreadNotificationCount}
-                </span>
+          {/* Compact Quick-Action Utility Pills */}
+          {(onOpenSearch || onOpenNotifications) && (
+            <div className={`grid gap-2 ${onOpenSearch && onOpenNotifications ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {onOpenSearch && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenSearch();
+                    setMobileMenuOpen(false);
+                  }}
+                  aria-label={t('Search destinations & trips')}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl bg-white dark:bg-slate-800/85 border border-[#E2EBE1] dark:border-slate-700/70 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#2D5A3D]/40 dark:hover:border-emerald-500/40 active:scale-[0.98] transition-all shadow-[0_1px_2px_rgba(21,42,28,0.03)] cursor-pointer min-w-0"
+                >
+                  <span className="w-7 h-7 rounded-xl bg-[#F4F6F2] dark:bg-slate-900/80 flex items-center justify-center text-[#2D5A3D] dark:text-emerald-400 shrink-0">
+                    <Search className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="truncate">{t('Search')}</span>
+                </button>
               )}
-            </button>
+
+              {onOpenNotifications && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenNotifications();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl bg-white dark:bg-slate-800/85 border border-[#E2EBE1] dark:border-slate-700/70 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#2D5A3D]/40 dark:hover:border-emerald-500/40 active:scale-[0.98] transition-all shadow-[0_1px_2px_rgba(21,42,28,0.03)] cursor-pointer min-w-0"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className="w-7 h-7 rounded-xl bg-[#F4F6F2] dark:bg-slate-900/80 flex items-center justify-center text-[#2D5A3D] dark:text-emerald-400 shrink-0">
+                      <Bell className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="truncate">{t('Notifications')}</span>
+                  </span>
+                  {unreadNotificationCount > 0 && (
+                    <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
+                      {unreadNotificationCount}
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
           )}
 
           {/* Mobile Subscription & Plan Banner */}
           {onOpenProModal && (
-            <div 
+            <button
+              type="button"
               onClick={() => {
                 onOpenProModal();
                 setMobileMenuOpen(false);
               }}
-              className={`p-4 my-2 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${
+              className={`w-full text-left p-3 rounded-2xl border transition-all cursor-pointer shadow-[0_1px_3px_rgba(21,42,28,0.04)] active:scale-[0.99] flex items-center justify-between gap-3 ${
                 quota.isPro
                   ? 'bg-gradient-to-r from-[#152A1C] via-[#1E3E2A] to-[#2D5A3D] text-white border-emerald-400/30'
-                  : 'bg-white dark:bg-slate-800 border-[#E2EBE1] dark:border-slate-700 text-[#152A1C] dark:text-white'
+                  : 'bg-gradient-to-r from-white via-white to-[#EDF4ED] dark:from-slate-800/90 dark:via-slate-800/90 dark:to-emerald-950/35 border-[#DCE7DB] dark:border-emerald-800/40 text-[#152A1C] dark:text-white'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                   quota.isPro ? 'bg-amber-400 text-amber-950' : 'bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-400'
                 }`}>
-                  <Crown className="w-5 h-5 fill-current" />
+                  <Crown className="w-4.5 h-4.5 fill-current" />
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <p className={`text-xs font-bold truncate ${quota.isPro ? 'text-white' : 'text-[#152A1C] dark:text-slate-100'}`}>
                       {quota.isPro ? t('TripVerse Pro Member') : t('TripVerse Pro')}
                     </p>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase shrink-0 ${
+                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide shrink-0 ${
                       quota.isPro ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' : 'bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-400'
                     }`}>
                       {quota.isPro ? t('ACTIVE') : t('UPGRADE')}
@@ -637,118 +652,167 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </div>
               <ChevronRight className={`w-4 h-4 shrink-0 ${quota.isPro ? 'text-amber-300' : 'text-slate-400 dark:text-slate-500'}`} />
-            </div>
+            </button>
           )}
 
-          {mobileNavLinks.map((link) => {
-            const isActive = currentTab === link.id;
-            const Icon = link.icon;
-            return (
-              <button
-                key={link.id}
-                onClick={() => handleLinkClick(link.id)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
-                  isActive 
-                    ? 'bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300' 
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  {Icon && <Icon className={`w-5 h-5 ${isActive ? 'text-[#2D5A3D] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />}
-                  <span>{link.label}</span>
-                </div>
-                {link.badge ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2D5A3D] dark:bg-emerald-600 text-white">
-                    {link.badge}
-                  </span>
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600" />
-                )}
-              </button>
-            );
-          })}
+          {/* Grouped Navigation Menu Surface */}
+          <nav
+            aria-label="Drawer Navigation"
+            className="rounded-2xl bg-white dark:bg-slate-800/80 border border-[#E2EBE1] dark:border-slate-700/70 divide-y divide-[#F1F5F0] dark:divide-slate-700/50 overflow-hidden shadow-[0_1px_3px_rgba(21,42,28,0.04)]"
+          >
+            {mobileNavLinks.map((link) => {
+              const isActive = currentTab === link.id;
+              const Icon = link.icon;
+              return (
+                <button
+                  key={link.id}
+                  type="button"
+                  onClick={() => handleLinkClick(link.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-[13.5px] font-semibold transition-colors cursor-pointer ${
+                    isActive
+                      ? 'bg-[#EAF1E9]/85 dark:bg-emerald-950/45 text-[#1E4631] dark:text-emerald-300'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-[#F4F6F2]/75 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        isActive
+                          ? 'bg-[#2D5A3D] dark:bg-emerald-600 text-white shadow-2xs'
+                          : 'bg-[#F4F6F2] dark:bg-slate-900/70 text-slate-500 dark:text-slate-400'
+                      }`}
+                    >
+                      {Icon && <Icon className="w-4 h-4" />}
+                    </span>
+                    <span className="truncate">{link.label}</span>
+                  </div>
+                  {link.badge ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2D5A3D] dark:bg-emerald-600 text-white shrink-0">
+                      {link.badge}
+                    </span>
+                  ) : (
+                    <ChevronRight className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#2D5A3D] dark:text-emerald-400' : 'text-slate-300 dark:text-slate-600'}`} />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
-          {/* Mobile Install App banner for browser users */}
+          {/* Compact Install App Strip for Browser Users */}
           {!isStandaloneApp && (
-            <div className="p-3 my-2 rounded-2xl bg-[#EAF0E9] dark:bg-slate-800/90 border border-[#8EA78D]/30 dark:border-slate-700 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
+            <div className="px-3 py-2 rounded-2xl bg-[#E8EFE7]/90 dark:bg-slate-800/90 border border-[#DCE7DB] dark:border-slate-700 flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 p-1.5 flex items-center justify-center shrink-0 shadow-2xs border border-slate-200/90 dark:border-slate-700">
                   <BrandIconMark className="w-full h-full" idPrefix="nav-banner" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{t('TripVerse App')}</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">{t('Free, offline & fast')}</p>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-[#152A1C] dark:text-slate-100 truncate">{t('TripVerse App')}</p>
+                  <p className="text-[10px] text-[#5A7362] dark:text-slate-400 truncate">{t('Free, offline & fast')}</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={handleOpenInstall}
-                className="px-3 py-1.5 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer active:scale-95 transition-all"
+                className="min-h-0 px-3.5 py-1.5 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs cursor-pointer active:scale-95 transition-all shrink-0"
               >
                 {t('Install')}
               </button>
             </div>
           )}
 
-          {/* Mobile Language selector */}
-          <div className="pt-2 pb-2 px-3 flex items-center justify-between gap-2 border-t border-slate-200/60 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-semibold shrink-0">
-              <Languages className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-              <span>{t('Language:')}</span>
+          {/* Grouped Preferences Surface (Aligned Language, Currency & Appearance Switch) */}
+          <div className="rounded-2xl bg-white dark:bg-slate-800/80 border border-[#E2EBE1] dark:border-slate-700/70 divide-y divide-[#F1F5F0] dark:divide-slate-700/50 overflow-hidden shadow-[0_1px_3px_rgba(21,42,28,0.04)]">
+            {/* Language */}
+            <div className="px-3 py-1.5 flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-7 h-7 rounded-xl bg-[#F4F6F2] dark:bg-slate-900/70 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+                  <Languages className="w-4 h-4" />
+                </span>
+                <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200 truncate">
+                  {t('Language')}
+                </span>
+              </div>
+              <select
+                value={language}
+                onChange={(e) => handleLanguageChange(e.target.value as LanguageCode)}
+                className="w-[58%] min-w-0 shrink-0 truncate px-2.5 py-1.5 rounded-xl bg-[#F4F6F2] dark:bg-slate-900 border border-[#E2EBE1] dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2D5A3D]/25"
+                aria-label={t('Select Mobile Language')}
+              >
+                {Object.values(LANGUAGES).map((l) => (
+                  <option key={l.code} value={l.code} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+                    {l.flag} {l.nativeName === l.name ? l.nativeName : `${l.nativeName} (${l.name})`}
+                  </option>
+                ))}
+              </select>
             </div>
-            <select
-              value={language}
-              onChange={(e) => handleLanguageChange(e.target.value as LanguageCode)}
-              className="min-w-0 max-w-[66%] truncate px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
-              aria-label={t('Select Mobile Language')}
-            >
-              {Object.values(LANGUAGES).map((l) => (
-                <option key={l.code} value={l.code} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                  {l.flag} {l.nativeName} ({l.name})
-                </option>
-              ))}
-            </select>
-          </div>
 
-          {/* Mobile Currency selector */}
-          <div className="pt-2 pb-2 px-3 flex items-center justify-between gap-2 border-t border-slate-200/60 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-semibold shrink-0">
-              <Globe className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-              <span>{t('Currency:')}</span>
+            {/* Currency */}
+            <div className="px-3 py-1.5 flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-7 h-7 rounded-xl bg-[#F4F6F2] dark:bg-slate-900/70 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+                  <Globe className="w-4 h-4" />
+                </span>
+                <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200 truncate">
+                  {t('Currency')}
+                </span>
+              </div>
+              <select
+                value={currency}
+                onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
+                className="w-[58%] min-w-0 shrink-0 truncate px-2.5 py-1.5 rounded-xl bg-[#F4F6F2] dark:bg-slate-900 border border-[#E2EBE1] dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2D5A3D]/25"
+                aria-label={t('Select Mobile Currency')}
+              >
+                {Object.keys(CURRENCIES).map((c) => (
+                  <option key={c} value={c} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+                    {CURRENCIES[c as CurrencyCode].symbol} {c} ({CURRENCIES[c as CurrencyCode].name})
+                  </option>
+                ))}
+              </select>
             </div>
-            <select
-              value={currency}
-              onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
-              className="min-w-0 max-w-[66%] truncate px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
-              aria-label={t('Select Mobile Currency')}
-            >
-              {Object.keys(CURRENCIES).map((c) => (
-                <option key={c} value={c} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                  {CURRENCIES[c as CurrencyCode].symbol} {c} ({CURRENCIES[c as CurrencyCode].name})
-                </option>
-              ))}
-            </select>
-          </div>
 
-          <button
-            type="button"
-            onClick={toggleDarkMode}
-            className="w-full flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/60 cursor-pointer"
-            aria-label={isDarkMode ? t('Switch to light mode') : t('Switch to dark mode')}
-          >
-            <span className="flex items-center gap-3">
-              {isDarkMode ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5 text-slate-400 dark:text-slate-500" />}
-              <span>{isDarkMode ? t('Light mode') : t('Dark mode')}</span>
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">{isDarkMode ? t('On') : t('Off')}</span>
-          </button>
-
-          <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 space-y-2">
+            {/* Dark Mode Toggle Switch */}
             <button
+              type="button"
+              role="switch"
+              aria-checked={isDarkMode}
+              onClick={toggleDarkMode}
+              className="w-full px-3 py-2 flex items-center justify-between text-left transition-colors hover:bg-[#F4F6F2]/75 dark:hover:bg-slate-800 cursor-pointer"
+              aria-label={isDarkMode ? t('Switch to light mode') : t('Switch to dark mode')}
+            >
+              <span className="flex items-center gap-2.5">
+                <span className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+                  isDarkMode ? 'bg-amber-400/15 text-amber-400' : 'bg-[#F4F6F2] dark:bg-slate-900/70 text-slate-500'
+                }`}>
+                  {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </span>
+                <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                  {t('Dark mode')}
+                </span>
+              </span>
+              <span
+                aria-hidden="true"
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
+                  isDarkMode ? 'bg-[#2D5A3D] dark:bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-[#FFFFFF] shadow-xs transition-transform duration-200 ${
+                    isDarkMode ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
+
+          {/* Primary Actions Footer */}
+          <div className="pt-0.5 space-y-2">
+            <button
+              type="button"
               onClick={() => {
                 onOpenPlanner();
                 setMobileMenuOpen(false);
               }}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-trip-gradient text-white font-bold text-sm shadow-md active:scale-98 transition-transform cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-trip-gradient text-white font-bold text-sm shadow-md active:scale-[0.98] transition-transform cursor-pointer"
             >
               <PlaneTakeoff className="w-4 h-4" />
               <span>{t('Plan My Trip With AI')}</span>
@@ -761,7 +825,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onOpenAuthModal?.();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#E8EFE7] dark:bg-emerald-950/60 border border-[#DCE7DB] dark:border-emerald-800/50 text-[#2D5A3D] dark:text-emerald-300 font-bold text-sm transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-[#E8EFE7] hover:bg-[#DCE7DB] dark:bg-emerald-950/60 dark:hover:bg-emerald-950/80 border border-[#DCE7DB] dark:border-emerald-800/50 text-[#2D5A3D] dark:text-emerald-300 font-bold text-sm transition-colors cursor-pointer"
               >
                 <User className="w-4 h-4" />
                 <span>{t('Sign In / Register')}</span>
@@ -776,7 +840,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       onSignOut();
                     }
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 font-bold text-sm transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300 font-bold text-sm transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>{t('Sign Out')}</span>
