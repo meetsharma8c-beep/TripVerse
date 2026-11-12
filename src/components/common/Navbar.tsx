@@ -174,8 +174,29 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#F4F6F2]/90 dark:bg-[#070C16]/90 backdrop-blur-md border-b border-[#E2EBE1] dark:border-slate-800 transition-all pt-safe pl-safe pr-safe">
-      <div className="max-w-[1536px] mx-auto px-3 sm:px-5 lg:px-4 2xl:px-8">
+    <header
+      data-frosted-header="true"
+      className="sticky top-0 z-40 w-full transition-colors duration-200"
+    >
+      <div className="relative pt-safe pl-safe pr-safe">
+        {/* Smooth top-to-bottom frosted gradient shade: borderless transition over content */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 -bottom-3.5 bg-gradient-to-b from-[#EDF2EC]/95 via-[#F4F6F2]/88 via-65% to-transparent dark:from-[#070C16]/96 dark:via-[#070C16]/86 dark:via-65% dark:to-transparent backdrop-blur-md"
+          style={{
+            maskImage:
+              'linear-gradient(to bottom, rgba(0, 0, 0, 1) 58%, rgba(0, 0, 0, 0.7) 80%, rgba(0, 0, 0, 0) 100%)',
+            WebkitMaskImage:
+              'linear-gradient(to bottom, rgba(0, 0, 0, 1) 58%, rgba(0, 0, 0, 0.7) 80%, rgba(0, 0, 0, 0) 100%)',
+          }}
+        />
+        {/* Soft ambient downward shade replacing the hard bottom border */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 -bottom-4 bg-gradient-to-b from-[#152A1C]/[0.02] via-[#152A1C]/[0.055] via-72% to-transparent dark:from-black/15 dark:via-black/35 dark:via-75% dark:to-transparent"
+        />
+
+        <div className="relative z-10 max-w-[1536px] mx-auto px-3 sm:px-5 lg:px-4 2xl:px-8">
         {/* DESKTOP HEADER (Responsive across lg 1024px through 2xl 1536px+ without clipping) */}
         <div className="hidden lg:flex items-center justify-between h-16 xl:h-18 gap-2">
           
@@ -522,6 +543,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {/* Mobile Drawer Backdrop overlay - closes drawer on tap outside */}

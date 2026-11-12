@@ -353,14 +353,14 @@ html.dark [class~="bg-[#F4F6F2]/80"] {
 }
 
 /* Header and Navbar in night mode */
-html.dark header {
+html.dark header:not([data-frosted-header="true"]) {
   background-color: rgba(7, 12, 22, 0.88) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
   border-bottom-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-html.dark header [class~="bg-gradient-to-r"] {
+html.dark header:not([data-frosted-header="true"]) [class~="bg-gradient-to-r"] {
   background: linear-gradient(90deg, #070C16 0%, #0D2619 50%, #070C16 100%) !important;
   border-bottom: 1px solid rgba(16, 185, 129, 0.2) !important;
 }
