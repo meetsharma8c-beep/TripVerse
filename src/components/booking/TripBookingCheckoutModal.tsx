@@ -126,11 +126,11 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
   const effectiveLiveTotal = effectiveTransportCost + effectiveStayCost + effectiveDiningCost + effectiveActivitiesCost + effectiveBufferCost;
 
   const estimateItems = [
-    { label: 'Transport', amount: effectiveTransportCost, icon: Plane, color: 'text-sky-600 bg-sky-50' },
-    { label: 'Stays & Lodging', amount: effectiveStayCost, icon: Bed, color: 'text-indigo-600 bg-indigo-50' },
-    { label: 'Local Dining', amount: effectiveDiningCost, icon: Tag, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Activities & Entry', amount: effectiveActivitiesCost, icon: Ticket, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Safety Buffer', amount: effectiveBufferCost, icon: ShieldCheck, color: 'text-slate-600 bg-slate-100' }
+    { label: 'Transport', amount: effectiveTransportCost, icon: Plane, color: 'text-sky-600 bg-sky-50 dark:bg-sky-950/40 dark:text-sky-300' },
+    { label: 'Stays & Lodging', amount: effectiveStayCost, icon: Bed, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-300' },
+    { label: 'Local Dining', amount: effectiveDiningCost, icon: Tag, color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300' },
+    { label: 'Activities & Entry', amount: effectiveActivitiesCost, icon: Ticket, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300' },
+    { label: 'Safety Buffer', amount: effectiveBufferCost, icon: ShieldCheck, color: 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300' }
   ];
 
   // Open Gateway with specific package
@@ -178,11 +178,11 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
           role="dialog"
           aria-modal="true"
           aria-labelledby="booking-options-title"
-          className="my-auto flex max-h-[92vh] sm:max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200 bg-white shadow-2xl transition-all"
+          className="my-auto flex max-h-[92vh] sm:max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0C1523] shadow-2xl transition-all"
           onClick={event => event.stopPropagation()}
         >
           {/* Smart Space-Efficient Header: Zero Clipping, High Contrast */}
-          <header className="shrink-0 flex items-center justify-between border-b border-slate-200 bg-slate-900 px-4 py-3 sm:px-5 sm:py-3.5 text-white">
+          <header className="shrink-0 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-900 px-4 py-3 sm:px-5 sm:py-3.5 text-white">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-400/30">
                 <Sparkles className="w-4 h-4 text-emerald-400" />
@@ -221,7 +221,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
           </header>
 
           {/* Smart Segmented Tab Navigation Bar */}
-          <div className="shrink-0 bg-slate-100/90 border-b border-slate-200/80 px-3 py-2 sm:px-4">
+          <div className="shrink-0 bg-slate-100/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800 px-3 py-2 sm:px-4">
             <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
               {[
                 { id: 'all', label: 'All Essentials', icon: Sparkles, count: undefined },
@@ -242,14 +242,14 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                       isActive
                         ? 'bg-emerald-800 text-white shadow-xs'
-                        : 'bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/70'
+                        : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border border-slate-200/70 dark:border-slate-700/70'
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-300' : 'text-slate-500'}`} />
+                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-300' : 'text-slate-500 dark:text-slate-400'}`} />
                     <span>{t(tab.label)}</span>
                     {tab.count && (
                       <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${
-                        isActive ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-200 text-slate-600'
+                        isActive ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                       }`}>
                         {t(tab.count)}
                       </span>
@@ -261,14 +261,14 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
           </div>
 
           {/* Tab Content Body: Prioritizes Actionable Important Information */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-4 text-slate-800">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-4 text-slate-800 dark:text-slate-200">
 
             {/* TAB 1: ALL ESSENTIALS & COMPLETE DIRECT CHECKOUT */}
             {activeTab === 'all' && (
               <>
                 {/* Confirmed Booking Banner (If Already Paid) */}
                 {existingBooking && (
-                  <div className="rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-50 via-teal-50 to-white p-3.5 sm:p-4 shadow-xs">
+                  <div className="rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-50 via-teal-50 to-white dark:from-emerald-950/60 dark:via-teal-950/40 dark:to-slate-900 dark:border-emerald-600 p-3.5 sm:p-4 shadow-xs">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
@@ -276,15 +276,15 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-200/80 px-2 py-0.5 rounded-md">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-200/80 dark:bg-emerald-950/80 px-2 py-0.5 rounded-md">
                               {t('Booking Confirmed & Paid')}
                             </span>
-                            <span className="text-xs text-slate-600 font-mono font-bold">PNR: {existingBooking.pnr}</span>
+                            <span className="text-xs text-slate-600 dark:text-slate-400 font-mono font-bold">PNR: {existingBooking.pnr}</span>
                           </div>
-                          <h3 className="text-sm font-bold text-slate-900 mt-0.5">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
                             Booking #{existingBooking.id} • {existingBooking.paymentMethod}
                           </h3>
-                          <p className="text-[11px] text-slate-500">
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
                             Total: {formatCurrency(existingBooking.amount, currency)} • Hotel Voucher: {existingBooking.hotelVoucher}
                           </p>
                         </div>
@@ -294,9 +294,9 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                         <button
                           type="button"
                           onClick={handleDownloadInvoice}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-900 hover:bg-emerald-50 transition-colors cursor-pointer shadow-2xs"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-emerald-900 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-2xs"
                         >
-                          <Download className="w-3.5 h-3.5 text-emerald-700" />
+                          <Download className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                           <span>{t('Tax Invoice')}</span>
                         </button>
                         {onNavigateToPasses && (
@@ -318,7 +318,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                 )}
 
                 {/* Direct Payment Gateway Hero Card */}
-                <div className="rounded-2xl border border-emerald-400/60 bg-gradient-to-r from-emerald-950 via-[#0E3A2F] to-[#0B2545] p-4 sm:p-5 text-white shadow-md relative overflow-hidden">
+                <div className="rounded-2xl border border-emerald-400/60 dark:border-emerald-500/40 bg-gradient-to-r from-emerald-950 via-[#0E3A2F] to-[#0B2545] p-4 sm:p-5 text-white shadow-md relative overflow-hidden">
                   <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -359,19 +359,19 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                 </div>
 
                 {/* Calibrated Trip Budget Chips */}
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-3.5">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-slate-700">Estimated Expense Breakdown</span>
-                    <span className="text-[11px] text-slate-500">{startDateStr} to {endDateStr}</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Estimated Expense Breakdown</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">{startDateStr} to {endDateStr}</span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     {estimateItems.map(item => (
-                      <div key={item.label} className="rounded-xl bg-white p-2.5 border border-slate-200/70 shadow-2xs">
-                        <div className="flex items-center gap-1.5 text-slate-500 mb-1">
-                          <item.icon className="w-3.5 h-3.5 text-emerald-700" />
+                      <div key={item.label} className="rounded-xl bg-white dark:bg-slate-800/80 p-2.5 border border-slate-200/70 dark:border-slate-700/80 shadow-2xs">
+                        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 mb-1">
+                          <item.icon className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                           <span className="text-[10px] font-bold uppercase truncate">{item.label}</span>
                         </div>
-                        <span className="text-xs sm:text-sm font-black text-slate-900 block truncate font-mono">
+                        <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white block truncate font-mono">
                           {formatCurrency(item.amount, currency)}
                         </span>
                       </div>
@@ -383,29 +383,29 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Hotel Quick Preview */}
                   {hotel ? (
-                    <div className="rounded-2xl border border-slate-200 p-3.5 bg-white hover:border-emerald-300 transition-all flex flex-col justify-between">
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 bg-white dark:bg-slate-900/80 hover:border-emerald-300 dark:hover:border-emerald-500 transition-all flex flex-col justify-between">
                       <div>
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
                           <span className="flex items-center gap-1.5">
-                            <Bed className="w-4 h-4 text-emerald-700" />
+                            <Bed className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                             {hotel.name}
                           </span>
-                          <span className="text-emerald-800 font-mono font-black">{formatCurrency(effectiveStayCost, currency)}</span>
+                          <span className="text-emerald-800 dark:text-emerald-400 font-mono font-black">{formatCurrency(effectiveStayCost, currency)}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 truncate">{hotel.address || hotel.neighborhood} • {nights}N / {rooms}R</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{hotel.address || hotel.neighborhood} • {nights}N / {rooms}R</p>
                       </div>
-                      <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                      <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                         <button
                           type="button"
                           onClick={() => setActiveTab('hotels')}
-                          className="text-xs font-bold text-emerald-800 hover:underline cursor-pointer"
+                          className="text-xs font-bold text-emerald-800 dark:text-emerald-400 hover:underline cursor-pointer"
                         >
                           View Hotel Details →
                         </button>
                         <button
                           type="button"
                           onClick={() => openGateway('hotel_only', effectiveStayCost, `Stay at ${hotel.name}`)}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[11px] transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 hover:bg-emerald-200 dark:hover:bg-emerald-900 text-emerald-900 dark:text-emerald-300 border border-transparent dark:border-emerald-800/80 font-bold text-[11px] transition-colors cursor-pointer"
                         >
                           Book Stay ({formatCurrency(effectiveStayCost, currency)})
                         </button>
@@ -415,29 +415,29 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
 
                   {/* Transit Quick Preview */}
                   {bestTransport ? (
-                    <div className="rounded-2xl border border-slate-200 p-3.5 bg-white hover:border-emerald-300 transition-all flex flex-col justify-between">
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 bg-white dark:bg-slate-900/80 hover:border-emerald-300 dark:hover:border-emerald-500 transition-all flex flex-col justify-between">
                       <div>
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
                           <span className="flex items-center gap-1.5">
-                            <Plane className="w-4 h-4 text-emerald-700" />
+                            <Plane className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                             {bestTransport.title}
                           </span>
-                          <span className="text-emerald-800 font-mono font-black">{formatCurrency(effectiveTransportCost, currency)}</span>
+                          <span className="text-emerald-800 dark:text-emerald-400 font-mono font-black">{formatCurrency(effectiveTransportCost, currency)}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 truncate">{origin} → {destination} • {travelers} Pax</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{origin} → {destination} • {travelers} Pax</p>
                       </div>
-                      <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                      <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                         <button
                           type="button"
                           onClick={() => setActiveTab('transport')}
-                          className="text-xs font-bold text-emerald-800 hover:underline cursor-pointer"
+                          className="text-xs font-bold text-emerald-800 dark:text-emerald-400 hover:underline cursor-pointer"
                         >
                           View Transport Deals →
                         </button>
                         <button
                           type="button"
                           onClick={() => openGateway('transit_only', effectiveTransportCost, `${bestTransport.title} Transit`)}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[11px] transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 hover:bg-emerald-200 dark:hover:bg-emerald-900 text-emerald-900 dark:text-emerald-300 border border-transparent dark:border-emerald-800/80 font-bold text-[11px] transition-colors cursor-pointer"
                         >
                           Book Seats ({formatCurrency(effectiveTransportCost, currency)})
                         </button>
@@ -477,7 +477,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     </div>
 
                     {/* Detailed Hotel Card */}
-                    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 overflow-hidden shadow-xs">
                       <div className="p-4 flex flex-col sm:flex-row gap-4">
                         {hotel.image && (
                           <img
@@ -489,8 +489,8 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <h4 className="text-base font-bold text-slate-900">{hotel.name}</h4>
-                              <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                              <h4 className="text-base font-bold text-slate-900 dark:text-white">{hotel.name}</h4>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                 <span className="truncate">{hotel.address || hotel.neighborhood}</span>
                               </p>
@@ -501,30 +501,30 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                                 <span>{hotel.userRating}</span>
                                 <span className="text-slate-400 font-normal">({hotel.reviewCount})</span>
                               </div>
-                              <span className="text-sm font-black text-emerald-800 block mt-0.5 font-mono">
-                                ₹{hotel.nightlyRate.toLocaleString('en-IN')}<span className="text-[10px] text-slate-500 font-normal">/night</span>
+                              <span className="text-sm font-black text-emerald-800 dark:text-emerald-400 block mt-0.5 font-mono">
+                                ₹{hotel.nightlyRate.toLocaleString('en-IN')}<span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">/night</span>
                               </span>
                             </div>
                           </div>
 
                           <div className="mt-2.5 flex flex-wrap gap-1.5">
                             {hotel.amenities.map(am => (
-                              <span key={am} className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                              <span key={am} className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
                                 {am}
                               </span>
                             ))}
                           </div>
 
-                          <p className="mt-2 text-xs text-emerald-700 font-medium">
+                          <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-400 font-medium">
                             ✓ {hotel.cancellationPolicy}
                           </p>
 
-                          <div className="mt-3 flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100">
+                          <div className="mt-3 flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100 dark:border-slate-800">
                             <a
                               href={hotel.bookingUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                             >
                               <span>Booking.com Official</span>
                               <ExternalLink className="w-3 h-3 text-slate-400" />
@@ -534,7 +534,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                                 href={hotel.googleHotelsUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                               >
                                 <span>Google Hotels Rates</span>
                                 <ExternalLink className="w-3 h-3 text-slate-400" />
@@ -546,10 +546,10 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                  <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 p-6 text-center">
                     <Bed className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                    <h4 className="text-sm font-bold text-slate-800">Find Stays in {destination}</h4>
-                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">Find Stays in {destination}</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1 mb-4">
                       Explore top-rated resorts, luxury hotels and authentic villas for {trip.durationDays} days.
                     </p>
                     <div className="flex flex-wrap justify-center gap-2">
@@ -572,21 +572,21 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
             {activeTab === 'transport' && (
               <div className="space-y-4">
                 {bestTransport && (
-                  <div className="rounded-2xl border border-emerald-300/80 bg-emerald-50/70 p-4 shadow-xs">
+                  <div className="rounded-2xl border border-emerald-300/80 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/40 p-4 shadow-xs">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                      <span className="rounded-full bg-emerald-200/90 px-2.5 py-0.5 text-[10px] font-bold text-emerald-900 uppercase">
+                      <span className="rounded-full bg-emerald-200/90 dark:bg-emerald-900/80 px-2.5 py-0.5 text-[10px] font-bold text-emerald-900 dark:text-emerald-300 uppercase">
                         {bestTransport.badge || 'Recommended Option'}
                       </span>
-                      <span className="text-xs sm:text-sm font-black text-emerald-900 font-mono">
+                      <span className="text-xs sm:text-sm font-black text-emerald-900 dark:text-emerald-300 font-mono">
                         ₹{bestTransport.dealPrice.toLocaleString('en-IN')}{' '}
-                        <span className="text-[10px] text-slate-500 font-normal">({bestTransport.priceUnit.replace('_', ' ')})</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">({bestTransport.priceUnit.replace('_', ' ')})</span>
                       </span>
                     </div>
 
-                    <h4 className="text-sm font-black text-slate-900">{bestTransport.title}</h4>
-                    <p className="text-xs text-slate-600">{bestTransport.subtitle}</p>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white">{bestTransport.title}</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">{bestTransport.subtitle}</p>
 
-                    <div className="mt-2.5 flex items-center gap-4 text-xs text-slate-700 bg-white p-2.5 rounded-xl border border-emerald-100">
+                    <div className="mt-2.5 flex items-center gap-4 text-xs text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900/50">
                       <div>
                         <span className="text-[10px] text-slate-400 block uppercase font-bold">Departure</span>
                         <span className="font-bold">{bestTransport.route.departureTime}</span>
@@ -617,7 +617,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                         href={bestTransport.bookingUrl || flightLinks.googleFlights}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-800 hover:bg-slate-50 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                       >
                         Google Flights
                         <ExternalLink className="w-3 h-3 text-slate-400" />
@@ -626,9 +626,9 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                         href={trainLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-800 hover:bg-slate-50 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                       >
-                        <Train className="w-3.5 h-3.5 text-emerald-700" />
+                        <Train className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                         IRCTC Trains
                         <ExternalLink className="w-3 h-3 text-slate-400" />
                       </a>
@@ -642,13 +642,13 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     href={flightLinks.googleFlights}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 hover:border-emerald-400 hover:bg-emerald-50/30 transition-colors"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-3 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 transition-colors"
                   >
                     <div className="flex items-center gap-2.5">
                       <Plane className="w-5 h-5 text-sky-600 shrink-0" />
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">Google Flights Live Prices</span>
-                        <span className="text-[11px] text-slate-500">{origin} → {destination}</span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-white block">Google Flights Live Prices</span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">{origin} → {destination}</span>
                       </div>
                     </div>
                     <ExternalLink className="w-4 h-4 text-slate-400 shrink-0" />
@@ -658,15 +658,15 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     href={trainLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 hover:border-emerald-400 hover:bg-emerald-50/30 transition-colors"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-3 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 transition-colors"
                   >
                     <div className="flex items-center gap-2.5">
                       <Train className="w-5 h-5 text-indigo-600 shrink-0" />
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">
+                        <span className="text-xs font-bold text-slate-800 dark:text-white block">
                           {isIndiaRoute ? 'IRCTC Indian Railways' : 'Global Rail & High-Speed Trains'}
                         </span>
-                        <span className="text-[11px] text-slate-500">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
                           {isIndiaRoute ? 'Live seat quota & tatkal booking' : 'Trainline / Eurail / JR Pass / Amtrak reservations'}
                         </span>
                       </div>
@@ -678,15 +678,15 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     href={busLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 hover:border-emerald-400 hover:bg-emerald-50/30 transition-colors"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-3 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 transition-colors"
                   >
                     <div className="flex items-center gap-2.5">
                       <Bus className="w-5 h-5 text-rose-600 shrink-0" />
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">
+                        <span className="text-xs font-bold text-slate-800 dark:text-white block">
                           {isIndiaRoute ? 'redBus Sleeper & Express' : 'FlixBus & Intercity Coaches'}
                         </span>
-                        <span className="text-[11px] text-slate-500">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
                           {isIndiaRoute ? 'Overnight air-conditioned buses' : 'Direct intercity express coach tickets'}
                         </span>
                       </div>
@@ -698,15 +698,15 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     href={cabLinks.zoomcar}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 hover:border-emerald-400 hover:bg-emerald-50/30 transition-colors"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-3 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 transition-colors"
                   >
                     <div className="flex items-center gap-2.5">
                       <Car className="w-5 h-5 text-amber-600 shrink-0" />
                       <div>
-                        <span className="text-xs font-bold text-slate-800 block">
+                        <span className="text-xs font-bold text-slate-800 dark:text-white block">
                           {isIndiaRoute ? 'Zoomcar Self-Drive' : 'Rentalcars.com & Self-Drive'}
                         </span>
-                        <span className="text-[11px] text-slate-500">Self-drive vehicle rental in {destination}</span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">Self-drive vehicle rental in {destination}</span>
                       </div>
                     </div>
                     <ExternalLink className="w-4 h-4 text-slate-400 shrink-0" />
@@ -742,15 +742,15 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
 
                 {/* Itinerary Highlights */}
                 {trip.itinerary && trip.itinerary.length > 0 && (
-                  <div className="rounded-2xl border border-slate-200 p-3.5 bg-slate-50/60">
-                    <span className="text-xs font-bold text-slate-700 block mb-2">Planned Itinerary Attractions</span>
+                  <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 bg-slate-50/60 dark:bg-slate-900/60">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">Planned Itinerary Attractions</span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {trip.itinerary.flatMap((day, dayIdx) => 
                         day.activities.slice(0, 2).map((act, actIdx) => (
-                          <div key={`${dayIdx}-${actIdx}`} className="p-2.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
-                            <span className="text-[10px] font-bold text-emerald-800 uppercase block">Day {day.dayNumber} • {act.time}</span>
-                            <span className="text-xs font-bold text-slate-900 block truncate">{act.title}</span>
-                            {act.description && <p className="text-[11px] text-slate-500 truncate mt-0.5">{act.description}</p>}
+                          <div key={`${dayIdx}-${actIdx}`} className="p-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+                            <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-400 uppercase block">Day {day.dayNumber} • {act.time}</span>
+                            <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">{act.title}</span>
+                            {act.description && <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{act.description}</p>}
                           </div>
                         ))
                       ).slice(0, 4)}
@@ -764,11 +764,11 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     href={`https://www.viator.com/searchResults/all?text=${encodeURIComponent(destination)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3.5 hover:border-emerald-400 hover:bg-emerald-50/30 transition-colors bg-white shadow-2xs"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 transition-colors bg-white dark:bg-slate-900/80 shadow-2xs"
                   >
                     <div>
-                      <span className="text-xs font-bold text-slate-800 block">Viator (TripAdvisor) Experiences</span>
-                      <span className="text-[11px] text-slate-500">Skip-the-line monument passes & guided day tours</span>
+                      <span className="text-xs font-bold text-slate-800 dark:text-white block">Viator (TripAdvisor) Experiences</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">Skip-the-line monument passes & guided day tours</span>
                     </div>
                     <ExternalLink className="w-4 h-4 text-slate-400 shrink-0" />
                   </a>
@@ -777,11 +777,11 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                     href={`https://www.getyourguide.com/s/?q=${encodeURIComponent(destination)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3.5 hover:border-emerald-400 hover:bg-emerald-50/30 transition-colors bg-white shadow-2xs"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 transition-colors bg-white dark:bg-slate-900/80 shadow-2xs"
                   >
                     <div>
-                      <span className="text-xs font-bold text-slate-800 block">GetYourGuide Mobile Passes</span>
-                      <span className="text-[11px] text-slate-500">Instant digital tickets & priority access</span>
+                      <span className="text-xs font-bold text-slate-800 dark:text-white block">GetYourGuide Mobile Passes</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">Instant digital tickets & priority access</span>
                     </div>
                     <ExternalLink className="w-4 h-4 text-slate-400 shrink-0" />
                   </a>
@@ -792,9 +792,9 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
           </div>
 
           {/* Space-Efficient Bottom Action Bar */}
-          <footer className="shrink-0 flex items-center justify-between gap-3 border-t border-slate-200/80 bg-slate-50/90 px-4 py-3">
-            <p className="text-[11px] text-slate-500 flex items-center gap-1.5 truncate">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+          <footer className="shrink-0 flex items-center justify-between gap-3 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 px-4 py-3">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 truncate">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
               <span className="truncate">TripVerse Buyer Protection • 100% Refund Guarantee</span>
             </p>
             <div className="flex items-center gap-2 shrink-0">

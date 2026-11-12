@@ -621,7 +621,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
       onClick={onClose}
     >
       <div 
-        className="my-auto flex w-full max-w-4xl max-h-[96vh] sm:max-h-[92vh] flex-col overflow-hidden rounded-[24px] sm:rounded-[32px] border border-emerald-900/40 bg-white shadow-2xl transition-all"
+        className="my-auto flex w-full max-w-4xl max-h-[96vh] sm:max-h-[92vh] flex-col overflow-hidden rounded-[24px] sm:rounded-[32px] border border-emerald-900/40 dark:border-slate-800 bg-white dark:bg-[#0C1523] shadow-2xl transition-all"
         onClick={e => e.stopPropagation()}
       >
         {/* ================================================================ */}
@@ -726,15 +726,15 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
             {/* ------------------------------------------------------------ */}
             {/* LEFT COLUMN: PAYMENT METHOD TABS (7 cols)                     */}
             {/* ------------------------------------------------------------ */}
-            <div className="lg:col-span-7 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-100 bg-slate-50/60 p-3.5 sm:p-5">
+            <div className="lg:col-span-7 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-[#0B1320] p-3.5 sm:p-5">
               
               {/* Payment Methods Pill Selector */}
               <div className="mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                   Select Payment Method
                 </span>
 
-                <div className={`grid gap-1.5 p-1 bg-slate-200/70 rounded-2xl ${
+                <div className={`grid gap-1.5 p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-2xl ${
                   isINR 
                     ? 'grid-cols-3 sm:grid-cols-6' 
                     : 'grid-cols-2 sm:grid-cols-4'
@@ -749,13 +749,13 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                         onClick={() => handleTabSwitch(tab.id as PaymentMethodType)}
                         className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-center transition-all cursor-pointer ${
                           isActive
-                            ? 'bg-white text-emerald-950 font-bold shadow-sm border border-slate-200/80 scale-[1.02]'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 font-semibold'
+                            ? 'bg-white dark:bg-slate-900 text-emerald-950 dark:text-emerald-300 font-bold shadow-sm border border-slate-200/80 dark:border-slate-700/80 scale-[1.02]'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 font-semibold'
                         }`}
                       >
-                        <Icon className={`w-4 h-4 mb-1 ${isActive ? 'text-emerald-700' : 'text-slate-500'}`} />
+                        <Icon className={`w-4 h-4 mb-1 ${isActive ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`} />
                         <span className="text-[11px] leading-tight truncate w-full">{tab.label}</span>
-                        <span className={`text-[9px] ${isActive ? 'text-emerald-700' : 'text-slate-400'} font-medium truncate`}>
+                        <span className={`text-[9px] ${isActive ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'} font-medium truncate`}>
                           {tab.badge}
                         </span>
                       </button>
@@ -768,14 +768,14 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
               {activeTab === 'upi_qr' && (
                 <div className="space-y-4 flex-1 flex flex-col justify-between">
                   {/* UPI Sub-Tabs */}
-                  <div className="flex border-b border-slate-200 gap-4 text-xs font-bold">
+                  <div className="flex border-b border-slate-200 dark:border-slate-800 gap-4 text-xs font-bold">
                     <button
                       type="button"
                       onClick={() => setUpiSubTab('qr')}
                       className={`pb-2 border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
                         upiSubTab === 'qr'
-                          ? 'border-emerald-600 text-emerald-800'
-                          : 'border-transparent text-slate-500 hover:text-slate-800'
+                          ? 'border-emerald-600 dark:border-emerald-500 text-emerald-800 dark:text-emerald-400'
+                          : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                       }`}
                     >
                       <QrCode className="w-3.5 h-3.5" />
@@ -786,8 +786,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                       onClick={() => setUpiSubTab('apps')}
                       className={`pb-2 border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
                         upiSubTab === 'apps'
-                          ? 'border-emerald-600 text-emerald-800'
-                          : 'border-transparent text-slate-500 hover:text-slate-800'
+                          ? 'border-emerald-600 dark:border-emerald-500 text-emerald-800 dark:text-emerald-400'
+                          : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                       }`}
                     >
                       <Smartphone className="w-3.5 h-3.5" />
@@ -798,8 +798,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                       onClick={() => setUpiSubTab('id')}
                       className={`pb-2 border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
                         upiSubTab === 'id'
-                          ? 'border-emerald-600 text-emerald-800'
-                          : 'border-transparent text-slate-500 hover:text-slate-800'
+                          ? 'border-emerald-600 dark:border-emerald-500 text-emerald-800 dark:text-emerald-400'
+                          : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                       }`}
                     >
                       Enter UPI ID
@@ -808,10 +808,10 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                   {/* Sub-tab A: DYNAMIC QR CODE DISPLAY WITH 5-MINUTE COUNTDOWN */}
                   {upiSubTab === 'qr' && (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 text-center shadow-xs space-y-2.5">
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-3 sm:p-4 text-center shadow-xs space-y-2.5">
                       
                       {/* LIVE 5-MINUTE COUNTDOWN TIMER BADGE */}
-                      <div className="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
+                      <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
                         <div className="flex items-center gap-2">
                           <div className="relative flex items-center justify-center w-7 h-7">
                             <svg className="w-7 h-7 -rotate-90">
@@ -819,7 +819,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                                 cx="14"
                                 cy="14"
                                 r={11}
-                                className="stroke-slate-200"
+                                className="stroke-slate-200 dark:stroke-slate-800"
                                 strokeWidth="2.5"
                                 fill="transparent"
                               />
@@ -838,7 +838,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                             <Clock className={`w-3 h-3 absolute ${getTimerColorClass()}`} />
                           </div>
                           <div className="text-left" translate="no" data-no-translate="true">
-                            <span className="text-[9px] uppercase font-bold text-slate-400 block leading-tight">QR Expires In</span>
+                            <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500 block leading-tight">QR Expires In</span>
                             <span 
                               translate="no"
                               data-no-translate="true"
@@ -859,7 +859,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                             Regenerate
                           </button>
                         ) : (
-                          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/80">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                             <span>Live Scanner Active</span>
                           </div>
@@ -871,31 +871,31 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                         <div className="space-y-3 py-1">
                           <div 
                             onClick={() => initiatePayment('Dynamic UPI QR')}
-                            className="relative mx-auto w-40 h-40 sm:w-44 sm:h-44 p-3 rounded-2xl border-2 border-dashed border-emerald-600/70 bg-gradient-to-b from-emerald-50/70 via-white to-slate-50 hover:bg-emerald-50 hover:border-emerald-700 shadow-sm flex flex-col items-center justify-center cursor-pointer transition-all group"
+                            className="relative mx-auto w-40 h-40 sm:w-44 sm:h-44 p-3 rounded-2xl border-2 border-dashed border-emerald-600/70 dark:border-emerald-500/50 bg-gradient-to-b from-emerald-50/70 via-white to-slate-50 dark:from-emerald-950/40 dark:via-slate-900/90 dark:to-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 hover:border-emerald-700 dark:hover:border-emerald-400 shadow-sm flex flex-col items-center justify-center cursor-pointer transition-all group"
                             title="Click to launch Official Bank-Verified Live Dynamic QR"
                           >
-                            <div className="w-14 h-14 rounded-2xl bg-white border border-emerald-200 shadow-xs flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
-                              <QrCode className="w-8 h-8 text-emerald-800" />
+                            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700/60 shadow-xs flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                              <QrCode className="w-8 h-8 text-emerald-800 dark:text-emerald-400" />
                             </div>
-                            <span className="text-[11px] font-black text-emerald-950 uppercase tracking-wider block">
+                            <span className="text-[11px] font-black text-emerald-950 dark:text-emerald-300 uppercase tracking-wider block">
                               Launch Live Dynamic QR
                             </span>
-                            <span className="text-[9px] text-emerald-700 font-semibold mt-0.5">
+                            <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-semibold mt-0.5">
                               NPCI & RBI Verified
                             </span>
-                            <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100/80 px-2 py-0.5 text-[8px] font-bold text-emerald-900 border border-emerald-300/60">
+                            <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100/80 dark:bg-emerald-950/80 px-2 py-0.5 text-[8px] font-bold text-emerald-900 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800/80">
                               <Lock className="w-2.5 h-2.5" />
                               <span>Zero Invalid VPA Errors</span>
                             </div>
                           </div>
 
-                          <p className="text-[11px] text-slate-600 font-medium max-w-sm mx-auto">
-                            Click below to generate your authentic, order-locked QR code. Works 100% with <strong className="text-slate-900">Google Pay, PhonePe, Paytm, CRED & BHIM</strong> without invalid UPI ID errors.
+                          <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium max-w-sm mx-auto">
+                            Click below to generate your authentic, order-locked QR code. Works 100% with <strong className="text-slate-900 dark:text-slate-200">Google Pay, PhonePe, Paytm, CRED & BHIM</strong> without invalid UPI ID errors.
                           </p>
                           
                           <div className="flex flex-wrap items-center justify-center gap-2">
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-mono font-bold text-emerald-900">
-                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/70 text-[10px] font-mono font-bold text-emerald-900 dark:text-emerald-300">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                               <span>NPCI Direct Gateway • Instant PNR Issuance</span>
                             </div>
                           </div>
@@ -903,8 +903,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                       ) : (
                         <div className="py-6 space-y-2.5 text-center">
                           <AlertCircle className="w-9 h-9 text-rose-500 mx-auto" />
-                          <h4 className="text-sm font-bold text-slate-900">QR Session Expired</h4>
-                          <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">QR Session Expired</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
                             The 5-minute security window has elapsed. Please regenerate a fresh session to proceed.
                           </p>
                           <button
@@ -919,7 +919,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                       )}
 
                       {/* Direct Checkout Actions */}
-                      <div className="pt-2 border-t border-slate-100">
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                         <button
                           type="button"
                           onClick={() => initiatePayment('Dynamic UPI QR')}
@@ -934,19 +934,19 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                   {/* Sub-tab B: ONE-TAP UPI APPS */}
                   {upiSubTab === 'apps' && (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3 shadow-xs">
-                      <span className="text-xs font-bold text-slate-700 block">
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-4 sm:p-5 space-y-3 shadow-xs">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                         Choose your installed UPI application:
                       </span>
 
                       <div className="grid grid-cols-2 gap-2.5">
                         {[
-                          { id: 'gpay', name: 'Google Pay', color: 'border-blue-200 hover:border-blue-500 bg-blue-50/40 text-blue-900' },
-                          { id: 'phonepe', name: 'PhonePe', color: 'border-purple-200 hover:border-purple-500 bg-purple-50/40 text-purple-900' },
-                          { id: 'paytm', name: 'Paytm UPI', color: 'border-sky-200 hover:border-sky-500 bg-sky-50/40 text-sky-900' },
-                          { id: 'cred', name: 'CRED UPI', color: 'border-slate-300 hover:border-slate-800 bg-slate-100 text-slate-900' },
-                          { id: 'bhim', name: 'BHIM UPI', color: 'border-teal-200 hover:border-teal-500 bg-teal-50/40 text-teal-900' },
-                          { id: 'amazon', name: 'Amazon Pay', color: 'border-amber-200 hover:border-amber-500 bg-amber-50/40 text-amber-900' }
+                          { id: 'gpay', name: 'Google Pay', color: 'border-blue-200 dark:border-blue-900/60 hover:border-blue-500 dark:hover:border-blue-400 bg-blue-50/40 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200' },
+                          { id: 'phonepe', name: 'PhonePe', color: 'border-purple-200 dark:border-purple-900/60 hover:border-purple-500 dark:hover:border-purple-400 bg-purple-50/40 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200' },
+                          { id: 'paytm', name: 'Paytm UPI', color: 'border-sky-200 dark:border-sky-900/60 hover:border-sky-500 dark:hover:border-sky-400 bg-sky-50/40 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200' },
+                          { id: 'cred', name: 'CRED UPI', color: 'border-slate-300 dark:border-slate-700 hover:border-slate-800 dark:hover:border-slate-500 bg-slate-100 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100' },
+                          { id: 'bhim', name: 'BHIM UPI', color: 'border-teal-200 dark:border-teal-900/60 hover:border-teal-500 dark:hover:border-teal-400 bg-teal-50/40 dark:bg-teal-950/40 text-teal-900 dark:text-teal-200' },
+                          { id: 'amazon', name: 'Amazon Pay', color: 'border-amber-200 dark:border-amber-900/60 hover:border-amber-500 dark:hover:border-amber-400 bg-amber-50/40 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200' }
                         ].map(app => (
                           <button
                             key={app.id}
@@ -975,8 +975,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                   {/* Sub-tab C: UPI ID / VPA */}
                   {upiSubTab === 'id' && (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3 shadow-xs">
-                      <label className="text-xs font-bold text-slate-700 block">
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-4 sm:p-5 space-y-3 shadow-xs">
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                         Enter Recipient / Virtual Payment Address (VPA)
                       </label>
                       <div className="flex gap-2">
@@ -985,7 +985,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                           value={upiIdInput}
                           onChange={e => setUpiIdInput(e.target.value)}
                           placeholder="e.g. mobile@okhdfcbank"
-                          className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                          className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                         />
                       </div>
 
@@ -996,7 +996,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                             key={suffix}
                             type="button"
                             onClick={() => setUpiIdInput(prev => (prev ? prev.split('@')[0] : 'alex') + suffix)}
-                            className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-[10px] font-semibold text-slate-600 transition-colors cursor-pointer"
+                            className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[10px] font-semibold text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
                           >
                             {suffix}
                           </button>
@@ -1018,9 +1018,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
               {/* TAB CONTENT 2: CREDIT / DEBIT CARDS */}
               {activeTab === 'card' && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 space-y-3 shadow-xs">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-3.5 sm:p-4 space-y-3 shadow-xs">
                   {/* Virtual Card Preview Header */}
-                  <div className="rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-3 text-white shadow-md relative overflow-hidden">
+                  <div className="rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-3 text-white shadow-md relative overflow-hidden border border-slate-700/50">
                     <div className="flex justify-between items-center mb-2.5">
                       <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400">
                         TripVerse Secure Card Pay
@@ -1045,22 +1045,22 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   </div>
 
                   {/* Accepted Worldwide Cards Row */}
-                  <div className="flex items-center justify-between px-1 text-[10px] text-slate-500 font-medium">
+                  <div className="flex items-center justify-between px-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                     <span>Accepted Worldwide:</span>
                     <div className="flex items-center gap-1 font-bold text-[9px] uppercase tracking-wider">
-                      <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Visa</span>
-                      <span className="px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">Mastercard</span>
-                      <span className="px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">Amex</span>
-                      <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">Discover</span>
-                      <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">JCB</span>
-                      <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">RuPay</span>
+                      <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">Visa</span>
+                      <span className="px-1.5 py-0.5 rounded bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800">Mastercard</span>
+                      <span className="px-1.5 py-0.5 rounded bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800">Amex</span>
+                      <span className="px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">Discover</span>
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">JCB</span>
+                      <span className="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">RuPay</span>
                     </div>
                   </div>
 
                   {sessionExpired && (
-                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 text-xs">
                       <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                         <span className="text-[11px] font-semibold">
                           Rate lock expired. Refresh to guarantee current exchange rate.
                         </span>
@@ -1079,44 +1079,44 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   {/* Card Form */}
                   <div className="space-y-2.5">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-600 block mb-1">Card Number</label>
+                      <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-1">Card Number</label>
                       <input
                         type="text"
                         value={cardNumber}
                         onChange={e => setCardNumber(formatCardNumber(e.target.value))}
                         placeholder="4532 8920 1823 4821"
                         maxLength={19}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-slate-600 block mb-1">Name on Card</label>
+                      <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-1">Name on Card</label>
                       <input
                         type="text"
                         value={cardHolder}
                         onChange={e => setCardHolder(e.target.value)}
                         placeholder="e.g. Alex Sharma"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-600 block mb-1">Expiry Date</label>
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-1">Expiry Date</label>
                         <input
                           type="text"
                           value={cardExpiry}
                           onChange={e => setCardExpiry(formatCardExpiry(e.target.value))}
                           placeholder="MM/YY"
                           maxLength={5}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-600 flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 flex items-center justify-between mb-1">
                           <span>CVV / CVC</span>
-                          <span className="text-[9px] text-slate-400 font-normal">3-4 digits</span>
+                          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-normal">3-4 digits</span>
                         </label>
                         <input
                           type="password"
@@ -1124,7 +1124,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                           onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
                           placeholder="•••"
                           maxLength={4}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                         />
                       </div>
                     </div>
@@ -1134,9 +1134,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                         type="checkbox"
                         checked={saveCard}
                         onChange={e => setSaveCard(e.target.checked)}
-                        className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-600"
+                        className="rounded border-slate-300 dark:border-slate-700 text-emerald-700 focus:ring-emerald-600 dark:bg-slate-900"
                       />
-                      <span className="text-[10px] text-slate-600 font-medium">
+                      <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">
                         {isINR
                           ? 'Securely save card as per RBI Tokenization guidelines'
                           : 'Save card securely with PCI-DSS Level 1 & 256-bit AES Tokenization'}
@@ -1144,8 +1144,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                     </label>
 
                     {cardValidationError && (
-                      <div className="p-2.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
-                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <div className="p-2.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                        <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                         <span>{cardValidationError}</span>
                       </div>
                     )}
@@ -1164,21 +1164,21 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
               {/* TAB CONTENT: DIGITAL WALLETS (APPLE PAY & GOOGLE PAY) */}
               {activeTab === 'digital_wallets' && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-xs">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-4 sm:p-5 space-y-4 shadow-xs">
                   <div className="space-y-1">
-                    <h3 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
-                      <Smartphone className="w-4 h-4 text-emerald-700" />
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Smartphone className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                       <span>1-Tap Digital Wallets</span>
                     </h3>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                       Instant, biometric-verified payment with your device. Zero form filling or manual card number entry.
                     </p>
                   </div>
 
                   {sessionExpired && (
-                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 text-xs">
                       <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                         <span className="text-[11px] font-semibold">
                           Session expired. Refresh to guarantee current exchange rate.
                         </span>
@@ -1198,7 +1198,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   <button
                     type="button"
                     onClick={() => initiatePayment(`Apple Pay (${currency})`)}
-                    className="w-full py-3.5 px-4 rounded-xl bg-black hover:bg-slate-900 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
+                    className="w-full py-3.5 px-4 rounded-xl bg-black hover:bg-slate-900 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99] border border-slate-700/50"
                   >
                     <span className="text-sm font-semibold tracking-tight">Apple Pay</span>
                     <span>• Pay {formatCurrency(finalPayableINR, currency)}</span>
@@ -1208,21 +1208,21 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   <button
                     type="button"
                     onClick={() => initiatePayment(`Google Pay (${currency})`)}
-                    className="w-full py-3.5 px-4 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs sm:text-sm shadow-xs transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
+                    className="w-full py-3.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs sm:text-sm shadow-xs transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
                   >
                     <span className="font-black text-sm tracking-tight text-blue-600">G<span className="text-red-500">o</span><span className="text-amber-500">o</span><span className="text-blue-500">g</span><span className="text-emerald-500">l</span><span className="text-red-500">e</span> Pay</span>
                     <span>• Pay {formatCurrency(finalPayableINR, currency)}</span>
                   </button>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
                     <span className="flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-emerald-600" />
+                      <Lock className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                       <span>Biometric FaceID / TouchID Tokenized</span>
                     </span>
                     <span 
                       translate="no"
                       data-no-translate="true"
-                      className="font-mono text-emerald-700 font-bold notranslate"
+                      className="font-mono text-emerald-700 dark:text-emerald-400 font-bold notranslate"
                     >
                       Rate Lock: {formatTimerString(secondsRemaining)}
                     </span>
@@ -1232,21 +1232,21 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
               {/* TAB CONTENT: PAYPAL WORLDWIDE */}
               {activeTab === 'paypal' && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-xs">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-4 sm:p-5 space-y-4 shadow-xs">
                   <div className="space-y-1">
-                    <h3 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
-                      <Globe className="w-4 h-4 text-[#003087]" />
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-[#003087] dark:text-sky-400" />
                       <span>PayPal Worldwide Checkout</span>
                     </h3>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                       Pay safely in {currency} or your local currency using your PayPal balance, linked bank, or international card.
                     </p>
                   </div>
 
                   {sessionExpired && (
-                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 text-xs">
                       <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                         <span className="text-[11px] font-semibold">
                           Session expired. Refresh to guarantee current exchange rate.
                         </span>
@@ -1272,22 +1272,22 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                     <span>Checkout • {formatCurrency(finalPayableINR, currency)}</span>
                   </button>
 
-                  <div className="rounded-xl bg-sky-50/70 border border-sky-100 p-3 text-[10px] text-sky-900 space-y-1">
+                  <div className="rounded-xl bg-sky-50/70 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/60 p-3 text-[10px] text-sky-900 dark:text-sky-200 space-y-1">
                     <div className="flex items-center gap-1.5 font-bold">
-                      <ShieldCheck className="w-3.5 h-3.5 text-sky-700" />
+                      <ShieldCheck className="w-3.5 h-3.5 text-sky-700 dark:text-sky-400" />
                       <span>PayPal Buyer Protection</span>
                     </div>
-                    <p className="text-sky-800/80 leading-relaxed">
+                    <p className="text-sky-800/80 dark:text-sky-300/80 leading-relaxed">
                       Includes 180 days buyer protection and zero liability for unauthorized international transactions.
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
                     <span>Available in 200+ countries</span>
                     <span 
                       translate="no"
                       data-no-translate="true"
-                      className="font-mono text-emerald-700 font-bold notranslate"
+                      className="font-mono text-emerald-700 dark:text-emerald-400 font-bold notranslate"
                     >
                       Rate Lock: {formatTimerString(secondsRemaining)}
                     </span>
@@ -1297,9 +1297,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
               {/* TAB CONTENT 3: NET BANKING */}
               {activeTab === 'netbanking' && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-xs">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-4 sm:p-5 space-y-4 shadow-xs">
                   <div>
-                    <span className="text-xs font-bold text-slate-700 block mb-2.5">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2.5">
                       Popular Indian Banks
                     </span>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1310,28 +1310,28 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                           onClick={() => setSelectedBank(bank.id)}
                           className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                             selectedBank === bank.id
-                              ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-600/30 font-bold'
-                              : 'border-slate-200 hover:border-slate-300 bg-slate-50/40 text-slate-700'
+                              ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/40 ring-2 ring-emerald-600/30 text-emerald-950 dark:text-emerald-300 font-bold'
+                              : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50/40 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200'
                           }`}
                         >
                           <span className="text-xs font-bold block truncate">{bank.name}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">{bank.code}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{bank.code}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1">
                       Or select from 50+ other banks:
                     </label>
                     <select
                       value={selectedBank}
                       onChange={e => setSelectedBank(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                     >
                       {OTHER_BANKS.map(bank => (
-                        <option key={bank.id} value={bank.id}>{bank.name}</option>
+                        <option key={bank.id} value={bank.id} className="dark:bg-slate-900 dark:text-white">{bank.name}</option>
                       ))}
                     </select>
                   </div>
@@ -1353,17 +1353,17 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
               {/* TAB CONTENT 4: WALLETS & PAY LATER */}
               {activeTab === 'wallet' && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-xs">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-4 sm:p-5 space-y-4 shadow-xs">
                   {/* TripVerse Coins / Travel Wallet */}
-                  <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50/40 p-4">
+                  <div className="rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-gradient-to-r from-amber-50 to-orange-50/40 dark:from-amber-950/40 dark:to-orange-950/30 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
                           <Coins className="w-4 h-4 text-white" />
                         </div>
                         <div>
-                          <span className="text-xs font-bold text-amber-950 block">TripVerse Travel Cash</span>
-                          <span className="text-[11px] text-amber-700">₹1,500 promotional coins available</span>
+                          <span className="text-xs font-bold text-amber-950 dark:text-amber-200 block">TripVerse Travel Cash</span>
+                          <span className="text-[11px] text-amber-700 dark:text-amber-400">₹1,500 promotional coins available</span>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -1376,14 +1376,14 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                           }}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-700"></div>
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-700"></div>
                       </label>
                     </div>
                   </div>
 
                   {/* Wallets & BNPL providers */}
                   <div className="space-y-2">
-                    <span className="text-xs font-bold text-slate-700 block">External Digital Wallets & BNPL</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">External Digital Wallets & BNPL</span>
                     <div className="grid grid-cols-2 gap-2">
                       {[
                         { id: 'amazon_pay', name: 'Amazon Pay Balance', sub: 'Instant checkout', code: 'amazonpay' },
@@ -1395,10 +1395,10 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                           key={w.id}
                           type="button"
                           onClick={() => initiatePayment(`Wallet (${w.name})`, { wallet: w.code })}
-                          className="p-3 rounded-xl border border-slate-200 hover:border-emerald-600 bg-slate-50/50 hover:bg-emerald-50/20 text-left transition-all cursor-pointer"
+                          className="p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 hover:border-emerald-600 dark:hover:border-emerald-500 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/30 text-left transition-all cursor-pointer"
                         >
-                          <span className="text-xs font-bold text-slate-900 block">{w.name}</span>
-                          <span className="text-[10px] text-slate-500">{w.sub}</span>
+                          <span className="text-xs font-bold text-slate-900 dark:text-white block">{w.name}</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">{w.sub}</span>
                         </button>
                       ))}
                     </div>
@@ -1408,8 +1408,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
               {/* TAB CONTENT 5: EMI & INSTALLMENTS */}
               {activeTab === 'emi' && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3 shadow-xs">
-                  <span className="text-xs font-bold text-slate-800 block">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-4 sm:p-5 space-y-3 shadow-xs">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
                     No-Cost & Low-Cost Credit Card EMI Options
                   </span>
 
@@ -1422,25 +1422,25 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                     ].map(plan => (
                       <div
                         key={plan.months}
-                        className="p-3 rounded-xl border border-slate-200 hover:border-emerald-600 flex items-center justify-between gap-3 transition-all"
+                        className="p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 hover:border-emerald-600 dark:hover:border-emerald-500 bg-slate-50/30 dark:bg-slate-800/40 flex items-center justify-between gap-3 transition-all"
                       >
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-900">{plan.months} Months Plan</span>
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-[9px] font-bold text-emerald-800">
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">{plan.months} Months Plan</span>
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-[9px] font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/70">
                               {plan.badge}
                             </span>
                           </div>
-                          <span className="text-[10px] text-slate-500">{plan.rate}</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">{plan.rate}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-xs font-black text-emerald-800 block">
+                          <span className="text-xs font-black text-emerald-800 dark:text-emerald-400 block">
                             ₹{plan.monthly.toLocaleString('en-IN')}/mo
                           </span>
                           <button
                             type="button"
                             onClick={() => initiatePayment(`EMI (${plan.months} Months @ ₹${plan.monthly}/mo)`)}
-                            className="text-[10px] font-bold text-emerald-700 hover:underline cursor-pointer"
+                            className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
                           >
                             Choose Plan →
                           </button>
@@ -1456,17 +1456,17 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
             {/* ------------------------------------------------------------ */}
             {/* RIGHT COLUMN: ORDER SUMMARY & COUPONS (5 cols)               */}
             {/* ------------------------------------------------------------ */}
-            <div className="lg:col-span-5 flex flex-col justify-between p-3.5 sm:p-5 bg-white space-y-3">
+            <div className="lg:col-span-5 flex flex-col justify-between p-3.5 sm:p-5 bg-white dark:bg-[#0C1523] space-y-3">
               
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1.5">
                   Trip Order Summary
                 </span>
 
                 {/* Worldwide Live Forex Guarantee Badge */}
                 {!isINR && (
-                  <div className="flex items-center gap-2 p-2 rounded-xl bg-emerald-50/80 border border-emerald-200/90 text-[10px] text-emerald-900 font-medium mb-2.5">
-                    <Globe className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/50 border border-emerald-200/90 dark:border-emerald-800/70 text-[10px] text-emerald-900 dark:text-emerald-300 font-medium mb-2.5">
+                    <Globe className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
                     <div className="truncate">
                       <span className="font-bold">Guaranteed Forex Rate: </span>
                       <span>1 {currency} ≈ ₹{inrPerUnit} INR • 0% Forex Surcharge</span>
@@ -1475,23 +1475,23 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 )}
 
                 {/* Destination & Dates Card */}
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 mb-2.5">
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 p-3 mb-2.5">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                      <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
                         {packageType === 'pro_subscription' ? 'TripVerse Pro VIP Tier' : destination}
                       </h4>
-                      <p className="text-[10px] sm:text-[11px] text-slate-500">
+                      <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
                         {packageType === 'pro_subscription' ? 'Unlimited AI Engine & 30h Co-Pilot' : `${origin} → ${destination}`}
                       </p>
                     </div>
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800">
+                    <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 text-[9px] font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/70">
                       {packageType === 'pro_subscription' ? 'VIP Access' : `${durationDays}D / ${Math.max(1, durationDays - 1)}N`}
                     </span>
                   </div>
-                  <div className="mt-1.5 pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-600">
+                  <div className="mt-1.5 pt-1.5 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-400">
                     <span>{packageType === 'pro_subscription' ? 'Plan Tier:' : 'Travelers:'}</span>
-                    <strong className="text-slate-900">
+                    <strong className="text-slate-900 dark:text-white">
                       {packageType === 'pro_subscription' ? 'All-Access Pass' : `${travelers} Pax`}
                     </strong>
                   </div>
@@ -1499,7 +1499,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                 {/* Promo Coupon Box */}
                 <div className="space-y-1.5 mb-2.5">
-                  <label className="text-[10px] font-bold text-slate-700 block">
+                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">
                     {t('Have a Promo Code?')}
                   </label>
                   <div className="flex gap-1.5">
@@ -1508,12 +1508,12 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                       value={couponInput}
                       onChange={e => setCouponInput(e.target.value.toUpperCase())}
                       placeholder="e.g. TRIPVERSE500"
-                      className="flex-1 px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                      className="flex-1 px-2.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500 text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-600"
                     />
                     <button
                       type="button"
                       onClick={() => handleApplyCoupon()}
-                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-bold text-xs transition-colors cursor-pointer"
                     >
                       Apply
                     </button>
@@ -1522,14 +1522,14 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   {/* Feedback Message */}
                   {couponMessage && (
                     <div className={`p-1.5 rounded-lg text-[10px] font-semibold flex items-center justify-between ${
-                      couponMessage.isError ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-800'
+                      couponMessage.isError ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900' : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                     }`}>
                       <span>{couponMessage.text}</span>
                       {appliedCoupon && (
                         <button
                           type="button"
                           onClick={handleRemoveCoupon}
-                          className="text-[10px] font-bold text-rose-600 hover:underline cursor-pointer"
+                          className="text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
                         >
                           Remove
                         </button>
@@ -1552,9 +1552,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                             key={c.code}
                             type="button"
                             onClick={() => handleApplyCoupon(c.code)}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-dashed border-emerald-400 bg-emerald-50/50 text-[9px] font-bold text-emerald-900 hover:bg-emerald-100 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-dashed border-emerald-400 dark:border-emerald-700/80 bg-emerald-50/50 dark:bg-emerald-950/40 text-[9px] font-bold text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer"
                           >
-                            <BadgePercent className="w-2.5 h-2.5 text-emerald-700" />
+                            <BadgePercent className="w-2.5 h-2.5 text-emerald-700 dark:text-emerald-400" />
                             <span>{c.code} ({couponLabel})</span>
                           </button>
                         );
@@ -1564,21 +1564,21 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 </div>
 
                 {/* Price Itemization Breakdown */}
-                <div className="space-y-1.5 rounded-2xl bg-slate-50/80 p-2.5 sm:p-3 border border-slate-200/80 text-[11px] text-slate-600">
+                <div className="space-y-1.5 rounded-2xl bg-slate-50/80 dark:bg-slate-900/80 p-2.5 sm:p-3 border border-slate-200/80 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
                   <div className="flex justify-between items-center">
                     <span>{isProSub ? 'TripVerse Pro Plan:' : 'Base Package Fare:'}</span>
-                    <span className="font-semibold text-slate-800">{formatCurrency(initialBaseAmount, currency)}</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formatCurrency(initialBaseAmount, currency)}</span>
                   </div>
 
                   {coinDiscount > 0 && (
-                    <div className="flex justify-between items-center text-amber-700 font-medium">
+                    <div className="flex justify-between items-center text-amber-700 dark:text-amber-400 font-medium">
                       <span>TripVerse Coins Applied:</span>
                       <span>- {formatCurrency(coinDiscount, currency)}</span>
                     </div>
                   )}
 
                   {appliedCoupon && (
-                    <div className="flex justify-between items-center text-emerald-700 font-medium">
+                    <div className="flex justify-between items-center text-emerald-700 dark:text-emerald-400 font-medium">
                       <span>Promo ({appliedCoupon.code}) Discount:</span>
                       <span>- {formatCurrency(appliedCoupon.discount, currency)}</span>
                     </div>
@@ -1586,21 +1586,21 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
                   <div className="flex justify-between items-center">
                     <span>Platform Convenience Fee:</span>
-                    <span className="text-emerald-700 font-bold">
-                      <span className="line-through text-slate-400 font-normal mr-1">{formatCurrency(199, currency)}</span> FREE
+                    <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                      <span className="line-through text-slate-400 dark:text-slate-500 font-normal mr-1">{formatCurrency(199, currency)}</span> FREE
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <span>{isProSub ? 'Taxes & GST (Included):' : 'Taxes & GST (18%):'}</span>
-                    <span className="font-semibold text-slate-800">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
                       {isProSub ? 'Included' : formatCurrency(gstAmount, currency)}
                     </span>
                   </div>
 
-                  <div className="pt-1.5 border-t border-slate-200 flex justify-between items-baseline">
-                    <span className="text-xs font-black text-slate-900 uppercase">Total Amount:</span>
-                    <span className="text-lg font-black text-emerald-800">
+                  <div className="pt-1.5 border-t border-slate-200 dark:border-slate-800 flex justify-between items-baseline">
+                    <span className="text-xs font-black text-slate-900 dark:text-white uppercase">Total Amount:</span>
+                    <span className="text-lg font-black text-emerald-800 dark:text-emerald-400">
                       {formatCurrency(finalPayableINR, currency)}
                     </span>
                   </div>
@@ -1608,12 +1608,12 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
               </div>
 
               {/* Trust & Guarantee Banner */}
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-2.5 text-[10px] text-emerald-900 space-y-0.5">
+              <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/60 bg-emerald-50/60 dark:bg-emerald-950/40 p-2.5 text-[10px] text-emerald-900 dark:text-emerald-300 space-y-0.5">
                 <div className="flex items-center gap-1.5 font-bold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>100% Guaranteed Protection</span>
                 </div>
-                <p className="text-[10px] text-emerald-800/80 leading-relaxed">
+                <p className="text-[10px] text-emerald-800/80 dark:text-emerald-300/80 leading-relaxed">
                   {isProSub
                     ? 'Instant Pro VIP activation with unlimited AI replanning, 4K offline exports, and priority ConCode concierge.'
                     : 'Instant booking verification with immediate PNR and hotel confirmation. Free cancellation within 24 hours.'}
@@ -1630,11 +1630,11 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         {/* ================================================================ */}
         {gatewayStage === 'authorizing' && (
           <div className="p-12 text-center space-y-4 min-h-[400px] flex flex-col items-center justify-center">
-            <div className="w-16 h-16 rounded-full border-4 border-emerald-200 border-t-emerald-800 animate-spin" />
-            <h3 className="text-base sm:text-lg font-black text-slate-900">
+            <div className="w-16 h-16 rounded-full border-4 border-emerald-200 dark:border-emerald-800/60 border-t-emerald-800 dark:border-t-emerald-400 animate-spin" />
+            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
               Connecting to Secure Banking Gateway...
             </h3>
-            <p className="text-xs text-slate-500 max-w-sm">
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
               Please do not refresh or press back. We are verifying authorization with your bank's 256-bit secure server.
             </p>
           </div>
@@ -1645,24 +1645,24 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         {/* ================================================================ */}
         {gatewayStage === 'unavailable' && (
           <div className="p-6 sm:p-8 space-y-5 max-w-lg mx-auto my-auto min-h-[400px] flex flex-col justify-center">
-            <div className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left">
-              <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 rounded-2xl border border-amber-300 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/40 p-4 text-left">
+              <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <h3 className="text-sm font-black text-amber-950">
+                <h3 className="text-sm font-black text-amber-950 dark:text-amber-200">
                   Live In-App Payment Gateway Not Configured
                 </h3>
-                <p className="text-xs text-amber-900 leading-relaxed">
+                <p className="text-xs text-amber-900 dark:text-amber-300 leading-relaxed">
                   {gatewayErrorMessage || 'RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are not configured on this server. No payment was charged and no PNR or hotel voucher has been issued.'}
                 </p>
               </div>
             </div>
 
             {packageType === 'pro_subscription' ? (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-3 text-left">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">
+              <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/40 p-4 space-y-3 text-left">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 block">
                   Complimentary Pro Preview Available
                 </span>
-                <p className="text-xs text-emerald-950 leading-relaxed">
+                <p className="text-xs text-emerald-950 dark:text-emerald-200 leading-relaxed">
                   Since live merchant billing is not active on this server, you can unlock <strong>TripVerse Pro</strong> immediately at zero cost (no payment charged).
                 </p>
                 <button
@@ -1698,8 +1698,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 </button>
               </div>
             ) : (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3 text-left">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-4 space-y-3 text-left">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
                   Complete Booking Directly on Official Partner Portals
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1707,37 +1707,37 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                     href={`https://www.google.com/travel/flights?q=${encodeURIComponent(`${origin} to ${destination}`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-emerald-600 dark:hover:border-emerald-500 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
                   >
                     <span>Google Flights</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   </a>
                   <a
                     href="https://www.irctc.co.in/nget/train-search"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-emerald-600 dark:hover:border-emerald-500 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
                   >
                     <span>IRCTC Official Trains</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   </a>
                   <a
                     href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(trip?.selectedHotel?.name || destination)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-emerald-600 dark:hover:border-emerald-500 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
                   >
                     <span>Booking.com Stays</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   </a>
                   <a
                     href="https://www.redbus.in/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 text-xs font-bold text-slate-800 transition-colors"
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-emerald-600 dark:hover:border-emerald-500 text-xs font-bold text-slate-800 dark:text-slate-200 transition-colors"
                   >
                     <span>redBus Intercity</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   </a>
                 </div>
               </div>
@@ -1747,14 +1747,14 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
               <button
                 type="button"
                 onClick={() => setGatewayStage('checkout')}
-                className="flex-1 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-colors cursor-pointer"
+                className="flex-1 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition-colors cursor-pointer"
               >
                 ← Back to Payment Options
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
+                className="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs transition-colors cursor-pointer"
               >
                 Close
               </button>
@@ -1767,43 +1767,43 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         {/* ================================================================ */}
         {gatewayStage === 'success' && confirmedBooking && (
           <div className="p-6 sm:p-8 space-y-6 text-center max-w-lg mx-auto min-h-[460px] flex flex-col justify-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-800 mx-auto flex items-center justify-center shadow-md animate-bounce">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 mx-auto flex items-center justify-center shadow-md animate-bounce">
               <CheckCircle2 className="w-9 h-9" />
             </div>
 
             <div className="space-y-1">
-              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700">
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
                 Payment Authorized & Verified
               </span>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 Booking Confirmed!
               </h3>
-              <p className="text-xs text-slate-500">
-                Your journey to <strong className="text-slate-800">{destination}</strong> is officially booked & active.
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Your journey to <strong className="text-slate-800 dark:text-slate-200">{destination}</strong> is officially booked & active.
               </p>
             </div>
 
             {/* Receipt Summary Card */}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left space-y-2.5 text-xs">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 p-4 text-left space-y-2.5 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-500">Booking Reference:</span>
-                <span className="font-mono font-black text-slate-900">{confirmedBooking.id}</span>
+                <span className="text-slate-500 dark:text-slate-400">Booking Reference:</span>
+                <span className="font-mono font-black text-slate-900 dark:text-white">{confirmedBooking.id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Transit PNR:</span>
-                <span className="font-mono font-black text-emerald-800">{confirmedBooking.pnr}</span>
+                <span className="text-slate-500 dark:text-slate-400">Transit PNR:</span>
+                <span className="font-mono font-black text-emerald-800 dark:text-emerald-400">{confirmedBooking.pnr}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Hotel Voucher Code:</span>
-                <span className="font-mono font-black text-indigo-800">{confirmedBooking.hotelVoucher}</span>
+                <span className="text-slate-500 dark:text-slate-400">Hotel Voucher Code:</span>
+                <span className="font-mono font-black text-indigo-800 dark:text-indigo-400">{confirmedBooking.hotelVoucher}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Amount Paid:</span>
-                <span className="font-black text-slate-900">{formatCurrency(confirmedBooking.amount, currency)}</span>
+                <span className="text-slate-500 dark:text-slate-400">Amount Paid:</span>
+                <span className="font-black text-slate-900 dark:text-white">{formatCurrency(confirmedBooking.amount, currency)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Payment Channel:</span>
-                <span className="font-semibold text-slate-700">{confirmedBooking.paymentMethod}</span>
+                <span className="text-slate-500 dark:text-slate-400">Payment Channel:</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">{confirmedBooking.paymentMethod}</span>
               </div>
             </div>
 
@@ -1812,9 +1812,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
               <button
                 type="button"
                 onClick={handleDownloadInvoice}
-                className="w-full py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                className="w-full py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
               >
-                <Download className="w-3.5 h-3.5 text-emerald-700" />
+                <Download className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                 <span>Download E-Ticket & Tax Invoice</span>
               </button>
 
@@ -1833,7 +1833,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                  className="px-5 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
                 >
                   Done
                 </button>

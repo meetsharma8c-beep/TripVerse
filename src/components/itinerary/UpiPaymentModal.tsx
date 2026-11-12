@@ -147,16 +147,16 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="settlement-details-title"
-        className="w-full max-w-md space-y-4 rounded-[32px] border border-[#E2EBE1] bg-white p-5 sm:p-6 shadow-2xl"
+        className="w-full max-w-md space-y-4 rounded-[32px] border border-[#E2EBE1] dark:border-slate-800 bg-white dark:bg-[#0C1523] p-5 sm:p-6 shadow-2xl"
         onClick={event => event.stopPropagation()}
       >
         <header className="flex items-start justify-between gap-3">
           <div>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-              <Sparkles className="w-3 h-3 text-emerald-600" />
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
+              <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
               <span>{t('Instant UPI Settlement Gateway')}</span>
             </div>
-            <h2 id="settlement-details-title" className="mt-0.5 text-lg font-bold text-[#152A1C]">
+            <h2 id="settlement-details-title" className="mt-0.5 text-lg font-bold text-[#152A1C] dark:text-white">
               {t('Scan to Pay & Settle Balance')}
             </h2>
           </div>
@@ -164,37 +164,37 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label={t('Close')}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-[#EAF0E9] hover:text-[#152A1C] transition-colors cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-[#EAF0E9] hover:text-[#152A1C] dark:hover:bg-slate-800 dark:hover:text-white transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
         </header>
 
         {/* Amount & Direction Header */}
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-50/60 to-slate-50 p-3.5 text-center border border-[#E2EBE1]">
-          <p className="text-[11px] font-semibold text-[#5A7362] uppercase tracking-wider">{t('Settlement Amount')}</p>
-          <p className="text-2xl sm:text-3xl font-black text-[#152A1C] mt-0.5">
+        <div className="rounded-2xl bg-gradient-to-br from-emerald-50/60 to-slate-50 dark:from-emerald-950/40 dark:to-slate-900/80 p-3.5 text-center border border-[#E2EBE1] dark:border-slate-800">
+          <p className="text-[11px] font-semibold text-[#5A7362] dark:text-slate-400 uppercase tracking-wider">{t('Settlement Amount')}</p>
+          <p className="text-2xl sm:text-3xl font-black text-[#152A1C] dark:text-white mt-0.5">
             {formatCurrency(amount, currency)}
           </p>
-          <p className="mt-1 flex items-center justify-center gap-2 text-xs font-bold text-[#152A1C]">
+          <p className="mt-1 flex items-center justify-center gap-2 text-xs font-bold text-[#152A1C] dark:text-slate-200">
             <span>{fromUser}</span>
-            <ArrowRight className="h-3.5 w-3.5 text-[#2D5A3D]" />
-            <span className="text-emerald-800">{toUser}</span>
+            <ArrowRight className="h-3.5 w-3.5 text-[#2D5A3D] dark:text-emerald-400" />
+            <span className="text-emerald-800 dark:text-emerald-400">{toUser}</span>
           </p>
         </div>
 
         {/* Dynamic QR Code & 5-Minute Timer Section */}
         {!isSettled ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center space-y-3 shadow-xs">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-4 text-center space-y-3 shadow-xs">
             
             {currency === 'INR' ? (
               <>
                 {/* 5-Min Timer Pill */}
-                <div className="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <div className="relative flex items-center justify-center w-7 h-7">
                       <svg className="w-7 h-7 -rotate-90">
-                        <circle cx="14" cy="14" r={timerRadius} className="stroke-slate-200" strokeWidth="2.5" fill="transparent" />
+                        <circle cx="14" cy="14" r={timerRadius} className="stroke-slate-200 dark:stroke-slate-800" strokeWidth="2.5" fill="transparent" />
                         <circle
                           cx="14"
                           cy="14"
@@ -210,11 +210,11 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
                       <Clock className={`w-3 h-3 absolute ${secondsRemaining > 60 ? 'text-emerald-600' : 'text-rose-500'}`} />
                     </div>
                     <div className="text-left" translate="no" data-no-translate="true">
-                      <span className="text-[9px] uppercase font-bold text-slate-400 block">QR Valid For</span>
+                      <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500 block">QR Valid For</span>
                       <span 
                         translate="no"
                         data-no-translate="true"
-                        className="text-xs font-mono font-black text-slate-900 notranslate"
+                        className="text-xs font-mono font-black text-slate-900 dark:text-white notranslate"
                       >
                         {formatTimer(secondsRemaining)}
                       </span>
@@ -225,13 +225,13 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
                     <button
                       type="button"
                       onClick={handleRegenerate}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 hover:bg-emerald-200 dark:hover:bg-emerald-900 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
                     >
                       <RefreshCw className="w-3 h-3" />
                       <span>Refresh</span>
                     </button>
                   ) : (
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 border border-transparent dark:border-emerald-800/80 px-2 py-0.5 rounded-full flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                       Active
                     </span>
@@ -241,23 +241,23 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
                 {/* QR Matrix */}
                 {secondsRemaining > 0 ? (
                   <div className="space-y-2">
-                    <div className="relative mx-auto w-40 h-40 p-2 rounded-xl border border-slate-200 bg-white shadow-xs flex items-center justify-center">
+                    <div className="relative mx-auto w-40 h-40 p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white shadow-xs flex items-center justify-center">
                       <img src={qrCodeUrl} alt="Scan to pay settlement" className="w-full h-full object-contain rounded-lg" />
                       <div className="absolute inset-0 m-auto w-8 h-8 rounded-lg bg-white/95 border border-emerald-700 shadow-sm flex items-center justify-center">
                         <span className="text-[10px] font-black text-emerald-800">UPI</span>
                       </div>
                     </div>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       Scan using GPay, PhonePe, Paytm, or CRED
                     </p>
                   </div>
                 ) : (
                   <div className="py-4 space-y-2">
-                    <p className="text-xs text-rose-600 font-bold">QR code expired (5-minute security timeout)</p>
+                    <p className="text-xs text-rose-600 dark:text-rose-400 font-bold">QR code expired (5-minute security timeout)</p>
                     <button
                       type="button"
                       onClick={handleRegenerate}
-                      className="px-4 py-1.5 rounded-xl bg-emerald-800 text-white font-bold text-xs"
+                      className="px-4 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs cursor-pointer shadow-sm"
                     >
                       Regenerate QR Code
                     </button>
@@ -265,30 +265,30 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
                 )}
 
                 {/* Recipient VPA */}
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs bg-slate-50 p-2.5 rounded-xl">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-900/80 p-2.5 rounded-xl">
                   <div className="text-left truncate mr-2">
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block">Recipient UPI VPA</span>
-                    <span className="font-mono font-bold text-slate-800 truncate block">{recipientVpa}</span>
+                    <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Recipient UPI VPA</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate block">{recipientVpa}</span>
                   </div>
                   <button
                     type="button"
                     onClick={handleCopyVpa}
-                    className="shrink-0 p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-emerald-700 hover:border-emerald-300 transition-colors cursor-pointer"
+                    className="shrink-0 p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-600 transition-colors cursor-pointer"
                     title="Copy VPA"
                   >
-                    {copiedVpa ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedVpa ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </>
             ) : (
               /* International Settlement View */
               <div className="space-y-4 py-2">
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-left space-y-3">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-left space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800">Direct International Settle</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Global P2P</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-white">Direct International Settle</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-transparent dark:border-emerald-800/80">Global P2P</span>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     Settle directly with <strong>{toUser}</strong> via your preferred peer-to-peer app, Revolut tag, or bank transfer in {currency}.
                   </p>
                   <div className="pt-1 flex items-center gap-2">
@@ -302,9 +302,9 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
                     <button
                       type="button"
                       onClick={handleCopyVpa}
-                      className="py-2 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="py-2 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      {copiedVpa ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedVpa ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>Copy Handle</span>
                     </button>
                   </div>
@@ -324,18 +324,18 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
           </div>
         ) : (
           <div className="py-8 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 mx-auto flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-transparent dark:border-emerald-800 mx-auto flex items-center justify-center">
               <CheckCircle2 className="w-7 h-7" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">{t('Settlement Recorded!')}</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('Settlement Recorded!')}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {fromUser} {t('paid')} {formatCurrency(amount, currency)} {t('to')} {toUser}. {t('Balance is updated.')}
             </p>
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 pt-1">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+        <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 pt-1">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
           <span>{currency === 'INR' ? 'NPCI Unified Payments Interface • End-to-End Encrypted' : 'Bank-Grade 256-Bit SSL Encryption • Verified Traveler Settlement'}</span>
         </div>
       </section>
