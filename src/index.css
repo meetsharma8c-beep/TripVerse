@@ -1407,3 +1407,73 @@ div[style*="z-index: 2000000000"] {
   }
 }
 
+/* ==========================================================================
+   TRIPVERSE CREATIVE BRAND LOGO LOADER ANIMATIONS
+   ========================================================================== */
+@keyframes tvLogoFloat {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.02);
+  }
+}
+
+@keyframes tvOrbitRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes tvOrbitCounterRotate {
+  0% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes tvShimmerSweep {
+  0% {
+    transform: translateX(-150%) rotate(25deg);
+  }
+  35%, 100% {
+    transform: translateX(220%) rotate(25deg);
+  }
+}
+
+@keyframes tvRadarPing {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.75;
+  }
+  75%, 100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+.animate-tv-float {
+  animation: tvLogoFloat 2.6s ease-in-out infinite;
+}
+
+.animate-tv-orbit {
+  animation: tvOrbitRotate 6s linear infinite;
+}
+
+.animate-tv-orbit-reverse {
+  animation: tvOrbitCounterRotate 9s linear infinite;
+}
+
+.animate-tv-shimmer {
+  animation: tvShimmerSweep 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-tv-radar {
+  animation: tvRadarPing 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+

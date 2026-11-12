@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, ShieldCheck, Car, Bed, Coffee, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Car, Bed, Coffee, CheckCircle2 } from 'lucide-react';
 import { formatCurrency, getActiveCurrency } from '../../services/currencyService';
 
 interface AIGenerationSkeletonProps {
@@ -50,26 +50,91 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6 text-center animate-in zoom-in-95">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-6 text-center animate-in zoom-in-95">
         
-        {/* Animated Brand Glow Icon */}
-        <div className="relative w-20 h-20 mx-auto">
-          <div className="absolute inset-0 rounded-3xl bg-emerald-400 animate-ping opacity-25" />
-          <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#2D5A3D] to-teal-400 text-white flex items-center justify-center shadow-xl shadow-emerald-500/30">
-            <Sparkles className="w-10 h-10 animate-spin-slow" />
+        {/* Creative TripVerse Animated Brand Logo with Geospatial Orbit & Shimmer */}
+        <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
+          {/* Concentric Geospatial Radar Waves */}
+          <div className="absolute inset-0 rounded-full bg-emerald-400/20 dark:bg-emerald-500/25 animate-tv-radar pointer-events-none" />
+          <div 
+            className="absolute inset-2 rounded-full bg-teal-400/25 dark:bg-teal-500/30 animate-tv-radar pointer-events-none" 
+            style={{ animationDelay: '0.8s' }} 
+          />
+
+          {/* Primary Orbital Waypoint Ring with Orbiting Flight Marker */}
+          <div className="absolute inset-0 w-full h-full animate-tv-orbit pointer-events-none">
+            <svg viewBox="0 0 112 112" className="w-full h-full overflow-visible">
+              <circle
+                cx="56"
+                cy="56"
+                r="50"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeDasharray="4 6"
+                className="text-emerald-400/40 dark:text-emerald-400/35"
+              />
+              {/* Orbiting Flight Waypoint Marker */}
+              <g transform="translate(56, 6)">
+                <circle cx="0" cy="0" r="5" className="fill-emerald-400 shadow-md" />
+                <circle cx="0" cy="0" r="2.2" fill="#FFFFFF" />
+              </g>
+            </svg>
+          </div>
+
+          {/* Counter-Rotating Secondary Route Ring */}
+          <div className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)] animate-tv-orbit-reverse pointer-events-none">
+            <svg viewBox="0 0 96 96" className="w-full h-full overflow-visible">
+              <circle
+                cx="48"
+                cy="48"
+                r="44"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1"
+                strokeDasharray="2 7"
+                className="text-teal-400/30 dark:text-teal-300/25"
+              />
+              <g transform="translate(48, 92)">
+                <circle cx="0" cy="0" r="3.5" className="fill-amber-400" />
+                <circle cx="0" cy="0" r="1.3" fill="#FFFFFF" />
+              </g>
+            </svg>
+          </div>
+
+          {/* Ambient Multi-Stop Radial Aura */}
+          <div className="absolute inset-3 rounded-3xl bg-gradient-to-tr from-emerald-500/35 via-teal-400/30 to-[#2D5A3D]/40 blur-md pointer-events-none" />
+
+          {/* Floating TripVerse Emblem Badge with Specular Light Sweep */}
+          <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#1B3E26] via-[#2D5A3D] to-[#386B49] p-3 shadow-2xl shadow-emerald-950/40 border border-emerald-400/30 dark:border-emerald-400/40 flex items-center justify-center overflow-hidden animate-tv-float">
+            {/* Shimmer Light Reflection Sweep */}
+            <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
+              <div className="w-[60%] h-[200%] -top-[50%] bg-gradient-to-r from-transparent via-white/35 to-transparent animate-tv-shimmer" />
+            </div>
+
+            {/* Official TripVerse Logo Mark */}
+            <img
+              src="/tripverse-mark.png?v=16"
+              srcSet="/tripverse-mark.png?v=16 1x, /tripverse-mark@2x.png?v=16 2x, /tripverse-mark@3x.png?v=16 3x"
+              alt="TripVerse Logo"
+              className="w-14 h-14 object-contain select-none pointer-events-none filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)]"
+              style={{ imageRendering: '-webkit-optimize-contrast' }}
+              draggable={false}
+              loading="eager"
+            />
           </div>
         </div>
 
         {/* Title */}
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[#2D5A3D] text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/50 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>AI Route & Highway Engine</span>
           </div>
-          <h3 className="text-xl sm:text-2xl font-black font-display text-[#0B2545]">
+          <h3 className="text-xl sm:text-2xl font-black font-display text-[#0B2545] dark:text-white">
             Crafting Your {destination || 'Custom'} Journey
           </h3>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
             {duration} Days • {travelers} Explorers • Budget: {formatCurrency(budget, currency)}
           </p>
         </div>
@@ -86,18 +151,18 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
                 key={idx}
                 className={`p-3.5 rounded-2xl border transition-all duration-300 flex items-center gap-3 ${
                   isCurrent
-                    ? 'bg-emerald-50/80 border-[#2D5A3D] shadow-xs'
+                    ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-[#2D5A3D] dark:border-emerald-500/60 shadow-xs'
                     : isDone
-                      ? 'bg-slate-50 border-slate-200 opacity-90'
-                      : 'bg-white border-slate-100 opacity-40'
+                      ? 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60 opacity-90'
+                      : 'bg-white dark:bg-slate-900/40 border-slate-100 dark:border-slate-800 opacity-40'
                 }`}
               >
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                   isCurrent
-                    ? 'bg-[#2D5A3D] text-white animate-pulse'
+                    ? 'bg-[#2D5A3D] dark:bg-emerald-600 text-white animate-pulse'
                     : isDone
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-slate-100 text-slate-400'
+                      ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
                 }`}>
                   {isDone ? (
                     <CheckCircle2 className="w-4 h-4" />
@@ -107,16 +172,16 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-xs font-bold text-slate-800 leading-tight">
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight">
                     {step.title}
                   </h4>
-                  <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                     {step.desc}
                   </p>
                 </div>
 
                 {isCurrent && (
-                  <span className="w-4 h-4 border-2 border-[#2D5A3D] border-t-transparent rounded-full animate-spin shrink-0" />
+                  <span className="w-4 h-4 border-2 border-[#2D5A3D] dark:border-emerald-400 border-t-transparent rounded-full animate-spin shrink-0" />
                 )}
               </div>
             );
@@ -124,7 +189,7 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
         </div>
 
         {/* Bottom indicator */}
-        <p className="text-[11px] text-slate-400 font-medium italic">
+        <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium italic">
           TripVerse plans the whole road trip in ~30 seconds with 100% budget accuracy.
         </p>
 
