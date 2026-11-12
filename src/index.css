@@ -647,11 +647,40 @@ html.dark footer [class~="text-slate-600"] {
 }
 
 /* Leaflet Map in Night Mode */
+html.dark .leaflet-container {
+  background-color: #0E1726 !important;
+}
+
 html.dark .leaflet-control,
 html.dark .leaflet-bar a {
   background-color: #0E1726 !important;
   color: #E2E8F0 !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .leaflet-popup-content-wrapper,
+html.dark .leaflet-popup-tip {
+  background-color: #0E1726 !important;
+  color: #F8FAFC !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* View Transitions for Silky Smooth Theme Toggling */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.35s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Ambient Eye-Strain Protection for Travel Photos in Night Mode */
+html.dark img:not([data-no-dim="true"]) {
+  filter: brightness(0.92) contrast(1.04);
+  transition: filter 0.25s ease;
+}
+
+html.dark img:not([data-no-dim="true"]):hover {
+  filter: brightness(1);
 }
 
 /* Scrollbars in Night Mode */

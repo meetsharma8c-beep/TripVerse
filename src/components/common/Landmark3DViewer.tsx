@@ -69,9 +69,12 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
     );
   }, [destination, landmarkName, encyclopediaData?.coordinates]);
 
-  const [timeOfDay, setTimeOfDay] = useState<'day' | 'golden' | 'night'>(
-    landmarkDetails.defaultTimeOfDay || 'golden'
-  );
+  const [timeOfDay, setTimeOfDay] = useState<'day' | 'golden' | 'night'>(() => {
+    if (typeof document !== 'undefined' && document.documentElement.classList.contains('dark')) {
+      return 'night';
+    }
+    return landmarkDetails.defaultTimeOfDay || 'golden';
+  });
   const [isWireframe, setIsWireframe] = useState<boolean>(false);
   const [isAutoRotate, setIsAutoRotate] = useState<boolean>(true);
   const isAutoRotateRef = useRef<boolean>(isAutoRotate);

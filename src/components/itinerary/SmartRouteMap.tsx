@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Trip } from '../../types/trip';
 import { Navigation, Maximize2 } from 'lucide-react';
@@ -57,6 +57,29 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
   const mapInstanceRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
   const routeBoundsRef = useRef<L.LatLngBounds | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+
+  const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
+    return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  });
+
+  useEffect(() => {
+    const syncTheme = () => {
+      const dark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+      setIsDarkTheme(dark);
+    };
+
+    window.addEventListener('tripverse-theme-change', syncTheme);
+    const observer = new MutationObserver(() => syncTheme());
+    if (typeof document !== 'undefined') {
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    return () => {
+      window.removeEventListener('tripverse-theme-change', syncTheme);
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
@@ -67,17 +90,46 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
       scrollWheelZoom: false
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+
+    const initialDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+    const tileUrl = initialDark
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const tileAttr = initialDark
+      ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      : '&copy; OpenStreetMap contributors';
+
+    const tileLayer = L.tileLayer(tileUrl, { attribution: tileAttr, maxZoom: 19 }).addTo(map);
+    tileLayerRef.current = tileLayer;
+
     mapInstanceRef.current = map;
     layerGroupRef.current = L.layerGroup().addTo(map);
     return () => {
       map.remove();
       mapInstanceRef.current = null;
       layerGroupRef.current = null;
+      tileLayerRef.current = null;
     };
   }, []);
+
+  // Dynamically swap map tiles when switching between Dark Mode and Light Mode
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const tileUrl = isDarkTheme
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const tileAttr = isDarkTheme
+      ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      : '&copy; OpenStreetMap contributors';
+
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+    }
+    const nextTile = L.tileLayer(tileUrl, { attribution: tileAttr, maxZoom: 19 }).addTo(map);
+    tileLayerRef.current = nextTile;
+  }, [isDarkTheme]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -102,7 +154,13 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
           if (Number.isFinite(lat) && Number.isFinite(lng)) {
             const destPt: L.LatLngTuple = [lat, lng];
             fallbackPoints.push(destPt);
-            L.circleMarker(destPt, { radius: 9, color: '#fff', weight: 3, fillColor: '#2D5A3D', fillOpacity: 1 })
+            L.circleMarker(destPt, {
+              radius: 9,
+              color: '#fff',
+              weight: 3,
+              fillColor: isDarkTheme ? '#10B981' : '#2D5A3D',
+              fillOpacity: 1
+            })
               .bindPopup(makePopup(trip.destination || 'Destination', 'Trip destination center'))
               .addTo(layers);
           }
@@ -113,7 +171,13 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
             if (act.coordinates && Number.isFinite(act.coordinates.lat) && Number.isFinite(act.coordinates.lng)) {
               const pt: L.LatLngTuple = [Number(act.coordinates.lat), Number(act.coordinates.lng)];
               fallbackPoints.push(pt);
-              L.circleMarker(pt, { radius: 6, color: '#fff', weight: 2, fillColor: '#0284C7', fillOpacity: 1 })
+              L.circleMarker(pt, {
+                radius: 6,
+                color: '#fff',
+                weight: 2,
+                fillColor: isDarkTheme ? '#38BDF8' : '#0284C7',
+                fillOpacity: 1
+              })
                 .bindPopup(makePopup(act.title || 'Activity', `Day ${day.dayNumber} · ${act.time || ''}`))
                 .addTo(layers);
             }
@@ -146,15 +210,33 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
       const end = realRoute[realRoute.length - 1];
       const routePoints = realRoute;
 
-      L.polyline(routePoints, { color: '#2D5A3D', weight: 5, opacity: 0.85 }).addTo(layers);
+      if (isDarkTheme) {
+        // Glowing double-layer neon emerald route for dark mode
+        L.polyline(routePoints, { color: '#059669', weight: 8, opacity: 0.4 }).addTo(layers);
+        L.polyline(routePoints, { color: '#34D399', weight: 4, opacity: 1 }).addTo(layers);
+      } else {
+        L.polyline(routePoints, { color: '#2D5A3D', weight: 5, opacity: 0.85 }).addTo(layers);
+      }
 
       if (Number.isFinite(start[0]) && Number.isFinite(start[1])) {
-        L.circleMarker(start, { radius: 8, color: '#fff', weight: 3, fillColor: '#0B2545', fillOpacity: 1 })
+        L.circleMarker(start, {
+          radius: 8,
+          color: '#fff',
+          weight: 3,
+          fillColor: isDarkTheme ? '#38BDF8' : '#0B2545',
+          fillOpacity: 1
+        })
           .bindPopup(makePopup(trip.origin || 'Origin', 'Trip starting point'))
           .addTo(layers);
       }
       if (Number.isFinite(end[0]) && Number.isFinite(end[1])) {
-        L.circleMarker(end, { radius: 8, color: '#fff', weight: 3, fillColor: '#2D5A3D', fillOpacity: 1 })
+        L.circleMarker(end, {
+          radius: 8,
+          color: '#fff',
+          weight: 3,
+          fillColor: isDarkTheme ? '#10B981' : '#2D5A3D',
+          fillOpacity: 1
+        })
           .bindPopup(makePopup(trip.destination || 'Destination', 'Trip destination'))
           .addTo(layers);
       }
@@ -198,7 +280,7 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
     } catch (mapErr) {
       console.warn('[SmartRouteMap] Could not render polyline or bounds:', mapErr);
     }
-  }, [trip]);
+  }, [trip, isDarkTheme]);
 
   const hasLiveRoute = trip.routeDetails?.source === 'geoapify_routing' &&
     trip.routeDetails.origin === trip.origin &&

@@ -57,9 +57,25 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
   const { language, setLanguage, t } = useLanguage();
   const [isStandaloneApp] = useState(() => isStandalone());
-  const [isDarkMode, setIsDarkMode] = useState(() => {
+  const [themeMode, setThemeMode] = useState<'system' | 'light' | 'dark'>(() => {
     try {
-      return localStorage.getItem('tripverse_theme') === 'dark';
+      const saved = localStorage.getItem('tripverse_theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+      return 'system';
+    } catch {
+      return 'system';
+    }
+  });
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof document !== 'undefined' && document.documentElement.classList.contains('dark')) {
+      return true;
+    }
+    try {
+      const saved = localStorage.getItem('tripverse_theme');
+      if (saved === 'dark') return true;
+      if (saved === 'light') return false;
+      return typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
     } catch {
       return false;
     }
@@ -99,24 +115,74 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => mq.removeEventListener?.('change', handleViewportChange);
   }, [mobileMenuOpen]);
 
+  // Synchronize Dark Mode, status bar theme-color, and dispatch custom event for maps and 3D scenes
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDarkMode);
-    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute(
-      'content',
-      isDarkMode ? '#0B1220' : '#2D5A3D'
-    );
-  }, [isDarkMode]);
+    const applyThemeState = (dark: boolean) => {
+      document.documentElement.classList.toggle('dark', dark);
+      document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute(
+        'content',
+        dark ? '#070C16' : '#2D5A3D'
+      );
+      window.dispatchEvent(new CustomEvent('tripverse-theme-change', { detail: { isDark: dark } }));
+    };
+
+    if (themeMode === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleSystemChange = (e: MediaQueryListEvent) => {
+        setIsDarkMode(e.matches);
+        applyThemeState(e.matches);
+      };
+      setIsDarkMode(mediaQuery.matches);
+      applyThemeState(mediaQuery.matches);
+      mediaQuery.addEventListener?.('change', handleSystemChange);
+      return () => mediaQuery.removeEventListener?.('change', handleSystemChange);
+    } else {
+      const isDark = themeMode === 'dark';
+      setIsDarkMode(isDark);
+      applyThemeState(isDark);
+    }
+  }, [themeMode]);
 
   const toggleDarkMode = () => {
-    setIsDarkMode(current => {
-      const next = !current;
+    const nextDark = !isDarkMode;
+    const nextTheme: 'dark' | 'light' = nextDark ? 'dark' : 'light';
+    
+    const commitTheme = () => {
+      setThemeMode(nextTheme);
+      setIsDarkMode(nextDark);
       try {
-        localStorage.setItem('tripverse_theme', next ? 'dark' : 'light');
+        localStorage.setItem('tripverse_theme', nextTheme);
       } catch (error) {
         console.error('[Theme] Could not save theme preference:', error);
       }
-      return next;
-    });
+    };
+
+    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+      (document as any).startViewTransition(() => {
+        commitTheme();
+      });
+    } else {
+      commitTheme();
+    }
+  };
+
+  const handleSelectThemeMode = (mode: 'system' | 'light' | 'dark') => {
+    const commitTheme = () => {
+      setThemeMode(mode);
+      try {
+        localStorage.setItem('tripverse_theme', mode);
+      } catch (error) {
+        console.error('[Theme] Could not save theme preference:', error);
+      }
+    };
+
+    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+      (document as any).startViewTransition(() => {
+        commitTheme();
+      });
+    } else {
+      commitTheme();
+    }
   };
 
   const handleOpenInstall = () => {
@@ -770,38 +836,59 @@ export const Navbar: React.FC<NavbarProps> = ({
               </select>
             </div>
 
-            {/* Dark Mode Toggle Switch */}
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isDarkMode}
-              onClick={toggleDarkMode}
-              className="w-full px-3 py-2 flex items-center justify-between text-left transition-colors hover:bg-[#F4F6F2]/75 dark:hover:bg-slate-800 cursor-pointer"
-              aria-label={isDarkMode ? t('Switch to light mode') : t('Switch to dark mode')}
-            >
-              <span className="flex items-center gap-2.5">
-                <span className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
-                  isDarkMode ? 'bg-amber-400/15 text-amber-400' : 'bg-[#F4F6F2] dark:bg-slate-900/70 text-slate-500'
-                }`}>
-                  {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {/* Appearance: 3-Way Mode (System / Light / Dark) */}
+            <div className="w-full px-3 py-2 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-left">
+                <span className="flex items-center gap-2.5">
+                  <span className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+                    isDarkMode ? 'bg-amber-400/15 text-amber-400' : 'bg-[#F4F6F2] dark:bg-slate-900/70 text-slate-500'
+                  }`}>
+                    {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  </span>
+                  <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                    {t('Appearance')}
+                  </span>
                 </span>
-                <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">
-                  {t('Dark mode')}
+                <span className="text-[11px] font-bold text-[#2D5A3D] dark:text-emerald-400 uppercase tracking-wider">
+                  {themeMode === 'system' ? t('Auto') : isDarkMode ? t('Dark') : t('Light')}
                 </span>
-              </span>
-              <span
-                aria-hidden="true"
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
-                  isDarkMode ? 'bg-[#2D5A3D] dark:bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
-                }`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-[#FFFFFF] shadow-xs transition-transform duration-200 ${
-                    isDarkMode ? 'translate-x-5' : 'translate-x-0'
+              </div>
+              <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-[#F4F6F2] dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => handleSelectThemeMode('system')}
+                  className={`py-1.5 rounded-lg transition-all cursor-pointer ${
+                    themeMode === 'system'
+                      ? 'bg-white dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
-                />
-              </span>
-            </button>
+                >
+                  {t('Auto')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectThemeMode('light')}
+                  className={`py-1.5 rounded-lg transition-all cursor-pointer ${
+                    themeMode === 'light'
+                      ? 'bg-white dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {t('Light')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectThemeMode('dark')}
+                  className={`py-1.5 rounded-lg transition-all cursor-pointer ${
+                    themeMode === 'dark'
+                      ? 'bg-white dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-400 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {t('Dark')}
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Primary Actions Footer */}

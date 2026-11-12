@@ -32,7 +32,7 @@
       (function() {
         try {
           var t = localStorage.getItem('tripverse_theme');
-          var d = t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var d = t === 'dark' || ((!t || t === 'system') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
           if (d) {
             document.documentElement.classList.add('dark');
             var m = document.querySelector('meta[name="theme-color"]');
