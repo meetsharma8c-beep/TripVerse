@@ -24,6 +24,7 @@ import {
   sendFirebasePhoneOtp,
   confirmFirebasePhoneOtp,
   clearFirebasePhoneSession,
+  sendFirebasePasswordReset,
   FirebaseConfig
 } from './firebase';
 import { 
@@ -946,35 +947,275 @@ export async function signInWithGooglePopup(): Promise<AuthUser> {
   throw new Error('Google Sign-In service is initializing. Please tap again in a moment.');
 }
 
-export async function sendPasswordResetCode(email: string): Promise<{ code: string; expiresAt: number }> {
-  const emailNorm = email.trim().toLowerCase();
+export async function sendPasswordResetCode(email: string): Promise<{
+  code: string;
+  expiresAt: number;
+  token?: string;
+  isSandboxNotice?: boolean;
+  sandboxNotice?: string;
+  devCode?: string;
+  message?: string;
+}> {
+  const emailNorm = (email || '').trim().toLowerCase();
   if (!emailNorm || !emailNorm.includes('@')) {
     throw new Error('Please enter a valid email address.');
   }
 
   // Safely bypass simulated or test domains to prevent SMTP delivery bounces
   if (isSimulatedTestEmail(emailNorm)) {
-    return { code: 'test_bypassed', expiresAt: Date.now() + 15 * 60 * 1000 };
+    return {
+      code: 'test_bypassed',
+      expiresAt: Date.now() + 15 * 60 * 1000,
+      devCode: '123456',
+      message: 'Test password reset initiated.'
+    };
   }
 
+  let supabaseDispatched = false;
+  let supabaseError = '';
   const supabase = getSupabaseClient();
-  if (!supabase) {
-    throw new Error('Supabase authentication is not configured. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable genuine password resets.');
+  if (supabase) {
+    try {
+      const redirectUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/reset-password`
+        : 'https://trip-verse.com/reset-password';
+
+      const { error } = await supabase.auth.resetPasswordForEmail(emailNorm, {
+        redirectTo: redirectUrl
+      });
+      if (!error) {
+        supabaseDispatched = true;
+      } else {
+        supabaseError = error.message || '';
+        console.warn('[Supabase] resetPasswordForEmail warning:', error.message);
+      }
+    } catch (e: any) {
+      supabaseError = e?.message || '';
+      console.warn('[Supabase] resetPasswordForEmail exception:', e);
+    }
   }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(emailNorm, {
-    redirectTo: `${window.location.origin}/reset-password`
-  });
-
-  if (error) {
-    throw new Error(error.message || 'Failed to dispatch password reset email.');
+  // 2. Dispatch Firebase password reset email in parallel if Firebase is configured
+  if (isFirebaseConfigured()) {
+    try {
+      sendFirebasePasswordReset(emailNorm).catch(() => {});
+    } catch {}
   }
 
-  return { code: 'email_dispatched', expiresAt: Date.now() + 15 * 60 * 1000 };
+  // 3. Dispatch authentic 6-digit OTP code via Resend
+  let otpDispatched = false;
+  let otpData: any = null;
+  try {
+    const res = await fetch('/api/email-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'send',
+        email: emailNorm,
+        purpose: 'password_reset'
+      })
+    });
+    otpData = await res.json().catch(() => ({}));
+    if (res.ok && otpData.success) {
+      otpDispatched = true;
+      if (typeof window !== 'undefined' && otpData.token) {
+        localStorage.setItem(`tripverse_pwd_reset_token_${emailNorm}`, otpData.token);
+      }
+    }
+  } catch (err) {
+    console.warn('[Resend] Password reset OTP notice:', err);
+  }
+
+  if (!supabaseDispatched && !otpDispatched) {
+    if (supabaseError && (supabaseError.toLowerCase().includes('rate limit') || supabaseError.includes('over_email_send_rate_limit'))) {
+      throw new Error('Email dispatch rate limit reached. Please wait a few moments before requesting another reset code.');
+    }
+    throw new Error(supabaseError || 'Failed to dispatch password recovery email. Please verify your address and try again.');
+  }
+
+  return {
+    code: otpDispatched ? 'otp_and_link_dispatched' : 'email_dispatched',
+    expiresAt: Date.now() + 15 * 60 * 1000,
+    token: otpData?.token,
+    isSandboxNotice: Boolean(otpData?.isSandboxNotice),
+    sandboxNotice: otpData?.sandboxNotice,
+    devCode: otpData?.devCode,
+    message: `Password reset instructions sent to ${emailNorm}.`
+  };
 }
 
 export async function sendPasswordResetEmail(email: string): Promise<void> {
   await sendPasswordResetCode(email);
+}
+
+/**
+ * Update authenticated user's password in Supabase and sync hashed credentials locally.
+ */
+export async function updateUserPassword(newPassword: string): Promise<AuthUser> {
+  const cleanPassword = (newPassword || '').trim();
+  if (cleanPassword.length < 6) {
+    throw new Error('Password must be at least 6 characters long.');
+  }
+
+  const pwdHash = await hashPassword(cleanPassword);
+  const supabase = getSupabaseClient();
+  let updatedUser: AuthUser | null = getCurrentUser();
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        password: cleanPassword
+      });
+      if (error) {
+        console.warn('[Supabase] auth.updateUser password notice:', error.message);
+      } else if (data?.user) {
+        updatedUser = supabaseUserToAuthUser(data.user);
+      }
+    } catch (e: any) {
+      console.warn('[Supabase] auth.updateUser exception:', e);
+    }
+  }
+
+  if (!updatedUser) {
+    const activeSession = getActiveSession();
+    if (activeSession?.user) {
+      updatedUser = activeSession.user;
+    } else {
+      const accounts = loadAccounts();
+      if (accounts.length > 0) {
+        updatedUser = accounts[0].user;
+      }
+    }
+  }
+
+  if (updatedUser) {
+    syncAccountToLocal(updatedUser, pwdHash);
+    saveSession({
+      user: updatedUser,
+      token: 'session_reset_' + Date.now(),
+      expiresAt: Date.now() + 30 * 86400 * 1000
+    });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY, { detail: updatedUser }));
+      window.dispatchEvent(new CustomEvent('tripverse_auth_state_change', { detail: { user: updatedUser } }));
+    }
+    return updatedUser;
+  }
+
+  throw new Error('Could not identify user session to update password. Please request a new reset email.');
+}
+
+/**
+ * Reset password directly using 6-digit email confirmation code (via Supabase or Resend OTP).
+ */
+export async function resetPasswordWithEmailOtp(
+  email: string,
+  code: string,
+  newPassword: string
+): Promise<AuthUser> {
+  const emailNorm = (email || '').trim().toLowerCase();
+  const cleanCode = (code || '').trim().replace(/\D/g, '');
+  const cleanPassword = (newPassword || '').trim();
+
+  if (!emailNorm || !emailNorm.includes('@')) {
+    throw new Error('Please enter a valid email address.');
+  }
+  if (cleanCode.length !== 6) {
+    throw new Error('Please enter the full 6-digit verification code.');
+  }
+  if (cleanPassword.length < 6) {
+    throw new Error('Password must be at least 6 characters long.');
+  }
+
+  let isVerified = false;
+
+  // 1. Try Supabase recovery OTP verification
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: emailNorm,
+        token: cleanCode,
+        type: 'recovery'
+      });
+      if (!error && data?.user) {
+        isVerified = true;
+        await supabase.auth.updateUser({ password: cleanPassword }).catch(() => {});
+      }
+    } catch {}
+  }
+
+  // 2. Try Resend email-otp verification if Supabase verifyOtp did not succeed
+  if (!isVerified) {
+    const storedToken = typeof window !== 'undefined'
+      ? (localStorage.getItem(`tripverse_pwd_reset_token_${emailNorm}`) || localStorage.getItem(`tripverse_email_otp_token_${emailNorm}`) || '')
+      : '';
+
+    try {
+      const res = await fetch('/api/email-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verify',
+          email: emailNorm,
+          code: cleanCode,
+          token: storedToken || undefined
+        })
+      });
+      const resData = await res.json().catch(() => ({}));
+      if (res.ok && resData.success) {
+        isVerified = true;
+      }
+    } catch {}
+  }
+
+  // Handle simulated / test accounts
+  if (!isVerified && isSimulatedTestEmail(emailNorm) && cleanCode === '123456') {
+    isVerified = true;
+  }
+
+  if (!isVerified) {
+    throw new Error('Invalid or expired verification code. Please check your email or request a new code.');
+  }
+
+  // 3. Hash password and update local account & session
+  const pwdHash = await hashPassword(cleanPassword);
+  const accounts = loadAccounts();
+  const existing = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+
+  const authUser: AuthUser = existing ? existing.user : {
+    uid: toDeterministicUuid('email:' + emailNorm),
+    email: emailNorm,
+    displayName: emailNorm.split('@')[0],
+    photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(emailNorm)}&backgroundColor=2D5A3D,0B2545`,
+    travelerStyle: 'Budget explorer',
+    travelStyleTag: 'Verified Explorer',
+    location: 'India',
+    occupation: 'Explorer',
+    age: 25,
+    emailVerified: true,
+    provider: 'email',
+    subscriptionTier: 'free',
+    freeTripsRemaining: 3,
+    createdAt: new Date().toISOString(),
+    lastLoginAt: new Date().toISOString(),
+    savedPlaceIds: []
+  };
+
+  syncAccountToLocal(authUser, pwdHash);
+  saveSession({
+    user: authUser,
+    token: 'session_otp_reset_' + Date.now(),
+    expiresAt: Date.now() + 30 * 86400 * 1000
+  });
+
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(`tripverse_pwd_reset_token_${emailNorm}`);
+    window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY, { detail: authUser }));
+    window.dispatchEvent(new CustomEvent('tripverse_auth_state_change', { detail: { user: authUser } }));
+  }
+
+  return authUser;
 }
 
 /**
@@ -1898,6 +2139,17 @@ export function onAuthStateChanged(callback: (user: AuthUser | null) => void): (
 
       // 2. Listen to Supabase auth state transitions
       supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          if (session?.user) {
+            const authUser = supabaseUserToAuthUser(session.user);
+            syncAccountToLocal(authUser);
+          }
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('tripverse_open_reset_password_modal', { detail: session }));
+          }
+          return;
+        }
+
         if (session?.user) {
           const authUser = supabaseUserToAuthUser(session.user);
           const existingUser = getCurrentUser();

@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
-  const { action, email, code, token, name } = req.body || {};
+  const { action, email, code, token, name, purpose } = req.body || {};
   const emailNorm = String(email || '').trim().toLowerCase();
 
   if (!emailNorm || !emailNorm.includes('@')) {
@@ -84,6 +84,16 @@ export default async function handler(req, res) {
 
     const rawName = name ? String(name).trim().slice(0, 60) : emailNorm.split('@')[0];
     const recipientName = escapeHtml(rawName);
+    const isPasswordReset = purpose === 'password_reset';
+
+    const emailSubject = isPasswordReset
+      ? `${otpCode} is your TripVerse password reset code`
+      : `${otpCode} is your TripVerse verification code`;
+
+    const headingText = isPasswordReset ? 'Reset Your Password' : 'Verify Your Email Address';
+    const bodyText = isPasswordReset
+      ? `Hello <strong style="color: #0f172a;">${recipientName}</strong>, enter this 6-digit verification code in TripVerse to securely reset your account password:`
+      : `Hello <strong style="color: #0f172a;">${recipientName}</strong>, enter this 6-digit confirmation code in TripVerse to verify your account:`;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -96,9 +106,9 @@ export default async function handler(req, res) {
             <p style="color: #cbd5e1; margin: 6px 0 0; font-size: 13px;">AI-Powered Smart Travel Route & Stop Planner</p>
           </div>
           <div style="padding: 32px 24px; text-align: center;">
-            <h2 style="color: #0f172a; margin: 0 0 8px; font-size: 20px; font-weight: 700;">Verify Your Email Address</h2>
+            <h2 style="color: #0f172a; margin: 0 0 8px; font-size: 20px; font-weight: 700;">${headingText}</h2>
             <p style="color: #64748b; font-size: 14px; line-height: 1.5; margin: 0 0 24px;">
-              Hello <strong style="color: #0f172a;">${recipientName}</strong>, enter this 6-digit confirmation code in TripVerse to verify your account:
+              ${bodyText}
             </p>
             <div style="background: #F4F7F5; border: 2px dashed #2D5A3D; border-radius: 14px; padding: 18px 24px; display: inline-block; margin: 0 auto 24px;">
               <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #2D5A3D; display: block;">${otpCode}</span>
@@ -150,7 +160,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           from: fromAddress,
           to: emailNorm,
-          subject: `${otpCode} is your TripVerse verification code`,
+          subject: emailSubject,
           html: htmlContent
         })
       });
@@ -169,7 +179,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: fromAddress,
             to: emailNorm,
-            subject: `${otpCode} is your TripVerse verification code`,
+            subject: emailSubject,
             html: htmlContent
           })
         });

@@ -98,6 +98,7 @@ import { DestinationDetailModal } from './components/explore/DestinationDetailMo
 const SavedItemsView = lazyWithRetry(() => import('./components/saved/SavedItemsView').then(m => ({ default: m.SavedItemsView })));
 const ProfileView = lazyWithRetry(() => import('./components/profile/ProfileView').then(m => ({ default: m.ProfileView })));
 import { AuthModal } from './components/profile/AuthModal';
+import { ResetPasswordModal } from './components/profile/ResetPasswordModal';
 import { GuestPlannerRestrictedModal } from './components/planner/GuestPlannerRestrictedModal';
 import { 
   getCurrentUser, 
@@ -199,6 +200,15 @@ export function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalInitialMethod, setAuthModalInitialMethod] = useState<'google' | 'email' | 'phone' | 'guest'>('google');
   const [authModalInitialSubMode, setAuthModalInitialSubMode] = useState<'login' | 'signup'>('login');
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return Boolean(
+      (initialRoute as any).openResetPassword ||
+      window.location.pathname.startsWith('/reset-password') ||
+      window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('type=recovery')
+    );
+  });
   const [isLiveNavOpen, setIsLiveNavOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(() => (initialRoute as any).openPro || false);
   const [isBestDealModalOpen, setIsBestDealModalOpen] = useState(false);
@@ -476,9 +486,16 @@ export function App() {
     };
     window.addEventListener('tripverse_quota_updated', handleQuotaUpdate);
 
+    const handlePasswordRecoveryEvent = () => {
+      setIsResetPasswordModalOpen(true);
+      setIsAuthModalOpen(false);
+    };
+    window.addEventListener('tripverse_open_reset_password_modal', handlePasswordRecoveryEvent);
+
     return () => {
       unsub();
       window.removeEventListener('tripverse_quota_updated', handleQuotaUpdate);
+      window.removeEventListener('tripverse_open_reset_password_modal', handlePasswordRecoveryEvent);
     };
   }, []);
 
@@ -786,6 +803,7 @@ export function App() {
     isPhotoJournalOpen ||
     isReviewModalOpen ||
     isAuthModalOpen ||
+    isResetPasswordModalOpen ||
     isProModalOpen ||
     isOnboardingOpen ||
     activityModalState.isOpen ||
@@ -864,6 +882,10 @@ export function App() {
         setIsAuthModalOpen(false);
         return;
       }
+      if (isResetPasswordModalOpen) {
+        setIsResetPasswordModalOpen(false);
+        return;
+      }
       if (isProModalOpen) {
         setIsProModalOpen(false);
         return;
@@ -911,6 +933,9 @@ export function App() {
       if (route.openBooking) {
         setIsBookingModalOpen(true);
       }
+      if (route.openResetPassword) {
+        setIsResetPasswordModalOpen(true);
+      }
       if (route.openPlanner) {
         const activeUser = currentUser ?? getCurrentUser();
         if (isGuestUser(activeUser)) {
@@ -942,6 +967,7 @@ export function App() {
         isPhotoJournalOpen ||
         isReviewModalOpen ||
         isAuthModalOpen ||
+        isResetPasswordModalOpen ||
         isProModalOpen ||
         isOnboardingOpen ||
         activityModalState.isOpen ||
@@ -964,6 +990,7 @@ export function App() {
         setIsPhotoJournalOpen(false);
         setIsReviewModalOpen(false);
         setIsAuthModalOpen(false);
+        setIsResetPasswordModalOpen(false);
         setIsProModalOpen(false);
         setIsOnboardingOpen(false);
         setActivityModalState(prev => ({ ...prev, isOpen: false }));
@@ -1001,6 +1028,7 @@ export function App() {
     isPhotoJournalOpen,
     isReviewModalOpen,
     isAuthModalOpen,
+    isResetPasswordModalOpen,
     isProModalOpen,
     isGuestPlannerRestrictedOpen,
     isOnboardingOpen,
@@ -1807,6 +1835,7 @@ export function App() {
     isAIChatOpen ||
     isShareModalOpen ||
     isAuthModalOpen ||
+    isResetPasswordModalOpen ||
     isLiveNavOpen ||
     isBestDealModalOpen ||
     isPrintModalOpen ||
@@ -2931,6 +2960,21 @@ export function App() {
             setCurrentUser(activeUser);
             setUserProfile(updated);
             saveUserProfile(updated, activeUser?.uid);
+          }}
+        />
+      )}
+
+      {isResetPasswordModalOpen && (
+        <ResetPasswordModal
+          isOpen={isResetPasswordModalOpen}
+          onClose={() => setIsResetPasswordModalOpen(false)}
+          onSuccess={() => {
+            const activeUser = getCurrentUser();
+            setCurrentUser(activeUser);
+            if (activeUser) {
+              setUserProfile(toUserProfile(activeUser));
+            }
+            setIsResetPasswordModalOpen(false);
           }}
         />
       )}

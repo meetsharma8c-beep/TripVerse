@@ -11,6 +11,7 @@ import {
   ConfirmationResult,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail as fbSendPasswordResetEmail,
   onAuthStateChanged as onFbAuthStateChanged
 } from 'firebase/auth';
 
@@ -343,6 +344,18 @@ export async function signInWithFirebaseEmailAuth(email: string, password: strin
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth not configured.');
   return await signInWithEmailAndPassword(auth, email, password);
+}
+
+export async function sendFirebasePasswordReset(email: string): Promise<boolean> {
+  const auth = getFirebaseAuth();
+  if (!auth) return false;
+  try {
+    await fbSendPasswordResetEmail(auth, email);
+    return true;
+  } catch (err) {
+    console.warn('[Firebase] sendPasswordResetEmail notice:', err);
+    return false;
+  }
 }
 export type { ConfirmationResult };
 

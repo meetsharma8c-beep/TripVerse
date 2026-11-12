@@ -18,6 +18,7 @@ export interface ResolvedRoute {
   openPlanner: boolean;
   openCollab?: boolean;
   openPro?: boolean;
+  openResetPassword?: boolean;
 }
 
 /**
@@ -92,8 +93,22 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
   if (pathname === '/planner') {
     return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: true };
   }
+  if (pathname === '/reset-password' || pathname === '/reset-password/' || pathname.startsWith('/reset-password')) {
+    return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: false, openResetPassword: true };
+  }
 
-  // 2. Query parameters fallback (?tripId=..., ?action=..., ?collab=..., ?tab=...)
+  // 2. Query parameters fallback (?tripId=..., ?action=..., ?collab=..., ?tab=..., ?type=recovery, ?mode=resetPassword)
+  const modeParam = (searchParams.get('mode') || searchParams.get('type') || '').toLowerCase();
+  if (
+    modeParam === 'resetpassword' ||
+    modeParam === 'recovery' ||
+    rawHash.includes('type=recovery') ||
+    rawHash.includes('mode=resetpassword') ||
+    rawHash === 'reset-password'
+  ) {
+    return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: false, openResetPassword: true };
+  }
+
   const tripIdParam = searchParams.get('tripId') || searchParams.get('trip');
   const actionParam = searchParams.get('action');
   const collabParam = searchParams.get('collab');

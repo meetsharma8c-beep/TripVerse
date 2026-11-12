@@ -42,8 +42,12 @@ import {
   parseGoogleAuthResult,
   toggleUserTwoFactor,
   sendTwoFactorOtp,
-  verifyTwoFactorOtp
+  verifyTwoFactorOtp,
+  sendPasswordResetCode,
+  updateUserPassword,
+  resetPasswordWithEmailOtp
 } from '../src/services/authService';
+import { resolveRouteFromBrowser } from '../src/utils/routeResolver';
 import { AuthUser } from '../src/types/auth';
 
 describe('Auth Security & Verification Tests', () => {
@@ -843,6 +847,159 @@ describe('Auth Security & Verification Tests', () => {
       const expResult = getExpResult();
       expect(expResult.statusCode).toBe(400);
       expect(expResult.responseJson.message).toMatch(/expired/i);
+    });
+  });
+
+  describe('Password Reset & Recovery Security Architecture', () => {
+    it('rejects invalid or blank email address on sendPasswordResetCode', async () => {
+      await expect(sendPasswordResetCode('')).rejects.toThrow(/valid email/i);
+      await expect(sendPasswordResetCode('not-an-email')).rejects.toThrow(/valid email/i);
+    });
+
+    it('safely handles simulated/test domains without throwing network errors', async () => {
+      const res = await sendPasswordResetCode('test_reset_user@example.com');
+      expect(res.code).toBe('test_bypassed');
+      expect(res.expiresAt).toBeGreaterThan(Date.now());
+      expect(res.devCode).toBe('123456');
+    });
+
+    it('rejects password updates shorter than 6 characters', async () => {
+      await expect(updateUserPassword('123')).rejects.toThrow(/at least 6 characters/i);
+      await expect(updateUserPassword('')).rejects.toThrow(/at least 6 characters/i);
+    });
+
+    it('updateUserPassword updates user password hash and enables login with new password', async () => {
+      const email = 'pwd_reset_test@domain.com';
+      const oldPwd = 'OldPassword123!';
+      const newPwd = 'NewSecurePassword456!';
+
+      // 1. Setup account with old password
+      const oldHash = await hashPassword(oldPwd);
+      const testUser: AuthUser = {
+        uid: 'user_reset_123',
+        email,
+        displayName: 'Reset Tester',
+        photoURL: '',
+        travelerStyle: 'Budget explorer',
+        travelStyleTag: 'Explorer',
+        location: 'India',
+        occupation: 'Tester',
+        age: 26,
+        emailVerified: true,
+        provider: 'email',
+        subscriptionTier: 'free',
+        freeTripsRemaining: 3,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+        savedPlaceIds: []
+      };
+
+      saveAccounts([{ user: testUser, passwordHash: oldHash }]);
+
+      // Verify sign in with old password succeeds
+      const loginOld = await signInWithEmail({ email, password: oldPwd });
+      expect(loginOld.email).toBe(email);
+
+      // 2. Perform password update
+      const updated = await updateUserPassword(newPwd);
+      expect(updated.email).toBe(email);
+
+      // Verify sign in with old password now FAILS
+      await expect(signInWithEmail({ email, password: oldPwd })).rejects.toThrow();
+
+      // Verify sign in with new password SUCCEEDS
+      const loginNew = await signInWithEmail({ email, password: newPwd });
+      expect(loginNew.email).toBe(email);
+    });
+
+    it('resetPasswordWithEmailOtp validates 6-digit code and sets new password', async () => {
+      const email = 'ci_otp_reset@example.com';
+      const newPwd = 'BrandNewPassword789!';
+
+      // Rejects invalid code length
+      await expect(resetPasswordWithEmailOtp(email, '123', newPwd)).rejects.toThrow(/6-digit/i);
+
+      // Rejects password < 6 characters
+      await expect(resetPasswordWithEmailOtp(email, '123456', '123')).rejects.toThrow(/at least 6 characters/i);
+
+      // Simulated domain with test code '123456' succeeds
+      const user = await resetPasswordWithEmailOtp(email, '123456', newPwd);
+      expect(user.email).toBe(email);
+
+      // Now verify user can log in with new password
+      const login = await signInWithEmail({ email, password: newPwd });
+      expect(login.email).toBe(email);
+    });
+
+    it('resolveRouteFromBrowser correctly resolves /reset-password, #type=recovery, and ?type=recovery to openResetPassword: true', () => {
+      // 1. Direct pathname /reset-password
+      (global as any).window.location = {
+        origin: 'https://trip-verse.com',
+        pathname: '/reset-password',
+        search: '',
+        hash: ''
+      };
+      const route1 = resolveRouteFromBrowser([]);
+      expect(route1.openResetPassword).toBe(true);
+
+      // 2. Hash containing type=recovery
+      (global as any).window.location = {
+        origin: 'https://trip-verse.com',
+        pathname: '/',
+        search: '',
+        hash: '#access_token=xyz123&type=recovery'
+      };
+      const route2 = resolveRouteFromBrowser([]);
+      expect(route2.openResetPassword).toBe(true);
+
+      // 3. Search query param ?type=recovery
+      (global as any).window.location = {
+        origin: 'https://trip-verse.com',
+        pathname: '/',
+        search: '?type=recovery',
+        hash: ''
+      };
+      const route3 = resolveRouteFromBrowser([]);
+      expect(route3.openResetPassword).toBe(true);
+
+      // Clean up window location
+      (global as any).window.location = {
+        origin: 'https://trip-verse.com',
+        pathname: '/',
+        search: '',
+        hash: ''
+      };
+    });
+
+    it('api/email-otp generates password reset specific content when purpose is password_reset', async () => {
+      const emailOtpHandler = (await import('../api/email-otp.js')).default;
+      let statusCode = 200;
+      let responseJson: any = null;
+      const res: any = {
+        status: (code: number) => {
+          statusCode = code;
+          return {
+            json: (data: any) => { responseJson = data; return res; },
+            end: () => res
+          };
+        },
+        setHeader: () => res
+      };
+      const req: any = {
+        method: 'POST',
+        headers: {},
+        body: {
+          action: 'send',
+          email: 'ci_pwd_reset_email@example.com',
+          name: 'Reset Candidate',
+          purpose: 'password_reset'
+        }
+      };
+
+      await emailOtpHandler(req, res);
+      expect(statusCode).toBe(200);
+      expect(responseJson.success).toBe(true);
+      expect(responseJson.token).toBeDefined();
     });
   });
 });
