@@ -52,7 +52,7 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-6 text-center animate-in zoom-in-95">
         
-        {/* Creative TripVerse Animated Brand Logo with Geospatial Orbit & Shimmer */}
+        {/* Creative Free-Floating Animated TripVerse Logo (Zero App-Icon Box) */}
         <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
           {/* Concentric Geospatial Radar Waves */}
           <div className="absolute inset-0 rounded-full bg-emerald-400/20 dark:bg-emerald-500/25 animate-tv-radar pointer-events-none" />
@@ -102,22 +102,16 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
             </svg>
           </div>
 
-          {/* Ambient Multi-Stop Radial Aura */}
-          <div className="absolute inset-3 rounded-3xl bg-gradient-to-tr from-emerald-500/35 via-teal-400/30 to-[#2D5A3D]/40 blur-md pointer-events-none" />
+          {/* Ambient Behind-the-Logo Soft Radial Glow */}
+          <div className="absolute inset-2 rounded-full bg-emerald-500/25 dark:bg-emerald-400/20 blur-xl pointer-events-none" />
 
-          {/* Floating TripVerse Emblem Badge with Specular Light Sweep */}
-          <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#1B3E26] via-[#2D5A3D] to-[#386B49] p-3 shadow-2xl shadow-emerald-950/40 border border-emerald-400/30 dark:border-emerald-400/40 flex items-center justify-center overflow-hidden animate-tv-float">
-            {/* Shimmer Light Reflection Sweep */}
-            <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden">
-              <div className="w-[60%] h-[200%] -top-[50%] bg-gradient-to-r from-transparent via-white/35 to-transparent animate-tv-shimmer" />
-            </div>
-
-            {/* Official TripVerse Logo Mark */}
+          {/* Pure Floating TripVerse Logo (Zero Box / Zero App Icon) */}
+          <div className="relative w-22 h-22 flex items-center justify-center animate-tv-float">
             <img
               src="/tripverse-mark.png?v=16"
               srcSet="/tripverse-mark.png?v=16 1x, /tripverse-mark@2x.png?v=16 2x, /tripverse-mark@3x.png?v=16 3x"
               alt="TripVerse Logo"
-              className="w-14 h-14 object-contain select-none pointer-events-none filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)]"
+              className="w-full h-full object-contain select-none pointer-events-none drop-shadow-[0_8px_18px_rgba(45,90,61,0.28)] dark:drop-shadow-[0_8px_22px_rgba(16,185,129,0.4)]"
               style={{ imageRendering: '-webkit-optimize-contrast' }}
               draggable={false}
               loading="eager"
