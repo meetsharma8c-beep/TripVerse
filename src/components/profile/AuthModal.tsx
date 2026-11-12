@@ -225,7 +225,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const res = await sendTwoFactorOtp(targetEmail, targetName);
       setTwoFactorToken(res.token);
       setTwoFactorCountdown(60);
-      setSuccessMsg(`New 2FA security code dispatched to ${targetEmail}`);
+      if (res.devCode) {
+        setOtpDigits(res.devCode.split(''));
+        setSuccessMsg(res.sandboxNotice || `Test code generated: ${res.devCode}`);
+      } else {
+        setSuccessMsg(`New 2FA security code dispatched to ${targetEmail}`);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Could not resend code. Please try again.');
     } finally {
@@ -319,10 +324,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPendingPasswordHash('oauth_google_gis_verified');
       setPending2FaType('google');
       setTwoFactorToken(res.token);
-      setOtpDigits(['', '', '', '', '', '']);
+      setOtpDigits(res.devCode ? res.devCode.split('') : ['', '', '', '', '', '']);
       setIs2FaStep(true);
       setTwoFactorCountdown(60);
-      setSuccessMsg(`2FA security code dispatched to ${user.email}`);
+      setSuccessMsg(res.sandboxNotice || `2FA security code dispatched to ${user.email}`);
       setTimeout(() => {
         otpInputRefs.current[0]?.focus();
       }, 150);
@@ -622,10 +627,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPendingPasswordHash(passwordHash);
       setPending2FaType('email-login');
       setTwoFactorToken(res.token);
-      setOtpDigits(['', '', '', '', '', '']);
+      setOtpDigits(res.devCode ? res.devCode.split('') : ['', '', '', '', '', '']);
       setIs2FaStep(true);
       setTwoFactorCountdown(60);
-      setSuccessMsg(`2FA security code dispatched to ${user.email}`);
+      setSuccessMsg(res.sandboxNotice || `2FA security code dispatched to ${user.email}`);
       setTimeout(() => {
         otpInputRefs.current[0]?.focus();
       }, 150);
@@ -701,10 +706,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPendingRegistration(signupData);
       setPending2FaType('email-signup');
       setTwoFactorToken(res.token);
-      setOtpDigits(['', '', '', '', '', '']);
+      setOtpDigits(res.devCode ? res.devCode.split('') : ['', '', '', '', '', '']);
       setIs2FaStep(true);
       setTwoFactorCountdown(60);
-      setSuccessMsg(`Verification code sent to ${signupData.email}`);
+      setSuccessMsg(res.sandboxNotice || `Verification code sent to ${signupData.email}`);
       setTimeout(() => {
         otpInputRefs.current[0]?.focus();
       }, 150);

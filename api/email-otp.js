@@ -138,26 +138,49 @@ export default async function handler(req, res) {
     }
 
     try {
-      const resendRes = await fetch('https://api.resend.com/emails', {
+      // First try sending from verified brand domain (TripVerse <auth@trip-verse.com>)
+      // If domain is not yet verified on Resend, automatically fallback to onboarding@resend.dev
+      let fromAddress = 'TripVerse <auth@trip-verse.com>';
+      let resendRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${RESEND_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: 'TripVerse <onboarding@resend.dev>',
+          from: fromAddress,
           to: emailNorm,
           subject: `${otpCode} is your TripVerse verification code`,
           html: htmlContent
         })
       });
 
-      const resendData = await resendRes.json();
+      let resendData = await resendRes.json();
+
+      // If custom domain is not yet verified in Resend, retry via onboarding@resend.dev
+      if (!resendRes.ok && typeof resendData.message === 'string' && resendData.message.includes('domain is not verified')) {
+        fromAddress = 'TripVerse <onboarding@resend.dev>';
+        resendRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: fromAddress,
+            to: emailNorm,
+            subject: `${otpCode} is your TripVerse verification code`,
+            html: htmlContent
+          })
+        });
+        resendData = await resendRes.json();
+      }
+
       if (!resendRes.ok) {
         console.error('[Resend Error]', resendData);
-        // If Resend free tier restricts to owner (meet.sharma8c@gmail.com):
+        // If Resend test domain restricts to owner (meet.sharma8c@gmail.com):
         if (typeof resendData.message === 'string' && resendData.message.includes('You can only send testing emails to your own email address')) {
-          console.warn(`[Resend Notice] Free tier owner restriction for ${emailNorm}. Storing token securely without double-burning outbound email tokens.`);
+          console.warn(`[Resend Notice] Resend sandbox owner restriction for ${emailNorm}. Storing token securely.`);
           emailDispatchCooldowns.set(emailNorm, now);
           activeEmailOtpTokens.set(emailNorm, { token: verificationToken, expiresAt });
 
@@ -165,7 +188,9 @@ export default async function handler(req, res) {
           return res.status(200).json({
             success: true,
             isSandboxNotice: true,
-            message: `Free-tier sandbox mode: verification code registered for ${emailNorm}.`,
+            devCode: otpCode,
+            sandboxNotice: `Resend Sandbox Notice: Live delivery is restricted to owner (meet.sharma8c@gmail.com) until trip-verse.com DNS is added. For testing, your security code is: ${otpCode}`,
+            message: `Free-tier sandbox mode: verification code registered for ${emailNorm}. Code: ${otpCode}`,
             email: emailNorm,
             token: verificationToken,
             expiresAt
@@ -177,7 +202,7 @@ export default async function handler(req, res) {
         });
       }
 
-      console.log(`[Resend] Genuine OTP email dispatched to ${emailNorm}, id: ${resendData.id}`);
+      console.log(`[Resend] Genuine OTP email dispatched from ${fromAddress} to ${emailNorm}, id: ${resendData.id}`);
       emailDispatchCooldowns.set(emailNorm, now);
       activeEmailOtpTokens.set(emailNorm, { token: verificationToken, expiresAt });
       res.setHeader('Set-Cookie', `tripverse_email_otp=${encodeURIComponent(verificationToken)}; Path=/; Max-Age=600; SameSite=Lax; Secure; HttpOnly`);
