@@ -1,9 +1,10 @@
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState } from 'react';
-import { X, ShieldCheck, FileText, AlertTriangle, MessageSquare, Star, Check, Send, Lock, Compass } from 'lucide-react';
+import { X, ShieldCheck, FileText, AlertTriangle, MessageSquare, Star, Check, Send, Lock, Compass, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getSupabaseClient } from '../../services/supabase';
 import { useLanguage } from '../../services/languageService';
+import { TypeformModal } from './TypeformModal';
 
 export type LegalTab = 'privacy' | 'terms' | 'advisory' | 'feedback';
 
@@ -29,6 +30,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
   const [feedbackEmail, setFeedbackEmail] = useState<string>(userEmail);
   const [message, setMessage] = useState<string>('');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [isTypeformOpen, setIsTypeformOpen] = useState<boolean>(false);
 
   useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
@@ -352,12 +354,29 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
                     <Send className="w-3.5 h-3.5" />
                     <span>Submit Traveler Feedback</span>
                   </button>
+
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setIsTypeformOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2D5A3D] hover:underline cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Prefer an interactive questionnaire? Open Typeform Survey</span>
+                    </button>
+                  </div>
                 </form>
               )}
             </div>
           )}
 
         </div>
+
+        <TypeformModal
+          isOpen={isTypeformOpen}
+          onClose={() => setIsTypeformOpen(false)}
+          title="TripVerse Traveler Feedback"
+        />
 
         {/* Modal Footer */}
         <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-[11px] text-slate-500 shrink-0">
