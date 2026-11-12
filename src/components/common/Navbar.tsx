@@ -179,29 +179,29 @@ export const Navbar: React.FC<NavbarProps> = ({
       className="sticky top-0 z-40 w-full transition-colors duration-200"
     >
       <div className="relative pt-safe pl-safe pr-safe">
-        {/* Smooth top-to-bottom frosted gradient shade: borderless transition over content */}
+        {/* Smooth top-to-bottom frosted gradient shade: borderless across all screen widths */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 -bottom-3.5 bg-gradient-to-b from-[#EDF2EC]/95 via-[#F4F6F2]/88 via-65% to-transparent dark:from-[#070C16]/96 dark:via-[#070C16]/86 dark:via-65% dark:to-transparent backdrop-blur-md"
+          className="pointer-events-none absolute inset-x-0 top-0 -bottom-5 bg-gradient-to-b from-[#ECF2EB]/96 via-[#F4F6F2]/90 via-66% to-transparent dark:from-[#070C16]/96 dark:via-[#070C16]/86 dark:via-66% dark:to-transparent backdrop-blur-md"
           style={{
             maskImage:
-              'linear-gradient(to bottom, rgba(0, 0, 0, 1) 58%, rgba(0, 0, 0, 0.7) 80%, rgba(0, 0, 0, 0) 100%)',
+              'linear-gradient(to bottom, rgba(0, 0, 0, 1) 66%, rgba(0, 0, 0, 0.74) 84%, rgba(0, 0, 0, 0) 100%)',
             WebkitMaskImage:
-              'linear-gradient(to bottom, rgba(0, 0, 0, 1) 58%, rgba(0, 0, 0, 0.7) 80%, rgba(0, 0, 0, 0) 100%)',
+              'linear-gradient(to bottom, rgba(0, 0, 0, 1) 66%, rgba(0, 0, 0, 0.74) 84%, rgba(0, 0, 0, 0) 100%)',
           }}
         />
         {/* Soft ambient downward shade replacing the hard bottom border */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 -bottom-4 bg-gradient-to-b from-[#152A1C]/[0.02] via-[#152A1C]/[0.055] via-72% to-transparent dark:from-black/15 dark:via-black/35 dark:via-75% dark:to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 -bottom-5 bg-gradient-to-b from-[#152A1C]/[0.025] via-[#152A1C]/[0.06] via-74% to-transparent dark:from-black/15 dark:via-black/38 dark:via-74% dark:to-transparent"
         />
 
-        <div className="relative z-10 max-w-[1536px] mx-auto px-3 sm:px-5 lg:px-4 2xl:px-8">
+        <div className="relative z-10 max-w-[1536px] mx-auto px-3 sm:px-5 lg:px-3 xl:px-5 2xl:px-8">
         {/* DESKTOP HEADER (Responsive across lg 1024px through 2xl 1536px+ without clipping) */}
-        <div className="hidden lg:flex items-center justify-between h-16 xl:h-18 gap-2">
+        <div className="hidden lg:flex items-center justify-between h-16 xl:h-18 gap-1.5 xl:gap-2">
           
           {/* Left: Brand Logo & Navigation Links */}
-          <div className="flex items-center gap-2 xl:gap-3 2xl:gap-4 min-w-0 shrink-0">
+          <div className="flex items-center gap-1.5 xl:gap-3 2xl:gap-4 min-w-0 shrink-0">
             <div className="flex items-center gap-1.5 xl:gap-2 min-w-0 shrink-0">
               <Logo 
                 size="adaptive" 
@@ -213,7 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {/* Desktop Navigation Links */}
-            <nav className="flex items-center space-x-0.5 xl:space-x-1 shrink-0" aria-label="Main Navigation">
+            <nav className="flex items-center space-x-0 xl:space-x-1 shrink-0" aria-label="Main Navigation">
               {desktopNavLinks.map((link) => {
                 const isActive = currentTab === link.id;
 
@@ -221,7 +221,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     key={link.id}
                     onClick={() => handleLinkClick(link.id)}
-                    className={`relative flex items-center gap-1 px-2.5 xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-[13px] 2xl:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                    className={`relative flex items-center gap-1 px-1.5 xl:px-3 py-1.5 xl:py-2 rounded-xl text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                       isActive 
                         ? 'text-[#2D5A3D] dark:text-emerald-400 bg-[#E8EFE7] dark:bg-emerald-950/40 shadow-xs' 
                         : 'text-slate-600 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/60'
@@ -248,11 +248,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
+              className="flex h-7.5 w-7.5 xl:h-8 xl:w-8 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
               aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
               title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
             >
-              {isDarkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
+              {isDarkMode ? <Sun className="h-3.5 w-3.5 xl:h-4 xl:w-4 text-amber-400" /> : <Moon className="h-3.5 w-3.5 xl:h-4 xl:w-4" />}
             </button>
 
             {/* Notifications Trigger */}
@@ -260,11 +260,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenNotifications}
-                className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
+                className="relative flex h-7.5 w-7.5 xl:h-8 xl:w-8 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
                 aria-label={`View notifications${unreadNotificationCount > 0 ? ` (${unreadNotificationCount} unread)` : ''}`}
                 title={`View notifications${unreadNotificationCount > 0 ? ` (${unreadNotificationCount} unread)` : ''}`}
               >
-                <Bell className="h-4 w-4" />
+                <Bell className="h-3.5 w-3.5 xl:h-4 xl:w-4" />
                 {unreadNotificationCount > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-xs">
                     {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
@@ -278,17 +278,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenSearch}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
+                className="flex h-7.5 w-7.5 xl:h-8 xl:w-8 shrink-0 items-center justify-center rounded-full border border-[#DCE7DB] dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 transition-colors hover:bg-white dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
                 title={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
                 aria-label={`Search destinations & trips (${isMac ? '⌘K' : 'Ctrl+K'})`}
               >
-                <Search className="h-4 w-4" />
+                <Search className="h-3.5 w-3.5 xl:h-4 xl:w-4" />
               </button>
             )}
 
             {/* Compact Language Selector Pill */}
-            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-8 px-2 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0" title="Change Language">
-              <Languages className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-7.5 xl:h-8 px-1.5 xl:px-2 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0" title="Change Language">
+              <Languages className="hidden xl:block w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
               <select
                 value={language}
                 onChange={(e) => handleLanguageChange(e.target.value as LanguageCode)}
@@ -304,7 +304,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {/* Compact Currency Selector Pill */}
-            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-8 px-2 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0" title="Change Currency">
+            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 rounded-full h-7.5 xl:h-8 px-1.5 xl:px-2 border border-[#DCE7DB] dark:border-slate-700 text-xs transition-all shadow-2xs shrink-0" title="Change Currency">
               <select
                 value={currency}
                 onChange={(e) => handleCurrencyChange(e.target.value as CurrencyCode)}
@@ -324,7 +324,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenProModal}
-                className={`flex items-center gap-1 h-8 px-2 xl:px-2.5 rounded-full text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer shadow-2xs border ${
+                className={`flex items-center gap-1 h-7.5 xl:h-8 px-2 xl:px-2.5 rounded-full text-[11px] xl:text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer shadow-2xs border ${
                   quota.isPro
                     ? 'bg-amber-500/10 border-amber-300/40 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20'
                     : 'bg-[#E8EFE7] dark:bg-emerald-950/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400'
@@ -339,7 +339,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Primary CTA: "Plan Trip" */}
             <button
               onClick={onOpenPlanner}
-              className="btn-liquid-primary flex items-center gap-1.5 h-8 px-2.5 xl:px-3.5 rounded-full text-white font-bold text-xs whitespace-nowrap group shrink-0"
+              className="btn-liquid-primary flex items-center gap-1 xl:gap-1.5 h-7.5 xl:h-8 px-2 xl:px-3.5 rounded-full text-white font-bold text-[11px] xl:text-xs whitespace-nowrap group shrink-0"
             >
               <PlaneTakeoff className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               <span>{t('Plan Trip')}</span>
@@ -350,7 +350,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 text-[#2D5A3D] dark:text-emerald-400 text-xs font-bold whitespace-nowrap shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="flex items-center gap-1 xl:gap-1.5 h-7.5 xl:h-8 px-2 xl:px-3 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/40 border border-[#DCE7DB] dark:border-emerald-800/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 text-[#2D5A3D] dark:text-emerald-400 text-[11px] xl:text-xs font-bold whitespace-nowrap shrink-0 transition-all shadow-2xs cursor-pointer active:scale-95"
                 title="Sign In / Register"
               >
                 <User className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
