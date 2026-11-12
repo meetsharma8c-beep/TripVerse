@@ -186,10 +186,29 @@ export function resolveCanonicalDestination(rawQuery: string): CanonicalResoluti
 
   if (clean.includes(',')) {
     const parts = clean.split(',').map(s => s.trim()).filter(Boolean);
+    const tail = parts[parts.length - 1] || '';
+    const normTail = tail.toLowerCase();
+    const KNOWN_INDIAN_STATES_OR_REGIONS = new Set([
+      'india', 'gujarat', 'rajasthan', 'maharashtra', 'kerala', 'karnataka', 'tamil nadu',
+      'himachal pradesh', 'uttarakhand', 'goa', 'punjab', 'haryana', 'delhi', 'delhi ncr',
+      'uttar pradesh', 'madhya pradesh', 'west bengal', 'sikkim', 'meghalaya', 'assam',
+      'ladakh', 'jammu & kashmir', 'jammu and kashmir', 'odisha', 'bihar', 'jharkhand',
+      'andhra pradesh', 'telangana', 'chhattisgarh', 'arunachal pradesh', 'puducherry',
+      'pondicherry', 'pavagadh', 'champaner', 'kutch', 'saurashtra'
+    ]);
     if (parts.length >= 2) {
-      detectedCountry = parts[parts.length - 1];
-      if (parts.length >= 3) {
+      if (normTail === 'india') {
+        detectedCountry = 'India';
+        if (parts.length >= 3) detectedState = parts[parts.length - 2];
+      } else if (KNOWN_INDIAN_STATES_OR_REGIONS.has(normTail)) {
+        detectedCountry = 'India';
+        detectedState = tail;
+      } else if (parts.length >= 3) {
+        detectedCountry = tail;
         detectedState = parts[parts.length - 2];
+      } else {
+        // 2-part query like "Kyoto, Japan" or "Subspot, Region": treat as country only if it's not a local sub-region
+        detectedCountry = tail;
       }
     }
   }

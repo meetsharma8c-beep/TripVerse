@@ -70,12 +70,14 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
     if (!isLegacy && trip.estimatedTotal > 0) return trip.estimatedTotal;
 
     const travelers = Math.max(1, trip.travelersCount || 1);
-    const nights = Math.max(1, trip.durationDays - 1);
+    const nights = Math.max(0, trip.durationDays - 1);
     const rooms = Math.ceil(travelers / 2);
 
-    const stayCost = trip.selectedHotel?.nightlyRate
-      ? trip.selectedHotel.nightlyRate * nights * rooms
-      : liveMarket.hotelTotalGroupINR;
+    const stayCost = nights === 0
+      ? 0
+      : trip.selectedHotel?.nightlyRate
+        ? trip.selectedHotel.nightlyRate * nights * rooms
+        : liveMarket.hotelTotalGroupINR;
 
     const transportCost = trip.transportMode === 'flight'
       ? (liveMarket.smartHubArbitrage
@@ -110,9 +112,14 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
   // Destination image preview
   const destinationImg = resolveDestinationImage(trip.destination);
 
-  // Format date range (e.g. "12–18 May")
+  // Format date range (e.g. "12–18 May" or "1 Day • Same-Day Trip • 19 Nov")
   const formatDateRange = () => {
-    if (!trip.startDate) return `${trip.durationDays} Days • ${Math.max(1, trip.durationDays - 1)} Nights`;
+    const nights = Math.max(0, trip.durationDays - 1);
+    const durationSummary = nights === 0
+      ? `${trip.durationDays} ${trip.durationDays === 1 ? 'Day' : 'Days'} • Same-Day Trip`
+      : `${trip.durationDays} Days • ${nights} ${nights === 1 ? 'Night' : 'Nights'}`;
+
+    if (!trip.startDate) return durationSummary;
     try {
       const start = new Date(trip.startDate);
       const end = new Date(start);
@@ -120,11 +127,14 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
       const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
       const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
       if (startMonth === endMonth) {
-        return `${trip.durationDays} Days • ${Math.max(1, trip.durationDays - 1)} Nights • ${start.getDate()}–${end.getDate()} ${startMonth}`;
+        const dateSpan = start.getDate() === end.getDate()
+          ? `${start.getDate()} ${startMonth}`
+          : `${start.getDate()}–${end.getDate()} ${startMonth}`;
+        return `${durationSummary} • ${dateSpan}`;
       }
-      return `${trip.durationDays} Days • ${Math.max(1, trip.durationDays - 1)} Nights • ${start.getDate()} ${startMonth}–${end.getDate()} ${endMonth}`;
+      return `${durationSummary} • ${start.getDate()} ${startMonth}–${end.getDate()} ${endMonth}`;
     } catch {
-      return `${trip.durationDays} Days • ${Math.max(1, trip.durationDays - 1)} Nights`;
+      return durationSummary;
     }
   };
 

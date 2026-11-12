@@ -767,16 +767,30 @@ export function resolvePreciseLocationSync(input: string): PreciseLocation {
   const clean = input.trim();
   const norm = normalizeQuery(clean);
 
-  // 1. Direct check against curated spots
+  // 1. Direct check against curated spots (supports multi-segment places like "Manchi Haveli, Pavagadh")
+  const querySegments = clean
+    .split(',')
+    .map(s => normalizeQuery(s))
+    .filter(s => s.length >= 4);
+
   for (const spot of PRECISE_SPOTS_INDEX) {
-    if (
+    const spotNorm = normalizeQuery(spot.name);
+    const spotTokens = spotNorm.split(/[\s-]+/).filter(t => t.length >= 4);
+    const matchesWholeOrToken =
       spot.id === norm ||
-      normalizeQuery(spot.name) === norm ||
-      norm.includes(normalizeQuery(spot.name)) ||
-      normalizeQuery(spot.name).includes(norm) ||
-      norm.includes(spot.id)
-    ) {
-      return spot;
+      spotNorm === norm ||
+      norm.includes(spotNorm) ||
+      spotNorm.includes(norm) ||
+      norm.includes(spot.id) ||
+      querySegments.some(seg => spotTokens.includes(seg) || spotNorm.includes(seg));
+
+    if (matchesWholeOrToken) {
+      if (spotNorm === norm || spot.id === norm) return spot;
+      return {
+        ...spot,
+        name: clean,
+        highlights: Array.from(new Set([clean, ...spot.highlights])).slice(0, 8)
+      };
     }
   }
 
@@ -815,9 +829,10 @@ export function resolvePreciseLocationSync(input: string): PreciseLocation {
   // Categorize based on keywords & Global Atlas
   let category: Destination['category'] = 'roadtrip';
   let spotType: PreciseLocation['spotType'] = 'city';
-  let state = 'Worldwide Destination';
+  let state = 'Region';
   let country = 'Worldwide';
-  let coordinates: Coordinates = { lat: 48.8566, lng: 2.3522 }; // Neutral international coordinate
+  // Neutral central fallback (never default an unlisted spot to Paris coordinates)
+  let coordinates: Coordinates = { lat: 23.2599, lng: 77.4126 };
 
   // 1. UNITED STATES
   if (norm.includes('new york') || norm.includes('manhattan') || norm.includes('brooklyn') || norm.includes('nyc')) {
@@ -972,10 +987,22 @@ export function resolvePreciseLocationSync(input: string): PreciseLocation {
     category = 'heritage';
 
   // 12. INDIA (Fully preserved)
-  } else if (norm.includes('gujarat') || norm.includes('ahmedabad') || norm.includes('surat') || norm.includes('vadodara') || norm.includes('rajkot') || norm.includes('kutch') || norm.includes('somnath') || norm.includes('dwarka') || norm.includes('polo')) {
+  } else if (norm.includes('gujarat') || norm.includes('ahmedabad') || norm.includes('surat') || norm.includes('vadodara') || norm.includes('baroda') || norm.includes('rajkot') || norm.includes('kutch') || norm.includes('somnath') || norm.includes('dwarka') || norm.includes('polo') || norm.includes('pavagadh') || norm.includes('champaner') || norm.includes('saputara') || norm.includes('bhuj') || norm.includes('jamnagar') || norm.includes('junagadh') || norm.includes('bharuch') || norm.includes('anand')) {
     state = 'Gujarat';
     country = 'India';
-    coordinates = norm.includes('polo') ? { lat: 24.0044, lng: 73.2386 } : { lat: 23.0225, lng: 72.5714 };
+    coordinates = norm.includes('pavagadh') || norm.includes('champaner')
+      ? { lat: 22.4842, lng: 73.5350 }
+      : norm.includes('vadodara') || norm.includes('baroda')
+        ? { lat: 22.3072, lng: 73.1812 }
+        : norm.includes('surat')
+          ? { lat: 21.1702, lng: 72.8311 }
+          : norm.includes('rajkot')
+            ? { lat: 22.3039, lng: 70.8022 }
+            : norm.includes('saputara')
+              ? { lat: 20.5750, lng: 73.7481 }
+              : norm.includes('polo')
+                ? { lat: 24.0044, lng: 73.2386 }
+                : { lat: 23.0225, lng: 72.5714 };
   } else if (norm.includes('rajasthan') || norm.includes('jaipur') || norm.includes('mansarovar') || norm.includes('jodhpur') || norm.includes('udaipur') || norm.includes('jaisalmer') || norm.includes('pushkar') || norm.includes('bikaner') || norm.includes('abu')) {
     state = 'Rajasthan';
     country = 'India';
@@ -1023,6 +1050,35 @@ export function resolvePreciseLocationSync(input: string): PreciseLocation {
     country = 'India';
     category = 'mountain';
     coordinates = norm.includes('ladakh') || norm.includes('leh') ? { lat: 34.1526, lng: 77.5771 } : { lat: 34.0837, lng: 74.7973 };
+  } else if (norm.includes('west bengal') || norm.includes('kolkata') || norm.includes('darjeeling') || norm.includes('siliguri') || norm.includes('kalimpong') || norm.includes('sundarban')) {
+    state = 'West Bengal';
+    country = 'India';
+    category = norm.includes('darjeeling') || norm.includes('kalimpong') ? 'mountain' : 'heritage';
+    coordinates = norm.includes('darjeeling') ? { lat: 27.0410, lng: 88.2663 } : { lat: 22.5726, lng: 88.3639 };
+  } else if (norm.includes('andaman') || norm.includes('port blair') || norm.includes('havelock') || norm.includes('swaraj dweep') || norm.includes('lakshadweep') || norm.includes('kavaratti')) {
+    state = norm.includes('lakshadweep') || norm.includes('kavaratti') ? 'Lakshadweep' : 'Andaman & Nicobar Islands';
+    country = 'India';
+    category = 'beach';
+    spotType = 'beach';
+    coordinates = norm.includes('lakshadweep') || norm.includes('kavaratti') ? { lat: 10.5593, lng: 72.6358 } : { lat: 11.6234, lng: 92.7265 };
+  } else if (norm.includes('uttar pradesh') || norm.includes('varanasi') || norm.includes('agra') || norm.includes('lucknow') || norm.includes('ayodhya') || norm.includes('mathura')) {
+    state = 'Uttar Pradesh';
+    country = 'India';
+    category = norm.includes('varanasi') || norm.includes('ayodhya') || norm.includes('mathura') ? 'spiritual' : 'heritage';
+    coordinates = norm.includes('agra') ? { lat: 27.1767, lng: 78.0081 } : { lat: 25.3176, lng: 82.9739 };
+  } else if (norm.includes('madhya pradesh') || norm.includes('bhopal') || norm.includes('indore') || norm.includes('ujjain') || norm.includes('khajuraho') || norm.includes('pachmarhi')) {
+    state = 'Madhya Pradesh';
+    country = 'India';
+    coordinates = norm.includes('indore') ? { lat: 22.7196, lng: 75.8577 } : { lat: 23.2599, lng: 77.4126 };
+  } else if (norm.includes('sikkim') || norm.includes('gangtok') || norm.includes('assam') || norm.includes('guwahati') || norm.includes('meghalaya') || norm.includes('shillong')) {
+    state = norm.includes('sikkim') || norm.includes('gangtok') ? 'Sikkim' : norm.includes('meghalaya') || norm.includes('shillong') ? 'Meghalaya' : 'Assam';
+    country = 'India';
+    category = 'nature';
+    coordinates = norm.includes('gangtok') || norm.includes('sikkim') ? { lat: 27.3314, lng: 88.6138 } : norm.includes('shillong') || norm.includes('meghalaya') ? { lat: 25.5788, lng: 91.8933 } : { lat: 26.1445, lng: 91.7362 };
+  } else if (norm.includes('odisha') || norm.includes('puri') || norm.includes('bhubaneswar') || norm.includes('konark') || norm.includes('hyderabad') || norm.includes('telangana') || norm.includes('tirupati')) {
+    state = norm.includes('hyderabad') || norm.includes('telangana') ? 'Telangana' : norm.includes('tirupati') ? 'Andhra Pradesh' : 'Odisha';
+    country = 'India';
+    coordinates = norm.includes('hyderabad') || norm.includes('telangana') ? { lat: 17.3850, lng: 78.4867 } : norm.includes('tirupati') ? { lat: 13.6288, lng: 79.4192 } : { lat: 20.2961, lng: 85.8245 };
   }
 
   if (norm.includes('temple') || norm.includes('mandir') || norm.includes('ghat') || norm.includes('dham') || norm.includes('spiritual') || norm.includes('basilica') || norm.includes('cathedral') || norm.includes('shrine') || norm.includes('mosque')) {
@@ -1044,7 +1100,7 @@ export function resolvePreciseLocationSync(input: string): PreciseLocation {
 
   // Construct clean formatted title
   const locationParts: string[] = [clean];
-  if (state && state !== 'Worldwide Destination' && state.toLowerCase() !== clean.toLowerCase()) {
+  if (state && state !== 'Region' && state !== 'Worldwide Destination' && state.toLowerCase() !== clean.toLowerCase()) {
     locationParts.push(state);
   }
   if (country && country !== 'Worldwide') {

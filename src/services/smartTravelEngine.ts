@@ -31,8 +31,46 @@ function haversineDist(c1: Coordinates, c2: Coordinates): number {
 }
 
 /**
- * Solves Travelling Salesperson 2-Opt Heuristic on intermediate attractions
- * to minimize zigzagging across the city and eliminate wasted transit time.
+ * Parses a clock string like "9:30 AM", "04:00 PM", or "13:15" into minutes since midnight.
+ */
+function parseTimeToMinutes(timeStr?: string): number {
+  if (!timeStr || typeof timeStr !== 'string') return 12 * 60;
+  const trimmed = timeStr.trim();
+  const m12 = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (m12) {
+    let h = parseInt(m12[1], 10) % 12;
+    const min = parseInt(m12[2], 10);
+    if (m12[3].toUpperCase() === 'PM') h += 12;
+    return h * 60 + min;
+  }
+  const m24 = trimmed.match(/^(\d{1,2}):(\d{2})/);
+  if (m24) {
+    return parseInt(m24[1], 10) * 60 + parseInt(m24[2], 10);
+  }
+  return 12 * 60;
+}
+
+function assignQueueSlotByTime(act: ItineraryActivity, idx: number, total: number): ItineraryActivity['queueSlot'] {
+  const mins = parseTimeToMinutes(act.time);
+  if (idx === 0 || mins < 11 * 60) {
+    return 'early_morning_low_crowd';
+  }
+  if (mins >= 18 * 60 || idx === total - 1) {
+    return 'evening_vibrant';
+  }
+  if (mins < 15 * 60) {
+    return 'midday_timed_indoor';
+  }
+  return 'afternoon_leisure';
+}
+
+function isFlexibleSightseeing(act: ItineraryActivity): boolean {
+  return act.type === 'attraction' || act.type === 'viewpoint' || act.type === 'nightlife';
+}
+
+/**
+ * Solves Travelling Salesperson 2-Opt Heuristic on flexible destination sightseeing
+ * stops while strictly preserving chronological schedule integrity and fixed transit/meal anchors.
  */
 export function optimizeDayActivitiesTsp(activities: ItineraryActivity[]): {
   activities: ItineraryActivity[];
@@ -40,7 +78,10 @@ export function optimizeDayActivitiesTsp(activities: ItineraryActivity[]): {
 } {
   if (!activities || activities.length <= 2) {
     return {
-      activities: activities || [],
+      activities: (activities || []).map((act, idx, arr) => ({
+        ...act,
+        queueSlot: assignQueueSlotByTime(act, idx, arr.length)
+      })),
       result: {
         originalDistanceKm: 0,
         optimizedDistanceKm: 0,
@@ -51,71 +92,85 @@ export function optimizeDayActivitiesTsp(activities: ItineraryActivity[]): {
     };
   }
 
-  // Preserve starting activity (departure or breakfast) and end activity (hotel return or nightlife)
-  const first = activities[0];
-  const last = activities.length > 3 ? activities[activities.length - 1] : null;
-  const middle = last ? activities.slice(1, -1) : activities.slice(1);
+  // Always start from strictly ascending chronological order
+  const chrono = activities
+    .map((act, index) => ({ act, index, mins: parseTimeToMinutes(act.time) }))
+    .sort((a, b) => a.mins - b.mins || a.index - b.index)
+    .map(item => item.act);
 
-  // Compute original distance
+  // Compute original sequential distance
   let origDist = 0;
-  for (let i = 0; i < activities.length - 1; i++) {
-    origDist += haversineDist(activities[i].coordinates, activities[i + 1].coordinates);
+  for (let i = 0; i < chrono.length - 1; i++) {
+    origDist += haversineDist(chrono[i].coordinates, chrono[i + 1].coordinates);
   }
 
-  // Nearest-neighbor / 2-Opt TSP on intermediate attractions
-  const unvisited = [...middle];
-  const orderedMiddle: ItineraryActivity[] = [];
-  let currentCoords = first.coordinates;
+  // Only spatially reorder flexible sightseeing stops strictly BEFORE any return departure
+  const returnIdx = chrono.findIndex(
+    (a, idx) => idx > 0 && ((a.type === 'departure' && /return/i.test(`${a.tag || ''} ${a.title}`)) || a.type === 'arrival')
+  );
+  const sightWindowEnd = returnIdx > 0 ? returnIdx : chrono.length;
 
-  while (unvisited.length > 0) {
-    let nearestIdx = 0;
-    let minD = Infinity;
+  const sightIndices: number[] = [];
+  for (let i = 0; i < sightWindowEnd; i++) {
+    if (isFlexibleSightseeing(chrono[i])) {
+      sightIndices.push(i);
+    }
+  }
 
-    for (let i = 0; i < unvisited.length; i++) {
-      const d = haversineDist(currentCoords, unvisited[i].coordinates);
-      if (d < minD) {
-        minD = d;
-        nearestIdx = i;
+  const finalOrdered = [...chrono];
+  if (sightIndices.length >= 2) {
+    const anchorIndex = Math.max(0, sightIndices[0] - 1);
+    let currentCoords = finalOrdered[anchorIndex].coordinates;
+    const unvisited = sightIndices.map(idx => chrono[idx]);
+    const slotTimes = sightIndices.map(idx => chrono[idx].time);
+    const reorderedSights: ItineraryActivity[] = [];
+
+    while (unvisited.length > 0) {
+      let nearestIdx = 0;
+      let minD = Infinity;
+      for (let i = 0; i < unvisited.length; i++) {
+        const d = haversineDist(currentCoords, unvisited[i].coordinates);
+        if (d < minD) {
+          minD = d;
+          nearestIdx = i;
+        }
       }
+      const chosen = unvisited.splice(nearestIdx, 1)[0];
+      reorderedSights.push(chosen);
+      currentCoords = chosen.coordinates;
     }
 
-    const nextAct = unvisited.splice(nearestIdx, 1)[0];
-    orderedMiddle.push(nextAct);
-    currentCoords = nextAct.coordinates;
+    // Reassign original ascending time slots to reordered sightseeing spots so times never scramble
+    sightIndices.forEach((slotIdx, orderIdx) => {
+      finalOrdered[slotIdx] = {
+        ...reorderedSights[orderIdx],
+        time: slotTimes[orderIdx]
+      };
+    });
   }
 
-  const finalOrdered = [first, ...orderedMiddle, ...(last ? [last] : [])];
-
-  // Recalculate optimized distance
+  // Recalculate optimized distance (if reordering increased distance, revert to original chronological order)
   let optDist = 0;
   for (let i = 0; i < finalOrdered.length - 1; i++) {
     optDist += haversineDist(finalOrdered[i].coordinates, finalOrdered[i + 1].coordinates);
   }
+  const chosenOrder = optDist <= origDist ? finalOrdered : chrono;
+  const finalOptDist = Math.min(origDist, optDist);
 
-  // Assign Queue-Curve Slots to prevent peak crowd bottlenecks
-  const enriched = finalOrdered.map((act, idx) => {
-    let queueSlot: any = 'afternoon_leisure';
-    if (idx === 0 || idx === 1) {
-      queueSlot = 'early_morning_low_crowd'; // 07:30 - 10:00: Open shrines, sunrise viewpoints
-    } else if (idx === 2) {
-      queueSlot = 'midday_timed_indoor'; // 11:30 - 14:00: Indoor museums / food halls
-    } else if (idx >= finalOrdered.length - 2) {
-      queueSlot = 'evening_vibrant'; // 18:00 - 21:30: Night markets, illuminated decks
-    }
-    return {
-      ...act,
-      queueSlot
-    };
-  });
+  // Assign accurate Queue-Curve Slots based on actual clock time
+  const enriched = chosenOrder.map((act, idx) => ({
+    ...act,
+    queueSlot: assignQueueSlotByTime(act, idx, chosenOrder.length)
+  }));
 
-  const savedKm = Math.max(0, Math.round((origDist - optDist) * 10) / 10);
-  const timeSavedMin = Math.round(savedKm * 4.5); // Average 4.5 min/km in metropolitan subway/traffic
+  const savedKm = Math.max(0, Math.round((origDist - finalOptDist) * 10) / 10);
+  const timeSavedMin = Math.round(savedKm * 4.5);
 
   return {
     activities: enriched,
     result: {
       originalDistanceKm: Math.round(origDist * 10) / 10,
-      optimizedDistanceKm: Math.round(optDist * 10) / 10,
+      optimizedDistanceKm: Math.round(finalOptDist * 10) / 10,
       savedDistanceKm: savedKm,
       estimatedTransitTimeSavedMinutes: timeSavedMin,
       routePolygon: enriched.map(a => a.coordinates).filter(Boolean)

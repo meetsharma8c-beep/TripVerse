@@ -1,4 +1,4 @@
-import { AccommodationType, TransportMode, Trip } from '../types/trip';
+import { AccommodationType, Coordinates, TransportMode, Trip } from '../types/trip';
 import { resolveTransitContext } from './transportFeasibilityEngine';
 import { resolvePreciseLocationSync } from './locationService';
 import { CURRENCIES, syncLiveExchangeRates } from './currencyService';
@@ -290,12 +290,17 @@ const MAJOR_AIRPORT_CODES: Record<string, string> = {
   queenstown: 'ZQN'
 };
 
-function calculateDistanceKm(origin: string, destination: string): number {
+function calculateDistanceKm(
+  origin: string,
+  destination: string,
+  originCoords?: Coordinates,
+  destCoords?: Coordinates
+): number {
   const oLoc = resolvePreciseLocationSync(origin);
   const dLoc = resolvePreciseLocationSync(destination);
-  const c1 = oLoc?.coordinates;
-  const c2 = dLoc?.coordinates;
-  if (!c1 || !c2 || !c1.lat || !c2.lat) return 950;
+  const c1 = originCoords || oLoc?.coordinates;
+  const c2 = destCoords || dLoc?.coordinates;
+  if (!c1 || !c2 || !c1.lat || !c2.lat) return 450;
 
   const R = 6371;
   const dLat = ((c2.lat - c1.lat) * Math.PI) / 180;
@@ -340,6 +345,8 @@ export function evaluateLiveMarketPrices(params: {
   startDate?: string;
   accommodationType?: AccommodationType;
   transportMode?: TransportMode;
+  originCoords?: Coordinates;
+  destCoords?: Coordinates;
 }): LiveMarketPriceReport {
   // Trigger background live exchange rate refresh safely
   if (typeof window !== 'undefined') {
@@ -351,7 +358,7 @@ export function evaluateLiveMarketPrices(params: {
   const cleanOrigin = rawOrigin.split(',')[0].trim() || 'Origin';
   const cleanDest = rawDest.split(',')[0].trim() || 'Destination';
   const durationDays = Math.max(1, params.durationDays || 4);
-  const nightsCount = Math.max(1, durationDays - 1);
+  const nightsCount = durationDays <= 1 ? 0 : durationDays - 1;
   const travelersCount = Math.max(1, params.travelersCount || 2);
   const roomsRequired = Math.max(1, Math.ceil(travelersCount / 2));
   const stayTier: StayTier = mapStayTier(params.accommodationType);
@@ -370,9 +377,9 @@ export function evaluateLiveMarketPrices(params: {
     ? regionalHubMatch.originCode
     : resolveAirportCode(cleanOrigin);
 
-  const transit = resolveTransitContext(rawDest);
+  const transit = resolveTransitContext(rawDest, params.destCoords);
   const gatewayAirportName =
-    transit.primaryAirport?.name || `${cleanDest} Airport`;
+    transit.primaryAirport?.name || `${cleanDest} Gateway Airport`;
   const gatewayAirportCode =
     transit.primaryAirport?.code?.split('/')[0]?.trim() ||
     resolveAirportCode(cleanDest);
@@ -437,21 +444,26 @@ export function evaluateLiveMarketPrices(params: {
     advanceBookingBadge = 'Advance Saver Window (30+ Days)';
   }
 
-  const distKm = calculateDistanceKm(originCityDisplay, cleanDest);
+  const distKm = calculateDistanceKm(originCityDisplay, cleanDest, params.originCoords, params.destCoords);
   const roadDistKm = Math.round(distKm * 1.28);
+  const isShortCommute = !isInternational && distKm < 200;
 
   // =========================================================================
   // 1. LIVE FLIGHT MARKET PRICING & SMART HUB ARBITRAGE
   // =========================================================================
   const isConnectingFlightRoute = Boolean(
-    regionalHubMatch?.isTier2Connecting &&
+    !isShortCommute &&
+      regionalHubMatch?.isTier2Connecting &&
       (isKashmirHimalaya || isLadakh || isGoaAndaman || isInternational || distKm > 750)
   );
 
   let flightRoundTripPerPersonINR = 0;
   let flightCarrierSummary = '';
 
-  if (isInternational) {
+  if (isShortCommute) {
+    flightRoundTripPerPersonINR = 0;
+    flightCarrierSummary = `Short Road/Rail Corridor (~${roadDistKm} km) — Direct commercial flights unavailable`;
+  } else if (isInternational) {
     const baseIntlRT = distKm > 4500 ? 64000 : 34000;
     flightRoundTripPerPersonINR = Math.round(
       baseIntlRT * seasonMultiplier * (isConnectingFlightRoute ? 1.35 : 1.0)
@@ -661,8 +673,10 @@ export function evaluateLiveMarketPrices(params: {
       smartHubArbitrage.groundTransferToHubCost
     : totalWithOriginFlightsINR;
 
-  const lineItems: LiveMarketLineItem[] = [
-    {
+  const lineItems: LiveMarketLineItem[] = [];
+
+  if (!isShortCommute) {
+    lineItems.push({
       id: 'flights',
       categoryLabel: `Flights (${originAirportCode} ↔ ${gatewayAirportCode} Round Trip)`,
       itemTitle: flightCarrierSummary,
@@ -676,8 +690,8 @@ export function evaluateLiveMarketPrices(params: {
       isIncludedInGroundBudget: false,
       bookingProvider: 'Google Flights Live',
       bookingUrl: flightGoogleUrl
-    }
-  ];
+    });
+  }
 
   if (smartHubArbitrage) {
     lineItems.push({
@@ -701,8 +715,8 @@ export function evaluateLiveMarketPrices(params: {
     });
   }
 
-  lineItems.push(
-    {
+  if (nightsCount > 0) {
+    lineItems.push({
       id: 'hotels',
       categoryLabel: `Hotels & Stays (${nightsCount} ${nightsCount === 1 ? 'Night' : 'Nights'}, ${roomsRequired} ${roomsRequired === 1 ? 'Room' : 'Rooms'})`,
       itemTitle: `${stayTier === 'luxury' ? '4★/5★ Resort & Boutique Stay' : stayTier === 'mid' ? 'Curated 3★/4★ Hotel & Cottage' : 'Verified Budget Stay & Homestay'} in ${cleanDest}`,
@@ -714,7 +728,10 @@ export function evaluateLiveMarketPrices(params: {
       isIncludedInGroundBudget: true,
       bookingProvider: 'Booking.com Live',
       bookingUrl: hotelBookingUrl
-    },
+    });
+  }
+
+  lineItems.push(
     {
       id: 'local_transit',
       categoryLabel: params.transportMode === 'car' || params.transportMode === 'bike'

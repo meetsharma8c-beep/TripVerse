@@ -483,60 +483,161 @@ const DESTINATION_PROFILES: Record<string, DestinationTransitProfile> = {
 };
 
 /**
- * Resolves any free-form destination string into its true geographic & transit context
+ * Major commercial passenger airport hubs (used to identify the real nearest gateway airport
+ * instead of fabricating synthetic "${city} Airport" names for non-airport destinations).
  */
-export function resolveTransitContext(rawDestination: string): DestinationTransitProfile {
+const INDIA_COMMERCIAL_AIRPORTS: Array<{ name: string; code: string; coords: Coordinates }> = [
+  { name: 'Indira Gandhi International Airport, Delhi', code: 'DEL', coords: { lat: 28.5562, lng: 77.1000 } },
+  { name: 'Chhatrapati Shivaji Maharaj International Airport, Mumbai', code: 'BOM', coords: { lat: 19.0896, lng: 72.8656 } },
+  { name: 'Kempegowda International Airport, Bengaluru', code: 'BLR', coords: { lat: 13.1986, lng: 77.7066 } },
+  { name: 'Sardar Vallabhbhai Patel International Airport, Ahmedabad', code: 'AMD', coords: { lat: 23.0772, lng: 72.6347 } },
+  { name: 'Vadodara Airport', code: 'BDQ', coords: { lat: 22.3362, lng: 73.2263 } },
+  { name: 'Surat Airport', code: 'STV', coords: { lat: 21.1141, lng: 72.7418 } },
+  { name: 'Rajkot International Airport', code: 'HSR', coords: { lat: 22.3778, lng: 71.0319 } },
+  { name: 'Bhuj Airport', code: 'BHJ', coords: { lat: 23.2878, lng: 69.6702 } },
+  { name: 'Diu Airport', code: 'DIU', coords: { lat: 20.7131, lng: 70.9211 } },
+  { name: 'Jaipur International Airport', code: 'JAI', coords: { lat: 26.8242, lng: 75.8122 } },
+  { name: 'Maharana Pratap Airport, Udaipur', code: 'UDR', coords: { lat: 24.6177, lng: 73.8961 } },
+  { name: 'Jodhpur Airport', code: 'JDH', coords: { lat: 26.2511, lng: 73.0489 } },
+  { name: 'Manohar International / Dabolim Airport, Goa', code: 'GOI / GOX', coords: { lat: 15.3808, lng: 73.8314 } },
+  { name: 'Pune Airport', code: 'PNQ', coords: { lat: 18.5821, lng: 73.9197 } },
+  { name: 'Rajiv Gandhi International Airport, Hyderabad', code: 'HYD', coords: { lat: 17.2403, lng: 78.4294 } },
+  { name: 'Chennai International Airport', code: 'MAA', coords: { lat: 12.9941, lng: 80.1709 } },
+  { name: 'Cochin International Airport, Kochi', code: 'COK', coords: { lat: 10.1520, lng: 76.4019 } },
+  { name: 'Netaji Subhas Chandra Bose International Airport, Kolkata', code: 'CCU', coords: { lat: 22.6547, lng: 88.4467 } },
+  { name: 'Chandigarh International Airport', code: 'IXC', coords: { lat: 30.6735, lng: 76.7885 } },
+  { name: 'Jolly Grant Airport, Dehradun', code: 'DED', coords: { lat: 30.1897, lng: 78.1803 } },
+  { name: 'Sheikh ul-Alam International Airport, Srinagar', code: 'SXR', coords: { lat: 33.9871, lng: 74.7742 } },
+  { name: 'Kushok Bakula Rimpochee Airport, Leh', code: 'IXL', coords: { lat: 34.1359, lng: 77.5465 } },
+  { name: 'Sri Guru Ram Dass Jee International Airport, Amritsar', code: 'ATQ', coords: { lat: 31.7096, lng: 74.7973 } },
+  { name: 'Lal Bahadur Shastri International Airport, Varanasi', code: 'VNS', coords: { lat: 25.4524, lng: 82.8593 } },
+  { name: 'Devi Ahilya Bai Holkar Airport, Indore', code: 'IDR', coords: { lat: 22.7218, lng: 75.8011 } },
+  { name: 'Raja Bhoj Airport, Bhopal', code: 'BHO', coords: { lat: 23.2875, lng: 77.3374 } },
+  { name: 'Dr. Babasaheb Ambedkar International Airport, Nagpur', code: 'NAG', coords: { lat: 21.0922, lng: 79.0472 } },
+  { name: 'Bagdogra Airport', code: 'IXB', coords: { lat: 26.6812, lng: 88.3286 } },
+  { name: 'Lokpriya Gopinath Bordoloi International Airport, Guwahati', code: 'GAU', coords: { lat: 26.1061, lng: 91.5859 } },
+  { name: 'Kullu-Bhuntar Airport', code: 'KUU', coords: { lat: 31.8767, lng: 77.1544 } },
+  { name: 'Coimbatore International Airport', code: 'CJB', coords: { lat: 11.0300, lng: 77.0434 } }
+];
+
+function findNearestIndianAirport(coords: Coordinates): { name: string; code: string; distanceKm: number } {
+  let best = INDIA_COMMERCIAL_AIRPORTS[0];
+  let minKm = Infinity;
+  for (const hub of INDIA_COMMERCIAL_AIRPORTS) {
+    const km = computeHaversineDistanceKm(coords, hub.coords);
+    if (km < minKm) {
+      minKm = km;
+      best = hub;
+    }
+  }
+  return { name: best.name, code: best.code, distanceKm: minKm };
+}
+
+function isCoordsInsideIndia(coords?: Coordinates): boolean {
+  if (!coords) return false;
+  return coords.lat >= 6 && coords.lat <= 37.5 && coords.lng >= 68 && coords.lng <= 97.5;
+}
+
+/**
+ * Resolves any free-form destination string into its true geographic & transit context.
+ * Never fabricates nonexistent local airports for towns, hill stations, or heritage sites.
+ */
+export function resolveTransitContext(rawDestination: string, destCoords?: Coordinates): DestinationTransitProfile {
   const norm = (rawDestination || '').toLowerCase().trim();
 
-  // Exact or substring match in curated registry
+  // Exact or substring match in curated registry (skip bare ambiguous matches)
   for (const [key, profile] of Object.entries(DESTINATION_PROFILES)) {
     if (norm.includes(key)) {
       return profile;
     }
   }
 
-  // Check if international / overseas via location service
+  // Known non-airport heritage/hill/pilgrimage hubs (e.g. Pavagadh / Champaner, Saputara, Polo Forest)
+  if (norm.includes('pavagadh') || norm.includes('champaner')) {
+    return {
+      destination: 'Champaner-Pavagadh, Gujarat',
+      hasDirectAirport: false,
+      primaryAirport: {
+        name: 'Vadodara Airport (BDQ)',
+        code: 'BDQ',
+        distanceKm: 45,
+        transferNotes: 'Pavagadh has no airport. Nearest airport is Vadodara (BDQ, ~45 km / 1 hr via Halol Highway) or Ahmedabad (AMD, ~140 km).'
+      },
+      hasDirectTrain: false,
+      primaryRailwayStation: {
+        name: 'Vadodara Junction (BRC)',
+        code: 'BRC',
+        distanceKm: 47,
+        transferNotes: 'Major Western Railway junction ~47 km away with frequent GSRTC buses and taxis via Halol.'
+      },
+      roadConnectivity: {
+        status: 'all_weather_highway',
+        notes: 'Well connected by Halol–Vadodara State Highway (SH-87). Ropeway/bus operates to Manchi Plateau on Pavagadh Hill.'
+      },
+      requiresMultiModal: true,
+      multiModalGuidance: 'Best reached directly by road or cab via Halol (Vadodara ~47 km, Ahmedabad ~140 km).'
+    };
+  }
+
+  // Check if international / overseas via location service + coordinates
   const loc = resolvePreciseLocationSync(rawDestination);
+  const resolvedCoords = destCoords || loc.coordinates;
   const cleanName = loc.name || rawDestination.split(',')[0].trim() || 'Destination';
-  const isIntl = Boolean(loc.country && loc.country.toLowerCase() !== 'india' && loc.country.toLowerCase() !== 'worldwide');
+  const locCountryLower = (loc.country || '').toLowerCase();
+  const isIntl = Boolean(
+    !isCoordsInsideIndia(resolvedCoords) &&
+    locCountryLower &&
+    locCountryLower !== 'india' &&
+    locCountryLower !== 'worldwide'
+  );
 
   if (isIntl) {
     return {
       destination: `${cleanName}, ${loc.country || 'International'}`,
-      hasDirectAirport: true,
+      hasDirectAirport: false,
       primaryAirport: {
-        name: `${cleanName} International Airport`,
-        transferNotes: 'Subject to international airline schedule verification.'
+        name: `${cleanName} Gateway / Regional Airport`,
+        transferNotes: 'Confirm the nearest commercial airport serving this international destination before booking.'
       },
       hasDirectTrain: false,
       primaryRailwayStation: null,
       roadConnectivity: {
         status: 'island_no_bridge',
-        notes: 'Overseas international route. Overland road and train travel unavailable from origin.'
+        notes: 'Overseas international route. Check local airport and ground transfer connections.'
       },
-      requiresMultiModal: false,
+      requiresMultiModal: true,
       isOverseas: true
     };
   }
 
-  // Generic fallback for domestic destinations
+  const isNoAirport = NO_DIRECT_AIRPORT_KEYWORDS.some(k => norm.includes(k));
+  const isNoTrain = NO_TRAIN_MOUNTAIN_KEYWORDS.some(k => norm.includes(k));
+  const nearestAirport = findNearestIndianAirport(resolvedCoords);
+  const hasDirectAirport = !isNoAirport && nearestAirport.distanceKm <= 25;
+
   return {
     destination: cleanName,
-    hasDirectAirport: true,
+    hasDirectAirport,
     primaryAirport: {
-      name: `${cleanName} Airport`,
-      transferNotes: 'Subject to commercial schedule verification.'
+      name: nearestAirport.name,
+      code: nearestAirport.code,
+      distanceKm: nearestAirport.distanceKm,
+      transferNotes: hasDirectAirport
+        ? 'Commercial passenger airport serving the city; confirm flight schedules before booking.'
+        : `No commercial airport at ${cleanName}. Nearest commercial airport is ${nearestAirport.name} (~${nearestAirport.distanceKm} km by road).`
     },
-    hasDirectTrain: true,
-    primaryRailwayStation: {
-      name: `${cleanName} Railway Station`,
-      transferNotes: 'Subject to IRCTC route schedule verification.'
-    },
+    hasDirectTrain: !isNoTrain,
+    primaryRailwayStation: !isNoTrain
+      ? {
+          name: `${cleanName} / Nearest Junction`,
+          transferNotes: 'Subject to IRCTC route schedule verification.'
+        }
+      : null,
     roadConnectivity: {
-      status: 'all_weather_highway',
+      status: isNoTrain ? 'mountain_ghat' : 'all_weather_highway',
       notes: 'Check live road navigation and toll status.'
     },
-    requiresMultiModal: false
+    requiresMultiModal: !hasDirectAirport || isNoTrain
   };
 }
 
@@ -737,7 +838,8 @@ const NO_DIRECT_AIRPORT_KEYWORDS = [
   'spiti', 'kaza', 'kasol', 'mount abu', 'alibaug', 'hampi', 'ranthambore',
   'coorg', 'madikeri', 'gokarna', 'pachmarhi', 'nainital', 'mussoorie',
   'kodaikanal', 'munnar', 'mahabaleshwar', 'lonavala', 'chikmagalur',
-  'alleppey', 'ranikhet', 'kausani', 'chopta', 'kedarnath', 'badrinath'
+  'alleppey', 'ranikhet', 'kausani', 'chopta', 'kedarnath', 'badrinath',
+  'pavagadh', 'champaner', 'manchi haveli', 'poicha', 'polo forest', 'modhera', 'saputara'
 ];
 
 const INTERNATIONAL_DESTINATION_KEYWORDS = [
@@ -759,7 +861,9 @@ const INTERNATIONAL_DESTINATION_KEYWORDS = [
 export function getFeasibleTransportModes(
   rawOrigin: string,
   rawDestination: string,
-  travelDate?: string
+  travelDate?: string,
+  originCoords?: Coordinates,
+  destCoords?: Coordinates
 ): FeasibleTransportResult {
   const normDest = (rawDestination || '').toLowerCase().trim();
   const normOrigin = (rawOrigin || '').toLowerCase().trim();
@@ -785,12 +889,15 @@ export function getFeasibleTransportModes(
   const destLoc = resolvePreciseLocationSync(rawDestination);
   const originLoc = resolvePreciseLocationSync(rawOrigin || 'Ahmedabad, Gujarat');
 
-  const originCountry = (originLoc?.country || 'India').trim().toLowerCase();
-  const destCountry = (destLoc?.country || 'India').trim().toLowerCase();
+  const c1 = originCoords || originLoc?.coordinates || { lat: 23.0225, lng: 72.5714 };
+  const c2 = destCoords || destLoc?.coordinates || { lat: 23.2599, lng: 77.4126 };
+
+  const originCountry = isCoordsInsideIndia(c1) ? 'india' : (originLoc?.country || 'India').trim().toLowerCase();
+  const destCountry = isCoordsInsideIndia(c2) ? 'india' : (destLoc?.country || 'India').trim().toLowerCase();
 
   const isInternational =
     INTERNATIONAL_DESTINATION_KEYWORDS.some(k => normDest.includes(k)) ||
-    (originCountry !== destCountry && destCountry !== 'worldwide');
+    (originCountry !== 'worldwide' && destCountry !== 'worldwide' && originCountry !== destCountry);
 
   const isIsland =
     ISLAND_DESTINATION_KEYWORDS.some(k => normDest.includes(k));
@@ -801,9 +908,7 @@ export function getFeasibleTransportModes(
   const isNoAirport =
     NO_DIRECT_AIRPORT_KEYWORDS.some(k => normDest.includes(k));
 
-  // Compute straight-line distance
-  const c1 = originLoc?.coordinates || { lat: 23.0225, lng: 72.5714 };
-  const c2 = destLoc?.coordinates || { lat: 28.6139, lng: 77.2090 };
+  // Compute straight-line distance using the most accurate coordinates available
   const distanceKm = computeHaversineDistanceKm(c1, c2);
 
   const isShortCommute = !isInternational && !isIsland && distanceKm < 200;

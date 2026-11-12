@@ -48,14 +48,33 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
 
   // Declarative download anchor ref (zero manual DOM manipulation, top-level hook)
   const downloadAnchorRef = useRef<HTMLAnchorElement>(null);
+  const travelers = Math.max(1, trip?.travelersCount || 1);
 
-  if (!isOpen || !trip) return null;
+  // Evaluate genuine real-time market pricing index across all verticals
+  const liveMarket = useMemo(() => {
+    if (!trip) return null;
+    return evaluateLiveMarketPrices({
+      origin: trip.origin || 'Mumbai',
+      destination: trip.destination,
+      durationDays: trip.durationDays || 3,
+      travelersCount: travelers,
+      startDate: trip.startDate,
+      accommodationType: trip.accommodationType,
+      transportMode: trip.transportMode,
+      originCoords: trip.originCoordinates,
+      destCoords: trip.destinationDetails?.coordinates
+    });
+  }, [
+    trip,
+    travelers
+  ]);
+
+  if (!isOpen || !trip || !liveMarket) return null;
 
   const destination = trip.destination.split(',')[0].trim();
   const origin = (trip.origin || 'City Center').split(',')[0].trim();
-  const travelers = Math.max(1, trip.travelersCount || 1);
   const tripCountry = (trip.destinationDetails?.country || '').toLowerCase();
-  const isIndiaRoute = tripCountry === 'india' || ['udaipur', 'goa', 'manali', 'jaipur', 'kerala', 'ladakh', 'rishikesh', 'varanasi', 'mumbai', 'delhi'].some(k => destination.toLowerCase().includes(k));
+  const isIndiaRoute = tripCountry === 'india' || ['udaipur', 'goa', 'manali', 'jaipur', 'kerala', 'ladakh', 'rishikesh', 'varanasi', 'mumbai', 'delhi', 'vadodara', 'pavagadh'].some(k => destination.toLowerCase().includes(k));
 
   // Compute travel dates
   const today = new Date();
@@ -78,26 +97,15 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
   // Best Deal
   const bestTransport = trip.bestTransportDeal || trip.transportDeals?.[0];
 
-  // Evaluate genuine real-time market pricing index across all verticals
-  const liveMarket = useMemo(() => {
-    return evaluateLiveMarketPrices({
-      origin: trip.origin || 'Mumbai',
-      destination: trip.destination,
-      durationDays: trip.durationDays || 3,
-      travelersCount: travelers,
-      startDate: trip.startDate,
-      accommodationType: trip.accommodationType,
-      transportMode: trip.transportMode
-    });
-  }, [trip.origin, trip.destination, trip.durationDays, travelers, trip.startDate, trip.accommodationType, trip.transportMode]);
-
-  const nights = Math.max(1, trip.durationDays - 1);
+  const nights = Math.max(0, trip.durationDays - 1);
   const rooms = Math.ceil(travelers / 2);
 
   // Calibrated real-time market amounts
-  const effectiveStayCost = hotel?.nightlyRate
-    ? hotel.nightlyRate * nights * rooms
-    : (liveMarket.hotelTotalGroupINR || trip.budgetBreakdown?.accommodation || 9500);
+  const effectiveStayCost = nights === 0
+    ? 0
+    : hotel?.nightlyRate
+      ? hotel.nightlyRate * nights * rooms
+      : (liveMarket.hotelTotalGroupINR || trip.budgetBreakdown?.accommodation || 9500);
 
   const effectiveTransportCost = bestTransport
     ? (bestTransport.priceUnit === 'per_person' ? bestTransport.dealPrice * travelers : bestTransport.dealPrice)

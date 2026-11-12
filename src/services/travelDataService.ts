@@ -33,14 +33,35 @@ interface GeoapifyTravelDataResponse {
   }>;
 }
 
-export async function fetchGeoapifyTravelData(origin: string | Coordinates, destination: string): Promise<GeoapifyTravelDataResponse> {
+function haversineDistanceKm(a: Coordinates, b: Coordinates): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const sinLat = Math.sin(dLat / 2);
+  const sinLng = Math.sin(dLng / 2);
+  const h = sinLat * sinLat + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sinLng * sinLng;
+  return 2 * R * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+export async function fetchGeoapifyTravelData(
+  origin: string | Coordinates,
+  destination: string,
+  destinationCoordinates?: Coordinates
+): Promise<GeoapifyTravelDataResponse> {
   const apiBase = window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:'
     ? 'https://trip-verse.com'
     : '';
   const response = await fetch(`${apiBase}/api/route`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ origin, destination })
+    body: JSON.stringify({
+      origin,
+      destination,
+      ...(destinationCoordinates && Number.isFinite(destinationCoordinates.lat) && Number.isFinite(destinationCoordinates.lng)
+        ? { destinationCoordinates }
+        : {})
+    })
   });
   const result = await response.json().catch(() => ({}));
 
@@ -72,6 +93,22 @@ function hasPlaceType(types: string[], category: string): boolean {
 }
 
 export function applyGeoapifyTravelData(trip: Trip, data: GeoapifyTravelDataResponse): Trip {
+  const knownDestCoords = trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates;
+  if (
+    knownDestCoords &&
+    data.route?.destinationCoordinates &&
+    Number.isFinite(knownDestCoords.lat) &&
+    Number.isFinite(knownDestCoords.lng) &&
+    Number.isFinite(data.route.destinationCoordinates.lat) &&
+    Number.isFinite(data.route.destinationCoordinates.lng) &&
+    haversineDistanceKm(knownDestCoords, data.route.destinationCoordinates) > 150
+  ) {
+    return {
+      ...trip,
+      travelDataStatus: 'estimate'
+    };
+  }
+
   const places = data.places || [];
   const breakStops: BreakStop[] = places.map(place => ({
     id: `geoapify-${place.id}`,
@@ -120,6 +157,11 @@ export function applyGeoapifyTravelData(trip: Trip, data: GeoapifyTravelDataResp
   let accommodationIndex = 0;
   const routeDistanceKm = data.route?.distanceKm || 0;
   const eligibleStops = breakStops.filter(stop =>
+    stop.section !== 'medical' &&
+    stop.section !== 'ev_charging' &&
+    !stop.medicalFacilityAvailable &&
+    (stop.foodAvailable || stop.restAreaAvailable || stop.section === 'fuel') &&
+    (stop.detourDistanceKm ?? 0) <= 5 &&
     stop.distanceFromStartKm >= routeDistanceKm * 0.15 &&
     stop.distanceFromStartKm <= routeDistanceKm * 0.85
   );

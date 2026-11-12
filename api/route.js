@@ -333,9 +333,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
   if (isRateLimited(req)) return res.status(429).json({ error: 'RATE_LIMITED' });
 
-  const { origin, destination } = req.body || {};
+  const { origin, destination, destinationCoordinates } = req.body || {};
+  const explicitDestCoords = asCoordinates(destinationCoordinates);
   if ((!asCoordinates(origin) && (typeof origin !== 'string' || !origin.trim() || origin.length > 200)) ||
-      typeof destination !== 'string' || !destination.trim() || destination.length > 200) {
+      (!explicitDestCoords && (typeof destination !== 'string' || !destination.trim() || destination.length > 200))) {
     return res.status(400).json({ error: 'INVALID_ROUTE_INPUT' });
   }
 
@@ -345,7 +346,7 @@ export default async function handler(req, res) {
   try {
     const [routeOrigin, initialRouteDestination] = await Promise.all([
       resolveLocation(origin, apiKey),
-      resolveLocation(destination, apiKey)
+      explicitDestCoords ? Promise.resolve(explicitDestCoords) : resolveLocation(destination, apiKey)
     ]);
     if (!routeOrigin || !initialRouteDestination) {
       return res.status(422).json({ error: 'GEOAPIFY_LOCATION_NOT_FOUND' });

@@ -11,6 +11,15 @@ import { Coordinates } from '../types/trip';
 
 const WIKI_ATTRACTIONS_CACHE = new Map<string, string[]>();
 export const GLOBAL_LANDMARK_COORDS = new Map<string, Coordinates>();
+const GLOBAL_LANDMARK_LOCATIONS = new Map<string, Coordinates[]>();
+
+function registerGlobalLandmarkCoord(key: string, coords: Coordinates): void {
+  const normKey = key.toLowerCase();
+  GLOBAL_LANDMARK_COORDS.set(normKey, coords);
+  const existing = GLOBAL_LANDMARK_LOCATIONS.get(normKey) || [];
+  existing.push(coords);
+  GLOBAL_LANDMARK_LOCATIONS.set(normKey, existing);
+}
 
 // Pre-seed high-precision coordinates for iconic global sights
 const PRESET_LANDMARK_COORDS: Record<string, Coordinates> = {
@@ -69,8 +78,10 @@ const PRESET_LANDMARK_COORDS: Record<string, Coordinates> = {
 };
 
 for (const [k, v] of Object.entries(PRESET_LANDMARK_COORDS)) {
-  GLOBAL_LANDMARK_COORDS.set(k.toLowerCase(), v);
+  registerGlobalLandmarkCoord(k, v);
 }
+// Shared iconic landmark names that exist in multiple cities
+registerGlobalLandmarkCoord('city palace', { lat: 24.5764, lng: 73.6835 }); // Udaipur City Palace
 
 /**
  * Resolves high-precision GPS coordinates for any landmark, viewpoint, or activity.
@@ -79,12 +90,14 @@ export function resolveLandmarkCoordinates(landmarkName: string, destinationCoor
   if (!landmarkName) return destinationCoords;
   const norm = landmarkName.toLowerCase().trim();
 
-  // 1. Direct or partial match in landmark coords cache
+  // 1. Direct or partial match in landmark coords cache (reject stale cross-region hits > 150 km from destination)
+  const isNearDest = (coords: Coordinates) => haversineDistKm(coords, destinationCoords) <= 150;
   if (GLOBAL_LANDMARK_COORDS.has(norm)) {
-    return GLOBAL_LANDMARK_COORDS.get(norm)!;
+    const exact = GLOBAL_LANDMARK_COORDS.get(norm)!;
+    if (isNearDest(exact)) return exact;
   }
   for (const [key, coords] of GLOBAL_LANDMARK_COORDS.entries()) {
-    if (norm.includes(key) || key.includes(norm)) {
+    if ((norm.includes(key) || key.includes(norm)) && isNearDest(coords)) {
       return coords;
     }
   }
@@ -102,6 +115,40 @@ export function resolveLandmarkCoordinates(landmarkName: string, destinationCoor
     lat: Math.round((destinationCoords.lat + dLat) * 1000000) / 1000000,
     lng: Math.round((destinationCoords.lng + dLng) * 1000000) / 1000000
   };
+}
+
+/**
+ * Returns true if the landmark name clearly matches a known global landmark located
+ * far (> maxKm) from the target destination, and does not match a local landmark nearby.
+ */
+export function isLandmarkRemoteFromDestination(
+  landmarkName: string,
+  destinationCoords: Coordinates,
+  maxKm: number = 450
+): boolean {
+  if (!landmarkName || !destinationCoords) return false;
+  const norm = landmarkName.toLowerCase().trim();
+  if (!norm) return false;
+
+  const isNearDest = (coords: Coordinates) => haversineDistKm(coords, destinationCoords) <= maxKm;
+  if (GLOBAL_LANDMARK_LOCATIONS.has(norm)) {
+    const locs = GLOBAL_LANDMARK_LOCATIONS.get(norm)!;
+    return !locs.some(isNearDest);
+  }
+
+  let matchedNear = false;
+  let matchedRemote = false;
+  for (const [key, locs] of GLOBAL_LANDMARK_LOCATIONS.entries()) {
+    if (key.length < 5) continue;
+    if (norm.includes(key) || (norm.length >= 5 && key.includes(norm))) {
+      if (locs.some(isNearDest)) {
+        matchedNear = true;
+      } else {
+        matchedRemote = true;
+      }
+    }
+  }
+  return matchedRemote && !matchedNear;
 }
 
 export function haversineDistKm(c1: Coordinates, c2: Coordinates): number {
@@ -126,9 +173,12 @@ export function calculateTransitBetween(c1: Coordinates, c2: Coordinates): { dis
   if (roundedDist <= 1.2) {
     // Walking: 4.5 km/h ~ 13.3 min/km + 2 min buffer
     timeMin = Math.max(5, Math.round(roundedDist * 13.3 + 2));
-  } else {
+  } else if (roundedDist <= 25) {
     // City vehicle / transit: 25 km/h ~ 2.4 min/km + 6 min wait/boarding buffer
     timeMin = Math.max(10, Math.round(roundedDist * 2.4 + 6));
+  } else {
+    // Intercity highway corridor (~55 km/h average) + 10 min buffer
+    timeMin = Math.max(30, Math.round((roundedDist / 55) * 60 + 10));
   }
   return { distanceKm: roundedDist, travelTimeMin: timeMin };
 }

@@ -265,7 +265,7 @@ export function synthesizeDestination(
   }
 
   const image = meta?.image || resolved.image || resolveDestinationImage(cleanName, category);
-  const coordinates = customCoords || resolved.coordinates || { lat: 48.8566, lng: 2.3522 };
+  const coordinates = customCoords || resolved.coordinates || { lat: 23.2599, lng: 77.4126 };
   const bestTime = coordinates.lat > 40 ? 'May to September' : coordinates.lat < -15 ? 'November to March' : 'October to March';
 
   return {

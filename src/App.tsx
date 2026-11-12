@@ -1121,7 +1121,7 @@ export function App() {
       return;
     }
 
-    fetchGeoapifyTravelData(routeOrigin, trip.destination)
+    fetchGeoapifyTravelData(routeOrigin, trip.destination, trip.destinationDetails?.coordinates)
       .then(data => {
         if (cancelled) return;
         const currentTrip = tripsRef.current.find(item => item.id === tripId) || trip;

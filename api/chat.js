@@ -111,6 +111,9 @@ function buildServerlessItinerary(ctx) {
     : isVegOrJain
       ? 'Pure Vegetarian'
       : 'Authentic Regional';
+  const thaliTitle = foodLabel.toLowerCase().includes('regional')
+    ? `${foodLabel} Thali & Local Cafe`
+    : `${foodLabel} Regional Thali & Local Cafe`;
 
   const normDest = (dest + ' ' + (ctx.destination_region || '')).toLowerCase();
   let defaultHighlights = [
@@ -206,6 +209,7 @@ function buildServerlessItinerary(ctx) {
   let highlightIdx = 0;
 
   for (let d = 1; d <= daysCount; d++) {
+    const isSingleDay = daysCount === 1;
     const isFirst = d === 1 && daysCount > 1;
     const isLast = d === daysCount && daysCount > 1;
     const h1 = highlights[highlightIdx % highlights.length] || `${dest} Landmark ${d}A`;
@@ -213,7 +217,40 @@ function buildServerlessItinerary(ctx) {
     const h2 = highlights[highlightIdx % highlights.length] || `${dest} Viewpoint ${d}B`;
     highlightIdx++;
 
-    const activities = isFirst
+    const activities = isSingleDay
+      ? [
+          {
+            time: '10:15 AM',
+            title: h1,
+            type: 'attraction',
+            location: `${h1}, ${dest}`,
+            description: `Morning heritage & scenic exploration of ${h1} upon arrival.`,
+            estimatedCost: perActivityBudget,
+            preferenceMatch: ctx.preferences?.[0] || 'culture',
+            durationMin: 120
+          },
+          {
+            time: '1:00 PM',
+            title: thaliTitle,
+            type: 'food',
+            location: `${dest} Heritage District`,
+            description: `Midday ${foodLabel.toLowerCase()} culinary experience featuring signature local dishes.`,
+            estimatedCost: perActivityBudget,
+            preferenceMatch: 'food',
+            durationMin: 75
+          },
+          {
+            time: '3:15 PM',
+            title: h2,
+            type: 'viewpoint',
+            location: `${h2}, ${dest}`,
+            description: `Afternoon excursion to ${h2} with scenic views before return departure.`,
+            estimatedCost: Math.round(perActivityBudget * 0.7),
+            preferenceMatch: ctx.preferences?.[1] || 'scenic',
+            durationMin: 90
+          }
+        ]
+      : isFirst
       ? [
           {
             time: '2:30 PM',
@@ -292,7 +329,7 @@ function buildServerlessItinerary(ctx) {
             },
             {
               time: '1:00 PM',
-              title: `${foodLabel} Regional Thali & Local Cafe`,
+              title: thaliTitle,
               type: 'food',
               location: `${dest} Heritage District`,
               description: `Midday ${foodLabel.toLowerCase()} culinary experience featuring signature local dishes.`,
@@ -324,15 +361,19 @@ function buildServerlessItinerary(ctx) {
 
     itinerary.push({
       dayNumber: d,
-      title: isFirst
-        ? `Day 1 — Arrival & ${h1}`
-        : isLast
-          ? `Day ${d} — ${h1} & Departure`
-          : `Day ${d} — ${h1} & ${h2}`,
-      theme: isFirst
-        ? 'Arrival, Check-In & Sunset Highlights'
-        : isLast
-          ? 'Morning Sights, Souvenirs & Return'
+      title: isSingleDay
+        ? `Day 1 — Same-Day ${dest} Excursion & ${h1}`
+        : isFirst
+          ? `Day 1 — Arrival & ${h1}`
+          : isLast
+            ? `Day ${d} — ${h1} & Departure`
+            : `Day ${d} — ${h1} & ${h2}`,
+      theme: isSingleDay
+        ? 'Outbound Transit, Core Sightseeing, Local Dining & Return'
+        : isFirst
+          ? 'Arrival, Check-In & Sunset Highlights'
+          : isLast
+            ? 'Morning Sights, Souvenirs & Return'
           : `Heritage, Scenic Views & ${foodLabel} Dining`,
       activities
     });

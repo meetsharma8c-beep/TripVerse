@@ -297,10 +297,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   // Step 6: Transportation
   const [transportMode, setTransportMode] = useState<TransportMode>('car');
 
-  // Real-time transport feasibility based on geographic origin, destination & travel date
+  // Real-time transport feasibility based on geographic origin, destination, coordinates & travel date
   const transportFeasibility = React.useMemo(() => {
-    return getFeasibleTransportModes(origin, destination, startDate);
-  }, [origin, destination, startDate]);
+    return getFeasibleTransportModes(origin, destination, startDate, originCoords, selectedPreciseSpot?.coordinates);
+  }, [origin, destination, startDate, originCoords, selectedPreciseSpot]);
 
   // Keep transportMode valid: if current selection is not available for this route/destination, auto-promote to recommended default
   React.useEffect(() => {
@@ -332,9 +332,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
       travelersCount,
       startDate,
       accommodationType,
-      transportMode
+      transportMode,
+      originCoords,
+      destCoords: selectedPreciseSpot?.coordinates
     });
-  }, [origin, destination, duration, travelersCount, startDate, accommodationType, transportMode]);
+  }, [origin, destination, duration, travelersCount, startDate, accommodationType, transportMode, originCoords, selectedPreciseSpot]);
 
   const togglePreference = (pref: TravelPreference) => {
     if (preferences.includes(pref)) {
@@ -384,18 +386,21 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   const [availableSights, setAvailableSights] = useState<string[]>([]);
   const [selectedSights, setSelectedSights] = useState<string[]>([]);
   const [customSightInput, setCustomSightInput] = useState('');
+  const lastSightsDestRef = React.useRef<string>('');
 
-  // Dynamically populate genuine sights whenever destination or selected spot changes (including live worldwide Wikipedia + Geosearch sights)
+  // Dynamically populate genuine sights whenever destination or selected spot changes (never leak prior city's sights)
   useEffect(() => {
     const rawDest = (selectedPreciseSpot?.name || destination || '').trim();
     if (!rawDest) {
+      lastSightsDestRef.current = '';
       setAvailableSights([]);
       setSelectedSights([]);
       return;
     }
+    const destKey = rawDest.toLowerCase();
     const matched = POPULAR_DESTINATIONS.find(
-      d => d.name.toLowerCase() === rawDest.toLowerCase() ||
-           rawDest.toLowerCase().includes(d.name.toLowerCase())
+      d => d.name.toLowerCase() === destKey ||
+           destKey.includes(d.name.toLowerCase())
     );
     const atlasHighlights = getDestinationHighlights(rawDest, 14);
     const combined = Array.from(new Set([
@@ -403,8 +408,18 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
       ...(matched?.popularActivities || []),
       ...atlasHighlights
     ].filter(Boolean)));
+    const destChanged = lastSightsDestRef.current !== destKey;
+    lastSightsDestRef.current = destKey;
+
     setAvailableSights(combined);
-    setSelectedSights(prev => prev.length > 0 ? prev : combined.slice(0, 5));
+    setSelectedSights(prev => {
+      if (destChanged || prev.length === 0) {
+        return combined.slice(0, 5);
+      }
+      // Keep only selections that belong to the current destination's combined sights
+      const valid = prev.filter(s => combined.includes(s));
+      return valid.length > 0 ? valid : combined.slice(0, 5);
+    });
 
     // If the user typed any global destination not in our local catalog, fetch live Wikimedia Geosearch sights & exact coordinates
     if (!matched && rawDest.length >= 2) {
@@ -419,7 +434,11 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
               return merged;
             });
             setSelectedSights(prev => {
-              if (prev.length === 0) return globalLoc.highlights.slice(0, 5);
+              // Replace generic template highlights if live Wikipedia Geosearch returned real landmarks
+              const valid = prev.filter(s => globalLoc.highlights.includes(s));
+              if (prev.length === 0 || valid.length === 0) {
+                return globalLoc.highlights.slice(0, 5);
+              }
               return prev;
             });
           }

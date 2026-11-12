@@ -1,5 +1,5 @@
-import { TransportDeal, TransportMode, Priority } from '../types/trip';
-import { resolveTransitContext } from './transportFeasibilityEngine';
+import { Coordinates, TransportDeal, TransportMode, Priority } from '../types/trip';
+import { resolveTransitContext, getFeasibleTransportModes } from './transportFeasibilityEngine';
 import { resolvePreciseLocationSync } from './locationService';
 import { evaluateLiveMarketPrices } from './liveMarketPricingService';
 
@@ -12,16 +12,18 @@ export interface DealQueryParams {
   totalBudget: number;
   priorities?: Priority[];
   startDate?: string;
+  originCoords?: Coordinates;
+  destCoords?: Coordinates;
 }
 
 /**
  * Calculates genuine straight-line distance in km between two locations using Haversine formula.
  */
-function calculateRouteDistanceKm(origin: string, destination: string): number {
+function calculateRouteDistanceKm(origin: string, destination: string, originCoords?: Coordinates, destCoords?: Coordinates): number {
   const oLoc = resolvePreciseLocationSync(origin);
   const dLoc = resolvePreciseLocationSync(destination);
-  const c1 = oLoc?.coordinates;
-  const c2 = dLoc?.coordinates;
+  const c1 = originCoords || oLoc?.coordinates;
+  const c2 = destCoords || dLoc?.coordinates;
   if (!c1 || !c2 || !c1.lat || !c2.lat) return 450;
   
   const R = 6371;
@@ -158,8 +160,8 @@ export function generateTransportDeals(params: DealQueryParams): {
   allDeals: TransportDeal[];
 } {
   const cleanOrigin = (params.origin || 'City Center').split(',')[0].trim();
-  const rawDest = (params.destination || 'Destination').split(',')[0].trim();
-  const transit = resolveTransitContext(rawDest);
+  const rawDest = (params.destination || 'Destination').trim();
+  const transit = resolveTransitContext(rawDest, params.destCoords);
   const cleanDest = transit.destination.split(',')[0].trim();
   const travelers = Math.max(1, params.travelersCount || 1);
   const mode = params.mode || 'car';
@@ -170,10 +172,12 @@ export function generateTransportDeals(params: DealQueryParams): {
     : new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
 
   // Genuine route distance calculation across all modalities
-  const straightDistKm = calculateRouteDistanceKm(params.origin, params.destination);
+  const straightDistKm = calculateRouteDistanceKm(params.origin, params.destination, params.originCoords, params.destCoords);
   const airDistKm = straightDistKm;
   const roadDistKm = Math.round(straightDistKm * 1.28);
   const railDistKm = Math.round(straightDistKm * 1.18);
+  const routeFeasibility = getFeasibleTransportModes(params.origin, params.destination, travelDate, params.originCoords, params.destCoords);
+  const canFly = routeFeasibility.availableModes.includes('flight') && straightDistKm >= 200;
 
   // Region and international routing detection
   const canonical = resolveCanonicalDestination(rawDest);
@@ -222,9 +226,9 @@ export function generateTransportDeals(params: DealQueryParams): {
   // =========================================================================
   // FLIGHT DEALS (Live Market Indexed & Smart Nearby Hub Arbitrage Aware)
   // =========================================================================
-  if ((mode === 'flight' || mode === 'any') && transit.primaryAirport !== null) {
+  if ((mode === 'flight' || mode === 'any') && canFly && transit.primaryAirport !== null) {
     const flightUrls = buildFlightBookingUrl(cleanOrigin, rawDest, travelDate);
-    const airportName = transit.primaryAirport?.name || `${cleanDest} Airport`;
+    const airportName = transit.primaryAirport?.name || `${cleanDest} Gateway Airport`;
     const isMultiModalAir = !transit.hasDirectAirport && transit.primaryAirport !== null;
 
     const liveMarket = evaluateLiveMarketPrices({
@@ -233,7 +237,9 @@ export function generateTransportDeals(params: DealQueryParams): {
       durationDays: params.durationDays || 5,
       travelersCount: travelers,
       startDate: travelDate,
-      transportMode: 'flight'
+      transportMode: 'flight',
+      originCoords: params.originCoords,
+      destCoords: params.destCoords
     });
 
     const isConnectingRoute = liveMarket.isConnectingFlightRoute;

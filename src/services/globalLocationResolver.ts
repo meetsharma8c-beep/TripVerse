@@ -151,11 +151,13 @@ export async function resolveGlobalDestination(rawInput: string): Promise<Resolv
     'User-Agent': 'TripVerse-Client/1.0 (travel@trip-verse.com)'
   };
 
-  const queriesToTry = [
+  const commaParts = cleanInput.split(',').map(s => s.trim()).filter(s => s.length >= 3);
+  const queriesToTry = Array.from(new Set([
     cleanInput,
     canonical.canonicalName,
-    cleanInput.replace(/,\s*/g, '_')
-  ].filter(Boolean);
+    cleanInput.replace(/,\s*/g, '_'),
+    ...commaParts.slice(1)
+  ].filter(Boolean)));
 
   let wikiSummary: any = null;
   for (const q of queriesToTry) {
@@ -180,35 +182,41 @@ export async function resolveGlobalDestination(rawInput: string): Promise<Resolv
 
   let country = canonical.country || 'Worldwide';
   let state = canonical.state || 'Region';
-  let cityName = wikiSummary?.title || canonical.canonicalName || cleanInput.split(',')[0].trim();
+  let cityName = cleanInput.includes(',') ? cleanInput : (wikiSummary?.title || canonical.canonicalName || cleanInput);
   let description = wikiSummary?.extract || wikiSummary?.description || `Scenic destination in ${country}.`;
   let image = wikiSummary?.originalimage?.source || wikiSummary?.thumbnail?.source || undefined;
 
-  // 3. If coordinates are missing, query OpenStreetMap Nominatim geocoding
+  // 3. If coordinates are missing, query OpenStreetMap Nominatim geocoding (full query then parent locality)
   if (!coordinates) {
-    try {
-      const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanInput)}&format=json&addressdetails=1&limit=1`;
-      const nomRes = await fetch(nomUrl, { headers });
-      if (nomRes.ok) {
-        const nomData = await nomRes.json();
-        if (Array.isArray(nomData) && nomData.length > 0) {
-          const first = nomData[0];
-          coordinates = { lat: parseFloat(first.lat), lng: parseFloat(first.lon) };
-          if (first.address) {
-            country = first.address.country || country;
-            state = first.address.state || first.address.region || first.address.state_district || state;
-            cityName = first.address.city || first.address.town || first.address.village || cityName;
+    const nomQueries = Array.from(new Set([cleanInput, ...commaParts.slice(1)]));
+    for (const nomQuery of nomQueries) {
+      try {
+        const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(nomQuery)}&format=json&addressdetails=1&limit=1`;
+        const nomRes = await fetch(nomUrl, { headers });
+        if (nomRes.ok) {
+          const nomData = await nomRes.json();
+          if (Array.isArray(nomData) && nomData.length > 0) {
+            const first = nomData[0];
+            coordinates = { lat: parseFloat(first.lat), lng: parseFloat(first.lon) };
+            if (first.address) {
+              country = first.address.country || country;
+              state = first.address.state || first.address.region || first.address.state_district || state;
+              if (!cleanInput.includes(',')) {
+                cityName = first.address.city || first.address.town || first.address.village || cityName;
+              }
+            }
+            break;
           }
         }
+      } catch {
+        // Nominatim unreachable or throttled
       }
-    } catch {
-      // Nominatim unreachable or throttled
     }
   }
 
   // Fallback coordinates if offline
   if (!coordinates) {
-    coordinates = canonical.matchedDestination?.coordinates || { lat: 26.9124, lng: 75.7873 };
+    coordinates = canonical.matchedDestination?.coordinates || { lat: 23.2599, lng: 77.4126 };
   }
 
   // 4. Query Wikimedia Geosearch around coordinates to discover genuine famous sights

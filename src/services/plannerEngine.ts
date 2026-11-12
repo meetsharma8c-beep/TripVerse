@@ -8,7 +8,7 @@ import { resolveTransitContext, getFeasibleTransportModes } from './transportFea
 import { getActiveCurrency, formatCurrency, CURRENCIES } from './currencyService';
 import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
 import { resolveCanonicalDestination } from './canonicalCityService';
-import { getDestinationHighlights, resolveLandmarkCoordinates, calculateTransitBetween } from './landmarkAtlasService';
+import { getDestinationHighlights, resolveLandmarkCoordinates, calculateTransitBetween, isLandmarkRemoteFromDestination } from './landmarkAtlasService';
 import { evaluateLiveMarketPrices } from './liveMarketPricingService';
 import { calculateSolarTimes } from './solarTimeService';
 import { verifyVenueFeasibility } from './venueOperatingHoursService';
@@ -82,9 +82,9 @@ function resolveOriginCoords(originName: string): Coordinates {
   if (lower.includes('hyderabad')) return { lat: 17.3850, lng: 78.4867 };
   if (lower.includes('kolkata')) return { lat: 22.5726, lng: 88.3639 };
 
-  // Fallback to offline geocoder
+  // Fallback to offline geocoder (neutral central coordinates if unresolved)
   const resolved = resolvePreciseLocationSync(originName);
-  return resolved.coordinates || { lat: 48.8566, lng: 2.3522 };
+  return resolved.coordinates || { lat: 23.0225, lng: 72.5714 };
 }
 
 /**
@@ -463,22 +463,23 @@ export function generateAITrip(input: PlannerInput): Trip {
       : matchedDest.country || 'Worldwide';
   const spotType = preciseLoc.spotType || 'nature';
   const category = preciseLoc.category || matchedDest.category || 'roadtrip';
-  const transitContext = resolveTransitContext(spotName);
-  const routeFeasibility = getFeasibleTransportModes(input.origin || '', spotName, input.startDate);
-  const effectiveTransportMode = (input.transportMode && routeFeasibility.availableModes.includes(input.transportMode))
-    ? input.transportMode
-    : routeFeasibility.recommendedDefaultMode;
   const activeCurrency: CurrencyCode = input.currency || getActiveCurrency();
 
   // Determine true destination coordinates
-  const destCoords: Coordinates = input.destinationCoords || preciseLoc.coordinates || matchedDest.coordinates || { lat: 26.9124, lng: 75.7873 };
+  const destCoords: Coordinates = input.destinationCoords || preciseLoc.coordinates || matchedDest.coordinates || { lat: 23.2599, lng: 77.4126 };
 
   // Determine origin coordinates
   const originCoords: Coordinates = input.originCoords || resolveOriginCoords(input.origin || 'Ahmedabad, Gujarat');
 
+  const transitContext = resolveTransitContext(spotName, destCoords);
+  const routeFeasibility = getFeasibleTransportModes(input.origin || '', spotName, input.startDate, originCoords, destCoords);
+  const effectiveTransportMode = (input.transportMode && routeFeasibility.availableModes.includes(input.transportMode))
+    ? input.transportMode
+    : routeFeasibility.recommendedDefaultMode;
+
   // Calculate real highway distance & duration
   const straightLineDist = haversineDistKm(originCoords, destCoords);
-  const routeDistKm = Math.max(45, Math.round(straightLineDist * 1.25));
+  const routeDistKm = Math.max(15, Math.round(straightLineDist * 1.25));
   const avgSpeed = effectiveTransportMode === 'flight' ? 450 : effectiveTransportMode === 'bike' ? 55 : 68;
   const routeHours = Math.max(1, Math.round((routeDistKm / avgSpeed) * 10) / 10);
 
@@ -495,9 +496,13 @@ export function generateAITrip(input: PlannerInput): Trip {
     travelersCount: safeTravelers,
     startDate: input.startDate,
     accommodationType: input.accommodationType,
-    transportMode: effectiveTransportMode
+    transportMode: effectiveTransportMode,
+    originCoords,
+    destCoords
   });
 
+  const isBusFallback = effectiveTransportMode === 'bus';
+  const busEstimatedCost = Math.max(300, Math.round(routeDistKm * 1.4 * 2)) * safeTravelers;
   const transportCost = effectiveTransportMode === 'flight'
     ? (liveMarket.smartHubArbitrage
         ? liveMarket.smartHubArbitrage.hubRoundTripPerPerson * safeTravelers + liveMarket.smartHubArbitrage.groundTransferToHubCost
@@ -506,6 +511,8 @@ export function generateAITrip(input: PlannerInput): Trip {
     ? liveMarket.trainTotalGroupINR
     : effectiveTransportMode === 'car' || effectiveTransportMode === 'bike'
     ? liveMarket.roadTripFuelAndTollsINR
+    : isBusFallback
+    ? busEstimatedCost
     : liveMarket.localTransitTotalGroupINR;
 
   const stayCost = isSingleDay ? 0 : liveMarket.hotelTotalGroupINR;
@@ -522,7 +529,9 @@ export function generateAITrip(input: PlannerInput): Trip {
 
   // Compile full deduplicated highlights list: prioritize user selected sights, live discovered highlights from preciseLoc, and atlas
   const atlasHighlights = getDestinationHighlights(spotName, 25);
-  const userChosenActivities = (input.selectedActivities || []).map(s => s.trim()).filter(Boolean);
+  const userChosenActivities = (input.selectedActivities || [])
+    .map(s => s.trim())
+    .filter(s => s.length > 0 && !isLandmarkRemoteFromDestination(s, destCoords));
   const rawHighlights = Array.from(new Set([
     ...userChosenActivities,
     ...(preciseLoc?.highlights && preciseLoc.highlights.length > 0 ? preciseLoc.highlights : []),
@@ -611,7 +620,10 @@ export function generateAITrip(input: PlannerInput): Trip {
     : 1;
   const scaleExpense = (rawAmount: number) => Math.max(0, Math.round(rawAmount * budgetScale));
 
-  const isAir = effectiveTransportMode === 'flight' && transitContext.primaryAirport !== null;
+  const isAir = effectiveTransportMode === 'flight' &&
+    routeFeasibility.availableModes.includes('flight') &&
+    straightLineDist >= 200 &&
+    transitContext.primaryAirport !== null;
   const isRail = effectiveTransportMode === 'train' && transitContext.primaryRailwayStation !== null;
   const outboundTransitTitle = isAir
     ? `Flight from ${input.origin || 'Origin'} to ${transitContext.primaryAirport?.name || spotName}`
@@ -733,10 +745,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           travelTimeMin: 0,
           distanceKm: 0,
           description: `Evening return transit from ${spotName} to ${input.origin || 'Origin'}.`,
-          coordinates: {
-            lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.5,
-            lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.5
-          },
+          coordinates: destCoords,
           tag: 'Return'
         },
         {
@@ -808,7 +817,7 @@ export function generateAITrip(input: PlannerInput): Trip {
           id: `act-1-bs`,
           dayNumber: 1,
           time: bsTime,
-          title: `Arrival at ${transitContext.primaryAirport?.name || `${spotName} International Airport`}`,
+          title: `Arrival at ${transitContext.primaryAirport?.name || `${spotName} Gateway Airport`}`,
           type: 'arrival',
           location: `${transitContext.primaryAirport?.name || spotName} Terminal`,
           estimatedCost: scaleExpense(250 * cityMultiplier * safeTravelers),
@@ -1003,7 +1012,7 @@ export function generateAITrip(input: PlannerInput): Trip {
             ? `Flight Departure from ${transitContext.primaryAirport?.name || spotName}`
             : `Commence Return Journey to ${input.origin || 'Origin'}`,
           type: 'departure',
-          location: isAir ? (transitContext.primaryAirport?.name || `${spotName} Airport`) : isRail ? (transitContext.primaryRailwayStation?.name || `${spotName} Station`) : `${spotName} Highway Gateway`,
+          location: isAir ? (transitContext.primaryAirport?.name || `${spotName} Gateway Airport`) : isRail ? (transitContext.primaryRailwayStation?.name || `${spotName} Station`) : `${spotName} Highway Gateway`,
           estimatedCost: Math.round(transportCost * 0.5),
           travelTimeMin: 0,
           distanceKm: 0,
@@ -1286,7 +1295,9 @@ export function generateAITrip(input: PlannerInput): Trip {
     travelersCount: safeTravelers,
     totalBudget: totalBudget,
     priorities: input.priorities,
-    startDate: input.startDate
+    startDate: input.startDate,
+    originCoords,
+    destCoords
   });
 
   let safeStartDate = input.startDate;
@@ -1294,10 +1305,31 @@ export function generateAITrip(input: PlannerInput): Trip {
     safeStartDate = new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
   }
 
-  const fineStayCost = isSingleDay
+  let fineTransportCost = transportCost;
+  const rawStayCost = isSingleDay
     ? 0
     : (recommendedHotel?.nightlyRate ? recommendedHotel.nightlyRate * nightsCount * roomsCount : stayCost);
-  const fineEstimatedTotal = transportCost + fineStayCost + foodCost + actCost + miscCost;
+  let fineStayCost = rawStayCost;
+  let fineFoodCost = foodCost;
+  let fineActCost = actCost;
+  let fineMiscCost = miscCost;
+  let fineEstimatedTotal = fineTransportCost + fineStayCost + fineFoodCost + fineActCost + fineMiscCost;
+
+  // Tight budget calibration for budget/hostel/camping ground trips: scale local dining,
+  // free/public sightseeing, and shared transit proportions when market midpoints exceed budget
+  if (
+    fineEstimatedTotal > totalBudget &&
+    !isAir &&
+    (['hostel', 'camping', 'budget'].includes(input.accommodationType || 'budget') || input.priorities?.includes('budget'))
+  ) {
+    const scaleRatio = Math.max(0.25, (totalBudget * 0.94) / fineEstimatedTotal);
+    fineTransportCost = Math.round(fineTransportCost * scaleRatio);
+    fineStayCost = Math.round(fineStayCost * scaleRatio);
+    fineFoodCost = Math.round(fineFoodCost * scaleRatio);
+    fineActCost = Math.round(fineActCost * scaleRatio);
+    fineMiscCost = Math.max(0, totalBudget - (fineTransportCost + fineStayCost + fineFoodCost + fineActCost) - Math.round(totalBudget * 0.04));
+    fineEstimatedTotal = fineTransportCost + fineStayCost + fineFoodCost + fineActCost + fineMiscCost;
+  }
 
   const rawTrip: Trip = {
     id: `trip-${Date.now()}`,
@@ -1337,11 +1369,11 @@ export function generateAITrip(input: PlannerInput): Trip {
     aiRationale: `Suggested ${daysCount}-day trip plan to ${spotName} (${state ? `${state}, ` : ''}${country}) for ${safeTravelers} traveler(s).${isSingleDay ? '' : ` Selected stay: ${recommendedHotel.name} (${recommendedHotel.starRating}★).`} Pacing: ${pacing.replace('_', ' ')}. Total budget calibrated to real-time regional market prices. Buffer estimate: ${formatCurrency(Math.max(0, totalBudget - fineEstimatedTotal), activeCurrency)}.${climateProfile.protocol !== 'temperate_standard' ? ` Climate Protocol: ${climateProfile.title} — ${climateProfile.advisoryNote}` : ''} Astronomical Solar Day: Sunrise ${solarTimes.sunrise}, Sunset ${solarTimes.sunset} (${solarTimes.daylightHours}h daylight).${circuit.isMultiCity ? ` Multi-City Circuit: ${circuit.summary}.` : ''}`,
     breakStops: [],
     budgetBreakdown: {
-      transportation: transportCost,
+      transportation: fineTransportCost,
       accommodation: fineStayCost,
-      food: foodCost,
-      activities: actCost,
-      miscellaneous: miscCost
+      food: fineFoodCost,
+      activities: fineActCost,
+      miscellaneous: fineMiscCost
     },
     estimatedTotal: fineEstimatedTotal,
     routeType: routeType,

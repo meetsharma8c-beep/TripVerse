@@ -7,7 +7,7 @@ import { getActiveCurrency, CURRENCIES } from './currencyService';
 import { getActiveLanguage, LANGUAGES } from './languageService';
 import { enrichTripWithOriginalPhotos } from './originalPhotoService';
 import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
-import { getDestinationHighlights } from './landmarkAtlasService';
+import { getDestinationHighlights, isLandmarkRemoteFromDestination } from './landmarkAtlasService';
 import { resolveGlobalDestination, ResolvedGlobalLocation } from './globalLocationResolver';
 
 const ACTIVITY_TYPES = new Set(['food', 'attraction', 'viewpoint', 'nightlife', 'rest']);
@@ -220,9 +220,17 @@ export function applyItinerary(days: any[], input: PlannerInput, trip: Trip): Tr
             let rawTitle = typeof activity?.title === 'string' && activity.title.trim()
                 ? activity.title.trim().slice(0, 100)
                 : `Suggested ${trip.destination} experience`;
+            if (isLandmarkRemoteFromDestination(rawTitle, destinationCoordinates)) {
+                const localReplacement = highlightsPool.find(
+                    h => !seenTitles.has(h.toLowerCase()) && !isLandmarkRemoteFromDestination(h, destinationCoordinates)
+                );
+                rawTitle = localReplacement || `${trip.destination} Local Highlight ${activityIndex + 1}`;
+            }
             const normTitle = rawTitle.toLowerCase();
             if (seenTitles.has(normTitle) && type !== 'food') {
-                const replacement = highlightsPool.find(h => !seenTitles.has(h.toLowerCase()));
+                const replacement = highlightsPool.find(
+                    h => !seenTitles.has(h.toLowerCase()) && !isLandmarkRemoteFromDestination(h, destinationCoordinates)
+                );
                 if (replacement) {
                     rawTitle = replacement;
                 } else {
@@ -242,6 +250,19 @@ export function applyItinerary(days: any[], input: PlannerInput, trip: Trip): Tr
                 : defaultTimes[activityIndex] || '2:00 PM';
             if (isFirstDay && targetDaysCount > 1 && /\b0?([6-9]|10|11):\d{2}\s*AM\b/i.test(timeStr)) {
                 timeStr = DEFAULT_DAY1_TIMES[activityIndex] || '3:00 PM';
+            }
+            if (targetDaysCount === 1) {
+                const m = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+                if (m) {
+                    let h = parseInt(m[1], 10);
+                    const min = parseInt(m[2], 10);
+                    const mer = (m[3] || '').toUpperCase();
+                    if (mer === 'PM' && h < 12) h += 12;
+                    if (mer === 'AM' && h === 12) h = 0;
+                    if (h * 60 + min >= 17 * 60 + 15) {
+                        continue;
+                    }
+                }
             }
 
             // Spatial offset around destination center so map pins remain distinct
@@ -325,12 +346,13 @@ export function applyItinerary(days: any[], input: PlannerInput, trip: Trip): Tr
         }
     }
 
-    const modeLabel = trip.transportMode === 'flight' ? 'flight' : trip.transportMode === 'train' ? 'rail' : 'road';
+    const modeLabel = trip.transportMode === 'flight' ? 'flight' : trip.transportMode === 'train' ? 'rail' : trip.transportMode === 'bus' ? 'bus' : 'road';
+    const currSym = (CURRENCIES[trip.currency || 'INR'] || CURRENCIES.INR).symbol;
 
     return {
         ...trip,
         itinerary: plannedDays,
-        aiRationale: `Genuinely planned by ConCode AI Brain. Customized for ${trip.travelersCount} ${trip.travelerType || 'traveler(s)'} based on your choices: ${trip.preferences.join(', ') || 'scenic highlights'}, ${trip.foodPreference || 'authentic'} dining, and ${modeLabel} transit with a target budget of ₹${trip.totalBudget.toLocaleString('en-IN')}${input.specialRequests?.trim() ? ` (Request: “${input.specialRequests.trim().slice(0, 150)}”)` : ''}.`
+        aiRationale: `Genuinely planned by ConCode AI Brain. Customized for ${trip.travelersCount} ${trip.travelerType || 'traveler(s)'} based on your choices: ${trip.preferences.join(', ') || 'scenic highlights'}, ${trip.foodPreference || 'authentic'} dining, and ${modeLabel} transit with a target budget of ${currSym}${trip.totalBudget.toLocaleString('en-IN')}${input.specialRequests?.trim() ? ` (Request: “${input.specialRequests.trim().slice(0, 150)}”)` : ''}.`
     };
 }
 
@@ -343,11 +365,17 @@ export async function generatePersonalizedTrip(input: PlannerInput): Promise<Tri
         console.warn('[TripVerse] Global location resolver warning:', err);
     }
 
+    const resolvedDestCoords = resolvedGlobal?.coordinates || input.destinationCoords;
+    const sanitizedSelectedActivities = resolvedDestCoords
+        ? (input.selectedActivities || []).filter(s => !isLandmarkRemoteFromDestination(s, resolvedDestCoords))
+        : input.selectedActivities;
+
     const effectiveInput: PlannerInput = {
         ...input,
         destination: resolvedGlobal?.name || input.destination,
         destinationName: resolvedGlobal?.name || input.destinationName,
-        destinationCoords: resolvedGlobal?.coordinates || input.destinationCoords,
+        destinationCoords: resolvedDestCoords,
+        selectedActivities: sanitizedSelectedActivities,
         preciseLocation: resolvedGlobal ? {
             id: `geo-${resolvedGlobal.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
             name: resolvedGlobal.name,
