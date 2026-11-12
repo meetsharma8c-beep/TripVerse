@@ -69,11 +69,11 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('trips.portfolio')}</span>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#152A1C] tracking-tight">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D] dark:text-emerald-400">{t('trips.portfolio')}</span>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#152A1C] dark:text-white tracking-tight">
             {t('trips.title')}
           </h1>
-          <p className="text-xs sm:text-sm text-[#5A7362] mt-0.5 font-medium">
+          <p className="text-xs sm:text-sm text-[#5A7362] dark:text-slate-400 mt-0.5 font-medium">
             {t('trips.subtitle')}
           </p>
         </div>
@@ -88,7 +88,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#E2EBE1] pb-3 overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-2 border-b border-[#E2EBE1] dark:border-slate-800 pb-3 overflow-x-auto scrollbar-none">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -96,7 +96,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
             className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === tab.id
                 ? 'bg-[#2D5A3D] text-white shadow-xs'
-                : 'bg-white text-[#5A7362] border border-[#E2EBE1] hover:border-[#8EA78D] hover:bg-[#F8FAF7]'
+                : 'bg-white dark:bg-slate-900/80 text-[#5A7362] dark:text-slate-300 border border-[#E2EBE1] dark:border-slate-800 hover:border-[#8EA78D] hover:bg-[#F8FAF7] dark:hover:bg-slate-800'
             }`}
           >
             {tab.label}
@@ -106,15 +106,15 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
 
       {/* Trip Cards Grid */}
       {filteredTrips.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-3xl border border-[#E2EBE1] p-8 space-y-5 shadow-xs max-w-md mx-auto animate-fade-in">
-          <div className="w-20 h-20 rounded-3xl bg-[#E8EFE7] text-[#2D5A3D] flex items-center justify-center mx-auto shadow-inner border border-[#8EA78D]/30">
+        <div className="text-center py-16 bg-white dark:bg-[#0C1523] rounded-3xl border border-[#E2EBE1] dark:border-slate-800 p-8 space-y-5 shadow-xs max-w-md mx-auto animate-fade-in">
+          <div className="w-20 h-20 rounded-3xl bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-400 flex items-center justify-center mx-auto shadow-inner border border-[#8EA78D]/30 dark:border-emerald-800/40">
             <MapPin className="w-9 h-9 stroke-[1.8]" />
           </div>
           <div className="space-y-1.5">
-            <h3 className="text-xl font-bold font-display text-[#152A1C]">
+            <h3 className="text-xl font-bold font-display text-[#152A1C] dark:text-white">
               {trips.length === 0 ? t('trips.emptyTitle') : "No trips in this category"}
             </h3>
-            <p className="text-xs text-[#5A7362] max-w-xs mx-auto leading-relaxed">
+            <p className="text-xs text-[#5A7362] dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
               {trips.length === 0 
                 ? t('trips.emptySubtitle') 
                 : "No saved journeys found for the selected filter."}
@@ -138,10 +138,10 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
             return (
               <div
                 key={trip.id}
-                className={`bg-white rounded-3xl overflow-hidden border transition-all duration-200 flex flex-col justify-between group ${
+                className={`bg-white dark:bg-[#0C1523] rounded-3xl overflow-hidden border transition-all duration-200 flex flex-col justify-between group ${
                   isSelected 
-                    ? 'border-emerald-400 shadow-md ring-2 ring-emerald-500/20' 
-                    : 'border-slate-200/90 hover:border-slate-300 hover:shadow-lg'
+                    ? 'border-emerald-400 dark:border-emerald-500 shadow-md ring-2 ring-emerald-500/20' 
+                    : 'border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg'
                 }`}
               >
                 <div>
@@ -215,15 +215,15 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                   {/* Body Info */}
                   <div className="p-5 space-y-4">
                     <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 min-w-0">
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 min-w-0">
                         <span className="badge-caps text-slate-400 block">Duration & Team</span>
-                        <span className="font-bold text-slate-800 truncate block">
+                        <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
                           {trip.durationDays} Days • {trip.travelersCount} Pax
                         </span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 min-w-0">
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 min-w-0">
                         <span className="badge-caps text-slate-400 block">Est. Cost</span>
-                        <span className="font-extrabold text-[#2D5A3D] font-display truncate block">
+                        <span className="font-extrabold text-[#2D5A3D] dark:text-emerald-400 font-display truncate block">
                           {formatCurrency(trip.estimatedTotal, currency)}
                         </span>
                       </div>
@@ -233,10 +233,10 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                     {totalActivities > 0 && (
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-semibold text-slate-500">Plan Completeness</span>
-                          <span className="font-bold text-[#2D5A3D]">{totalActivities} Activities</span>
+                          <span className="font-semibold text-slate-500 dark:text-slate-400">Plan Completeness</span>
+                          <span className="font-bold text-[#2D5A3D] dark:text-emerald-400">{totalActivities} Activities</span>
                         </div>
-                        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                           <div
                             className="bg-trip-gradient h-full rounded-full transition-all duration-500"
                             style={{ width: trip.status === 'completed' ? '100%' : trip.status === 'ongoing' ? '70%' : '40%' }}
@@ -245,13 +245,13 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-slate-400" />
                         <span>{trip.breakStops.length} Break Stops</span>
                       </div>
                       {trip.photos && trip.photos.length > 0 ? (
-                        <span className="text-emerald-700 font-medium">{trip.photos.length} Memories Saved</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 font-medium">{trip.photos.length} Memories Saved</span>
                       ) : (
                         <span className="text-slate-400">Ready to travel</span>
                       )}
@@ -268,7 +268,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                           e.stopPropagation();
                           onOpenMemories(trip);
                         }}
-                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D] font-bold text-xs border border-[#8EA78D]/30 transition-colors cursor-pointer"
+                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#E8EFE7] dark:bg-emerald-950/60 hover:bg-[#dce7db] dark:hover:bg-emerald-900/60 text-[#2D5A3D] dark:text-emerald-300 font-bold text-xs border border-[#8EA78D]/30 dark:border-emerald-800/40 transition-colors cursor-pointer"
                       >
                         <Camera className="w-3.5 h-3.5" />
                         <span>Memories</span>
@@ -280,7 +280,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                           e.stopPropagation();
                           onOpenReview(trip);
                         }}
-                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs border border-amber-200 transition-colors cursor-pointer"
+                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-200 font-bold text-xs border border-amber-200 dark:border-amber-800/50 transition-colors cursor-pointer"
                       >
                         <Star className={`w-3.5 h-3.5 ${trip.review ? 'fill-amber-500 text-amber-500' : 'text-amber-500'}`} />
                         <span>{trip.review ? `${trip.review.rating}.0 Star` : 'Review'}</span>
