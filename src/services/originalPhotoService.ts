@@ -14,6 +14,7 @@
 import { Trip, DayPlan, ItineraryActivity } from '../types/trip';
 import { Hotel } from './hotelService';
 import { KNOWN_DESTINATION_IMAGES, DEFAULT_TRAVEL_FALLBACK_IMAGE } from '../utils/destinationImages';
+import { getCachedApiResponse, setCachedApiResponse } from './edgeCacheService';
 
 // In-Memory Fast Cache
 const MEMORY_PHOTO_CACHE = new Map<string, string>();
@@ -154,6 +155,14 @@ export async function fetchOriginalPhoto(
     return curated;
   }
 
+  // 2.5. Edge Database Cache Check (Supabase & Cross-Device Shared Cache)
+  const edgeKey = `photo:${normKey}`;
+  const cachedUrl = await getCachedApiResponse<string>(edgeKey);
+  if (cachedUrl) {
+    MEMORY_PHOTO_CACHE.set(normKey, cachedUrl);
+    return cachedUrl;
+  }
+
   // 3. Extract candidate queries for Wikimedia API
   const candidates = extractCleanLandmarkName(query, destination);
 
@@ -181,6 +190,7 @@ export async function fetchOriginalPhoto(
           const highResUrl = data.originalimage?.source || candidateImg.replace(/\/\d+px-/, '/1280px-');
           MEMORY_PHOTO_CACHE.set(normKey, highResUrl);
           persistCacheToStorage();
+          setCachedApiResponse(edgeKey, highResUrl, 86400 * 7).catch(() => {});
           return highResUrl;
         }
       }
@@ -214,6 +224,7 @@ export async function fetchOriginalPhoto(
           if (isPhotographicUrl(imgUrl)) {
             MEMORY_PHOTO_CACHE.set(normKey, imgUrl);
             persistCacheToStorage();
+            setCachedApiResponse(edgeKey, imgUrl, 86400 * 7).catch(() => {});
             return imgUrl;
           }
         }

@@ -1,5 +1,6 @@
 import { WeatherForecast, WeatherDay, Coordinates } from '../types/trip';
 import { resolvePreciseLocationSync } from './locationService';
+import { getCachedApiResponse, setCachedApiResponse } from './edgeCacheService';
 
 interface DestinationWeatherProfile {
   name: string;
@@ -654,6 +655,12 @@ export async function fetchLiveDestinationWeather(
 
   try {
     const count = Math.max(3, Math.min(durationDays, 7));
+    const cacheKey = `weather:${lat.toFixed(2)}:${lng.toFixed(2)}:${count}d`;
+    const cachedForecast = await getCachedApiResponse<WeatherForecast>(cacheKey);
+    if (cachedForecast) {
+      return cachedForecast;
+    }
+
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max&timezone=auto`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('Live weather API returned status ' + res.status);
@@ -700,7 +707,7 @@ export async function fetchLiveDestinationWeather(
 
     const currentMeta = mapWmoCodeToCondition(current.weather_code || 0);
 
-    return {
+    const liveForecast: WeatherForecast = {
       destination: fallback.destination,
       currentTempC: Math.round(current.temperature_2m),
       currentCondition: currentMeta.condition,
@@ -710,6 +717,9 @@ export async function fetchLiveDestinationWeather(
       source: 'Open-Meteo forecast',
       lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
+
+    setCachedApiResponse(cacheKey, liveForecast, 10800).catch(() => {});
+    return liveForecast;
   } catch (err) {
     console.warn('Real-time meteorological fetch failed; using curated profile:', err);
     return { ...fallback, isLive: false };

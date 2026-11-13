@@ -9,6 +9,7 @@ import { enrichTripWithOriginalPhotos } from './originalPhotoService';
 import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
 import { getDestinationHighlights, isLandmarkRemoteFromDestination } from './landmarkAtlasService';
 import { resolveGlobalDestination, ResolvedGlobalLocation } from './globalLocationResolver';
+import { buildItinerarySignature, getCachedAiItinerary, setCachedAiItinerary } from './edgeCacheService';
 
 const ACTIVITY_TYPES = new Set(['food', 'attraction', 'viewpoint', 'nightlife', 'rest']);
 
@@ -391,6 +392,32 @@ export async function generatePersonalizedTrip(input: PlannerInput): Promise<Tri
         } : input.preciseLocation
     };
 
+    // Sub-second AI Semantic Cache Check
+    const cacheSignature = buildItinerarySignature(
+        effectiveInput.destination || effectiveInput.destinationName || '',
+        effectiveInput.durationDays || 3,
+        effectiveInput.travelerType || 'solo',
+        effectiveInput.pacing || 'balanced',
+        effectiveInput.budgetAmount || 0
+    );
+
+    if (!effectiveInput.specialRequests) {
+        try {
+            const cachedTrip = await getCachedAiItinerary(cacheSignature);
+            if (cachedTrip && cachedTrip.itinerary && cachedTrip.itinerary.length > 0) {
+                return {
+                    ...cachedTrip,
+                    id: `trip-${Date.now()}`,
+                    name: `${effectiveInput.origin || 'Trip'} to ${effectiveInput.destination || effectiveInput.destinationName || cachedTrip.destination}`,
+                    startDate: effectiveInput.startDate || cachedTrip.startDate,
+                    travelersCount: effectiveInput.travelersCount || cachedTrip.travelersCount
+                };
+            }
+        } catch {
+            // Non-blocking
+        }
+    }
+
     const fallback = generateAITrip(effectiveInput);
     const itinerary = await requestPersonalizedItinerary(buildPrompt(effectiveInput, fallback), fallback, effectiveInput);
     const rawTrip: Trip = (itinerary ? applyItinerary(itinerary, effectiveInput, fallback) : null) || {
@@ -402,11 +429,22 @@ export async function generatePersonalizedTrip(input: PlannerInput): Promise<Tri
     const smartTrip = enrichTripWithSmartIntelligence(rawTrip);
 
     // Enrich the trip with genuine, original photography during the loading state
+    let finalTrip = smartTrip;
     try {
-        const enriched = await enrichTripWithOriginalPhotos(smartTrip, effectiveInput.destination || effectiveInput.destinationName);
-        return enriched;
+        finalTrip = await enrichTripWithOriginalPhotos(smartTrip, effectiveInput.destination || effectiveInput.destinationName);
     } catch {
-        return smartTrip;
+        finalTrip = smartTrip;
     }
+
+    if (!effectiveInput.specialRequests) {
+        setCachedAiItinerary(
+            cacheSignature,
+            effectiveInput.destination || effectiveInput.destinationName || '',
+            effectiveInput.durationDays || 3,
+            finalTrip
+        ).catch(() => {});
+    }
+
+    return finalTrip;
 }
 
