@@ -412,19 +412,46 @@ export function subscribeToTripCollaboration(
   };
   window.addEventListener('storage', handleStorage);
 
-  // 3. Supabase Realtime broadcast listener if configured
+  // 3. Supabase Realtime WebSocket listener (Broadcast + Postgres Changes CDC)
   let supabaseChannel: any = null;
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
-      supabaseChannel = supabase.channel(`collab:${tripId}`);
+      supabaseChannel = supabase.channel(`collab:${tripId}`, {
+        config: {
+          broadcast: { self: false }
+        }
+      });
+
       supabaseChannel
+        // Live broadcast from peer clients (<50ms)
         .on('broadcast', { event: 'collab_update' }, ({ payload }: any) => {
           if (payload && payload.tripId === tripId) {
             callback(payload as CollaborationSession);
           }
         })
-        .subscribe();
+        // Postgres CDC (Database changes directly in PostgreSQL)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'trip_collaborations',
+            filter: `trip_id=eq.${tripId}`
+          },
+          (payload: any) => {
+            if (payload.new && payload.new.session_data) {
+              const session = payload.new.session_data as CollaborationSession;
+              saveLocalSession(tripId, session);
+              callback(session);
+            }
+          }
+        )
+        .subscribe((status: string) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`[Realtime] Connected to live multiplayer room for trip ${tripId}`);
+          }
+        });
     } catch (e) {
       console.warn('[Supabase] Realtime collaboration subscription notice:', e);
     }

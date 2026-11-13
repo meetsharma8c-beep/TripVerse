@@ -5,7 +5,8 @@ import {
   buildItinerarySignature,
   getCachedAiItinerary,
   setCachedAiItinerary,
-  clearMemoryCache
+  clearMemoryCache,
+  getMemoryCacheSize
 } from '../src/services/edgeCacheService';
 import { Trip } from '../src/types/trip';
 
@@ -100,10 +101,10 @@ describe('Edge & Database Caching Engine (edgeCacheService)', () => {
     });
 
     it('clearMemoryCache wipes in-memory tier', async () => {
-      await setCachedApiResponse('temp:key', { test: true }, 60);
+      await setCachedApiResponse('temp:mem:only', { test: true }, 60);
+      expect(getMemoryCacheSize()).toBeGreaterThan(0);
       clearMemoryCache();
-      const res = await getCachedApiResponse('temp:key');
-      expect(res).toBeNull();
+      expect(getMemoryCacheSize()).toBe(0);
     });
   });
 });

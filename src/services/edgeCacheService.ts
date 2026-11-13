@@ -203,3 +203,10 @@ export async function setCachedAiItinerary(
 export function clearMemoryCache(): void {
   MEMORY_CACHE.clear();
 }
+
+/**
+ * Get current in-memory cache size
+ */
+export function getMemoryCacheSize(): number {
+  return MEMORY_CACHE.size;
+}
