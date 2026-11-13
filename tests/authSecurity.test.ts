@@ -30,6 +30,7 @@ import {
   getUserSubscriptionQuota,
   consumeTripCredit,
   upgradeUserToPro,
+  downgradeUserToFree,
   handleFirebaseUserCredential,
   isMobileDevice,
   shouldPreferGoogleRedirect,
@@ -394,6 +395,22 @@ describe('Auth Security & Verification Tests', () => {
     expect(proQuota.canCreateTrip).toBe(true);
     expect(proQuota.isPro).toBe(true);
     expect(proQuota.freeTripsRemaining).toBe(9999);
+
+    // Step 7: STRICT OPTION A: Downgrading from Pro keeps quota strictly exhausted (0 remaining, not reset to 3)
+    await downgradeUserToFree(proUser);
+    const postDowngradeQuota = getUserSubscriptionQuota(proUser);
+    expect(postDowngradeQuota.canCreateTrip).toBe(false);
+    expect(postDowngradeQuota.freeTripsRemaining).toBe(0);
+
+    // Step 8: STRICT OPTION A: Cross-session check with same email keeps quota exhausted even without local UID state
+    const freshSessionUser: AuthUser = {
+      ...testUser,
+      uid: 'fresh-session-uid-999',
+      freeTripsRemaining: 3 // attempting default 3
+    };
+    const crossSessionQuota = getUserSubscriptionQuota(freshSessionUser);
+    expect(crossSessionQuota.canCreateTrip).toBe(false);
+    expect(crossSessionQuota.freeTripsRemaining).toBe(0);
   });
 
   describe('Automated Google Auth Zero-DOM Redirect Detection', () => {

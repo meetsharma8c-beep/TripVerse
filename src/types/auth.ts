@@ -6,6 +6,7 @@ export interface UserSubscriptionQuota {
   isPro: boolean;
   freeTripsRemaining: number;
   freeTripsTotal: number;
+  lifetimeTripsCreated: number;
   canCreateTrip: boolean;
   weeklyAssistantMinutesRemaining: number;
   weeklyAssistantMinutesTotal: number;
@@ -33,6 +34,7 @@ export interface AuthUser {
   savedPlaceIds?: string[];
   subscriptionTier?: SubscriptionTier;
   freeTripsRemaining?: number;
+  lifetimeTripsCreated?: number;
   subscriptionExpiresAt?: string;
   weeklyAssistantMinutesRemaining?: number;
   weeklyQuotaResetAt?: string;

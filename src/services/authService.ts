@@ -165,8 +165,44 @@ export function supabaseUserToAuthUser(sbUser: SupabaseAuthUser, overrides?: Par
     ? 'phone'
     : 'email';
 
+  const emailNorm = (sbUser.email || overrides?.email || '').toLowerCase().trim();
+  const userDeterministicUid = toDeterministicUuid(sbUser.id);
+  let storedLifetime: number | undefined = undefined;
+
+  if (typeof metadata.lifetime_trips_created === 'number') {
+    storedLifetime = metadata.lifetime_trips_created;
+  } else if (typeof overrides?.lifetimeTripsCreated === 'number') {
+    storedLifetime = overrides.lifetimeTripsCreated;
+  } else if (typeof localStorage !== 'undefined') {
+    try {
+      if (emailNorm) {
+        const val = localStorage.getItem(`tripverse_lifetime_trips_created_email_${emailNorm}`);
+        if (val) storedLifetime = parseInt(val, 10);
+      }
+      if (storedLifetime === undefined) {
+        const val = localStorage.getItem(`tripverse_lifetime_trips_created_u_${userDeterministicUid}`);
+        if (val) storedLifetime = parseInt(val, 10);
+      }
+    } catch {}
+  }
+
+  const finalLifetime = typeof storedLifetime === 'number' && !isNaN(storedLifetime)
+    ? Math.max(0, storedLifetime)
+    : (isAnonymous ? 0 : 0);
+
+  const explicitRemaining = typeof overrides?.freeTripsRemaining === 'number'
+    ? overrides.freeTripsRemaining
+    : (typeof metadata.free_trips_remaining === 'number' ? metadata.free_trips_remaining : undefined);
+
+  // STRICT OPTION A: Free trips remaining can never exceed 3 minus lifetime trips created
+  const finalRemaining = isAnonymous
+    ? 0
+    : (typeof explicitRemaining === 'number'
+        ? Math.max(0, Math.min(explicitRemaining, 3 - finalLifetime))
+        : Math.max(0, 3 - finalLifetime));
+
   return {
-    uid: toDeterministicUuid(sbUser.id),
+    uid: userDeterministicUid,
     email: sbUser.email || overrides?.email || '',
     phoneNumber: sbUser.phone || overrides?.phoneNumber || '',
     displayName,
@@ -183,9 +219,8 @@ export function supabaseUserToAuthUser(sbUser: SupabaseAuthUser, overrides?: Par
     lastLoginAt: sbUser.last_sign_in_at || new Date().toISOString(),
     savedPlaceIds: overrides?.savedPlaceIds || [],
     subscriptionTier: overrides?.subscriptionTier || (metadata.subscription_tier as SubscriptionTier) || 'free',
-    freeTripsRemaining: typeof overrides?.freeTripsRemaining === 'number' 
-      ? overrides.freeTripsRemaining 
-      : (typeof metadata.free_trips_remaining === 'number' ? metadata.free_trips_remaining : (isAnonymous ? 0 : 3)),
+    freeTripsRemaining: finalRemaining,
+    lifetimeTripsCreated: finalLifetime,
     weeklyAssistantMinutesRemaining: typeof overrides?.weeklyAssistantMinutesRemaining === 'number'
       ? overrides.weeklyAssistantMinutesRemaining
       : (typeof metadata.weekly_assistant_minutes_remaining === 'number' ? metadata.weekly_assistant_minutes_remaining : 1800),
@@ -514,6 +549,13 @@ export async function signInWithGoogleCredential(credential: string): Promise<Au
   const now = new Date().toISOString();
 
   if (!account) {
+    const emailKey = `tripverse_lifetime_trips_created_email_${emailNorm}`;
+    const storedEmailLifetime = typeof localStorage !== 'undefined'
+      ? (parseInt(localStorage.getItem(emailKey) || '0', 10) || 0)
+      : 0;
+    const initialLifetime = Math.max(0, storedEmailLifetime);
+    const initialRemaining = Math.max(0, 3 - initialLifetime);
+
     const newUser: AuthUser = {
       uid,
       email: emailNorm,
@@ -527,7 +569,8 @@ export async function signInWithGoogleCredential(credential: string): Promise<Au
       emailVerified: payload.email_verified ?? true,
       provider: 'google',
       subscriptionTier: 'free',
-      freeTripsRemaining: 3,
+      freeTripsRemaining: initialRemaining,
+      lifetimeTripsCreated: initialLifetime,
       weeklyAssistantMinutesRemaining: 1800,
       createdAt: now,
       lastLoginAt: now,
@@ -542,6 +585,9 @@ export async function signInWithGoogleCredential(credential: string): Promise<Au
     account.user.provider = 'google';
     account.user.emailVerified = true;
     account.user.uid = uid;
+    if (typeof account.user.lifetimeTripsCreated !== 'number') {
+      account.user.lifetimeTripsCreated = Math.max(0, 3 - (account.user.freeTripsRemaining ?? 3));
+    }
   }
 
   saveAccounts(accounts);
@@ -617,6 +663,13 @@ export async function signInWithGoogleUserInfo(info: {
 
   if (!account) {
     const displayName = info.name || info.given_name || emailNorm.split('@')[0];
+    const emailKey = `tripverse_lifetime_trips_created_email_${emailNorm}`;
+    const storedEmailLifetime = typeof localStorage !== 'undefined'
+      ? (parseInt(localStorage.getItem(emailKey) || '0', 10) || 0)
+      : 0;
+    const initialLifetime = Math.max(0, storedEmailLifetime);
+    const initialRemaining = Math.max(0, 3 - initialLifetime);
+
     const newUser: AuthUser = {
       uid,
       email: emailNorm,
@@ -630,7 +683,8 @@ export async function signInWithGoogleUserInfo(info: {
       emailVerified: info.email_verified ?? true,
       provider: 'google',
       subscriptionTier: 'free',
-      freeTripsRemaining: 3,
+      freeTripsRemaining: initialRemaining,
+      lifetimeTripsCreated: initialLifetime,
       weeklyAssistantMinutesRemaining: 1800,
       createdAt: now,
       lastLoginAt: now,
@@ -645,6 +699,9 @@ export async function signInWithGoogleUserInfo(info: {
     account.user.provider = 'google';
     account.user.emailVerified = true;
     account.user.uid = uid;
+    if (typeof account.user.lifetimeTripsCreated !== 'number') {
+      account.user.lifetimeTripsCreated = Math.max(0, 3 - (account.user.freeTripsRemaining ?? 3));
+    }
   }
 
   saveAccounts(accounts);
@@ -729,6 +786,13 @@ export async function handleFirebaseUserCredential(cred: any): Promise<AuthUser>
 
   if (!account) {
     const displayName = fbUser.displayName || emailNorm.split('@')[0];
+    const emailKey = `tripverse_lifetime_trips_created_email_${emailNorm}`;
+    const storedEmailLifetime = typeof localStorage !== 'undefined'
+      ? (parseInt(localStorage.getItem(emailKey) || '0', 10) || 0)
+      : 0;
+    const initialLifetime = Math.max(0, storedEmailLifetime);
+    const initialRemaining = Math.max(0, 3 - initialLifetime);
+
     const newUser: AuthUser = {
       uid,
       email: emailNorm,
@@ -742,7 +806,8 @@ export async function handleFirebaseUserCredential(cred: any): Promise<AuthUser>
       emailVerified: fbUser.emailVerified ?? true,
       provider: 'google',
       subscriptionTier: 'free',
-      freeTripsRemaining: 3,
+      freeTripsRemaining: initialRemaining,
+      lifetimeTripsCreated: initialLifetime,
       weeklyAssistantMinutesRemaining: 1800,
       createdAt: now,
       lastLoginAt: now,
@@ -756,6 +821,9 @@ export async function handleFirebaseUserCredential(cred: any): Promise<AuthUser>
     if (fbUser.photoURL) account.user.photoURL = fbUser.photoURL;
     account.user.provider = 'google';
     account.user.emailVerified = true;
+    if (typeof account.user.lifetimeTripsCreated !== 'number') {
+      account.user.lifetimeTripsCreated = Math.max(0, 3 - (account.user.freeTripsRemaining ?? 3));
+    }
     // Preserve existing UID so user's existing trips, itinerary, and saved places are never severed
     if (!account.user.uid) {
       account.user.uid = uid;
@@ -2031,6 +2099,7 @@ export async function updateAuthProfile(updates: Partial<UserProfile & AuthUser>
           traveler_style: updatedUser.travelerStyle,
           location: updatedUser.location,
           free_trips_remaining: updatedUser.freeTripsRemaining,
+          lifetime_trips_created: updatedUser.lifetimeTripsCreated,
           subscription_tier: updatedUser.subscriptionTier,
           subscription_expires_at: updatedUser.subscriptionExpiresAt,
           weekly_assistant_minutes_remaining: updatedUser.weeklyAssistantMinutesRemaining
@@ -2043,6 +2112,17 @@ export async function updateAuthProfile(updates: Partial<UserProfile & AuthUser>
     saveProfileToSupabase(updatedUser.uid, toUserProfile(updatedUser)).catch(e => {
       console.warn('[Supabase] Profile update sync warning:', e);
     });
+  }
+
+  if (typeof localStorage !== 'undefined') {
+    try {
+      if (updatedUser.uid && typeof updatedUser.lifetimeTripsCreated === 'number') {
+        localStorage.setItem(`tripverse_lifetime_trips_created_u_${updatedUser.uid}`, updatedUser.lifetimeTripsCreated.toString());
+      }
+      if (updatedUser.email && typeof updatedUser.lifetimeTripsCreated === 'number') {
+        localStorage.setItem(`tripverse_lifetime_trips_created_email_${updatedUser.email.toLowerCase().trim()}`, updatedUser.lifetimeTripsCreated.toString());
+      }
+    } catch {}
   }
 
   return updatedUser;
@@ -2488,6 +2568,7 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
       isPro: false,
       freeTripsRemaining: 0,
       freeTripsTotal: 0,
+      lifetimeTripsCreated: 0,
       canCreateTrip: false,
       weeklyAssistantMinutesRemaining: 0,
       weeklyAssistantMinutesTotal: 0,
@@ -2505,36 +2586,48 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
     }
   }
 
-  // Cross-reference actual user-created trips count and lifetime created count to enforce strict 3-trip allowance
+  // STRICT OPTION A: Cross-reference user object, UID persistent tracker, email persistent tracker, and saved trips
+  const emailNorm = user.email ? user.email.toLowerCase().trim() : '';
+  let storedEmailLifetime = 0;
+  let storedUidLifetime = 0;
   let userCreatedTripsCount = 0;
-  let lifetimeCreatedCount = 0;
-  if (user.uid && typeof localStorage !== 'undefined') {
+
+  if (typeof localStorage !== 'undefined') {
     try {
-      const raw = localStorage.getItem(`tripverse_trips_u_${user.uid}`);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          userCreatedTripsCount = parsed.filter((t: any) => t && t.isUserCreated && !t.isSample).length;
-        }
+      if (emailNorm) {
+        storedEmailLifetime = parseInt(localStorage.getItem(`tripverse_lifetime_trips_created_email_${emailNorm}`) || '0', 10) || 0;
       }
-      const storedLifetime = localStorage.getItem(`tripverse_lifetime_trips_created_u_${user.uid}`);
-      if (storedLifetime) {
-        lifetimeCreatedCount = parseInt(storedLifetime, 10) || 0;
+      if (user.uid) {
+        storedUidLifetime = parseInt(localStorage.getItem(`tripverse_lifetime_trips_created_u_${user.uid}`) || '0', 10) || 0;
+        const raw = localStorage.getItem(`tripverse_trips_u_${user.uid}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            userCreatedTripsCount = parsed.filter((t: any) => t && t.isUserCreated && !t.isSample).length;
+          }
+        }
       }
     } catch {}
   }
 
-  const effectiveCreatedTrips = Math.max(userCreatedTripsCount, lifetimeCreatedCount);
+  const userObjLifetime = typeof user.lifetimeTripsCreated === 'number' ? user.lifetimeTripsCreated : 0;
+  const userObjUsed = typeof user.freeTripsRemaining === 'number' ? Math.max(0, 3 - user.freeTripsRemaining) : 0;
 
-  // Registered accounts get strictly 3 free trips on creation
-  const rawRemaining = typeof user.freeTripsRemaining === 'number' ? user.freeTripsRemaining : 3;
+  // STRICT OPTION A: Absolute lifetime created count is monotonic (never decreases)
+  const effectiveLifetimeCreated = Math.max(
+    userObjLifetime,
+    userObjUsed,
+    storedUidLifetime,
+    storedEmailLifetime,
+    userCreatedTripsCount
+  );
+
   let freeTripsRemaining: number;
   if (isPro) {
     freeTripsRemaining = 9999;
   } else {
-    // Cannot exceed 3 minus created trips, and cannot exceed raw remaining
-    const tripsLeftFromCount = Math.max(0, 3 - effectiveCreatedTrips);
-    freeTripsRemaining = Math.max(0, Math.min(rawRemaining, tripsLeftFromCount));
+    // Once 3 lifetime trips are reached, remaining is strictly 0 forever across all sessions
+    freeTripsRemaining = Math.max(0, 3 - effectiveLifetimeCreated);
   }
 
   const assistantMinutes = typeof user.weeklyAssistantMinutesRemaining === 'number'
@@ -2550,6 +2643,7 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
     isPro,
     freeTripsRemaining,
     freeTripsTotal: 3,
+    lifetimeTripsCreated: effectiveLifetimeCreated,
     canCreateTrip: isPro || freeTripsRemaining > 0,
     weeklyAssistantMinutesRemaining: assistantMinutes,
     weeklyAssistantMinutesTotal: isPro ? 1800 : 30, // 30 hours per week = 1800 mins
@@ -2579,23 +2673,41 @@ export function consumeTripCredit(userParam?: AuthUser | null): { allowed: boole
     return { allowed: false, remaining: 0 };
   }
 
-  const newRemaining = Math.max(0, quota.freeTripsRemaining - 1);
+  const emailNorm = targetUser.email ? targetUser.email.toLowerCase().trim() : '';
+  const currentLifetime = Math.max(
+    targetUser.lifetimeTripsCreated || 0,
+    quota.lifetimeTripsCreated,
+    3 - quota.freeTripsRemaining
+  );
+  const newLifetime = currentLifetime + 1;
+  const newRemaining = Math.max(0, 3 - newLifetime);
+
   if (userParam) {
+    userParam.lifetimeTripsCreated = newLifetime;
     userParam.freeTripsRemaining = newRemaining;
   }
-  if (targetUser && targetUser !== userParam) {
+  if (targetUser) {
+    targetUser.lifetimeTripsCreated = newLifetime;
     targetUser.freeTripsRemaining = newRemaining;
   }
 
-  // Track lifetime created count in persistent storage so deleting an existing trip cannot bypass the 3-trip allowance
-  if (targetUser.uid && typeof localStorage !== 'undefined') {
+  // Track lifetime created count in persistent storage across both UID and Email
+  if (typeof localStorage !== 'undefined') {
     try {
-      const currentLifetime = parseInt(localStorage.getItem(`tripverse_lifetime_trips_created_u_${targetUser.uid}`) || '0', 10);
-      localStorage.setItem(`tripverse_lifetime_trips_created_u_${targetUser.uid}`, (currentLifetime + 1).toString());
+      if (targetUser.uid) {
+        localStorage.setItem(`tripverse_lifetime_trips_created_u_${targetUser.uid}`, newLifetime.toString());
+      }
+      if (emailNorm) {
+        localStorage.setItem(`tripverse_lifetime_trips_created_email_${emailNorm}`, newLifetime.toString());
+      }
     } catch {}
   }
 
-  updateAuthProfile({ freeTripsRemaining: newRemaining }).catch(() => {});
+  updateAuthProfile({ 
+    freeTripsRemaining: newRemaining,
+    lifetimeTripsCreated: newLifetime
+  }).catch(() => {});
+
   if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
     try {
       window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { remaining: newRemaining, user: targetUser } }));
@@ -2687,6 +2799,12 @@ export async function upgradeUserToPro(userParam?: AuthUser | null, durationDays
     weeklyQuotaResetAt: nextReset
   });
 
+  if (userParam) {
+    userParam.subscriptionTier = 'pro';
+    userParam.freeTripsRemaining = 9999;
+    userParam.subscriptionExpiresAt = expiresAt;
+  }
+
   window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { isPro: true, user: updated } }));
   return updated;
 }
@@ -2702,12 +2820,37 @@ export async function downgradeUserToFree(userParam?: AuthUser | null): Promise<
     window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { isPro: false } }));
     return null;
   }
+  const emailNorm = user.email ? user.email.toLowerCase().trim() : '';
+  let storedLifetime = user.lifetimeTripsCreated;
+  if (typeof storedLifetime !== 'number' && typeof localStorage !== 'undefined') {
+    try {
+      if (emailNorm) {
+        const val = localStorage.getItem(`tripverse_lifetime_trips_created_email_${emailNorm}`);
+        if (val) storedLifetime = parseInt(val, 10);
+      }
+      if (storedLifetime === undefined && user.uid) {
+        const val = localStorage.getItem(`tripverse_lifetime_trips_created_u_${user.uid}`);
+        if (val) storedLifetime = parseInt(val, 10);
+      }
+    } catch {}
+  }
+  const effectiveLifetime = typeof storedLifetime === 'number' && !isNaN(storedLifetime) ? storedLifetime : 3;
+  const remainingAfterDowngrade = Math.max(0, 3 - effectiveLifetime);
+
   const updated = await updateAuthProfile({
     subscriptionTier: 'free',
-    freeTripsRemaining: 3,
+    freeTripsRemaining: remainingAfterDowngrade,
+    lifetimeTripsCreated: effectiveLifetime,
     weeklyAssistantMinutesRemaining: 30,
     subscriptionExpiresAt: undefined
   });
+
+  if (userParam) {
+    userParam.subscriptionTier = 'free';
+    userParam.freeTripsRemaining = remainingAfterDowngrade;
+    userParam.lifetimeTripsCreated = effectiveLifetime;
+    userParam.subscriptionExpiresAt = undefined;
+  }
   window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { isPro: false, user: updated } }));
   return updated;
 }
