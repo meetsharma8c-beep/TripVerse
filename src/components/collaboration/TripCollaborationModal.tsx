@@ -35,6 +35,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
     getOrInitializeCollaborationSession(trip, currentUser)
   );
   const [activeTab, setActiveTab] = useState<'invite' | 'votes' | 'suggestions'>('invite');
+  const [liveStatus, setLiveStatus] = useState<'CONNECTING' | 'LIVE' | 'DISCONNECTED'>('LIVE');
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -59,13 +60,19 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
   // Real-time synchronization subscription
   useEffect(() => {
     if (!isOpen) return;
-    const unsub = subscribeToTripCollaboration(trip.id, (updatedSession) => {
-      setSession(updatedSession);
-      onTripUpdatedRef.current({
-        ...tripRef.current,
-        collaboration: updatedSession
-      });
-    });
+    const unsub = subscribeToTripCollaboration(
+      trip.id,
+      (updatedSession) => {
+        setSession(updatedSession);
+        onTripUpdatedRef.current({
+          ...tripRef.current,
+          collaboration: updatedSession
+        });
+      },
+      (status) => {
+        setLiveStatus(status);
+      }
+    );
     return () => unsub();
   }, [trip.id, isOpen]);
 
@@ -195,6 +202,12 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   {session.collaborators.length} {t('Travelers')}
+                </span>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  liveStatus === 'LIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${liveStatus === 'LIVE' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                  {liveStatus === 'LIVE' ? t('Supabase Live Sync') : t('Connecting...')}
                 </span>
               </div>
               <p className="text-xs text-slate-500 truncate max-w-sm">

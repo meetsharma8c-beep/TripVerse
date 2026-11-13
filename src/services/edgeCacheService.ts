@@ -13,6 +13,7 @@
 
 import { getSupabaseClient } from './supabase';
 import { Trip } from '../types/trip';
+import { generateSemanticEmbedding } from './aiSemanticSearchService';
 
 interface CacheEntry<T> {
   data: T;
@@ -178,12 +179,16 @@ export async function setCachedAiItinerary(
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
+      const embedding = generateSemanticEmbedding(
+        `${destination} ${trip.travelerType || ''} ${(trip.preferences || []).join(' ')} ${trip.itinerary?.map(d => d.theme).join(' ') || ''}`
+      );
       const payload = {
         prompt_signature: normalized,
         destination: destination.trim(),
         duration_days: durationDays,
         traveler_type: trip.travelerType || 'solo',
         itinerary_payload: trip,
+        embedding,
         hit_count: 1,
         last_accessed_at: new Date().toISOString()
       };

@@ -22,6 +22,7 @@ import {
 
 const COLLAB_STORAGE_KEY_PREFIX = 'tripverse_collab_v1_';
 const COLLAB_EVENT_KEY = 'tripverse_collaboration_update';
+const IN_MEMORY_SESSIONS = new Map<string, CollaborationSession>();
 
 const AVATAR_COLORS = [
   '#2D5A3D', // Emerald
@@ -97,27 +98,41 @@ export function getOrInitializeCollaborationSession(
 }
 
 /**
- * Load local session from localStorage
+ * Load local session from memory or localStorage
  */
 function loadLocalSession(tripId: string): CollaborationSession | null {
-  if (typeof window === 'undefined') return null;
+  if (IN_MEMORY_SESSIONS.has(tripId)) {
+    return IN_MEMORY_SESSIONS.get(tripId)!;
+  }
+  if (typeof localStorage === 'undefined') return null;
   try {
     const raw = localStorage.getItem(`${COLLAB_STORAGE_KEY_PREFIX}${tripId}`);
-    return raw ? JSON.parse(raw) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      IN_MEMORY_SESSIONS.set(tripId, parsed);
+      return parsed;
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
 /**
- * Save session to localStorage and broadcast change event
+ * Save session to memory, localStorage and broadcast change event
  */
 function saveLocalSession(tripId: string, session: CollaborationSession): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(`${COLLAB_STORAGE_KEY_PREFIX}${tripId}`, JSON.stringify(session));
-    window.dispatchEvent(new CustomEvent(COLLAB_EVENT_KEY, { detail: session }));
-  } catch {}
+  IN_MEMORY_SESSIONS.set(tripId, session);
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(`${COLLAB_STORAGE_KEY_PREFIX}${tripId}`, JSON.stringify(session));
+    } catch {}
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(new CustomEvent(COLLAB_EVENT_KEY, { detail: session }));
+    } catch {}
+  }
 }
 
 /**
@@ -390,7 +405,8 @@ export function acceptSuggestionIntoTrip(
  */
 export function subscribeToTripCollaboration(
   tripId: string,
-  callback: (session: CollaborationSession) => void
+  callback: (session: CollaborationSession) => void,
+  onStatusChange?: (status: 'CONNECTING' | 'LIVE' | 'DISCONNECTED') => void
 ): () => void {
   // 1. Local CustomEvent listener
   const handleLocalEvent = (e: Event) => {
@@ -399,7 +415,9 @@ export function subscribeToTripCollaboration(
       callback(custom.detail);
     }
   };
-  window.addEventListener(COLLAB_EVENT_KEY, handleLocalEvent);
+  if (typeof window !== 'undefined') {
+    window.addEventListener(COLLAB_EVENT_KEY, handleLocalEvent);
+  }
 
   // 2. Storage event listener for multi-tab live sync
   const handleStorage = (e: StorageEvent) => {
@@ -410,12 +428,15 @@ export function subscribeToTripCollaboration(
       } catch {}
     }
   };
-  window.addEventListener('storage', handleStorage);
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', handleStorage);
+  }
 
   // 3. Supabase Realtime WebSocket listener (Broadcast + Postgres Changes CDC)
   let supabaseChannel: any = null;
   const supabase = getSupabaseClient();
   if (supabase) {
+    onStatusChange?.('CONNECTING');
     try {
       supabaseChannel = supabase.channel(`collab:${tripId}`, {
         config: {
@@ -450,17 +471,25 @@ export function subscribeToTripCollaboration(
         .subscribe((status: string) => {
           if (status === 'SUBSCRIBED') {
             console.log(`[Realtime] Connected to live multiplayer room for trip ${tripId}`);
+            onStatusChange?.('LIVE');
+          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            onStatusChange?.('DISCONNECTED');
           }
         });
     } catch (e) {
       console.warn('[Supabase] Realtime collaboration subscription notice:', e);
+      onStatusChange?.('DISCONNECTED');
     }
+  } else {
+    onStatusChange?.('LIVE');
   }
 
   // Return unsubscribe cleaner
   return () => {
-    window.removeEventListener(COLLAB_EVENT_KEY, handleLocalEvent);
-    window.removeEventListener('storage', handleStorage);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener(COLLAB_EVENT_KEY, handleLocalEvent);
+      window.removeEventListener('storage', handleStorage);
+    }
     if (supabaseChannel && supabase) {
       supabase.removeChannel(supabaseChannel);
     }
