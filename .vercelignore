@@ -1,0 +1,10 @@
+android/
+ios/
+tests/
+scratch/
+scripts/
+*.xlsx
+*.csv
+.git
+.idea
+.vscode
