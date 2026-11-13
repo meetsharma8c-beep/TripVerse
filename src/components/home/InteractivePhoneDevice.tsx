@@ -584,13 +584,13 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                   >
                     <BrandIconMark className="w-5 h-5 shrink-0" idPrefix="phone-header" />
                     <img
-                      src="/tripverse-title.png?v=10"
+                      src="/tripverse-title.png?v=17"
                       alt="TripVerse"
                       className="h-3.5 w-auto object-contain dark:hidden notranslate select-none pointer-events-none"
                       loading="eager"
                     />
                     <img
-                      src="/tripverse-title-dark.png?v=10"
+                      src="/tripverse-title-dark.png?v=17"
                       alt="TripVerse"
                       className="h-3.5 w-auto object-contain hidden dark:block notranslate select-none pointer-events-none"
                       loading="eager"

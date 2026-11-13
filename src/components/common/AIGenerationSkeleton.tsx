@@ -108,11 +108,10 @@ export const AIGenerationSkeleton: React.FC<AIGenerationSkeletonProps> = ({
           {/* Pure Floating TripVerse Logo (Zero Box / Zero App Icon) */}
           <div className="relative w-22 h-22 flex items-center justify-center animate-tv-float">
             <img
-              src="/tripverse-mark.png?v=16"
-              srcSet="/tripverse-mark.png?v=16 1x, /tripverse-mark@2x.png?v=16 2x, /tripverse-mark@3x.png?v=16 3x"
+              src="/tripverse-mark.png?v=17"
+              srcSet="/tripverse-mark.png?v=17 1x, /tripverse-mark@2x.png?v=17 2x, /tripverse-mark@3x.png?v=17 3x"
               alt="TripVerse Logo"
               className="w-full h-full object-contain select-none pointer-events-none drop-shadow-[0_8px_18px_rgba(45,90,61,0.28)] dark:drop-shadow-[0_8px_22px_rgba(16,185,129,0.4)]"
-              style={{ imageRendering: '-webkit-optimize-contrast' }}
               draggable={false}
               loading="eager"
             />

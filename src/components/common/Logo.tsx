@@ -28,11 +28,10 @@ export const BrandIconMark: React.FC<BrandIconMarkProps> = ({
   if (!imgFailed) {
     return (
       <img
-        src="/tripverse-mark.png?v=16"
-        srcSet="/tripverse-mark.png?v=16 1x, /tripverse-mark@2x.png?v=16 2x, /tripverse-mark@3x.png?v=16 3x"
+        src="/tripverse-mark.png?v=17"
+        srcSet="/tripverse-mark.png?v=17 1x, /tripverse-mark@2x.png?v=17 2x, /tripverse-mark@3x.png?v=17 3x"
         alt="TripVerse Logo"
         onError={() => setImgFailed(true)}
-        style={{ imageRendering: '-webkit-optimize-contrast' }}
         className={`select-none pointer-events-none object-contain inline-block ${className}`}
         draggable={false}
         loading="eager"
@@ -265,11 +264,10 @@ export const Logo: React.FC<LogoProps> = ({
             {/* Light Mode Wordmark: Dark Navy 'Trip' + Forest Green 'Verse' (hidden in night mode) */}
             {(variant === 'dark' || isAuto) && (
               <img
-                src="/tripverse-title.png?v=14"
-                srcSet="/tripverse-title.png?v=14 1x, /tripverse-title@2x.png?v=14 2x"
+                src="/tripverse-title.png?v=17"
+                srcSet="/tripverse-title.png?v=17 1x, /tripverse-title@2x.png?v=17 2x"
                 alt="TripVerse"
                 onError={() => setTitleImgFailed(true)}
-                style={{ imageRendering: '-webkit-optimize-contrast' }}
                 className={`select-none pointer-events-none object-contain drop-shadow-2xs transition-transform duration-300 group-hover:scale-[1.02] ${current.titleHeight} w-auto ${
                   isAuto ? 'block dark:hidden' : 'block'
                 }`}
@@ -282,11 +280,10 @@ export const Logo: React.FC<LogoProps> = ({
             {/* Night / Dark Mode Wordmark: Crisp Luminous Pearl 'Trip' + Vibrant Emerald 'Verse' (visible in night mode) */}
             {(variant === 'light' || isAuto) && (
               <img
-                src="/tripverse-title-dark.png?v=14"
-                srcSet="/tripverse-title-dark.png?v=14 1x, /tripverse-title-dark@2x.png?v=14 2x"
+                src="/tripverse-title-dark.png?v=17"
+                srcSet="/tripverse-title-dark.png?v=17 1x, /tripverse-title-dark@2x.png?v=17 2x"
                 alt="TripVerse"
                 onError={() => setTitleImgFailed(true)}
-                style={{ imageRendering: '-webkit-optimize-contrast' }}
                 className={`select-none pointer-events-none object-contain drop-shadow-2xs transition-transform duration-300 group-hover:scale-[1.02] ${current.titleHeight} w-auto ${
                   isAuto ? 'hidden dark:block' : 'block'
                 }`}
