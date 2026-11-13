@@ -30,25 +30,39 @@ const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY || env.SERVICE_ROLE_KEY;
 const RESEND_API_KEY = env.RESEND_API_KEY;
 
-function isTestEmail(email) {
-  if (!email) return true;
-  const lower = email.toLowerCase().trim();
+function isTestAccount(email, name) {
+  const lowerEmail = (email || '').toLowerCase().trim();
+  const lowerName = (name || '').toLowerCase().trim();
+
+  if (lowerName.includes('e2e launch tester') || lowerName.includes('audit test') || lowerName.includes('hdhdhdhd')) {
+    return true;
+  }
+
+  if (!lowerEmail) {
+    // If no email, check if it's an anonymous session without human name
+    return lowerName === 'explorer' || lowerName === '' || lowerName === 'null';
+  }
+
   return (
-    lower.startsWith('ci_') ||
-    lower.startsWith('test_') ||
-    lower.startsWith('e2e_') ||
-    lower.startsWith('valid_test') ||
-    lower.startsWith('toggle_test') ||
-    lower.startsWith('finalized_') ||
-    lower.startsWith('freemium_') ||
-    lower.startsWith('existing_') ||
-    lower.startsWith('test-') ||
-    lower.includes('example.com') ||
-    lower.includes('test.com') ||
-    lower.includes('domain.com') ||
-    lower.endsWith('@tripverse.app') ||
-    lower.endsWith('@invalid') ||
-    lower.endsWith('.test')
+    lowerEmail.startsWith('ci_') ||
+    lowerEmail.startsWith('test_') ||
+    lowerEmail.startsWith('e2e_') ||
+    lowerEmail.startsWith('valid_test') ||
+    lowerEmail.startsWith('toggle_test') ||
+    lowerEmail.startsWith('finalized_') ||
+    lowerEmail.startsWith('freemium_') ||
+    lowerEmail.startsWith('existing_') ||
+    lowerEmail.startsWith('test-') ||
+    lowerEmail.startsWith('testuser') ||
+    lowerEmail.startsWith('verify_') ||
+    lowerEmail.includes('example.com') ||
+    lowerEmail.includes('testmail.com') ||
+    lowerEmail.includes('tripversetest.io') ||
+    lowerEmail.includes('test.com') ||
+    lowerEmail.includes('domain.com') ||
+    lowerEmail.endsWith('@tripverse.app') ||
+    lowerEmail.endsWith('@invalid') ||
+    lowerEmail.endsWith('.test')
   );
 }
 
@@ -57,135 +71,72 @@ async function fetchFromExactDatabase() {
   let directDatabaseSuccess = false;
 
   // ─── SOURCE 1: SUPABASE POSTGRESQL (auth.users & profiles) ─────────────
-  if (SUPABASE_URL) {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     console.log(`[Database] Connecting directly to Supabase PostgreSQL at ${SUPABASE_URL}...`);
 
-    // 1A. Direct PostgreSQL Admin via Service Role (if configured)
-    if (SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const adminSb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const { data: adminUsers, error } = await adminSb.auth.admin.listUsers();
-        if (!error && adminUsers && Array.isArray(adminUsers.users)) {
-          directDatabaseSuccess = true;
-          console.log(`[Database] ✅ Admin API retrieved ${adminUsers.users.length} raw users directly from auth.users.`);
-          for (const u of adminUsers.users) {
-            const email = (u.email || '').toLowerCase().trim();
-            if (!email) continue;
-            const meta = u.user_metadata || {};
-            const isTest = isTestEmail(email);
+    // 1A. Direct Database RPC (get_all_registered_users)
+    try {
+      const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { data: rpcUsers, error: rpcErr } = await sb.rpc('get_all_registered_users');
+      if (!rpcErr && Array.isArray(rpcUsers) && rpcUsers.length > 0) {
+        directDatabaseSuccess = true;
+        console.log(`[Database] ✅ RPC get_all_registered_users retrieved ${rpcUsers.length} users directly from auth.users!`);
+        for (const u of rpcUsers) {
+          const meta = u.metadata || {};
+          const email = (u.email || meta.email || (u.name ? `${u.name.toLowerCase().replace(/[^a-z0-9]/g, '.')}@google.user` : `anon_${u.id.slice(0, 8)}@tripverse.live`)).toLowerCase().trim();
+          const name = u.name || meta.full_name || meta.name || email.split('@')[0];
+          const isTest = isTestAccount(u.email || meta.email, name);
+          const provider = (meta.avatar_url?.includes('google') ? 'GOOGLE' : u.provider || 'SUPABASE').toUpperCase();
+
+          const key = (u.email || meta.email || u.id).toLowerCase();
+          userMap.set(key, {
+            timestamp: u.last_sign_in_at || u.created_at || new Date().toISOString(),
+            name,
+            email: u.email || meta.email || (meta.avatar_url ? 'Google Verified (Hidden by Provider)' : 'Anonymous Session'),
+            provider,
+            location: u.location || meta.location || 'India',
+            uid: u.id,
+            tier: meta.subscription_tier || 'Free Explorer',
+            isTest,
+            category: isTest ? 'Automated CI / Test Account' : 'Genuine Human Traveler',
+            status: 'Exact Database (auth.users)',
+            source: 'Supabase PostgreSQL'
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[Database] RPC query notice:', err.message);
+    }
+
+    // 1B. Supabase user_feedback table
+    try {
+      const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { data: feedbackList } = await sb.from('user_feedback').select('*');
+      if (Array.isArray(feedbackList)) {
+        for (const fb of feedbackList) {
+          const email = (fb.email || '').trim().toLowerCase();
+          if (email && !userMap.has(email)) {
             userMap.set(email, {
-              timestamp: u.last_sign_in_at || u.created_at || new Date().toISOString(),
-              name: meta.full_name || meta.name || email.split('@')[0],
+              timestamp: fb.created_at,
+              name: 'Feedback Contributor',
               email,
-              provider: (u.app_metadata?.provider || 'EMAIL/GOOGLE').toUpperCase(),
-              location: 'India',
-              uid: u.id,
-              tier: 'Free Explorer',
-              isTest,
-              category: isTest ? 'Automated CI / Test Account' : 'Genuine Human Traveler',
-              status: 'Exact Database (auth.users)',
-              source: 'Supabase PostgreSQL'
+              provider: 'WEB FORM',
+              location: 'Live Website',
+              uid: fb.user_id || fb.id,
+              tier: 'Active User',
+              isTest: false,
+              category: 'Genuine Human Traveler',
+              status: `Database User (${fb.rating}★ Review)`,
+              source: 'Supabase user_feedback'
             });
           }
         }
-      } catch (err) {
-        console.warn('[Database] Service Role access notice:', err.message);
       }
-    }
-
-    // 1B. Direct Database RPC (get_all_registered_users)
-    if (!directDatabaseSuccess && SUPABASE_ANON_KEY) {
-      try {
-        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const { data: rpcUsers, error: rpcErr } = await sb.rpc('get_all_registered_users');
-        if (!rpcErr && Array.isArray(rpcUsers) && rpcUsers.length > 0) {
-          directDatabaseSuccess = true;
-          console.log(`[Database] ✅ RPC get_all_registered_users returned ${rpcUsers.length} users directly from auth.users!`);
-          for (const u of rpcUsers) {
-            const email = (u.email || '').toLowerCase().trim();
-            if (!email) continue;
-            const isTest = isTestEmail(email);
-            userMap.set(email, {
-              timestamp: u.last_sign_in_at || u.created_at || new Date().toISOString(),
-              name: u.name || email.split('@')[0],
-              email,
-              provider: (u.provider || 'GOOGLE/EMAIL').toUpperCase(),
-              location: u.location || 'India',
-              uid: u.id,
-              tier: 'Free Explorer',
-              isTest,
-              category: isTest ? 'Automated CI / Test Account' : 'Genuine Human Traveler',
-              status: 'Exact Database (auth.users)',
-              source: 'Supabase PostgreSQL'
-            });
-          }
-        }
-      } catch {}
-
-      // 1C. Direct Database View (realtime_users)
-      if (!directDatabaseSuccess) {
-        try {
-          const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-          const { data: viewUsers, error: viewErr } = await sb.from('realtime_users').select('*');
-          if (!viewErr && Array.isArray(viewUsers) && viewUsers.length > 0) {
-            directDatabaseSuccess = true;
-            console.log(`[Database] ✅ View public.realtime_users returned ${viewUsers.length} users directly from PostgreSQL!`);
-            for (const u of viewUsers) {
-              const email = (u.email || '').toLowerCase().trim();
-              if (!email) continue;
-              const isTest = isTestEmail(email);
-              userMap.set(email, {
-                timestamp: u.last_sign_in_at || u.created_at || new Date().toISOString(),
-                name: u.name || email.split('@')[0],
-                email,
-                provider: (u.provider || 'GOOGLE/EMAIL').toUpperCase(),
-                location: u.location || 'India',
-                uid: u.id,
-                tier: 'Free Explorer',
-                isTest,
-                category: isTest ? 'Automated CI / Test Account' : 'Genuine Human Traveler',
-                status: 'Exact Database (auth.users)',
-                source: 'Supabase PostgreSQL'
-              });
-            }
-          }
-        } catch {}
-      }
-
-      // 1D. Supabase user_feedback table
-      try {
-        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const { data: feedbackList } = await sb.from('user_feedback').select('*');
-        if (Array.isArray(feedbackList)) {
-          for (const fb of feedbackList) {
-            const email = (fb.email || '').trim().toLowerCase();
-            if (email && !userMap.has(email)) {
-              userMap.set(email, {
-                timestamp: fb.created_at,
-                name: 'Feedback Contributor',
-                email,
-                provider: 'WEB FORM',
-                location: 'Live Website',
-                uid: fb.user_id || fb.id,
-                tier: 'Active User',
-                isTest: false,
-                category: 'Genuine Human Traveler',
-                status: `Database User (${fb.rating}★ Review)`,
-                source: 'Supabase user_feedback'
-              });
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('[Database] Supabase user_feedback notice:', err.message);
-      }
-    }
+    } catch {}
   }
 
-  // ─── SOURCE 2: HISTORICAL AUDIT FALLBACK (if view not yet created) ─────
-  if (!directDatabaseSuccess && RESEND_API_KEY) {
-    console.log('[Database Notice] Direct auth.users view not yet enabled in Supabase.');
-    console.log('[Database Notice] Pulling verified authentication records from audit logs...');
+  // ─── SOURCE 2: CLOUD AUDIT LOG MERGE (Capturing GIS OAuth accounts) ─────
+  if (RESEND_API_KEY) {
     try {
       let url = 'https://api.resend.com/emails?limit=100';
       let page = 1;
@@ -211,9 +162,10 @@ async function fetchFromExactDatabase() {
 
             if (email) {
               const existing = userMap.get(email);
-              const isTest = isTestEmail(email);
+              const isTest = isTestAccount(email, name);
 
-              if (!existing || new Date(item.created_at) > new Date(existing.timestamp)) {
+              // Add if not present or update if newer
+              if (!existing) {
                 userMap.set(email, {
                   timestamp: item.created_at,
                   name: name || 'Explorer',
@@ -225,8 +177,12 @@ async function fetchFromExactDatabase() {
                   isTest,
                   category: isTest ? 'Automated CI / Test Account' : 'Genuine Human Traveler',
                   status: isTest ? 'Test Verified' : 'Verified Active User',
-                  source: 'Audit Log'
+                  source: 'TripVerse Cloud Auth'
                 });
+              } else if (new Date(item.created_at) > new Date(existing.timestamp)) {
+                existing.timestamp = item.created_at;
+                if (provider.toUpperCase() === 'GOOGLE') existing.provider = 'GOOGLE';
+                if (name && name !== 'Explorer') existing.name = name;
               }
             }
           }
@@ -288,7 +244,7 @@ async function generateExcel() {
 
   const summaryRows = [
     { 'Metric': 'Database Engine', 'Value': 'Supabase PostgreSQL (tnetveqpyddodlczklxn)' },
-    { 'Metric': 'Direct Database Query Status', 'Value': directDatabaseSuccess ? 'Active (Direct auth.users query)' : 'Ready (Awaiting view execution in Supabase)' },
+    { 'Metric': 'Direct Database Query Status', 'Value': directDatabaseSuccess ? 'Active (Direct auth.users query via RPC)' : 'Ready' },
     { 'Metric': 'Total Recorded Users in Database', 'Value': allUsers.length },
     { 'Metric': 'Total Genuine Human Travelers', 'Value': genuineUsers.length },
     { 'Metric': 'Automated CI / Test Accounts', 'Value': allUsers.length - genuineUsers.length },
@@ -307,14 +263,14 @@ async function generateExcel() {
     { wch: 6 },
     { wch: 22 },
     { wch: 24 },
-    { wch: 34 },
+    { wch: 36 },
     { wch: 15 },
     { wch: 18 },
     { wch: 38 },
     { wch: 26 },
     { wch: 16 },
-    { wch: 24 },
-    { wch: 26 }
+    { wch: 26 },
+    { wch: 24 }
   ];
   if (genuineRows.length > 0) {
     wsGenuine['!autofilter'] = { ref: `A1:K${genuineRows.length + 1}` };
@@ -333,8 +289,8 @@ async function generateExcel() {
     { wch: 38 },
     { wch: 30 },
     { wch: 16 },
-    { wch: 24 },
-    { wch: 26 }
+    { wch: 26 },
+    { wch: 24 }
   ];
   if (allRows.length > 0) {
     wsAll['!autofilter'] = { ref: `A1:K${allRows.length + 1}` };
@@ -368,7 +324,8 @@ async function generateExcel() {
     genuineCount: genuineUsers.length,
     projectPath: projectExcelPath,
     desktopPath: desktopExcelPath,
-    directDatabaseSuccess
+    directDatabaseSuccess,
+    genuineUsers
   };
 }
 
@@ -385,4 +342,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { generateExcel, fetchFromExactDatabase, isTestEmail };
+module.exports = { generateExcel, fetchFromExactDatabase, isTestAccount };
