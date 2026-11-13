@@ -128,6 +128,29 @@ export default async function handler(req, res) {
       }
     }
 
+    if (format === 'csv') {
+      const headers = ['Date & Time (IST)', 'Full Name', 'Email Address', 'Sign-In Method', 'Location', 'User ID', 'Account Status'];
+      const rows = merged.map(evt => {
+        let dateStr = evt.timestamp;
+        try {
+          dateStr = new Date(evt.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+        } catch {}
+        return [
+          `"${String(dateStr).replace(/"/g, '""')}"`,
+          `"${String(evt.displayName || 'Explorer').replace(/"/g, '""')}"`,
+          `"${String(evt.email || 'N/A').replace(/"/g, '""')}"`,
+          `"${String(evt.provider || 'AUTH').toUpperCase().replace(/"/g, '""')}"`,
+          `"${String(evt.location || 'India').replace(/"/g, '""')}"`,
+          `"${String(evt.uid || '').replace(/"/g, '""')}"`,
+          `"${String(evt.travelStyleTag || 'Verified Genuine User').replace(/"/g, '""')}"`
+        ].join(',');
+      });
+      const csv = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="tripverse_genuine_users.csv"');
+      return res.status(200).send(csv);
+    }
+
     if (format === 'cli' || format === 'text') {
       let output = `\n═══════════════════════════════════════════════════════════════════════\n`;
       output += `🚀 TRIPVERSE LIVE REAL-TIME AUTH ACTIVITY (${merged.length} Events)\n`;
