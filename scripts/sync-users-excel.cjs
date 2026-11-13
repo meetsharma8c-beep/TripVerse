@@ -89,8 +89,15 @@ async function fetchFromExactDatabase() {
           const provider = (meta.avatar_url?.includes('google') ? 'GOOGLE' : u.provider || 'SUPABASE').toUpperCase();
 
           const key = (u.email || meta.email || u.id).toLowerCase();
+          const hasSignedIn = Boolean(u.last_sign_in_at);
+          const emailConfirmed = Boolean(u.email_confirmed_at);
+
           userMap.set(key, {
             timestamp: u.last_sign_in_at || u.created_at || new Date().toISOString(),
+            createdAt: u.created_at,
+            lastSignInAt: u.last_sign_in_at,
+            hasSignedIn,
+            emailConfirmed,
             name,
             email: u.email || meta.email || (meta.avatar_url ? 'Google Verified (Hidden by Provider)' : 'Anonymous Session'),
             provider,
@@ -99,7 +106,7 @@ async function fetchFromExactDatabase() {
             tier: meta.subscription_tier || 'Free Explorer',
             isTest,
             category: isTest ? 'Automated CI / Test Account' : 'Genuine Human Traveler',
-            status: 'Exact Database (auth.users)',
+            status: hasSignedIn ? 'Signed In (auth.users)' : 'Registered Only (Never Signed In)',
             source: 'Supabase PostgreSQL'
           });
         }
@@ -118,6 +125,10 @@ async function fetchFromExactDatabase() {
           if (email && !userMap.has(email)) {
             userMap.set(email, {
               timestamp: fb.created_at,
+              createdAt: fb.created_at,
+              lastSignInAt: fb.created_at,
+              hasSignedIn: true,
+              emailConfirmed: true,
               name: 'Feedback Contributor',
               email,
               provider: 'WEB FORM',
@@ -168,6 +179,10 @@ async function fetchFromExactDatabase() {
               if (!existing) {
                 userMap.set(email, {
                   timestamp: item.created_at,
+                  createdAt: item.created_at,
+                  lastSignInAt: item.created_at,
+                  hasSignedIn: true,
+                  emailConfirmed: true,
                   name: name || 'Explorer',
                   email,
                   provider: provider.toUpperCase(),
@@ -176,13 +191,17 @@ async function fetchFromExactDatabase() {
                   tier: 'Free Explorer',
                   isTest,
                   category: isTest ? 'Automated CI / Test Account' : 'Genuine Human Traveler',
-                  status: isTest ? 'Test Verified' : 'Verified Active User',
+                  status: isTest ? 'Test Verified' : 'Verified Signed-In User',
                   source: 'TripVerse Cloud Auth'
                 });
-              } else if (new Date(item.created_at) > new Date(existing.timestamp)) {
-                existing.timestamp = item.created_at;
+              } else {
+                existing.hasSignedIn = true;
+                if (!existing.lastSignInAt || new Date(item.created_at) > new Date(existing.lastSignInAt)) {
+                  existing.lastSignInAt = item.created_at;
+                  existing.timestamp = item.created_at;
+                }
                 if (provider.toUpperCase() === 'GOOGLE') existing.provider = 'GOOGLE';
-                if (name && name !== 'Explorer') existing.name = name;
+                if (name && name !== 'Explorer' && !name.startsWith('anon_')) existing.name = name;
               }
             }
           }
@@ -203,42 +222,58 @@ async function fetchFromExactDatabase() {
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
+  const signedInUsers = allUsers.filter(u => u.hasSignedIn).sort(
+    (a, b) => new Date(b.lastSignInAt || b.timestamp).getTime() - new Date(a.lastSignInAt || a.timestamp).getTime()
+  );
+
   const genuineUsers = allUsers.filter(u => !u.isTest);
 
-  return { allUsers, genuineUsers, directDatabaseSuccess };
+  return { allUsers, signedInUsers, genuineUsers, directDatabaseSuccess };
 }
 
 function formatRow(u, index) {
-  let istTime = u.timestamp;
-  try {
-    istTime = new Date(u.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-  } catch {}
+  let lastSignInStr = 'Never Signed In';
+  if (u.lastSignInAt) {
+    try {
+      lastSignInStr = new Date(u.lastSignInAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    } catch {}
+  }
+
+  let createdAtStr = 'Unknown';
+  if (u.createdAt) {
+    try {
+      createdAtStr = new Date(u.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    } catch {}
+  }
 
   return {
     'S.No': index + 1,
-    'Last Active (IST)': istTime,
     'Full Name': u.name,
     'Email Address': u.email,
+    'Signed In Once?': u.hasSignedIn ? 'YES (Active)' : 'NO (Never Signed In)',
+    'Last Sign-In (IST)': lastSignInStr,
+    'Account Created (IST)': createdAtStr,
     'Auth Provider': u.provider,
+    'Email Verified': u.emailConfirmed ? 'YES' : 'NO',
     'Location / City': u.location,
-    'User ID (UID)': u.uid,
     'Category': u.category,
-    'Plan Tier': u.tier,
     'Status': u.status,
+    'User ID (UID)': u.uid,
     'Database Source': u.source
   };
 }
 
 async function generateExcel() {
   console.log('🔄 Querying real-time database records for Excel synchronization...');
-  const { allUsers, genuineUsers, directDatabaseSuccess } = await fetchFromExactDatabase();
-  console.log(`✅ Synchronized ${allUsers.length} total records (${genuineUsers.length} genuine travelers, ${allUsers.length - genuineUsers.length} test accounts).`);
+  const { allUsers, signedInUsers, genuineUsers, directDatabaseSuccess } = await fetchFromExactDatabase();
+  console.log(`✅ Synchronized ${allUsers.length} total records (${signedInUsers.length} signed in at least once, ${genuineUsers.length} genuine travelers).`);
 
+  const signedInRows = signedInUsers.map(formatRow);
   const genuineRows = genuineUsers.map(formatRow);
   const allRows = allUsers.map(formatRow);
 
   const providerCounts = {};
-  genuineUsers.forEach(u => {
+  signedInUsers.forEach(u => {
     providerCounts[u.provider] = (providerCounts[u.provider] || 0) + 1;
   });
 
@@ -246,10 +281,11 @@ async function generateExcel() {
     { 'Metric': 'Database Engine', 'Value': 'Supabase PostgreSQL (tnetveqpyddodlczklxn)' },
     { 'Metric': 'Direct Database Query Status', 'Value': directDatabaseSuccess ? 'Active (Direct auth.users query via RPC)' : 'Ready' },
     { 'Metric': 'Total Recorded Users in Database', 'Value': allUsers.length },
+    { 'Metric': 'Total Users Who Have Signed In At Least Once', 'Value': signedInUsers.length },
     { 'Metric': 'Total Genuine Human Travelers', 'Value': genuineUsers.length },
     { 'Metric': 'Automated CI / Test Accounts', 'Value': allUsers.length - genuineUsers.length },
-    { 'Metric': 'Google OAuth Genuine Users', 'Value': providerCounts['GOOGLE'] || 0 },
-    { 'Metric': 'Email / Password Genuine Users', 'Value': providerCounts['EMAIL'] || 0 },
+    { 'Metric': 'Google OAuth Signed-In Users', 'Value': providerCounts['GOOGLE'] || 0 },
+    { 'Metric': 'Email / Password Signed-In Users', 'Value': providerCounts['EMAIL'] || 0 },
     { 'Metric': 'Direct Web Form / Feedback Users', 'Value': providerCounts['WEB FORM'] || 0 },
     { 'Metric': 'Automated Real-Time Sync', 'Value': 'Active Every 30 Minutes' },
     { 'Metric': 'Last Database Pull (IST)', 'Value': new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) }
@@ -257,50 +293,50 @@ async function generateExcel() {
 
   const wb = XLSX.utils.book_new();
 
-  // Sheet 1: Genuine Users
+  const standardCols = [
+    { wch: 6 },  // S.No
+    { wch: 24 }, // Full Name
+    { wch: 38 }, // Email Address
+    { wch: 18 }, // Signed In Once?
+    { wch: 24 }, // Last Sign-In (IST)
+    { wch: 24 }, // Account Created (IST)
+    { wch: 15 }, // Auth Provider
+    { wch: 15 }, // Email Verified
+    { wch: 18 }, // Location / City
+    { wch: 28 }, // Category
+    { wch: 28 }, // Status
+    { wch: 38 }, // User ID (UID)
+    { wch: 24 }  // Database Source
+  ];
+
+  // Sheet 1: Signed In Users (The exact users who have logged in at least once)
+  const wsSignedIn = XLSX.utils.json_to_sheet(signedInRows);
+  wsSignedIn['!cols'] = standardCols;
+  if (signedInRows.length > 0) {
+    wsSignedIn['!autofilter'] = { ref: `A1:M${signedInRows.length + 1}` };
+  }
+  XLSX.utils.book_append_sheet(wb, wsSignedIn, 'Signed-In Users');
+
+  // Sheet 2: Genuine Travelers
   const wsGenuine = XLSX.utils.json_to_sheet(genuineRows);
-  wsGenuine['!cols'] = [
-    { wch: 6 },
-    { wch: 22 },
-    { wch: 24 },
-    { wch: 36 },
-    { wch: 15 },
-    { wch: 18 },
-    { wch: 38 },
-    { wch: 26 },
-    { wch: 16 },
-    { wch: 26 },
-    { wch: 24 }
-  ];
+  wsGenuine['!cols'] = standardCols;
   if (genuineRows.length > 0) {
-    wsGenuine['!autofilter'] = { ref: `A1:K${genuineRows.length + 1}` };
+    wsGenuine['!autofilter'] = { ref: `A1:M${genuineRows.length + 1}` };
   }
-  XLSX.utils.book_append_sheet(wb, wsGenuine, 'Genuine Users');
+  XLSX.utils.book_append_sheet(wb, wsGenuine, 'Genuine Travelers');
 
-  // Sheet 2: All Users in Database
+  // Sheet 3: All Database Users
   const wsAll = XLSX.utils.json_to_sheet(allRows);
-  wsAll['!cols'] = [
-    { wch: 6 },
-    { wch: 22 },
-    { wch: 24 },
-    { wch: 40 },
-    { wch: 15 },
-    { wch: 18 },
-    { wch: 38 },
-    { wch: 30 },
-    { wch: 16 },
-    { wch: 26 },
-    { wch: 24 }
-  ];
+  wsAll['!cols'] = standardCols;
   if (allRows.length > 0) {
-    wsAll['!autofilter'] = { ref: `A1:K${allRows.length + 1}` };
+    wsAll['!autofilter'] = { ref: `A1:M${allRows.length + 1}` };
   }
-  XLSX.utils.book_append_sheet(wb, wsAll, 'All Database Users');
+  XLSX.utils.book_append_sheet(wb, wsAll, 'All Registered Users');
 
-  // Sheet 3: Database & Sync Status
+  // Sheet 4: Database & Sync Status
   const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
   wsSummary['!cols'] = [
-    { wch: 38 },
+    { wch: 42 },
     { wch: 48 }
   ];
   XLSX.utils.book_append_sheet(wb, wsSummary, 'Database Status');
@@ -321,10 +357,12 @@ async function generateExcel() {
 
   return {
     totalCount: allUsers.length,
+    signedInCount: signedInUsers.length,
     genuineCount: genuineUsers.length,
     projectPath: projectExcelPath,
     desktopPath: desktopExcelPath,
     directDatabaseSuccess,
+    signedInUsers,
     genuineUsers
   };
 }
@@ -333,6 +371,7 @@ if (require.main === module) {
   generateExcel()
     .then(res => {
       console.log(`\n🎉 Excel synchronized with exact database.`);
+      console.log(`   - Users who have signed in at least once: ${res.signedInCount}`);
       console.log(`   - Genuine human users: ${res.genuineCount}`);
       console.log(`   - Total database records: ${res.totalCount}`);
     })
