@@ -245,6 +245,30 @@ export default async function handler(req, res) {
 
     let emailDispatchId = null;
 
+    // 2. Real-Time Excel / Google Sheets Webhook Automation
+    const sheetWebhookUrl = process.env.GOOGLE_SHEET_WEBHOOK_URL || process.env.EXCEL_WEBHOOK_URL;
+    if (sheetWebhookUrl && !isTestEmail && activityRecord.email) {
+      try {
+        fetch(sheetWebhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            timestamp: activityRecord.timestamp,
+            displayName: activityRecord.displayName,
+            email: activityRecord.email,
+            provider: activityRecord.provider,
+            location: activityRecord.location || locationStr,
+            uid: activityRecord.uid,
+            travelStyleTag: activityRecord.travelStyleTag || 'Verified Explorer',
+            tier: user.subscriptionTier || 'free',
+            tripsCount: user.tripsCount || 0
+          })
+        }).catch(err => console.warn('[Excel Webhook Error]', err));
+      } catch (sheetErr) {
+        console.warn('[Excel Webhook Dispatch Notice]', sheetErr);
+      }
+    }
+
     if (shouldDispatchEmail) {
       recentlyAlerted.set(alertKey, Date.now());
 
