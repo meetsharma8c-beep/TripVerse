@@ -17,7 +17,8 @@
     "test": "vitest run",
     "test:e2e": "node scripts/e2e_launch_verify.mjs",
     "verify:launch": "npm run build && npm run test && npm run test:e2e",
-    "users": "node scripts/get_realtime_users.mjs"
+    "users": "node scripts/get_realtime_users.mjs",
+    "sync:excel": "node scripts/sync-users-excel.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -39,7 +40,8 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwind-merge": "^3.7.0",
-    "three": "^0.187.0"
+    "three": "^0.187.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.2",

@@ -40,3 +40,7 @@ GoogleService-Info.plist
 
 # Scratch, intermediate testing assets
 scratch/
+
+# User Data & Spreadsheets (PII Protection)
+*.xlsx
+*.csv
