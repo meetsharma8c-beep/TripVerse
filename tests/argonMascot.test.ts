@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { inferArgonStateFromText, ARGON_STATE_THEME, DEFAULT_PROACTIVE_HINTS } from '../src/components/argon/argon.types';
+import { isGuestUser } from '../src/services/authService';
 
 describe('Argon AI Mascot State Machine & Emotion Intelligence', () => {
   it('correctly maps emotions and visual themes for all valid states', () => {
@@ -58,5 +59,29 @@ describe('Argon AI Mascot State Machine & Emotion Intelligence', () => {
       expect(theme.ledHex.length).toBe(7);
       expect(theme.ledGlowRgba).toMatch(/rgba\(\d+,\s*\d+,\s*\d+,\s*[\d\.]+\)/);
     }
+  });
+
+  it('correctly identifies guest users so the sign-up popup is triggered instead of opening chat', () => {
+    // Null or undefined user session is a guest
+    expect(isGuestUser(null)).toBe(true);
+    expect(isGuestUser(undefined)).toBe(true);
+
+    // Anonymous guest explorer
+    expect(isGuestUser({
+      uid: 'guest-123',
+      isAnonymous: true,
+      provider: 'guest',
+      email: '',
+      displayName: 'Guest Explorer'
+    } as any)).toBe(true);
+
+    // Registered user with genuine email is not a guest
+    expect(isGuestUser({
+      uid: 'user-789',
+      isAnonymous: false,
+      provider: 'google',
+      email: 'traveler@tripverse.com',
+      displayName: 'Alice Traveler'
+    } as any)).toBe(false);
   });
 });

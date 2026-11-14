@@ -194,6 +194,11 @@ export function App() {
   // Modals & Drawers
   const [isPlannerOpen, setIsPlannerOpen] = useState(() => Boolean(initialRoute.openPlanner && !isGuestUser(getCurrentUser())));
   const [isGuestPlannerRestrictedOpen, setIsGuestPlannerRestrictedOpen] = useState(() => Boolean(initialRoute.openPlanner && isGuestUser(getCurrentUser())));
+  const [guestRestrictedFeature, setGuestRestrictedFeature] = useState<{
+    featureTitle?: string;
+    featureDescription?: string;
+    featureButtonText?: string;
+  } | null>(null);
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -1323,6 +1328,7 @@ export function App() {
     }
     const activeUser = currentUser ?? getCurrentUser();
     if (isGuestUser(activeUser)) {
+      setGuestRestrictedFeature(null);
       setIsGuestPlannerRestrictedOpen(true);
       return;
     }
@@ -1332,6 +1338,23 @@ export function App() {
       return;
     }
     setIsPlannerOpen(true);
+  };
+
+  const handleOpenAIChat = (query?: string) => {
+    const activeUser = currentUser ?? getCurrentUser();
+    if (isGuestUser(activeUser)) {
+      setGuestRestrictedFeature({
+        featureTitle: 'Sign Up to Chat with ConCode AI Co-Pilot',
+        featureDescription: 'You are currently exploring TripVerse in Guest Mode. Instant AI route calculations, live weather alerts, and 24/7 travel co-pilot guidance require a free registered account.',
+        featureButtonText: 'Sign Up to Unlock ConCode AI (Free)'
+      });
+      setIsGuestPlannerRestrictedOpen(true);
+      return;
+    }
+    if (query) {
+      setActiveChatQuery(query);
+    }
+    setIsAIChatOpen(true);
   };
 
   const handleTripGenerated = async (input: PlannerInput) => {
@@ -1980,7 +2003,7 @@ export function App() {
         onNavigate={handleNavigateTab}
         onOpenPlanner={() => handleOpenPlannerWithPrefill()}
         onOpenSearch={() => setIsGlobalSearchOpen(true)}
-        onOpenChat={() => setIsAIChatOpen(true)}
+        onOpenChat={() => handleOpenAIChat()}
         userProfile={userProfile}
         onOpenNotifications={() => setIsNotificationCenterOpen(true)}
         unreadNotificationCount={unreadNotificationCount}
@@ -2144,7 +2167,7 @@ export function App() {
                 </button>
 
                 <button
-                  onClick={() => setIsAIChatOpen(true)}
+                  onClick={() => handleOpenAIChat()}
                   className="flex items-center gap-1.5 text-xs font-bold text-[#2D5A3D] bg-[#EAF0E9] px-3 py-1.5 rounded-full border border-[#8EA78D]/40 cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -2205,7 +2228,7 @@ export function App() {
               {/* Trip Header & Budget Overview */}
               <TripHeader
                 trip={activeTrip}
-                onOpenChat={() => setIsAIChatOpen(true)}
+                onOpenChat={() => handleOpenAIChat()}
                 onOpenShare={() => setIsShareModalOpen(true)}
                 onOptimizeBudget={() => handleSelectTripSubTab('budget', { forceScroll: true })}
                 onExportTrip={handleExportTrip}
@@ -2755,20 +2778,28 @@ export function App() {
         {isGuestPlannerRestrictedOpen && (
           <GuestPlannerRestrictedModal
             isOpen={isGuestPlannerRestrictedOpen}
-            onClose={() => setIsGuestPlannerRestrictedOpen(false)}
+            onClose={() => {
+              setIsGuestPlannerRestrictedOpen(false);
+              setGuestRestrictedFeature(null);
+            }}
             onOpenSignUp={() => {
               setIsGuestPlannerRestrictedOpen(false);
+              setGuestRestrictedFeature(null);
               setAuthModalInitialMethod('email');
               setAuthModalInitialSubMode('signup');
               setIsAuthModalOpen(true);
             }}
             onOpenSignIn={() => {
               setIsGuestPlannerRestrictedOpen(false);
+              setGuestRestrictedFeature(null);
               setAuthModalInitialMethod('email');
               setAuthModalInitialSubMode('login');
               setIsAuthModalOpen(true);
             }}
             prefilledDestination={plannerPrefill.destination}
+            featureTitle={guestRestrictedFeature?.featureTitle}
+            featureDescription={guestRestrictedFeature?.featureDescription}
+            featureButtonText={guestRestrictedFeature?.featureButtonText}
           />
         )}
 
@@ -3027,18 +3058,15 @@ export function App() {
           setIsLiveNavOpen(true);
         }}
         onOpenChat={() => {
-          setIsAIChatOpen(true);
+          handleOpenAIChat();
         }}
         onNavigateTab={handleNavigateTab}
       />
 
       {/* Autonomous AI Co-Pilot Floating Mascot Widget (ConCode AI) */}
       <ArgonFloatingWidget
-        onOpenChat={() => setIsAIChatOpen(true)}
-        onOpenChatWithQuery={(query) => {
-          setActiveChatQuery(query);
-          setIsAIChatOpen(true);
-        }}
+        onOpenChat={() => handleOpenAIChat()}
+        onOpenChatWithQuery={(query) => handleOpenAIChat(query)}
         isChatOpen={isAIChatOpen}
         destinationName={activeTrip?.destination || trips[0]?.destination}
       />

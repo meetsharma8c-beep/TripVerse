@@ -18,6 +18,9 @@ interface GuestPlannerRestrictedModalProps {
   onOpenSignUp?: () => void;
   onOpenSignIn: () => void;
   prefilledDestination?: string;
+  featureTitle?: string;
+  featureDescription?: string;
+  featureButtonText?: string;
 }
 
 export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalProps> = ({
@@ -25,7 +28,10 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
   onClose,
   onOpenSignUp,
   onOpenSignIn,
-  prefilledDestination
+  prefilledDestination,
+  featureTitle,
+  featureDescription,
+  featureButtonText
 }) => {
   useModalBehavior(isOpen, onClose);
   const { t } = useLanguage();
@@ -104,10 +110,12 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
             </div>
 
             <h3 id="guest-restricted-title" className="text-base sm:text-xl font-black text-[#0B2545] dark:text-white leading-snug">
-              {t('Sign Up to Use the AI Trip Planner')}
+              {featureTitle || t('Sign Up to Use the AI Trip Planner')}
             </h3>
             <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-              {prefilledDestination ? (
+              {featureDescription ? (
+                <span>{featureDescription}</span>
+              ) : prefilledDestination ? (
                 <>
                   {t('Ready to plan your trip to')} <strong className="text-slate-800 dark:text-slate-200">{prefilledDestination}</strong>?{' '}
                   {t('Guest Mode is explore-only. Create your free account in seconds to generate and customize your AI itinerary!')}
@@ -195,7 +203,7 @@ export const GuestPlannerRestrictedModal: React.FC<GuestPlannerRestrictedModalPr
             className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-[#A8C5AC] shrink-0" />
-            <span>{t('Sign Up to Unlock AI Planner (Free)')}</span>
+            <span>{featureButtonText || t('Sign Up to Unlock AI Planner (Free)')}</span>
             <ArrowRight className="w-4 h-4 ml-0.5 shrink-0" />
           </button>
 
