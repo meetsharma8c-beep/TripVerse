@@ -115,6 +115,8 @@ import {
 } from './services/authService';
 import { TripVerseProModal } from './components/subscription/TripVerseProModal';
 import { FounderDashboardModal } from './components/modals/FounderDashboardModal';
+import { DigitalPassportModal } from './components/passport/DigitalPassportModal';
+import { EmergencySosModal } from './components/safety/EmergencySosModal';
 import { AuthUser } from './types/auth';
 import {
   loadUserTripsFromSupabase,
@@ -252,6 +254,8 @@ export function App() {
   const [isLiveNavOpen, setIsLiveNavOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(() => (initialRoute as any).openPro || false);
   const [isFounderDashboardOpen, setIsFounderDashboardOpen] = useState(false);
+  const [isPassportModalOpen, setIsPassportModalOpen] = useState(false);
+  const [isEmergencySosOpen, setIsEmergencySosOpen] = useState(false);
   const [isBestDealModalOpen, setIsBestDealModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(() => initialRoute.openBooking || false);
@@ -2063,6 +2067,8 @@ export function App() {
         isAuthenticated={currentUser !== null}
         onOpenProModal={() => setIsProModalOpen(true)}
         onOpenFounderDashboard={() => setIsFounderDashboardOpen(true)}
+        onOpenPassport={() => setIsPassportModalOpen(true)}
+        onOpenEmergencySos={() => setIsEmergencySosOpen(true)}
       />
 
       {/* Pull down to refresh gesture wrapper */}
@@ -3163,6 +3169,25 @@ export function App() {
         <FounderDashboardModal
           isOpen={isFounderDashboardOpen}
           onClose={() => setIsFounderDashboardOpen(false)}
+        />
+      )}
+
+      {/* Digital Travel Passport Modal */}
+      {isPassportModalOpen && (
+        <DigitalPassportModal
+          isOpen={isPassportModalOpen}
+          onClose={() => setIsPassportModalOpen(false)}
+          userEmail={currentUser?.email}
+          userName={currentUser?.displayName || userProfile?.name}
+        />
+      )}
+
+      {/* Global Emergency SOS Modal */}
+      {isEmergencySosOpen && (
+        <EmergencySosModal
+          isOpen={isEmergencySosOpen}
+          onClose={() => setIsEmergencySosOpen(false)}
+          destinationCountry={activeTrip?.destination?.includes('France') || activeTrip?.destination?.includes('Paris') ? 'FR' : activeTrip?.destination?.includes('Dubai') ? 'AE' : activeTrip?.destination?.includes('Kyoto') || activeTrip?.destination?.includes('Japan') ? 'JP' : activeTrip?.destination?.includes('USA') ? 'US' : 'IN'}
         />
       )}
 

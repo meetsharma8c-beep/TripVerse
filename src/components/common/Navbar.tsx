@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Logo, BrandIconMark } from './Logo';
-import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, ChevronDown, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut, Bell, Languages, Home, Smartphone } from 'lucide-react';
+import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, ChevronDown, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut, Bell, Languages, Home, Smartphone, Stamp, ShieldAlert } from 'lucide-react';
 import { UserProfile, CurrencyCode, LanguageCode } from '../../types/trip';
 import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
 import { getActiveLanguage, setActiveLanguage, LANGUAGES, useLanguage } from '../../services/languageService';
@@ -22,6 +22,8 @@ interface NavbarProps {
   onOpenChat?: () => void;
   onOpenProModal?: () => void;
   onOpenFounderDashboard?: () => void;
+  onOpenPassport?: () => void;
+  onOpenEmergencySos?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -37,7 +39,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSearch,
   onOpenChat,
   onOpenProModal,
-  onOpenFounderDashboard
+  onOpenFounderDashboard,
+  onOpenPassport,
+  onOpenEmergencySos
 }) => {
   const [quota, setQuota] = useState(() => {
     return getUserSubscriptionQuota(userProfile ? {
@@ -542,6 +546,34 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <span>{t('Saved Spots')}</span>
                       </button>
 
+                      {onOpenPassport && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            onOpenPassport();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors cursor-pointer"
+                        >
+                          <Stamp className="w-4 h-4 text-amber-500" />
+                          <span>{t('Digital Travel Passport')}</span>
+                        </button>
+                      )}
+
+                      {onOpenEmergencySos && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            onOpenEmergencySos();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                        >
+                          <ShieldAlert className="w-4 h-4 text-rose-500" />
+                          <span>{t('Global Emergency SOS')}</span>
+                        </button>
+                      )}
+
                       <a
                         href="/downloads/TripVerse-v1.0.apk"
                         download="TripVerse-v1.0.apk"
@@ -803,6 +835,41 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               );
             })}
+            {/* Quick Action Tiles in Mobile Drawer */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {onOpenPassport && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenPassport();
+                  }}
+                  className="p-2.5 rounded-2xl bg-amber-500/10 dark:bg-amber-950/40 border border-amber-300/30 text-left transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <Stamp className="w-4 h-4 text-amber-500 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-amber-900 dark:text-amber-200 block truncate">{t('Passport')}</span>
+                    <span className="text-[10px] text-amber-700/70 dark:text-amber-400 block truncate">{t('Visa Stamps')}</span>
+                  </div>
+                </button>
+              )}
+              {onOpenEmergencySos && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenEmergencySos();
+                  }}
+                  className="p-2.5 rounded-2xl bg-rose-500/10 dark:bg-rose-950/40 border border-rose-300/30 text-left transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-rose-900 dark:text-rose-200 block truncate">{t('SOS Help')}</span>
+                    <span className="text-[10px] text-rose-700/70 dark:text-rose-400 block truncate">{t('Emergency')}</span>
+                  </div>
+                </button>
+              )}
+            </div>
           </nav>
 
           {/* Compact Install App Strip for Browser Users */}

@@ -351,6 +351,8 @@ export interface ChatMessage {
   }[];
   structuredItinerary?: StructuredItinerary;
   budgetBreakdown?: AIChatBudgetBreakdown;
+  imageUrl?: string;
+  visualScanResult?: any;
   modificationBadge?: {
     type: 'cheaper' | 'removed' | 'added' | 'rainy' | 'saved' | 'delay' | 'replan';
     label: string;

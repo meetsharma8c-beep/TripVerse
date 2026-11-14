@@ -11,7 +11,8 @@ import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/con
 import { ArgonAvatar } from '../argon/ArgonAvatar';
 import { inferArgonStateFromText, parseConCodeStreamResponse, ArgonState, ARGON_STATE_THEME } from '../argon/argon.types';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
-import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass, Mic, MicOff, FileText, Plane } from 'lucide-react';
+import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass, Mic, MicOff, FileText, Plane, Camera } from 'lucide-react';
+import { scanTravelImage, VisualScanResult } from '../../services/visualAiScannerService';
 import { triggerHaptic } from '../../services/deviceService';
 import { getUserSubscriptionQuota, consumeAssistantMinute } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
@@ -291,6 +292,22 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   const [isCheckingBrain, setIsCheckingBrain] = useState(false);
   const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
   const [viewer3DLandmark, setViewer3DLandmark] = useState('Heritage Landmark');
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setUploadedImage(reader.result);
+          triggerHaptic('light');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Active day tab state for structured itinerary cards
   const [activeItineraryDay, setActiveItineraryDay] = useState<Record<string, number>>({});
@@ -522,7 +539,8 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
   const handleSendMessage = async (textToSend?: string) => {
     const query = textToSend || inputQuery;
-    if (!query.trim() || isProcessing) return;
+    const currentImage = uploadedImage;
+    if ((!query.trim() && !currentImage) || isProcessing) return;
 
     if (!quota.isPro && quota.weeklyAssistantMinutesRemaining <= 0) {
       if (onOpenProModal) onOpenProModal();
@@ -534,25 +552,65 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     const userMessage: ChatMessage = {
       id: `usr-${Date.now()}`,
       sender: 'user',
-      text: query,
+      text: query || (currentImage ? 'Analyze this travel photo / booking ticket' : ''),
+      imageUrl: currentImage || undefined,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputQuery('');
+    setUploadedImage(null);
     setIsProcessing(true);
     consumeAssistantMinute(1);
 
     try {
-      const response = await processTravelCoPilotQuery(query, trip);
+      if (currentImage) {
+        // Run multimodal visual AI scan
+        const scanResult = await scanTravelImage(currentImage, query);
+        let summaryText = '';
+        if (scanResult.type === 'landmark') {
+          summaryText = `📸 **Visual Landmark Identification: ${scanResult.name}**\n\n📍 **Location:** ${scanResult.city}, ${scanResult.country}\n🏛️ **Architecture:** ${scanResult.architecturalStyle}\n⏱️ **Recommended Duration:** ${scanResult.suggestedDuration}\n🎟️ **Entry Fee:** ${scanResult.entryFee}\n☀️ **Best Time to Visit:** ${scanResult.bestTimeToVisit}\n\n${scanResult.description}`;
+        } else if (scanResult.type === 'ticket') {
+          summaryText = `🎫 **Boarding Pass & Booking Verified**\n\n✈️ **Carrier:** ${scanResult.carrier}\n🏷️ **Booking Ref / PNR:** ${scanResult.bookingRef}\n🛫 **Route:** ${scanResult.origin} ➔ ${scanResult.destination}\n⏰ **Departure:** ${scanResult.departureTime}\n💺 **Seat / Room:** ${scanResult.seatOrRoom}`;
+        } else {
+          summaryText = `🍽️ **Culinary Identification: ${scanResult.dishName}**\n\n🍜 **Cuisine:** ${scanResult.cuisine} (${scanResult.region})\n😋 **Flavor Profile:** ${scanResult.flavorProfile}\n🏷️ **Dietary:** ${scanResult.dietaryTags.join(', ')}\n💰 **Average Price:** ${scanResult.averagePrice}\n\n${scanResult.description}`;
+        }
 
-      setMessages(prev => [...prev, response.message]);
+        const aiMessage: ChatMessage = {
+          id: `ai-${Date.now()}`,
+          sender: 'ai',
+          text: summaryText,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          engine: 'concode_brain',
+          confidence: 0.98,
+          visualScanResult: scanResult,
+          actionButtons: scanResult.type === 'landmark' ? [
+            {
+              label: `➕ Add ${scanResult.name} to Day 1`,
+              action: 'add_activity',
+              payload: { day: 1, title: scanResult.name, description: scanResult.description, cost: 0 },
+              primary: true
+            },
+            {
+              label: `🌐 View 3D Landmark`,
+              action: 'view_3d',
+              payload: { landmark: scanResult.name }
+            }
+          ] : undefined
+        };
 
-      if (response.updatedTrip) {
-        onUpdateTrip(response.updatedTrip);
-      }
-      if (response.appAction && onAppAction) {
-        onAppAction(response.appAction);
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        const response = await processTravelCoPilotQuery(query, trip);
+
+        setMessages(prev => [...prev, response.message]);
+
+        if (response.updatedTrip) {
+          onUpdateTrip(response.updatedTrip);
+        }
+        if (response.appAction && onAppAction) {
+          onAppAction(response.appAction);
+        }
       }
     } catch (e) {
       console.error('Error processing query:', e);
@@ -896,6 +954,13 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                     </div>
                   )}
 
+                  {/* Attached Image Thumbnail */}
+                  {msg.imageUrl && (
+                    <div className="mb-2 max-w-xs rounded-2xl overflow-hidden border border-emerald-500/30 shadow-md">
+                      <img src={msg.imageUrl} alt="Uploaded attachment" className="w-full max-h-48 object-cover" />
+                    </div>
+                  )}
+
                   {/* Message Bubble */}
                   <div className={`p-4 sm:p-4.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed overflow-hidden break-words ${
                     isAi
@@ -1116,6 +1181,26 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
         {/* Input Bar - Elevated Floating Glass Capsule with Soft Blurred Emerald Glow */}
         <div className="p-3 sm:p-4 pb-safe bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-emerald-950/10 dark:border-white/10 shrink-0">
+          {/* Uploaded Image Preview Chip */}
+          {uploadedImage && (
+            <div className="mb-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-xs flex items-center justify-between animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <img src={uploadedImage} alt="Preview" className="w-8 h-8 rounded-lg object-cover border border-emerald-400" />
+                <span className="text-emerald-800 dark:text-emerald-200 font-semibold text-[11px]">
+                  📸 Photo attached — ConCode ready to scan
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUploadedImage(null)}
+                className="p-1 rounded-full hover:bg-emerald-200 dark:hover:bg-emerald-800 text-emerald-700 dark:text-emerald-300 cursor-pointer"
+                title="Remove photo"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {isListening && (
             <div className="mb-2 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-[11px] font-semibold text-rose-700 dark:text-rose-300 flex items-center justify-between animate-pulse">
               <span className="flex items-center gap-2">
@@ -1146,6 +1231,28 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               }}
               className="flex-1 py-1.5 bg-transparent border-0 text-base sm:text-sm focus:outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400 font-medium"
             />
+            {/* Hidden File Input for Camera/Photo Upload */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+            {/* Visual Scanner / Camera Button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                uploadedImage
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40'
+              }`}
+              title={t('Visual Scanner: Upload landmark photo, ticket, or menu')}
+              aria-label={t('Upload Image')}
+            >
+              <Camera className="w-4 h-4" />
+            </button>
             {/* Voice Dictation Button */}
             <button
               type="button"
@@ -1162,7 +1269,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             </button>
             <button
               onClick={() => handleSendMessage()}
-              disabled={!inputQuery.trim() || isProcessing}
+              disabled={(!inputQuery.trim() && !uploadedImage) || isProcessing}
               className="w-9 h-9 rounded-xl bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] hover:from-[#1E5237] hover:to-[#225C3C] text-white flex items-center justify-center shadow-sm shadow-emerald-950/20 transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shrink-0"
               aria-label={t('Send Message')}
             >

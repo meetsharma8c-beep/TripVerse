@@ -36,8 +36,18 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
   const [copiedVpa, setCopiedVpa] = useState<boolean>(false);
   const [isSettled, setIsSettled] = useState<boolean>(false);
 
-  // Recipient VPA derivation
-  const recipientVpa = `${toUser.toLowerCase().replace(/[^a-z0-9]/g, '')}.travel@okhdfcbank`;
+  // Recipient VPA derivation with custom editable override
+  const [customVpa, setCustomVpa] = useState<string>(() => {
+    try {
+      return localStorage.getItem(`tripverse_vpa_${toUser}`) || '';
+    } catch {
+      return '';
+    }
+  });
+  const [isEditingVpa, setIsEditingVpa] = useState<boolean>(false);
+  const [tempVpa, setTempVpa] = useState<string>('');
+
+  const recipientVpa = customVpa.trim() || `${toUser.toLowerCase().replace(/[^a-z0-9]/g, '')}.travel@okhdfcbank`;
 
   const [transactionRef, setTransactionRef] = useState(() => `SETTLE${Date.now().toString().slice(-6)}`);
 
@@ -264,20 +274,75 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
                   </div>
                 )}
 
+                {/* 1-Tap Direct UPI App Launcher */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic('medium');
+                    window.location.href = upiUri;
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-98"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>⚡ Open UPI App (GPay / PhonePe / Paytm)</span>
+                </button>
+
                 {/* Recipient VPA */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-900/80 p-2.5 rounded-xl">
-                  <div className="text-left truncate mr-2">
-                    <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Recipient UPI VPA</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate block">{recipientVpa}</span>
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5 bg-slate-50 dark:bg-slate-900/80 p-2.5 rounded-xl text-left">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="truncate mr-2">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Recipient UPI VPA</span>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate block">{recipientVpa}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempVpa(recipientVpa);
+                          setIsEditingVpa(!isEditingVpa);
+                        }}
+                        className="text-[10px] text-emerald-600 dark:text-emerald-400 underline font-semibold px-1 py-0.5"
+                      >
+                        {isEditingVpa ? 'Cancel' : 'Edit VPA'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCopyVpa}
+                        className="shrink-0 p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-600 transition-colors cursor-pointer"
+                        title="Copy VPA"
+                      >
+                        {copiedVpa ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleCopyVpa}
-                    className="shrink-0 p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:border-emerald-300 dark:hover:border-emerald-600 transition-colors cursor-pointer"
-                    title="Copy VPA"
-                  >
-                    {copiedVpa ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
+
+                  {isEditingVpa && (
+                    <div className="flex items-center gap-2 pt-1 border-t border-slate-200 dark:border-slate-700">
+                      <input
+                        type="text"
+                        placeholder="e.g. rohit@okhdfcbank"
+                        value={tempVpa}
+                        onChange={(e) => setTempVpa(e.target.value)}
+                        className="flex-1 px-2.5 py-1 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (tempVpa.trim()) {
+                            setCustomVpa(tempVpa.trim());
+                            try {
+                              localStorage.setItem(`tripverse_vpa_${toUser}`, tempVpa.trim());
+                            } catch {}
+                            setIsEditingVpa(false);
+                            triggerHaptic('light');
+                          }
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold text-[11px] cursor-pointer"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
