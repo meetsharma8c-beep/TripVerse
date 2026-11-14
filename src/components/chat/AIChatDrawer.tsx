@@ -642,10 +642,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             <div>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h3 className="font-bold text-sm flex items-center gap-1.5">
-                  <span>{t('TripVerse AI Co-Pilot')}</span>
-                  <span className="text-[10px] font-medium text-emerald-300 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-400/30">Argon</span>
+                  <span>{t('ConCode AI Co-Pilot')}</span>
                 </h3>
-                <span className="text-[9px] font-black uppercase tracking-wider bg-white/10 text-emerald-300 px-1.5 py-0.5 rounded border border-white/10 flex items-center gap-1">
+                <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1">
                   CONCODE
                 </span>
                 {quota.isPro ? (

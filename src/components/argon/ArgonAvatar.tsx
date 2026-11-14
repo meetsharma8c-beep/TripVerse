@@ -91,7 +91,7 @@ export const ArgonAvatar: React.FC<ArgonAvatarProps> = ({
     <div
       onClick={onClick}
       role={onClick ? 'button' : 'img'}
-      aria-label={`Argon AI Concierge - ${state}`}
+      aria-label={`ConCode AI Avatar - ${state}`}
       className={`relative select-none inline-flex items-center justify-center ${SIZE_MAP[size]} ${
         onClick ? 'cursor-pointer' : ''
       } ${className}`}

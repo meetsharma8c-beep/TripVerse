@@ -75,7 +75,7 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
   return (
     <div
       className={`fixed bottom-22 right-4 md:bottom-7 md:right-7 z-40 flex flex-col items-end gap-2.5 select-none ${className}`}
-      aria-label="Argon AI Co-Pilot"
+      aria-label="ConCode AI Co-Pilot"
     >
       {/* Proactive Speech Bubble */}
       {showHintBubble && (
@@ -114,8 +114,8 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
         onMouseEnter={() => setArgonState('excited')}
         onMouseLeave={() => setArgonState('idle')}
         className="group relative flex flex-col items-center bg-transparent border-0 p-0 shadow-none outline-none cursor-pointer focus:outline-none transition-transform duration-300 hover:scale-110 active:scale-95"
-        title="Chat with Argon (TripVerse AI Co-Pilot)"
-        aria-label="Open AI Trip Assistant with Argon"
+        title="Chat with ConCode (TripVerse AI Co-Pilot)"
+        aria-label="Open ConCode AI Travel Assistant"
       >
         <div className="relative">
           <ArgonAvatar

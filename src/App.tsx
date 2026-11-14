@@ -3032,7 +3032,7 @@ export function App() {
         onNavigateTab={handleNavigateTab}
       />
 
-      {/* Autonomous AI Co-Pilot Floating Mascot Widget (Argon) */}
+      {/* Autonomous AI Co-Pilot Floating Mascot Widget (ConCode AI) */}
       <ArgonFloatingWidget
         onOpenChat={() => setIsAIChatOpen(true)}
         onOpenChatWithQuery={(query) => {
