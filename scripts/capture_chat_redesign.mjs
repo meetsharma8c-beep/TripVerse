@@ -88,11 +88,10 @@ async function run() {
     }
   ];
 
-  await page.evaluateOnNewDocument((sess, msgs, uId) => {
+  await page.evaluateOnNewDocument((sess) => {
     localStorage.setItem('tripverse_onboarding_completed', 'true');
     localStorage.setItem('tripverse_auth_session_v3', JSON.stringify(sess));
-    localStorage.setItem(`tripverse_chat_u_${uId}`, JSON.stringify(msgs));
-  }, session, sampleMessages, userId);
+  }, session);
 
   console.log('Navigating to https://trip-verse.com/#home ...');
   await page.goto('https://trip-verse.com/#home', { waitUntil: 'networkidle2' });
@@ -128,12 +127,22 @@ async function run() {
   });
 
   console.log('Chat button status:', clicked);
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise(r => setTimeout(r, 1500));
 
-  // Screenshot Desktop
-  const desktopPath = '/Users/ms/.gemini/antigravity/brain/a8899a96-22c7-445a-abb8-4b193dcde446/concode_chat_redesign_live.png';
+  // Type a real query into the chat input
+  console.log('Typing live question into ConCode...');
+  const inputSelector = 'input[placeholder*="Ask anything"]';
+  await page.waitForSelector(inputSelector, { timeout: 5000 });
+  await page.type(inputSelector, 'What are the top 3 luxury rooftop restaurants in Dubai?');
+  await page.keyboard.press('Enter');
+
+  console.log('Waiting for live LLM response...');
+  await new Promise(r => setTimeout(r, 4000));
+
+  // Screenshot Desktop with genuine live response
+  const desktopPath = '/Users/ms/.gemini/antigravity/brain/a8899a96-22c7-445a-abb8-4b193dcde446/concode_chat_live_groq.png';
   await page.screenshot({ path: desktopPath });
-  console.log('Saved desktop screenshot to', desktopPath);
+  console.log('Saved live LLM screenshot to', desktopPath);
 
   // Switch to mobile viewport and open drawer on mobile
   await page.setViewport({ width: 412, height: 915, deviceScaleFactor: 2, isMobile: true, hasTouch: true });

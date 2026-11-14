@@ -641,20 +641,18 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           />
 
           <div className="relative z-10 flex items-center gap-3">
-            {/* Living 3D Avatar Pod */}
-            <div className="relative flex items-center justify-center">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 p-0.5 shadow-inner flex items-center justify-center">
-                <ArgonAvatar
-                  state={argonHeaderState}
-                  size="sm"
-                  className="w-11 h-11 drop-shadow-md"
-                />
-              </div>
+            {/* Living 3D Avatar (100% Unboxed & Borderless) */}
+            <div className="relative flex items-center justify-center shrink-0">
+              <ArgonAvatar
+                state={argonHeaderState}
+                size="sm"
+                className="w-12 h-12 sm:w-13 sm:h-13 drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-105"
+              />
               <span
-                className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#163D25] transition-colors duration-300"
+                className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#0E2818] transition-colors duration-300 pointer-events-none"
                 style={{
                   backgroundColor: ARGON_STATE_THEME[argonHeaderState].ledHex,
-                  boxShadow: `0 0 8px ${ARGON_STATE_THEME[argonHeaderState].ledGlowRgba}`
+                  boxShadow: `0 0 10px ${ARGON_STATE_THEME[argonHeaderState].ledGlowRgba}`
                 }}
               />
             </div>
