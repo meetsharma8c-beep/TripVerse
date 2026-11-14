@@ -37,19 +37,28 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenChat,
   onOpenProModal
 }) => {
-  const [quota, setQuota] = useState(() => getUserSubscriptionQuota());
+  const [quota, setQuota] = useState(() => {
+    return getUserSubscriptionQuota(userProfile ? {
+      email: userProfile.email,
+      displayName: userProfile.name
+    } as any : null);
+  });
 
   useEffect(() => {
-    const handleQuotaChange = () => {
-      setQuota(getUserSubscriptionQuota());
+    const updateQuota = () => {
+      setQuota(getUserSubscriptionQuota(userProfile ? {
+        email: userProfile.email,
+        displayName: userProfile.name
+      } as any : null));
     };
-    window.addEventListener('tripverse_quota_updated', handleQuotaChange);
-    window.addEventListener('tripverse_auth_state_change', handleQuotaChange);
+    updateQuota();
+    window.addEventListener('tripverse_quota_updated', updateQuota);
+    window.addEventListener('tripverse_auth_state_change', updateQuota);
     return () => {
-      window.removeEventListener('tripverse_quota_updated', handleQuotaChange);
-      window.removeEventListener('tripverse_auth_state_change', handleQuotaChange);
+      window.removeEventListener('tripverse_quota_updated', updateQuota);
+      window.removeEventListener('tripverse_auth_state_change', updateQuota);
     };
-  }, []);
+  }, [userProfile?.email, userProfile?.name]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -394,14 +403,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 type="button"
                 onClick={onOpenProModal}
                 className={`flex items-center gap-1 h-7.5 xl:h-8 px-2 xl:px-2.5 rounded-full text-[11px] xl:text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer shadow-2xs border ${
-                  quota.isPro
+                  quota.isFounder
+                    ? 'bg-amber-400 text-amber-950 font-black border-amber-300 shadow-xs hover:bg-amber-300'
+                    : quota.isPro
                     ? 'bg-amber-500/10 border-amber-300/40 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20'
                     : 'bg-[#E8EFE7] dark:bg-emerald-950/40 hover:bg-[#DCE7DB] dark:hover:bg-emerald-900/40 border-[#DCE7DB] dark:border-emerald-800/40 text-[#2D5A3D] dark:text-emerald-400'
                 }`}
-                title={quota.isPro ? t('TripVerse Pro Active') : t('Unlock Unlimited Trips with TripVerse Pro')}
+                title={quota.isFounder ? 'VIP Founder Pro Active (Lifetime Unlimited Access)' : quota.isPro ? t('TripVerse Pro Active') : t('Unlock Unlimited Trips with TripVerse Pro')}
               >
-                <Crown className={`w-3.5 h-3.5 shrink-0 ${quota.isFounder ? 'text-amber-400 fill-amber-400' : quota.isPro ? 'text-amber-500 fill-amber-500' : 'text-[#2D5A3D] dark:text-emerald-400'}`} />
-                <span>{quota.isFounder ? 'FOUNDER' : quota.isPro ? 'PRO' : 'Pro'}</span>
+                <Crown className={`w-3.5 h-3.5 shrink-0 ${quota.isFounder ? 'text-amber-950 fill-amber-950' : quota.isPro ? 'text-amber-500 fill-amber-500' : 'text-[#2D5A3D] dark:text-emerald-400'}`} />
+                <span>{quota.isFounder ? 'VIP FOUNDER' : quota.isPro ? 'PRO' : 'Pro'}</span>
               </button>
             )}
 
@@ -466,9 +477,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                       </div>
                       {quota.isPro && (
-                        <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-amber-300/40">
-                          <Crown className="w-3 h-3" />
-                          <span>{t('TripVerse Pro Member')}</span>
+                        <div className={`mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
+                          quota.isFounder
+                            ? 'bg-amber-400 text-amber-950 border-amber-300 shadow-xs'
+                            : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300/40'
+                        }`}>
+                          <Crown className={`w-3 h-3 ${quota.isFounder ? 'fill-amber-950 text-amber-950' : ''}`} />
+                          <span>{quota.isFounder ? '👑 VIP Founder Pro' : t('TripVerse Pro Member')}</span>
                         </div>
                       )}
                     </div>

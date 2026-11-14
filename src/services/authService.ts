@@ -44,8 +44,12 @@ export const FOUNDER_VIP_EMAILS = new Set([
   'meet.sharma8c@gmail.com'
 ]);
 
-export function isFounderVipUser(userParam?: AuthUser | null): boolean {
-  const user = userParam !== undefined ? userParam : getCurrentUser();
+export function isFounderVipUser(userParam?: AuthUser | UserProfile | { email?: string } | null): boolean {
+  if (userParam && typeof (userParam as any).email === 'string') {
+    const emailNorm = (userParam as any).email.toLowerCase().trim();
+    if (FOUNDER_VIP_EMAILS.has(emailNorm)) return true;
+  }
+  const user = userParam !== undefined ? (userParam as AuthUser | null) : getCurrentUser();
   const emailNorm = user?.email ? user.email.toLowerCase().trim() : '';
   if (!emailNorm) return false;
   return FOUNDER_VIP_EMAILS.has(emailNorm);
@@ -61,7 +65,7 @@ function purgeLegacyMockSessions(): void {
     if (rawSession) {
       const s = JSON.parse(rawSession);
       const uid = s?.user?.uid || '';
-      const email = s?.user?.email || '';
+      const email = s?.user?.email ? s.user.email.toLowerCase().trim() : '';
       const name = s?.user?.displayName || '';
       const isMock = s?.isMock === true || s?.user?.isMock === true;
       if (
@@ -72,6 +76,15 @@ function purgeLegacyMockSessions(): void {
         uid.startsWith('test-')
       ) {
         localStorage.removeItem(SESSION_STORAGE_KEY);
+      } else if (email && email !== 'meet.sharma8c@gmail.com') {
+        // Strip accidental Pro/Founder bleed on non-founder accounts (like ms.concode@gmail.com)
+        if (s.user?.subscriptionTier === 'pro' && (s.user.freeTripsRemaining === 9999 || (s.user.subscriptionExpiresAt && new Date(s.user.subscriptionExpiresAt).getFullYear() > 2030))) {
+          s.user.subscriptionTier = 'free';
+          s.user.freeTripsRemaining = 3;
+          s.user.weeklyAssistantMinutesRemaining = 30;
+          s.user.subscriptionExpiresAt = undefined;
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(s));
+        }
       }
     }
 
@@ -84,9 +97,18 @@ function purgeLegacyMockSessions(): void {
         !a.user.uid.startsWith('mock-') &&
         !a.user.uid.startsWith('test-')
       );
-      if (cleaned.length !== accounts.length) {
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(cleaned));
-      }
+      cleaned.forEach(a => {
+        const email = a.user.email ? a.user.email.toLowerCase().trim() : '';
+        if (email && email !== 'meet.sharma8c@gmail.com') {
+          if (a.user.subscriptionTier === 'pro' && (a.user.freeTripsRemaining === 9999 || (a.user.subscriptionExpiresAt && new Date(a.user.subscriptionExpiresAt).getFullYear() > 2030))) {
+            a.user.subscriptionTier = 'free';
+            a.user.freeTripsRemaining = 3;
+            a.user.weeklyAssistantMinutesRemaining = 30;
+            a.user.subscriptionExpiresAt = undefined;
+          }
+        }
+      });
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(cleaned));
     }
 
     // Always purge obsolete single-user legacy profile key and un-scoped founder vip key
