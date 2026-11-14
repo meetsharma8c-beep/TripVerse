@@ -1,6 +1,7 @@
 /**
  * Digital Passport Service (passportService.ts)
- * Collectible travel stamps, holographic visa badges, and explorer achievements.
+ * Collectible travel stamps, biometric visa badges, and verified explorer records.
+ * 100% professional and zero-emoji compliance.
  */
 
 export interface PassportStamp {
@@ -11,10 +12,12 @@ export interface PassportStamp {
   countryCode: string;
   category: 'landmark' | 'country' | 'achievement' | 'special';
   unlockedAt: string | null;
-  icon: string;
+  icon: string; // Clean vector icon identifier (e.g. 'crown', 'mountain', 'landmark', etc.)
   color: string;
   sealText: string;
   description: string;
+  portCode: string;
+  vintageNumber: string;
   isRare?: boolean;
   isFounderOnly?: boolean;
 }
@@ -34,6 +37,7 @@ export interface DigitalPassportProfile {
   holderName: string;
   email: string;
   homeCountry: string;
+  nationalityCode: string;
   issueDate: string;
   expiryDate: string;
   isFounder: boolean;
@@ -55,25 +59,29 @@ export const INITIAL_STAMPS: PassportStamp[] = [
     countryCode: 'VIP',
     category: 'special',
     unlockedAt: null,
-    icon: '👑',
+    icon: 'crown',
     color: '#D4AF37', // Gold
     sealText: 'VIP FOUNDER • ARCHITECT',
-    description: 'Exclusive founding architect stamp honoring the creation of TripVerse.',
+    portCode: 'CC-GENESIS',
+    vintageNumber: 'TV-ARCH-001',
+    description: 'Exclusive founding architect clearance honoring the inception of TripVerse.',
     isRare: true,
     isFounderOnly: true
   },
   {
     id: 'stamp_manali_himalayas',
     name: 'Himalayan Ridge Pass',
-    location: 'Manali, Himachal',
+    location: 'Manali, Himachal Pradesh',
     country: 'India',
     countryCode: 'IN',
     category: 'landmark',
     unlockedAt: '2026-10-15T10:00:00.000Z',
-    icon: '🏔️',
+    icon: 'mountain',
     color: '#15803D', // Emerald
     sealText: 'SOLANG VALLEY • 3,200M',
-    description: 'Alpine high-altitude pass verified in the pir panjal range.'
+    portCode: 'KUU / DEL',
+    vintageNumber: 'HIM-3200-A',
+    description: 'Alpine high-altitude pass verified across the Pir Panjal range.'
   },
   {
     id: 'stamp_eiffel_paris',
@@ -83,10 +91,12 @@ export const INITIAL_STAMPS: PassportStamp[] = [
     countryCode: 'FR',
     category: 'landmark',
     unlockedAt: null,
-    icon: '🗼',
+    icon: 'landmark',
     color: '#1E40AF', // Royal Blue
     sealText: 'CHAMP DE MARS • PARIS',
-    description: 'Summit clearance at the iron lady of Paris.'
+    portCode: 'CDG / PAR',
+    vintageNumber: 'FR-75007-B',
+    description: 'Summit clearance at the historic iron architectural monument of Paris.'
   },
   {
     id: 'stamp_taj_mahal',
@@ -96,23 +106,27 @@ export const INITIAL_STAMPS: PassportStamp[] = [
     countryCode: 'IN',
     category: 'landmark',
     unlockedAt: '2026-10-20T14:30:00.000Z',
-    icon: '🕌',
+    icon: 'monument',
     color: '#B45309', // Amber
     sealText: 'TAJ MAHAL • UNESCO',
-    description: 'Verified visit to the ivory-white jewel of world heritage.'
+    portCode: 'AGR / DEL',
+    vintageNumber: 'UP-282001-A',
+    description: 'Verified entry to the ivory-white marble jewel of world cultural heritage.'
   },
   {
     id: 'stamp_burj_khalifa',
-    name: 'Apex of the Clouds',
+    name: 'Apex Observation Seal',
     location: 'Downtown Dubai',
     country: 'United Arab Emirates',
     countryCode: 'AE',
     category: 'landmark',
     unlockedAt: null,
-    icon: '🏙️',
+    icon: 'building',
     color: '#047857', // Teal
     sealText: 'BURJ KHALIFA • 828M',
-    description: 'Conquered the highest observation deck in the world.'
+    portCode: 'DXB / T3',
+    vintageNumber: 'AE-DXB-828',
+    description: 'Clearance verified at the highest metropolitan observation deck in the world.'
   },
   {
     id: 'stamp_fushimi_inari',
@@ -122,49 +136,57 @@ export const INITIAL_STAMPS: PassportStamp[] = [
     countryCode: 'JP',
     category: 'landmark',
     unlockedAt: null,
-    icon: '⛩️',
+    icon: 'shrine',
     color: '#DC2626', // Crimson Vermilion
     sealText: 'KYOTO • SACRED TORII',
-    description: 'Crossed the vermilion labyrinth of Inari mountain.'
+    portCode: 'KIX / UKY',
+    vintageNumber: 'JP-61208-T',
+    description: 'Passage verified through the historic cedar shrine path of Inari Mountain.'
   },
   {
     id: 'stamp_colosseum',
-    name: 'Gladiator Arena Entry',
+    name: 'Flavian Amphitheater Entry',
     location: 'Rome',
     country: 'Italy',
     countryCode: 'IT',
     category: 'landmark',
     unlockedAt: null,
-    icon: '🏛️',
-    color: '#9333EA', // Purple
+    icon: 'arena',
+    color: '#9333EA', // Imperial Purple
     sealText: 'ROMA • FLAVIAN ARENA',
-    description: 'Walked the ancient arches of the Roman Colosseum.'
+    portCode: 'FCO / ROM',
+    vintageNumber: 'IT-00184-C',
+    description: 'Walked the ancient monumental arches of the Roman Flavian Colosseum.'
   },
   {
     id: 'stamp_marina_bay',
-    name: 'SkyPark Horizon',
+    name: 'SkyPark Observation Horizon',
     location: 'Marina Bay',
     country: 'Singapore',
     countryCode: 'SG',
     category: 'landmark',
     unlockedAt: null,
-    icon: '✨',
+    icon: 'horizon',
     color: '#0284C7', // Sky Blue
     sealText: 'SINGAPORE • SKYPARK',
-    description: 'Cantilever skyline view overlooking the Singapore Strait.'
+    portCode: 'SIN / SIN',
+    vintageNumber: 'SG-018956-M',
+    description: 'Cantilever skyline panoramic clearance overlooking the Singapore Strait.'
   },
   {
     id: 'stamp_country_india',
-    name: 'Republic of India Visa',
-    location: 'Border Clearance',
+    name: 'Republic of India Border Clearance',
+    location: 'Border Immigration',
     country: 'India',
     countryCode: 'IN',
     category: 'country',
     unlockedAt: '2026-09-01T08:00:00.000Z',
-    icon: '🇮🇳',
+    icon: 'flag',
     color: '#EA580C', // Saffron
-    sealText: 'BORDER IMMIGRATION • IN',
-    description: 'Official entry stamp for the incredible subcontinent.'
+    sealText: 'IMMIGRATION BUREAU • IN',
+    portCode: 'DEL / BOM',
+    vintageNumber: 'IND-VIS-2601',
+    description: 'Official sovereign entry clearance for the Indian subcontinent.'
   },
   {
     id: 'stamp_country_france',
@@ -174,10 +196,12 @@ export const INITIAL_STAMPS: PassportStamp[] = [
     countryCode: 'FR',
     category: 'country',
     unlockedAt: null,
-    icon: '🇫🇷',
+    icon: 'flag',
     color: '#2563EB',
-    sealText: 'SCHENGEN REPUBLIQUE • FR',
-    description: 'European Schengen territory admission stamp.'
+    sealText: 'SCHENGEN BORDER • FR',
+    portCode: 'CDG / ORY',
+    vintageNumber: 'SCH-FRA-2602',
+    description: 'European Schengen territory official entry and transit clearance.'
   },
   {
     id: 'stamp_country_japan',
@@ -187,23 +211,27 @@ export const INITIAL_STAMPS: PassportStamp[] = [
     countryCode: 'JP',
     category: 'country',
     unlockedAt: null,
-    icon: '🇯🇵',
+    icon: 'flag',
     color: '#E11D48',
-    sealText: 'IMMIGRATION BUREAU • JP',
-    description: 'Cherry blossom temporary visitor landing seal.'
+    sealText: 'IMMIGRATION SERVICES • JP',
+    portCode: 'NRT / HND',
+    vintageNumber: 'JPN-VIS-2603',
+    description: 'Ministry of Justice Japan verified temporary visitor landing seal.'
   },
   {
     id: 'stamp_country_uae',
-    name: 'Dubai International Arrival',
+    name: 'Dubai International Border Clearance',
     location: 'DXB Terminal 3',
     country: 'UAE',
     countryCode: 'AE',
     category: 'country',
     unlockedAt: null,
-    icon: '🇦🇪',
+    icon: 'flag',
     color: '#059669',
     sealText: 'GDRFA DUBAI • ENTRY',
-    description: 'Emirates golden gate desert metropolis arrival.'
+    portCode: 'DXB / DWC',
+    vintageNumber: 'UAE-DXB-2604',
+    description: 'General Directorate of Residency and Foreigners Affairs verified entry.'
   }
 ];
 
@@ -215,7 +243,6 @@ export function getPassportStamps(userEmail?: string): PassportStamp[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_PASSPORT_STAMPS);
     if (!raw) {
-      // Default: If founder, unlock genesis stamp automatically
       const stamps = INITIAL_STAMPS.map(s => {
         if (s.id === 'founder_genesis') {
           return { ...s, unlockedAt: isFounder ? new Date().toISOString() : null };
@@ -272,8 +299,9 @@ export function getPassportProfile(userEmail?: string, userName?: string): Digit
     holderName: userName || (isFounder ? 'Meet Sharma (Founder)' : 'Traveler'),
     email: userEmail || 'traveler@tripverse.com',
     homeCountry: 'India',
+    nationalityCode: 'IND',
     issueDate: '01 NOV 2026',
-    expiryDate: 'PERPETUAL VIP',
+    expiryDate: 'PERPETUAL DIPLOMATIC',
     isFounder,
     travelTier: tier,
     stampsCount: unlocked.length,

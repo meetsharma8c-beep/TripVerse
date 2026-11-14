@@ -1,7 +1,8 @@
 /**
  * Travel Wrapped Service (travelWrappedService.ts)
- * Computes Spotify Wrapped-style annual and all-time travel recap statistics,
+ * Computes executive annual and all-time travel recap statistics,
  * archetypes, and shareable highlights.
+ * 100% professional and zero-emoji compliance.
  */
 
 import { Trip } from '../types/trip';
@@ -16,7 +17,8 @@ export interface TravelWrappedStats {
   topLandmark: string;
   travelerArchetype: {
     title: string;
-    badge: string;
+    badge: string; // Clean typographic badge (e.g. 'FOUNDER ARCHITECT', 'ALPINE MAVERICK')
+    iconName: 'crown' | 'mountain' | 'landmark' | 'building' | 'compass';
     description: string;
     themeColor: string;
   };
@@ -85,37 +87,41 @@ export function computeTravelWrapped(
     }
   });
 
-  // Calculate kilometers (approx 850km per city + base)
+  // Calculate kilometers (approx 950km per city + base)
   const totalKm = (citiesSet.size * 950) + (totalDays * 120) + (isFounder ? 5000 : 1200);
 
-  // Determine Traveler Archetype
+  // Determine Traveler Archetype with zero emojis
   const destString = Array.from(citiesSet).join(' ').toLowerCase();
-  let archetype = {
+  let archetype: TravelWrappedStats['travelerArchetype'] = {
     title: 'Continental Voyager',
-    badge: '🧭',
-    description: 'You seek balanced horizons, blending cultural discoveries with serene wanderlust.',
+    badge: 'CONTINENTAL VOYAGER',
+    iconName: 'compass',
+    description: 'Balanced explorer bridging natural horizons, culture, and coastal wanderlust.',
     themeColor: '#10B981'
   };
 
   if (destString.includes('manali') || destString.includes('leh') || destString.includes('himalaya') || destString.includes('alps')) {
     archetype = {
       title: 'Alpine Maverick',
-      badge: '🏔️',
-      description: 'You crave high-altitude ridges, pine mist, and epic mountain passes.',
+      badge: 'ALPINE MAVERICK',
+      iconName: 'mountain',
+      description: 'High-altitude specialist conquering rigorous passes and alpine ridgelines.',
       themeColor: '#0EA5E9'
     };
   } else if (destString.includes('paris') || destString.includes('rome') || destString.includes('kyoto') || destString.includes('agra')) {
     archetype = {
       title: 'Heritage Connoisseur',
-      badge: '🏛️',
-      description: 'You are captivated by ancient architecture, classical wonders, and storied history.',
+      badge: 'HERITAGE CONNOISSEUR',
+      iconName: 'landmark',
+      description: 'Devoted to architectural masterworks, historic antiquities, and cultural heritage.',
       themeColor: '#F59E0B'
     };
   } else if (destString.includes('dubai') || destString.includes('singapore') || destString.includes('tokyo')) {
     archetype = {
       title: 'Metropolitan Nomad',
-      badge: '🏙️',
-      description: 'You thrive in futuristic skylines, high-speed rail, and glittering megacities.',
+      badge: 'METROPOLITAN NOMAD',
+      iconName: 'building',
+      description: 'Thriving across futuristic skylines, modern transit nodes, and global megacities.',
       themeColor: '#8B5CF6'
     };
   }
@@ -123,8 +129,9 @@ export function computeTravelWrapped(
   if (isFounder) {
     archetype = {
       title: 'VIP Founding Architect',
-      badge: '👑',
-      description: 'Master builder of the TripVerse cosmos with lifetime global clearance.',
+      badge: 'FOUNDER ARCHITECT',
+      iconName: 'crown',
+      description: 'Chief architect of the TripVerse cosmos with perpetual diplomatic clearance.',
       themeColor: '#D4AF37'
     };
   }
@@ -146,10 +153,17 @@ export function computeTravelWrapped(
 }
 
 export function generateWrappedSocialText(stats: TravelWrappedStats): string {
-  return `✨ My ${stats.year} TripVerse Wrapped:\n` +
-    `🚀 Archetype: ${stats.travelerArchetype.badge} ${stats.travelerArchetype.title}\n` +
-    `🌍 ${stats.countriesVisited.length} Countries • 🏙️ ${stats.citiesExplored.length} Cities\n` +
-    `✈️ ${stats.totalKmTraveled.toLocaleString()} km Traversed • ⏳ ${stats.totalDaysTraveled} Days on the Road\n` +
-    `🏛️ Top Spot: ${stats.topLandmark}\n\n` +
-    `Plan your next voyage at https://trip-verse.com #TripVerseWrapped`;
+  return (
+    `TRIPVERSE ${stats.year} TRAVEL WRAPPED\n` +
+    `Executive Annual Voyage Dossier\n` +
+    `----------------------------------------\n` +
+    `Designation: [${stats.travelerArchetype.badge}] ${stats.travelerArchetype.title}\n` +
+    `Ground Traversed: ~${stats.totalKmTraveled.toLocaleString()} km\n` +
+    `Time on Expedition: ${stats.totalDaysTraveled} Days\n` +
+    `Cities Explored: ${stats.citiesExplored.length} Metropolises\n` +
+    `Territories Visited: ${stats.countriesVisited.length} Sovereign Countries\n` +
+    `Signature Landmark: ${stats.topLandmark}\n` +
+    `----------------------------------------\n` +
+    `Verified via TripVerse: https://trip-verse.com #TripVerseWrapped`
+  );
 }

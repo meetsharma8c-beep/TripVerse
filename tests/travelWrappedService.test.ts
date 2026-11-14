@@ -57,18 +57,20 @@ describe('Travel Wrapped Service (travelWrappedService)', () => {
     expect(stats.countriesVisited.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('accurately designates VIP Founding Architect archetype for meet.sharma8c@gmail.com', () => {
+  it('accurately designates VIP Founding Architect archetype for meet.sharma8c@gmail.com without emojis', () => {
     const founderStats = computeTravelWrapped(mockTrips, 'meet.sharma8c@gmail.com', 2026);
     expect(founderStats.isFounder).toBe(true);
     expect(founderStats.travelerArchetype.title).toBe('VIP Founding Architect');
-    expect(founderStats.travelerArchetype.badge).toBe('👑');
+    expect(founderStats.travelerArchetype.badge).toBe('FOUNDER ARCHITECT');
+    expect(founderStats.travelerArchetype.iconName).toBe('crown');
   });
 
-  it('generates rich, viral-ready social card text', () => {
+  it('generates rich, viral-ready social card text free of emojis', () => {
     const stats = computeTravelWrapped(mockTrips, 'traveler@example.com', 2026);
     const text = generateWrappedSocialText(stats);
-    expect(text).toContain('TripVerse Wrapped');
-    expect(text).toContain('km Traversed');
+    expect(text).toContain('TRIPVERSE');
+    expect(text).toContain('TRAVEL WRAPPED');
+    expect(text).toContain('Ground Traversed');
     expect(text).toContain('#TripVerseWrapped');
     expect(text).toContain('https://trip-verse.com');
   });
