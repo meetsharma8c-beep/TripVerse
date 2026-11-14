@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { 
   getTravelerMemoryRing, 
   updateTravelerMemoryRing, 
-  clearTravelerMemoryRing 
+  clearTravelerMemoryRing,
+  resetConcodeSession 
 } from '../src/services/concodeSession';
 import { queryConcodeBrain } from '../src/services/concodeBrainService';
 import { Trip } from '../src/types/trip';
@@ -10,6 +11,7 @@ import { Trip } from '../src/types/trip';
 describe('CONCODE Brain Advanced Capabilities Integration', () => {
   beforeEach(() => {
     clearTravelerMemoryRing();
+    resetConcodeSession();
   });
 
   const mockTrip: Trip = {
@@ -130,5 +132,32 @@ describe('CONCODE Brain Advanced Capabilities Integration', () => {
     expect(res.guild).toBe('conversational');
     expect(res.response).toContain('VEGAN');
     expect(res.response).toContain('RELAXED');
+  });
+
+  it('routes PDF export and travel guide requests to the ui_ux guild with printable modal trigger', async () => {
+    const res = await queryConcodeBrain('Download and export official printable PDF travel guide dossier', mockTrip);
+    expect(res.guild).toBe('ui_ux');
+    expect(res.response).toContain('Official TripVerse Travel Guide');
+    expect(res.appAction?.type).toBe('OPEN_MODAL');
+    expect((res.appAction?.payload as any)?.modal).toBe('print');
+    expect(res.actionButtons?.some(btn => btn.action === 'PRINT_GUIDE')).toBe(true);
+  });
+
+  it('routes live weather, climate, and forecast queries to the security guild with seasonal advice', async () => {
+    const res = await queryConcodeBrain('What is the live weather forecast, temperature, and packing guide for Manali?', mockTrip);
+    expect(res.guild).toBe('security');
+    expect(res.response).toContain('Climate Overview');
+    expect(res.actionButtons?.some(btn => btn.action === 'VIEW_PACKING')).toBe(true);
+    expect(res.actionButtons?.some(btn => btn.action === 'RAINY_DAY_ALT')).toBe(true);
+  });
+
+  it('routes flight routes, airport codes, and airfare queries to the fullstack guild with Google Flights link', async () => {
+    const dubaiTrip = { ...mockTrip, destination: 'Dubai, UAE' };
+    const res = await queryConcodeBrain('Find best flight routes, airport codes, and airfare options', dubaiTrip);
+    expect(res.guild).toBe('fullstack');
+    expect(res.response).toContain('DXB');
+    expect(res.response).toContain('Flight Routes');
+    expect(res.actionButtons?.some(btn => btn.action === 'SEARCH_FLIGHTS')).toBe(true);
+    expect(res.actionButtons?.some(btn => btn.action === 'TRANSPORT_DEALS')).toBe(true);
   });
 });

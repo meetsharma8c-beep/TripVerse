@@ -626,9 +626,9 @@ export async function queryConcodeBrain(
     if (cloudResult) return cloudResult;
   }
 
-  const activeDest = session.destination || currentDest || 'Udaipur';
-  const activeDays = session.durationDays || tripContext.durationDays || 3;
-  const activeBudget = session.budget || tripContext.totalBudget || 15000;
+  const activeDest = currentDest && currentDest !== 'your destination' ? currentDest : (session.destination || 'Udaipur');
+  const activeDays = (tripContext.durationDays && tripContext.durationDays > 0) ? tripContext.durationDays : (session.durationDays || 3);
+  const activeBudget = (tripContext.totalBudget && tripContext.totalBudget > 0) ? tripContext.totalBudget : (session.budget || 15000);
 
   // =========================================================================
   // SCENARIO 8: SAVE THIS ITINERARY
@@ -1155,6 +1155,107 @@ export async function queryConcodeBrain(
   }
 
   // =========================================================================
+  // SCENARIO: FLIGHT ROUTES, AIRPORT CODES & AIRFARE INTELLIGENCE
+  // =========================================================================
+  if (
+    (norm.includes('flight') ||
+     norm.includes('fly') ||
+     norm.includes('airport') ||
+     norm.includes('airline') ||
+     norm.includes('airfare') ||
+     norm.includes('aeroplane')) &&
+    !norm.includes('delay') &&
+    !norm.includes('cancel') &&
+    !norm.includes('storm')
+  ) {
+    const normDest = activeDest.toLowerCase();
+    let airportCode = 'Major Regional Hub';
+    let airportName = `${activeDest} International Airport`;
+    let flightDuration = '2h – 4h';
+    let routeTip = 'Direct and 1-stop flights operate regularly from major hubs.';
+
+    if (normDest.includes('dubai') || normDest.includes('uae')) {
+      airportCode = 'DXB / DWC';
+      airportName = 'Dubai International (DXB) & Al Maktoum (DWC)';
+      flightDuration = '3h 30m – 4h non-stop';
+      routeTip = 'Emirates, flydubai, IndiGo, and Air India operate daily non-stop corridors.';
+    } else if (normDest.includes('goa')) {
+      airportCode = 'GOI / GOX';
+      airportName = 'Dabolim Airport (GOI, South Goa) & Manohar International Mopa (GOX, North Goa)';
+      flightDuration = '1h 15m (BOM) / 2h 30m (DEL)';
+      routeTip = 'Fly into GOX for North Goa beaches (Anjuna, Morjim) or GOI for South Goa resorts (Colva, Benaulim).';
+    } else if (normDest.includes('paris') || normDest.includes('france')) {
+      airportCode = 'CDG / ORY';
+      airportName = 'Charles de Gaulle Airport (CDG) & Paris Orly (ORY)';
+      flightDuration = '8h 30m – 9h non-stop';
+      routeTip = 'Air France and Air India operate direct services. RER B train connects CDG directly to Paris center in 35m.';
+    } else if (normDest.includes('london') || normDest.includes('uk')) {
+      airportCode = 'LHR / LGW';
+      airportName = 'London Heathrow (LHR) & Gatwick (LGW)';
+      flightDuration = '9h – 10h non-stop';
+      routeTip = 'Heathrow Express connects to Paddington in 15 mins. Best fares 6–8 weeks in advance.';
+    } else if (normDest.includes('tokyo') || normDest.includes('japan')) {
+      airportCode = 'HND / NRT';
+      airportName = 'Tokyo Haneda (HND, central) & Narita (NRT)';
+      flightDuration = '8h – 9h non-stop';
+      routeTip = 'Haneda (HND) monorail reaches downtown in 20 mins; Narita Express takes ~60 mins.';
+    } else if (normDest.includes('bali') || normDest.includes('indonesia')) {
+      airportCode = 'DPS';
+      airportName = 'Ngurah Rai International Airport (DPS, Denpasar)';
+      flightDuration = '6h – 8h (via SIN / KUL)';
+      routeTip = 'Pre-book airport lounge transfer to bypass arrival queues at DPS.';
+    } else if (normDest.includes('singapore')) {
+      airportCode = 'SIN';
+      airportName = 'Singapore Changi Airport (SIN)';
+      flightDuration = '4h 30m – 5h 30m non-stop';
+      routeTip = 'Direct MRT connects Changi terminals directly to downtown Singapore.';
+    } else if (normDest.includes('bangkok') || normDest.includes('thailand')) {
+      airportCode = 'BKK / DMK';
+      airportName = 'Suvarnabhumi Airport (BKK) & Don Mueang (DMK)';
+      flightDuration = '3h 45m – 4h 30m';
+      routeTip = 'Airport Rail Link connects BKK to Phaya Thai station in 26 minutes.';
+    } else if (normDest.includes('udaipur')) {
+      airportCode = 'UDR';
+      airportName = 'Maharana Pratap Airport (UDR)';
+      flightDuration = '1h 15m (BOM/DEL)';
+      routeTip = 'Pre-paid cabs take ~35 mins to Lake Pichola and the Old City.';
+    } else if (normDest.includes('jaipur')) {
+      airportCode = 'JAI';
+      airportName = 'Jaipur International Airport (JAI)';
+      flightDuration = '50m (DEL) / 1h 45m (BOM)';
+      routeTip = 'Direct flights connect across all Indian metros; terminal is 20m from central city.';
+    } else if (normDest.includes('ladakh') || normDest.includes('leh')) {
+      airportCode = 'IXL';
+      airportName = 'Kushok Bakula Rimpochee Airport (IXL, Leh)';
+      flightDuration = '1h 20m (morning scenic corridor)';
+      routeTip = 'Strict altitude acclimatization: Dedicate your entire arrival Day 1 to rest at hotel (3,500m elevation).';
+    } else if (normDest.includes('manali')) {
+      airportCode = 'KUU / IXC';
+      airportName = 'Bhuntar Airport (KUU, 50km) or Chandigarh (IXC, 280km)';
+      flightDuration = '1h to KUU / 1h to IXC + scenic road transfer';
+      routeTip = 'Bhuntar flights are weather-dependent. Most travelers fly into Chandigarh (IXC) and take a 7h scenic mountain drive.';
+    }
+
+    return {
+      guild: 'fullstack',
+      guildIcon: '',
+      confidence: 0.98,
+      response: `✈️ **Flight Routes, Airport Codes & Airfare Intelligence for ${activeDest}**\n\n` +
+        `• **Target Airports:** **${airportName}** (Code: \`${airportCode}\`)\n` +
+        `• **Flight Route Corridor:** ${currentOrigin} ✈️ ${activeDest}\n` +
+        `• **Estimated Flight Time:** ~${flightDuration}\n` +
+        `• **Route & Carrier Advice:** ${routeTip}\n\n` +
+        `💡 **Smart Booking Rule:** Lowest airfares are typically secured 4 to 6 weeks in advance. Mid-week departures (Tuesday/Wednesday) are up to 18% cheaper than peak weekend flights.\n\n` +
+        `Click below to compare real-time airfares on Google Flights or explore TripVerse transport deals!`,
+      actionButtons: [
+        { label: 'Search Google Flights ↗', action: 'SEARCH_FLIGHTS', primary: true },
+        { label: 'Browse Transport Deals', action: 'TRANSPORT_DEALS' },
+        { label: 'View Day 1 Schedule', action: 'VIEW_ITINERARY' }
+      ]
+    };
+  }
+
+  // =========================================================================
   // SCENARIO: MULTI-AGENT GROUP TRIP CONSENSUS (swarm.py)
   // =========================================================================
   if (
@@ -1378,7 +1479,7 @@ export async function queryConcodeBrain(
   // =========================================================================
   if (
     norm.includes('food') || 
-    norm.includes('eat') || 
+    /\b(?:eat|eats|eating)\b/.test(norm) || 
     norm.includes('restaurant') || 
     norm.includes('thali') || 
     norm.includes('dhaba') || 
@@ -1501,13 +1602,16 @@ export async function queryConcodeBrain(
   // e.g. "What should I pack?", "What clothes to wear?"
   // =========================================================================
   if (
-    norm.includes('pack') ||
-    norm.includes('cloth') ||
-    norm.includes('wear') ||
-    norm.includes('shoes') ||
-    norm.includes('gear') ||
-    norm.includes('luggage') ||
-    norm.includes('bag')
+    !norm.includes('weather') &&
+    !norm.includes('forecast') &&
+    !norm.includes('climate') &&
+    (norm.includes('pack') ||
+     norm.includes('cloth') ||
+     norm.includes('wear') ||
+     norm.includes('shoes') ||
+     norm.includes('gear') ||
+     norm.includes('luggage') ||
+     norm.includes('bag'))
   ) {
     const isUdaipur = activeDest.toLowerCase().includes('udaipur');
     const packDetails = isUdaipur
@@ -1542,6 +1646,7 @@ export async function queryConcodeBrain(
   if (
     norm.includes('best time') ||
     norm.includes('weather') ||
+    norm.includes('forecast') ||
     norm.includes('season') ||
     norm.includes('climate') ||
     norm.includes('temperature') ||
@@ -1550,23 +1655,46 @@ export async function queryConcodeBrain(
     norm.includes('monsoon')
   ) {
     const isUdaipur = activeDest.toLowerCase().includes('udaipur');
-    const weatherDetails = isUdaipur
-      ? `**Best Time to Visit Udaipur & Climate Overview:**\n\n` +
+    const isDubai = activeDest.toLowerCase().includes('dubai');
+    const isGoa = activeDest.toLowerCase().includes('goa');
+    const isManali = activeDest.toLowerCase().includes('manali');
+
+    let weatherDetails = '';
+    if (isUdaipur) {
+      weatherDetails = `**Best Time to Visit Udaipur & Climate Overview:**\n\n` +
         `• **Peak Season (October to March):** The absolute prime window. Daytime temperatures are pleasant (20°C–28°C) and evenings are crisp (10°C–15°C). Ideal for sightseeing, boating, and rooftop dining.\n` +
         `• **Monsoon Season (July to September):** Magical greenery. Lakes overflow, Aravali mountains turn lush emerald, and Monsoon Palace looks dramatic in the mist. Great for romantic trips and photography.\n` +
-        `• **Summer (April to June):** Highs reach 38°C–42°C. Sightseeing is best done early morning (7:00 AM–10:30 AM) and late evening. Hotels offer deep luxury discounts during this period.`
-      : `**Seasonal Climate Guide for ${activeDest}:**\n\n` +
-        `• **Optimal Travel Season:** Mild temperatures and minimal precipitation make morning and sunset sightseeing effortless.\n` +
+        `• **Summer (April to June):** Highs reach 38°C–42°C. Sightseeing is best done early morning (7:00 AM–10:30 AM) and late evening. Hotels offer deep luxury discounts during this period.`;
+    } else if (isDubai) {
+      weatherDetails = `**Best Time to Visit Dubai & Climate Overview:**\n\n` +
+        `• **Peak Winter Season (November to March):** Ideal outdoor climate (20°C–28°C). Perfect for desert safaris, beach clubs, and Marina yacht cruises.\n` +
+        `• **Shoulder Season (April & October):** Warm (28°C–35°C), great for waterparks, air-conditioned attractions, and evening rooftop dining.\n` +
+        `• **Summer (May to September):** Hot (38°C–45°C). All attractions are climate-controlled; indoor theme parks and luxury malls feature deep off-season deals.`;
+    } else if (isGoa) {
+      weatherDetails = `**Best Time to Visit Goa & Climate Overview:**\n\n` +
+        `• **Peak Beach Season (November to February):** Crisp sunny days (24°C–31°C) and refreshing sea breezes. Water sports, beach shacks, and night markets are in full swing.\n` +
+        `• **Monsoon Season (June to September):** Lush waterfalls (Dudhsagar), tranquil empty beaches, and vibrant green spice plantations.\n` +
+        `• **Summer (March to May):** Warm & humid (30°C–35°C). Ideal for uncrowded pool villas and early morning beach dips.`;
+    } else if (isManali) {
+      weatherDetails = `**Best Time to Visit Manali & Climate Overview:**\n\n` +
+        `• **Summer Escape (March to June):** Pleasant weather (10°C–25°C). Blooming apple orchards, Solang Valley paragliding, and snow points at Rohtang Pass.\n` +
+        `• **Winter Wonderland (December to February):** Heavy snowfall (-5°C–7°C). Ideal for skiing, snowboarding, and cozy fireside mountain stays.\n` +
+        `• **Monsoon (July to August):** Green valleys with mountain showers; exercise caution on winding highway passes.`;
+    } else {
+      weatherDetails = `**Seasonal Climate Guide for ${activeDest}:**\n\n` +
+        `• **Optimal Travel Season:** Mild temperatures (18°C–28°C) and minimal precipitation make morning and sunset sightseeing effortless.\n` +
         `• **Shoulder Season:** Balanced crowds and budget-friendly stay tariffs.\n` +
         `• **Off-Peak Season:** Higher discounts with special indoor / covered cultural programs.`;
+    }
 
     return {
       guild: 'security',
       guildIcon: '',
       confidence: 0.98,
-      response: `${weatherDetails}\n\nWould you like me to inspect rainy-day backups or optimize activities for cooler morning hours?`,
+      response: `${weatherDetails}\n\nWould you like me to inspect rainy-day backups, check the packing checklist, or optimize activities for cooler morning hours?`,
       actionButtons: [
-        { label: 'Rainy-Day Alternatives', action: 'RAINY_DAY_ALT', primary: true },
+        { label: 'Check Packing Checklist', action: 'VIEW_PACKING', primary: true },
+        { label: 'Rainy-Day Alternatives', action: 'RAINY_DAY_ALT' },
         { label: 'View Itinerary Timings', action: 'VIEW_ITINERARY' }
       ]
     };
@@ -1641,15 +1769,27 @@ export async function queryConcodeBrain(
     norm.includes('print') ||
     norm.includes('pdf') ||
     norm.includes('travel guide') ||
-    norm.includes('download guide')
+    norm.includes('download guide') ||
+    norm.includes('export itinerary') ||
+    norm.includes('export guide') ||
+    norm.includes('export pdf') ||
+    norm.includes('dossier')
   ) {
     return {
       guild: 'ui_ux',
       guildIcon: '',
-      confidence: 0.98,
-      response: `**Official TripVerse Travel Guide Ready!**\n\n` +
-        `Opening printable offline itinerary booklet for ${currentDest}...`,
-      appAction: { type: 'OPEN_MODAL', payload: { modal: 'print' } }
+      confidence: 0.99,
+      response: `📄 **Official TripVerse Travel Guide & Itinerary Dossier Ready!**\n\n` +
+        `• **Destination:** ${activeDest}\n` +
+        `• **Schedule:** ${activeDays}-Day Comprehensive Sightseeing Timeline\n` +
+        `• **Budget Allocation:** ~₹${activeBudget.toLocaleString('en-IN')}\n` +
+        `• **Included Offline Dossier:** Day-wise timings, dining recommendations, verified hospital emergency numbers, highway pitstops, and packing checklist.\n\n` +
+        `Opening the print & high-resolution PDF download modal now...`,
+      appAction: { type: 'OPEN_MODAL', payload: { modal: 'print' } },
+      actionButtons: [
+        { label: 'Download / Print PDF Guide', action: 'PRINT_GUIDE', primary: true },
+        { label: 'Share Itinerary Link', action: 'OPEN_SHARE' }
+      ]
     };
   }
 

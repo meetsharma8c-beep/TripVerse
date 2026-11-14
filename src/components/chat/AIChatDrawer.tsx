@@ -11,7 +11,7 @@ import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/con
 import { ArgonAvatar } from '../argon/ArgonAvatar';
 import { inferArgonStateFromText, parseConCodeStreamResponse, ArgonState, ARGON_STATE_THEME } from '../argon/argon.types';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
-import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass } from 'lucide-react';
+import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass, Mic, MicOff, FileText, Plane } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 import { getUserSubscriptionQuota, consumeAssistantMinute } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
@@ -335,10 +335,78 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>(getInitialMessages);
   const [inputQuery, setInputQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [quota, setQuota] = useState(() => getUserSubscriptionQuota());
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   useModalBehavior(isOpen, onClose);
+
+  // Clean up speech recognition on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
+      } catch (e) {}
+    };
+  }, []);
+
+  const toggleListening = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert(t('Voice dictation is supported in Chrome, Safari, and Chromium-based browsers.'));
+      return;
+    }
+
+    if (isListening) {
+      try {
+        recognitionRef.current?.stop();
+      } catch (e) {}
+      setIsListening(false);
+      triggerHaptic();
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        triggerHaptic();
+      };
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript) {
+          setInputQuery(transcript);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('[VoiceInput] Speech recognition notice:', event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.warn('[VoiceInput] Start failed:', err);
+      setIsListening(false);
+    }
+  };
 
   useEffect(() => {
     const handleQuota = () => setQuota(getUserSubscriptionQuota());
@@ -565,7 +633,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     } else if (action === 'START_NAV') {
       if (onAppAction) onAppAction({ type: 'START_NAVIGATION' });
       onClose();
-    } else if (action === 'OPEN_PRINT') {
+    } else if (action === 'OPEN_PRINT' || action === 'PRINT_GUIDE') {
       if (onAppAction) onAppAction({ type: 'OPEN_MODAL', payload: { modal: 'print' } });
       onClose();
     } else if (action === 'OPEN_SHARE') {
@@ -573,6 +641,14 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       onClose();
     } else if (action === 'OPEN_BOOKING') {
       if (onAppAction) onAppAction({ type: 'OPEN_MODAL', payload: { modal: 'booking' } });
+      onClose();
+    } else if (action === 'SEARCH_FLIGHTS') {
+      const origin = trip.origin || 'Delhi';
+      const dest = trip.destination || 'Dubai';
+      const flightUrl = `https://www.google.com/travel/flights?q=flights+from+${encodeURIComponent(origin)}+to+${encodeURIComponent(dest)}`;
+      window.open(flightUrl, '_blank', 'noopener,noreferrer');
+    } else if (action === 'TRANSPORT_DEALS' || action === 'VIEW_DEALS') {
+      if (onAppAction) onAppAction({ type: 'OPEN_MODAL', payload: { modal: 'deals' } });
       onClose();
     } else if (action === 'VIEW_ROUTE') {
       switchToTripSection('route');
@@ -590,6 +666,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   });
 
   const scenarioChips = [
+    { label: 'Export PDF Guide', icon: FileText, prompt: 'Download and export official printable PDF travel guide dossier' },
+    { label: 'Live Weather', icon: Sun, prompt: 'What is the live weather forecast, temperature, and packing guide?' },
+    { label: 'Flight Routes', icon: Plane, prompt: 'Find best flight routes, airport codes, and airfare options' },
     { label: '3D Landmark Tour', icon: Sparkles, prompt: 'Show me an interactive 3D WebGL tour of the landmark' },
     { label: 'Safety Radar', icon: Shield, prompt: 'What are the tourist scams and safety tips for my destination?' },
     { label: 'Flight Delayed', icon: Clock, prompt: 'My flight was delayed 3 hours, please replan Day 1' },
@@ -602,8 +681,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     { label: 'Rainy Day Alt', prompt: 'Give me a rainy-day alternative' },
     { label: 'Cost Breakdown', prompt: 'What will this trip approximately cost?' },
     { label: 'Save Itinerary', prompt: 'Save this itinerary' },
-    { label: 'Get Directions', prompt: 'Get directions to my destination' },
-    { label: 'PDF Guide', prompt: 'Print official travel guide and offline itinerary' }
+    { label: 'Get Directions', prompt: 'Get directions to my destination' }
   ];
 
   const latestAiMsg = [...messages].reverse().find(m => m.sender === 'ai');
@@ -1038,11 +1116,26 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
         {/* Input Bar - Elevated Floating Glass Capsule with Soft Blurred Emerald Glow */}
         <div className="p-3 sm:p-4 pb-safe bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-emerald-950/10 dark:border-white/10 shrink-0">
+          {isListening && (
+            <div className="mb-2 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-[11px] font-semibold text-rose-700 dark:text-rose-300 flex items-center justify-between animate-pulse">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                Listening... Speak your travel question
+              </span>
+              <button
+                type="button"
+                onClick={toggleListening}
+                className="text-[10px] underline hover:text-rose-900 cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/25 dark:border-emerald-500/30 shadow-[0_4px_20px_rgba(16,185,129,0.12)] focus-within:border-emerald-500/60 focus-within:shadow-[0_0_25px_rgba(16,185,129,0.25)] rounded-2xl px-3 py-1.5 transition-all">
             <Compass className="w-4 h-4 text-emerald-600/70 dark:text-emerald-400/70 shrink-0 hidden sm:block" />
             <input
               type="text"
-              placeholder={t('Ask anything (e.g. Plan a 5-day trip to Dubai)...')}
+              placeholder={isListening ? t('Listening to your voice...') : t('Ask anything (e.g. Plan a 5-day trip to Dubai)...')}
               value={inputQuery}
               onChange={(e) => setInputQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -1053,6 +1146,20 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               }}
               className="flex-1 py-1.5 bg-transparent border-0 text-base sm:text-sm focus:outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400 font-medium"
             />
+            {/* Voice Dictation Button */}
+            <button
+              type="button"
+              onClick={toggleListening}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                isListening
+                  ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/30 ring-2 ring-rose-400'
+                  : 'text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40'
+              }`}
+              title={isListening ? t('Stop Listening') : t('Voice Input (Dictate prompt)')}
+              aria-label={isListening ? t('Stop Listening') : t('Voice Input')}
+            >
+              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </button>
             <button
               onClick={() => handleSendMessage()}
               disabled={!inputQuery.trim() || isProcessing}
@@ -1063,7 +1170,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             </button>
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 px-1 pt-1.5 select-none font-medium">
-            <span>Press Enter ↵ to send</span>
+            <span>Press Enter ↵ to send • Voice enabled</span>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 inline-block" />
               ConCode 2.0 Live
