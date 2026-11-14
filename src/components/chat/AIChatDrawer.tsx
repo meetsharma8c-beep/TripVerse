@@ -9,7 +9,7 @@ import {
 } from '../../services/concodeBrainService';
 import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/concodeSession';
 import { ArgonAvatar } from '../argon/ArgonAvatar';
-import { inferArgonStateFromText, parseConCodeStreamResponse, ArgonState } from '../argon/argon.types';
+import { inferArgonStateFromText, parseConCodeStreamResponse, ArgonState, ARGON_STATE_THEME } from '../argon/argon.types';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
 import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
@@ -627,34 +627,52 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       className="fixed inset-0 z-50 overflow-hidden bg-slate-900/60 backdrop-blur-xs flex justify-end items-end sm:items-stretch"
     >
       
-      <div className="w-full sm:max-w-md md:max-w-lg bg-white h-[92dvh] sm:h-full max-h-[100dvh] rounded-t-3xl sm:rounded-none shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden">
+      <div className="w-full sm:max-w-md md:max-w-lg bg-white dark:bg-slate-900 h-[92dvh] sm:h-full max-h-[100dvh] rounded-t-3xl sm:rounded-none sm:rounded-l-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden border-l border-emerald-950/10 dark:border-white/10">
         
         {/* Mobile Pull Handle */}
-        <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto my-2 sm:hidden shrink-0" />
+        <div className="w-12 h-1.5 bg-slate-300/80 dark:bg-slate-700 rounded-full mx-auto my-2 sm:hidden shrink-0" />
 
-        {/* Chat Drawer Header */}
-        <div className="px-5 py-4 bg-gradient-to-r from-[#0B2545] to-[#133966] text-white flex items-center justify-between shadow-md shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-11 h-11 flex items-center justify-center shrink-0">
-              <ArgonAvatar
-                state={argonHeaderState}
-                size="sm"
-                className="w-11 h-11 drop-shadow-md"
+        {/* Unified Luxury ConCode AI Header */}
+        <div className="relative px-4 sm:px-5 py-3.5 bg-gradient-to-r from-[#0C2415] via-[#163D25] to-[#0E2818] text-white flex items-center justify-between border-b border-emerald-500/20 shadow-md shrink-0 overflow-hidden">
+          {/* Subtle Ambient Radial Glow Behind Avatar */}
+          <div 
+            className="pointer-events-none absolute -left-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 transition-all duration-700"
+            style={{ backgroundColor: ARGON_STATE_THEME[argonHeaderState].ledHex }}
+          />
+
+          <div className="relative z-10 flex items-center gap-3">
+            {/* Living 3D Avatar Pod */}
+            <div className="relative flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 p-0.5 shadow-inner flex items-center justify-center">
+                <ArgonAvatar
+                  state={argonHeaderState}
+                  size="sm"
+                  className="w-11 h-11 drop-shadow-md"
+                />
+              </div>
+              <span
+                className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#163D25] transition-colors duration-300"
+                style={{
+                  backgroundColor: ARGON_STATE_THEME[argonHeaderState].ledHex,
+                  boxShadow: `0 0 8px ${ARGON_STATE_THEME[argonHeaderState].ledGlowRgba}`
+                }}
               />
             </div>
+
             <div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h3 className="font-bold text-sm flex items-center gap-1.5">
-                  <span>{t('ConCode AI Co-Pilot')}</span>
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h3 className="font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center gap-1.5">
+                  <span>ConCode AI</span>
                 </h3>
-                <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1">
-                  CONCODE
+                <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-400/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/30 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Co-Pilot
                 </span>
                 {quota.isPro ? (
                   <button
                     type="button"
                     onClick={onOpenProModal}
-                    className="text-[9px] font-black uppercase tracking-wider bg-amber-400/25 hover:bg-amber-400/35 text-amber-300 px-1.5 py-0.5 rounded border border-amber-300/30 flex items-center gap-0.5 cursor-pointer transition-colors"
+                    className="text-[9px] font-black uppercase tracking-wider bg-amber-400/25 hover:bg-amber-400/35 text-amber-300 px-2 py-0.5 rounded-full border border-amber-300/30 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                     title={t('TripVerse Pro Active (30 Hours/Week Full ConCode Facility)')}
                   >
                     <Crown className="w-2.5 h-2.5 fill-amber-300" />
@@ -664,46 +682,45 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   <button
                     type="button"
                     onClick={onOpenProModal}
-                    className="text-[9px] font-bold uppercase tracking-wider bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-400/30 cursor-pointer transition-colors flex items-center gap-1"
+                    className="text-[9px] font-bold uppercase tracking-wider bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/30 cursor-pointer transition-colors flex items-center gap-1"
                     title={t('Free Explorer Tier • Upgrade to Pro for 30h/week Facility')}
                   >
                     <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-                    <span>{quota.weeklyAssistantMinutesRemaining}m {t('Free • Upgrade')}</span>
+                    <span>{quota.weeklyAssistantMinutesRemaining}m Free</span>
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-slate-300 font-medium flex items-center gap-1">
-                <span>{t('Travel Intelligence Layer')}</span>
-                <span>•</span>
-                <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  {t('Context-Aware')}
+              <p className="text-[11px] text-emerald-100/80 font-medium flex items-center gap-1.5 mt-0.5">
+                <span>{ARGON_STATE_THEME[argonHeaderState].badgeLabel}</span>
+                <span className="opacity-40">•</span>
+                <span className="text-emerald-300 font-semibold">
+                  {brainStatus.latencyMs ? `${brainStatus.latencyMs}ms live` : 'Real-time Intelligence'}
                 </span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="relative z-10 flex items-center gap-1">
             <button
               onClick={handleClearChat}
-              className="p-1.5 rounded-lg text-slate-300 hover:text-red-300 hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-emerald-100/70 hover:text-red-300 hover:bg-white/10 transition-colors cursor-pointer"
               title={t('Clear Conversation History')}
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
             </button>
 
             <button
               onClick={refreshBrainHealth}
               disabled={isCheckingBrain}
-              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-emerald-100/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               title={t('Refresh AI Status')}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isCheckingBrain ? 'animate-spin text-emerald-400' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isCheckingBrain ? 'animate-spin text-emerald-400' : ''}`} />
             </button>
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition-colors ml-1 cursor-pointer"
+              className="p-2 rounded-xl text-emerald-100/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               aria-label="Close Assistant"
             >
               <X className="w-5 h-5" />
@@ -711,39 +728,23 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           </div>
         </div>
 
-        {/* AI Model Status */}
-        <div className="px-3.5 py-1.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 text-[11px]">
-          <div className="flex items-center gap-1.5 text-slate-300 font-medium">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span>{t('AI Co-Pilot')}</span>
-            <span className="text-slate-500">•</span>
-            <span className="text-slate-400 text-[10px]">
-              {t('Live Travel Intelligence')}
-            </span>
-          </div>
-          <div className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold text-[10px] flex items-center gap-1.5 border border-emerald-500/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>{brainStatus.latencyMs ? `Online (${brainStatus.latencyMs}ms)` : 'Online'}</span>
-          </div>
-        </div>
-
-        {/* Quick Scenario Chips */}
-        <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+        {/* Quick Scenario Chips Carousel */}
+        <div className="px-3.5 py-2.5 bg-gradient-to-r from-[#F4F7F3] via-white to-[#F4F7F3] dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 border-b border-emerald-950/5 dark:border-slate-800 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0 shadow-2xs">
           {scenarioChips.map(chip => (
             <button
               key={chip.label}
               type="button"
               onClick={() => handleSendMessage(chip.prompt)}
-              className="text-[11px] px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 font-semibold whitespace-nowrap hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition-all flex items-center gap-1.5 flex-shrink-0 shadow-2xs cursor-pointer active:scale-95"
+              className="text-[11px] px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold whitespace-nowrap hover:border-emerald-500/70 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40 transition-all flex items-center gap-1.5 flex-shrink-0 shadow-2xs cursor-pointer active:scale-95"
             >
-              {chip.icon && <chip.icon className="w-3 h-3 text-emerald-600 shrink-0" />}
+              {chip.icon && <chip.icon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
               <span>{chip.label}</span>
             </button>
           ))}
         </div>
 
         {/* Message Stream */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-gradient-to-b from-[#F7FAF5] via-[#F3F6F1] to-[#ECF2EB] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
           {messages.map((msg) => {
             const isAi = msg.sender === 'ai';
             const parsed = isAi
@@ -755,33 +756,36 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             return (
               <div
                 key={msg.id}
-                className={`flex items-start gap-2.5 ${isAi ? '' : 'flex-row-reverse'}`}
+                className={`flex items-start gap-2.5 sm:gap-3 ${isAi ? '' : 'flex-row-reverse'}`}
               >
-                <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center flex-shrink-0 pt-0.5">
                   {isAi ? (
-                    <ArgonAvatar
-                      state={parsed.state}
-                      size="sm"
-                      className="w-8 h-8 drop-shadow-xs"
-                    />
+                    <div className="relative">
+                      <ArgonAvatar
+                        state={parsed.state}
+                        size="sm"
+                        className="w-8 h-8 sm:w-9 sm:h-9 drop-shadow-sm"
+                      />
+                    </div>
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center shadow-xs">
                       <User className="w-4 h-4" />
                     </div>
                   )}
                 </div>
 
-                <div className="max-w-[90%] sm:max-w-[85%] min-w-0 flex-1 space-y-2">
-                  {/* AI Metadata Badge */}
+                <div className="max-w-[92%] sm:max-w-[85%] min-w-0 flex-1 space-y-2">
+                  {/* AI Metadata Pill */}
                   {isAi && (
-                    <div className="flex items-center justify-between gap-1.5 text-[10px]">
-                      <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                        <span className="font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded-md flex items-center gap-1 shrink-0">
-                          <span>{msg.engine === 'offline' ? 'OFFLINE GUIDANCE' : 'CONCODE'}</span>
+                    <div className="flex items-center justify-between gap-1.5 text-[11px] px-1">
+                      <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                        <span className="font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/90 dark:border-emerald-800/60 px-2 py-0.5 rounded-full flex items-center gap-1.5 shrink-0 text-[10px] tracking-wide">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span>{msg.engine === 'offline' ? 'OFFLINE GUIDANCE' : 'CONCODE AI'}</span>
                           {msg.engine !== 'offline' && guildInfo && <span>• {guildInfo.label}</span>}
                         </span>
                         {msg.confidence && (
-                          <span className="text-slate-400 font-semibold truncate">
+                          <span className="text-slate-400 dark:text-slate-500 font-medium text-[10px]">
                             {Math.round(msg.confidence * 100)}% confidence
                           </span>
                         )}
@@ -789,33 +793,33 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
                       <button
                         onClick={() => handleCopyMessage(msg.id, parsed.cleanText)}
-                        className="text-slate-400 hover:text-slate-600 transition-colors p-1 shrink-0 cursor-pointer"
+                        className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors p-1 shrink-0 cursor-pointer rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800"
                         title="Copy message"
                       >
-                        {copiedMsgId === msg.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                        {copiedMsgId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   )}
 
                   {/* Modification Pill Badge (if present) */}
                   {msg.modificationBadge && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold shadow-2xs animate-in fade-in flex-wrap">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold shadow-2xs animate-in fade-in flex-wrap">
                       <TrendingDown className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>{msg.modificationBadge.label}</span>
-                      <span className="text-[10px] text-emerald-700 font-normal">({msg.modificationBadge.detail})</span>
+                      <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-normal">({msg.modificationBadge.detail})</span>
                     </div>
                   )}
 
                   {/* Message Bubble */}
-                  <div className={`p-3 sm:p-3.5 rounded-2xl text-xs leading-relaxed overflow-hidden break-words shadow-xs ${
+                  <div className={`p-4 sm:p-4.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed overflow-hidden break-words ${
                     isAi
-                      ? 'bg-white text-slate-800 rounded-tl-xs border border-slate-200/80'
-                      : 'bg-[#2D5A3D] text-white font-medium rounded-tr-xs'
+                      ? 'bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-slate-800 dark:text-slate-100 rounded-tl-xs border border-slate-200/80 dark:border-slate-700/80 shadow-[0_4px_24px_rgba(25,50,35,0.06)]'
+                      : 'bg-gradient-to-br from-[#1E4D34] via-[#245D3F] to-[#2D6E4B] text-white font-medium rounded-tr-xs shadow-md shadow-emerald-950/20'
                   }`}>
                     {isAi ? (
                       <FormattedAIMessage text={parsed.cleanText} />
                     ) : (
-                      <div className="whitespace-pre-line break-words">{msg.text}</div>
+                      <div className="whitespace-pre-line break-words leading-relaxed">{msg.text}</div>
                     )}
                   </div>
 
@@ -955,25 +959,47 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                     );
                   })()}
 
-                  {/* Action Buttons if provided by AI */}
-                  {msg.actionButtons && msg.actionButtons.length > 0 && (
-                    <div className="flex flex-col gap-1.5 pt-1">
-                      {msg.actionButtons.map((btn) => (
-                        <button
-                          key={btn.label}
-                          onClick={() => handleActionButton(btn.action, btn.payload)}
-                          className={`px-3 py-2 rounded-xl text-[11px] font-bold text-left transition-all shadow-2xs cursor-pointer active:scale-98 flex items-center justify-between group gap-2 ${
-                            btn.primary
-                              ? 'bg-trip-gradient hover:bg-trip-gradient-hover text-white shadow-emerald-500/20 shadow-sm'
-                              : 'bg-white border border-emerald-300 text-[#2D5A3D] hover:bg-emerald-50'
-                          }`}
-                        >
-                          <span className="break-words min-w-0">{btn.label}</span>
-                          <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 shrink-0" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  {/* Action Buttons if provided by AI - Intelligent Hero + 2-Column Grid */}
+                  {msg.actionButtons && msg.actionButtons.length > 0 && (() => {
+                    const primaryBtn = msg.actionButtons.find((b) => b.primary);
+                    const secondaryBtns = msg.actionButtons.filter((b) => !b.primary);
+                    return (
+                      <div className="pt-2.5 space-y-2">
+                        {primaryBtn && (
+                          <button
+                            key={primaryBtn.label}
+                            onClick={() => handleActionButton(primaryBtn.action, primaryBtn.payload)}
+                            className="w-full px-4 py-3 rounded-2xl text-xs font-bold text-left transition-all duration-200 shadow-md shadow-emerald-950/15 hover:shadow-lg hover:shadow-emerald-900/25 cursor-pointer active:scale-98 flex items-center justify-between group gap-2.5 bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] text-white border border-emerald-400/30"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-6 h-6 rounded-lg bg-emerald-400/20 border border-emerald-300/30 flex items-center justify-center shrink-0">
+                                <Sparkles className="w-3.5 h-3.5 text-emerald-300 animate-pulse shrink-0" />
+                              </div>
+                              <span className="break-words min-w-0 font-bold">{primaryBtn.label}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] text-emerald-100 font-bold shrink-0 uppercase tracking-wider group-hover:bg-white/20 transition-all">
+                              <span>Action</span>
+                              <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1" />
+                            </div>
+                          </button>
+                        )}
+                        {secondaryBtns.length > 0 && (
+                          <div className={`grid ${secondaryBtns.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-2`}>
+                            {secondaryBtns.map((btn) => (
+                              <button
+                                key={btn.label}
+                                onClick={() => handleActionButton(btn.action, btn.payload)}
+                                className="px-3.5 py-2.5 rounded-xl text-[11px] font-semibold text-left transition-all duration-150 cursor-pointer active:scale-98 flex items-center justify-between group gap-2 bg-white/95 dark:bg-slate-800/90 border border-emerald-500/15 hover:border-emerald-500/50 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/40 text-slate-700 dark:text-slate-200 shadow-2xs hover:shadow-xs"
+                              >
+                                <span className="truncate">{btn.label}</span>
+                                <ArrowRight className="w-3 h-3 text-emerald-600/60 dark:text-emerald-400/60 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   <span className="text-[10px] text-slate-400 block px-1">
                     {msg.timestamp}
@@ -984,41 +1010,57 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           })}
 
           {isProcessing && (
-            <div className="flex items-center gap-2.5 animate-in fade-in">
-              <div className="w-8 h-8 rounded-full bg-trip-gradient text-white flex items-center justify-center shadow-xs shrink-0">
-                <Sparkles className="w-4 h-4 animate-spin" />
+            <div className="flex items-center gap-3 animate-in fade-in duration-200 py-1">
+              <div className="relative w-8 h-8 rounded-full bg-gradient-to-tr from-[#163D25] to-[#2D6E4B] text-white flex items-center justify-center shadow-md shadow-emerald-950/20 shrink-0 border border-emerald-400/30">
+                <Sparkles className="w-4 h-4 text-emerald-300 animate-spin" />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900 animate-ping" />
               </div>
-              <div className="p-3 bg-white border border-slate-200 rounded-2xl rounded-tl-xs text-xs text-slate-600 font-medium shadow-2xs flex items-center gap-2">
-                <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse shrink-0" />
+              <div className="px-4 py-3 bg-white/95 dark:bg-slate-850/95 border border-slate-200/80 rounded-2xl rounded-tl-xs text-xs text-slate-700 dark:text-slate-200 font-semibold shadow-[0_4px_20px_rgba(20,50,30,0.06)] flex items-center gap-2.5">
+                <Activity className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse shrink-0" />
                 <span>ConCode AI reasoning travel schedule & budget...</span>
+                <span className="flex gap-1 ml-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" />
+                </span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Input Bar */}
-        <div className="p-3 sm:p-3.5 pb-safe bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
-          <input
-            type="text"
-            placeholder={t('Ask anything (e.g. Plan a 5-day trip to Dubai)...')}
-            value={inputQuery}
-            onChange={(e) => setInputQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-            className="flex-1 px-3.5 sm:px-4 py-2.5 rounded-2xl bg-slate-100 border border-slate-200 text-base sm:text-sm focus:outline-none focus:border-emerald-500 focus:bg-white transition-all text-slate-800 placeholder:text-slate-400 font-medium"
-          />
-          <button
-            onClick={() => handleSendMessage()}
-            disabled={!inputQuery.trim() || isProcessing}
-            className="w-10 h-10 rounded-2xl bg-trip-gradient hover:bg-trip-gradient-hover text-white flex items-center justify-center shadow-xs transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer shrink-0"
-            aria-label={t('Send Message')}
-          >
-            <Send className="w-4 h-4" />
-          </button>
+        {/* Input Bar - Elevated Floating Glass Capsule */}
+        <div className="p-3 sm:p-4 pb-safe bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800/80 shrink-0">
+          <div className="flex items-center gap-2 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 focus-within:border-emerald-500/70 focus-within:ring-2 focus-within:ring-emerald-500/20 rounded-2xl px-3 py-1.5 transition-all shadow-xs">
+            <Compass className="w-4 h-4 text-emerald-600/70 dark:text-emerald-400/70 shrink-0 hidden sm:block" />
+            <input
+              type="text"
+              placeholder={t('Ask anything (e.g. Plan a 5-day trip to Dubai)...')}
+              value={inputQuery}
+              onChange={(e) => setInputQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              className="flex-1 py-1.5 bg-transparent border-0 text-base sm:text-sm focus:outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400 font-medium"
+            />
+            <button
+              onClick={() => handleSendMessage()}
+              disabled={!inputQuery.trim() || isProcessing}
+              className="w-9 h-9 rounded-xl bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] hover:from-[#1E5237] hover:to-[#225C3C] text-white flex items-center justify-center shadow-sm shadow-emerald-950/20 transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shrink-0"
+              aria-label={t('Send Message')}
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 px-1 pt-1.5 select-none font-medium">
+            <span>Press Enter ↵ to send</span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 inline-block" />
+              ConCode 2.0 Live
+            </span>
+          </div>
         </div>
 
         {/* Interactive 3D WebGL Landmark Viewer */}
