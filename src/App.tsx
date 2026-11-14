@@ -46,6 +46,7 @@ import { PwaInstallPrompt } from './components/common/PwaInstallPrompt';
 import { AppSplashScreen } from './components/common/AppSplashScreen';
 import { GlobalSearchModal } from './components/common/GlobalSearchModal';
 import { PullToRefresh } from './components/common/PullToRefresh';
+import { ArgonFloatingWidget } from './components/argon/ArgonFloatingWidget';
 
 // Home Components
 import { HeroSection } from './components/home/HeroSection';
@@ -3029,6 +3030,17 @@ export function App() {
           setIsAIChatOpen(true);
         }}
         onNavigateTab={handleNavigateTab}
+      />
+
+      {/* Autonomous AI Co-Pilot Floating Mascot Widget (Argon) */}
+      <ArgonFloatingWidget
+        onOpenChat={() => setIsAIChatOpen(true)}
+        onOpenChatWithQuery={(query) => {
+          setActiveChatQuery(query);
+          setIsAIChatOpen(true);
+        }}
+        isChatOpen={isAIChatOpen}
+        destinationName={activeTrip?.destination || trips[0]?.destination}
       />
 
       {/* PWA Free Install Banner & iOS Guide */}

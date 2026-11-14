@@ -8,6 +8,8 @@ import {
   resetBrainSession 
 } from '../../services/concodeBrainService';
 import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/concodeSession';
+import { ArgonAvatar } from '../argon/ArgonAvatar';
+import { inferArgonStateFromText, ArgonState } from '../argon/argon.types';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
 import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
@@ -604,6 +606,14 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     { label: 'PDF Guide', prompt: 'Print official travel guide and offline itinerary' }
   ];
 
+  const argonHeaderState: ArgonState = isProcessing
+    ? 'thinking'
+    : inputQuery.trim()
+    ? 'listening'
+    : messages.length > 0 && messages[messages.length - 1].sender === 'ai'
+    ? inferArgonStateFromText(messages[messages.length - 1].text)
+    : 'idle';
+
   if (!isOpen) return null;
 
   return (
@@ -622,12 +632,20 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         {/* Chat Drawer Header */}
         <div className="px-5 py-4 bg-gradient-to-r from-[#0B2545] to-[#133966] text-white flex items-center justify-between shadow-md shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-trip-gradient flex items-center justify-center shadow-xs">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-2xl bg-white/10 p-0.5 border border-white/20 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
+              <ArgonAvatar
+                state={argonHeaderState}
+                size="sm"
+                baseImageUrl="/images/ai-robot-mascot.jpg"
+                className="w-10 h-10 scale-110"
+              />
             </div>
             <div>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <h3 className="font-bold text-sm">{t('TripVerse AI Co-Pilot')}</h3>
+                <h3 className="font-bold text-sm flex items-center gap-1.5">
+                  <span>{t('TripVerse AI Co-Pilot')}</span>
+                  <span className="text-[10px] font-medium text-emerald-300 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-400/30">Argon</span>
+                </h3>
                 <span className="text-[9px] font-black uppercase tracking-wider bg-white/10 text-emerald-300 px-1.5 py-0.5 rounded border border-white/10 flex items-center gap-1">
                   CONCODE
                 </span>
@@ -736,9 +754,18 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                 className={`flex items-start gap-2.5 ${isAi ? '' : 'flex-row-reverse'}`}
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  isAi ? 'bg-trip-gradient text-white shadow-xs' : 'bg-slate-200 text-slate-700'
+                  isAi ? 'bg-white border border-emerald-500/30 overflow-hidden shadow-xs' : 'bg-slate-200 text-slate-700'
                 }`}>
-                  {isAi ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                  {isAi ? (
+                    <ArgonAvatar
+                      state={inferArgonStateFromText(msg.text)}
+                      size="sm"
+                      baseImageUrl="/images/ai-robot-mascot.jpg"
+                      className="w-8 h-8 scale-110"
+                    />
+                  ) : (
+                    <User className="w-4 h-4" />
+                  )}
                 </div>
 
                 <div className="max-w-[90%] sm:max-w-[85%] min-w-0 flex-1 space-y-2">
