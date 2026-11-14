@@ -109,6 +109,7 @@ import {
   getUserSubscriptionQuota, 
   consumeTripCredit,
   upgradeUserToPro,
+  isFounderVipUser,
   signOut as authSignOut,
   checkAndProcessFirebaseRedirectResult
 } from './services/authService';
@@ -529,10 +530,12 @@ export function App() {
       const searchParams = new URLSearchParams(window.location.search);
       const isVipParam = searchParams.get('vip') === 'founder' || searchParams.get('founder') === 'true' || searchParams.get('unlock') === 'pro';
       if (isVipParam) {
-        localStorage.setItem('tripverse_founder_vip', 'true');
-        upgradeUserToPro(null, 36500).then(() => {
-          handleQuotaUpdate();
-        });
+        const active = getCurrentUser();
+        if (active && isFounderVipUser(active)) {
+          upgradeUserToPro(active, 36500).then(() => {
+            handleQuotaUpdate();
+          });
+        }
         const cleanUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, document.title, cleanUrl);
       }
