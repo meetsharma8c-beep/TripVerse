@@ -47,10 +47,11 @@ export const FOUNDER_VIP_EMAILS = new Set([
   '25bt04065@gsfcuniversity.ac.in'
 ]);
 
-export function isFounderVipUser(user?: AuthUser | null): boolean {
+export function isFounderVipUser(userParam?: AuthUser | null): boolean {
   if (typeof localStorage !== 'undefined' && localStorage.getItem('tripverse_founder_vip') === 'true') {
     return true;
   }
+  const user = userParam !== undefined ? userParam : getCurrentUser();
   const emailNorm = user?.email ? user.email.toLowerCase().trim() : '';
   return FOUNDER_VIP_EMAILS.has(emailNorm);
 }
@@ -185,6 +186,7 @@ export function supabaseUserToAuthUser(sbUser: SupabaseAuthUser, overrides?: Par
 
   const emailNorm = (sbUser.email || overrides?.email || '').toLowerCase().trim();
   const userDeterministicUid = toDeterministicUuid(sbUser.id);
+  const isFounderVIP = FOUNDER_VIP_EMAILS.has(emailNorm) || (typeof localStorage !== 'undefined' && localStorage.getItem('tripverse_founder_vip') === 'true');
   let storedLifetime: number | undefined = undefined;
 
   if (typeof metadata.lifetime_trips_created === 'number') {
@@ -236,13 +238,13 @@ export function supabaseUserToAuthUser(sbUser: SupabaseAuthUser, overrides?: Par
     createdAt: sbUser.created_at || new Date().toISOString(),
     lastLoginAt: sbUser.last_sign_in_at || new Date().toISOString(),
     savedPlaceIds: overrides?.savedPlaceIds || [],
-    subscriptionTier: overrides?.subscriptionTier || (metadata.subscription_tier as SubscriptionTier) || 'free',
-    freeTripsRemaining: finalRemaining,
+    subscriptionTier: isFounderVIP ? 'pro' : (overrides?.subscriptionTier || (metadata.subscription_tier as SubscriptionTier) || 'free'),
+    freeTripsRemaining: isFounderVIP ? 9999 : finalRemaining,
     lifetimeTripsCreated: finalLifetime,
-    weeklyAssistantMinutesRemaining: typeof overrides?.weeklyAssistantMinutesRemaining === 'number'
+    weeklyAssistantMinutesRemaining: isFounderVIP ? 1800 : (typeof overrides?.weeklyAssistantMinutesRemaining === 'number'
       ? overrides.weeklyAssistantMinutesRemaining
-      : (typeof metadata.weekly_assistant_minutes_remaining === 'number' ? metadata.weekly_assistant_minutes_remaining : 1800),
-    subscriptionExpiresAt: overrides?.subscriptionExpiresAt || metadata.subscription_expires_at,
+      : (typeof metadata.weekly_assistant_minutes_remaining === 'number' ? metadata.weekly_assistant_minutes_remaining : 1800)),
+    subscriptionExpiresAt: isFounderVIP ? '2099-12-31T23:59:59.999Z' : (overrides?.subscriptionExpiresAt || metadata.subscription_expires_at),
     weeklyQuotaResetAt: overrides?.weeklyQuotaResetAt || metadata.weekly_quota_reset_at
   };
 }
@@ -288,6 +290,16 @@ export function saveAccounts(accounts: StoredAccount[]): void {
  * Synchronize authenticated cloud user into local accounts storage & active session
  */
 export function syncAccountToLocal(user: AuthUser, passwordHash?: string): void {
+  if (isFounderVipUser(user)) {
+    user.subscriptionTier = 'pro';
+    user.freeTripsRemaining = 9999;
+    user.weeklyAssistantMinutesRemaining = 1800;
+    user.subscriptionExpiresAt = '2099-12-31T23:59:59.999Z';
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('tripverse_founder_vip', 'true');
+    }
+  }
+
   const accounts = loadAccounts();
   const existingIdx = accounts.findIndex(a => 
     a.user.uid === user.uid || 
@@ -359,6 +371,15 @@ export async function notifyAuthActivity(user: AuthUser, event: 'signin' | 'sign
 export function saveSession(session: AuthSession | null): void {
   try {
     if (session) {
+      if (session.user && isFounderVipUser(session.user)) {
+        session.user.subscriptionTier = 'pro';
+        session.user.freeTripsRemaining = 9999;
+        session.user.weeklyAssistantMinutesRemaining = 1800;
+        session.user.subscriptionExpiresAt = '2099-12-31T23:59:59.999Z';
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('tripverse_founder_vip', 'true');
+        }
+      }
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
     } else {
       localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -377,6 +398,15 @@ export function loadSession(): AuthSession | null {
     if (session.expiresAt && Date.now() > session.expiresAt) {
       localStorage.removeItem(SESSION_STORAGE_KEY);
       return null;
+    }
+    if (session.user && isFounderVipUser(session.user)) {
+      session.user.subscriptionTier = 'pro';
+      session.user.freeTripsRemaining = 9999;
+      session.user.weeklyAssistantMinutesRemaining = 1800;
+      session.user.subscriptionExpiresAt = '2099-12-31T23:59:59.999Z';
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('tripverse_founder_vip', 'true');
+      }
     }
     return session;
   } catch {
@@ -492,10 +522,11 @@ export function parseGoogleUserFromCredential(credential: string): AuthUser {
     throw new Error('Google credential does not contain a verified email address.');
   }
 
-  const emailNorm = payload.email.toLowerCase();
+  const emailNorm = payload.email.toLowerCase().trim();
   const uid = toDeterministicUuid('google:' + (payload.sub || emailNorm));
   const accounts = loadAccounts();
   const existing = accounts.find(a => a.user.email.toLowerCase() === emailNorm);
+  const isFounderVIP = FOUNDER_VIP_EMAILS.has(emailNorm) || (typeof localStorage !== 'undefined' && localStorage.getItem('tripverse_founder_vip') === 'true');
   const now = new Date().toISOString();
 
   const displayName = payload.name || payload.given_name || existing?.user.displayName || emailNorm.split('@')[0];
@@ -515,9 +546,10 @@ export function parseGoogleUserFromCredential(credential: string): AuthUser {
     emailVerified: payload.email_verified ?? true,
     twoFactorEnabled: is2Fa,
     provider: 'google',
-    subscriptionTier: existing?.user.subscriptionTier || 'free',
-    freeTripsRemaining: existing?.user.freeTripsRemaining ?? 3,
-    weeklyAssistantMinutesRemaining: existing?.user.weeklyAssistantMinutesRemaining ?? 1800,
+    subscriptionTier: isFounderVIP ? 'pro' : (existing?.user.subscriptionTier || 'free'),
+    freeTripsRemaining: isFounderVIP ? 9999 : (existing?.user.freeTripsRemaining ?? 3),
+    weeklyAssistantMinutesRemaining: isFounderVIP ? 1800 : (existing?.user.weeklyAssistantMinutesRemaining ?? 1800),
+    subscriptionExpiresAt: isFounderVIP ? '2099-12-31T23:59:59.999Z' : existing?.user.subscriptionExpiresAt,
     createdAt: existing?.user.createdAt || now,
     lastLoginAt: now,
     savedPlaceIds: existing?.user.savedPlaceIds || []
@@ -2094,6 +2126,13 @@ export async function updateAuthProfile(updates: Partial<UserProfile & AuthUser>
     uid: current.uid
   };
 
+  if (isFounderVipUser(updatedUser)) {
+    updatedUser.subscriptionTier = 'pro';
+    updatedUser.freeTripsRemaining = 9999;
+    updatedUser.weeklyAssistantMinutesRemaining = 1800;
+    updatedUser.subscriptionExpiresAt = '2099-12-31T23:59:59.999Z';
+  }
+
   if (index >= 0) {
     accounts[index].user = updatedUser;
     saveAccounts(accounts);
@@ -2684,8 +2723,8 @@ export function consumeTripCredit(userParam?: AuthUser | null): { allowed: boole
     return { allowed: false, remaining: 0 };
   }
 
-  // If user is Pro, unlimited trips!
-  if (targetUser.subscriptionTier === 'pro') {
+  // If user is Pro or VIP Founder, unlimited trips!
+  if (targetUser.subscriptionTier === 'pro' || isFounderVipUser(targetUser)) {
     return { allowed: true, remaining: 9999 };
   }
 
@@ -2839,6 +2878,9 @@ export async function downgradeUserToFree(userParam?: AuthUser | null): Promise<
     }
   } catch {}
   const user = userParam !== undefined ? userParam : getCurrentUser();
+  if (user && FOUNDER_VIP_EMAILS.has(user.email ? user.email.toLowerCase().trim() : '')) {
+    return user;
+  }
   if (!user) {
     try {
       if (typeof localStorage !== 'undefined') {
