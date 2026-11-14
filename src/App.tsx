@@ -172,6 +172,37 @@ import { resolveRouteFromBrowser } from './utils/routeResolver';
 import { POPULAR_DESTINATIONS } from './data/destinations';
 import { synthesizeDestination } from './utils/destinationImages';
 
+const DISCOVERY_FALLBACK_TRIP: Trip = {
+  id: 'discovery-co-pilot',
+  name: 'TripVerse Discovery',
+  origin: 'Current Location',
+  destination: 'Explore Destinations',
+  durationDays: 3,
+  travelersCount: 1,
+  travelerType: 'solo',
+  currency: 'INR',
+  totalBudget: 50000,
+  budgetPerPerson: 50000,
+  preferences: ['nature', 'culture', 'food'],
+  transportMode: 'any',
+  accommodationType: '3star',
+  foodPreference: 'any',
+  priorities: ['experience'],
+  itinerary: [],
+  breakStops: [],
+  budgetBreakdown: {
+    transportation: 15000,
+    accommodation: 20000,
+    food: 10000,
+    activities: 4000,
+    miscellaneous: 1000
+  },
+  estimatedTotal: 50000,
+  routeType: 'scenic',
+  status: 'draft',
+  createdAt: new Date().toISOString()
+};
+
 export function App() {
   const { language, t } = useLanguage();
   const initialTrips = React.useMemo(() => loadTrips(), []);
@@ -2826,9 +2857,9 @@ export function App() {
           />
         )}
 
-        {(activeTrip || trips[0]) && isAIChatOpen && (
+        {isAIChatOpen && (
           <AIChatDrawer
-            trip={activeTrip || trips[0]}
+            trip={activeTrip || trips[0] || DISCOVERY_FALLBACK_TRIP}
             isOpen={isAIChatOpen}
             initialQuery={activeChatQuery}
             onClose={() => {
