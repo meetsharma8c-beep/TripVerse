@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Logo, BrandIconMark } from './Logo';
-import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, ChevronDown, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut, Bell, Languages, Home } from 'lucide-react';
+import { Compass, MapPin, Bookmark, User, Sparkles, Menu, X, ChevronRight, ChevronDown, PlaneTakeoff, Globe, Search, Moon, Sun, Crown, LogOut, Bell, Languages, Home, Smartphone } from 'lucide-react';
 import { UserProfile, CurrencyCode, LanguageCode } from '../../types/trip';
 import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
 import { getActiveLanguage, setActiveLanguage, LANGUAGES, useLanguage } from '../../services/languageService';
@@ -21,6 +21,7 @@ interface NavbarProps {
   onOpenSearch?: () => void;
   onOpenChat?: () => void;
   onOpenProModal?: () => void;
+  onOpenFounderDashboard?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,7 +36,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   isAuthenticated = true,
   onOpenSearch,
   onOpenChat,
-  onOpenProModal
+  onOpenProModal,
+  onOpenFounderDashboard
 }) => {
   const [quota, setQuota] = useState(() => {
     return getUserSubscriptionQuota(userProfile ? {
@@ -490,6 +492,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                     {/* Menu Items */}
                     <div className="space-y-0.5">
+                      {quota.isFounder && onOpenFounderDashboard && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            onOpenFounderDashboard();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 mb-1 rounded-xl text-xs font-bold text-amber-950 dark:text-amber-200 bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/30 transition-all cursor-pointer shadow-xs"
+                        >
+                          <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400 fill-amber-500 shrink-0" />
+                          <span>{t('Founder Command Center')}</span>
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => {
@@ -525,6 +541,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <Bookmark className="w-4 h-4 text-slate-400" />
                         <span>{t('Saved Spots')}</span>
                       </button>
+
+                      <a
+                        href="/downloads/TripVerse-v1.0.apk"
+                        download="TripVerse-v1.0.apk"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
+                      >
+                        <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>{t('Get Android App (APK)')}</span>
+                      </a>
                     </div>
 
                     {/* Sign Out Action inside Dropdown */}

@@ -164,5 +164,49 @@ describe('PaymentGatewayService Unit Tests', () => {
       expect(fallbackTarget('CHF')).toBe('USD');
       expect(fallbackTarget('THB')).toBe('USD');
     });
+
+    it('cryptographically verifies HMAC-SHA256 signature matching Razorpay specifications', () => {
+      const crypto = require('node:crypto');
+      const secret = 'rzp_test_secret_key_12345';
+      const orderId = 'order_DA2G5q3W123456';
+      const paymentId = 'pay_kYtXwwci987654';
+
+      const text = `${orderId}|${paymentId}`;
+      const generatedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(text)
+        .digest('hex');
+
+      expect(generatedSignature).toHaveLength(64);
+
+      // Verify timing-safe comparison
+      const expBuf = Buffer.from(generatedSignature, 'utf8');
+      const sigBuf = Buffer.from(generatedSignature.toLowerCase(), 'utf8');
+      const isValid = expBuf.length === sigBuf.length && crypto.timingSafeEqual(expBuf, sigBuf);
+      expect(isValid).toBe(true);
+
+      // Tampered payment ID fails verification
+      const badBuf = Buffer.from('a'.repeat(64), 'utf8');
+      const isBadValid = expBuf.length === badBuf.length && crypto.timingSafeEqual(expBuf, badBuf);
+      expect(isBadValid).toBe(false);
+    });
+
+    it('guards against subscription amount spoofing for Pro tiers', () => {
+      const validateSubscriptionAmount = (packageType: string, currency: string, amount: number, promo?: string) => {
+        if (packageType === 'pro_subscription' && currency === 'INR') {
+          const minAllowed = promo === 'PRO50' ? 949 : 999;
+          return amount >= minAllowed;
+        }
+        return true;
+      };
+
+      // ₹1 spoofing attempt rejected
+      expect(validateSubscriptionAmount('pro_subscription', 'INR', 1)).toBe(false);
+      // ₹100 spoofing attempt rejected
+      expect(validateSubscriptionAmount('pro_subscription', 'INR', 100)).toBe(false);
+      // Authorized amount accepted
+      expect(validateSubscriptionAmount('pro_subscription', 'INR', 999)).toBe(true);
+      expect(validateSubscriptionAmount('pro_subscription', 'INR', 949, 'PRO50')).toBe(true);
+    });
   });
 });

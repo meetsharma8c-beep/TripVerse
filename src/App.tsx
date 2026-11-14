@@ -114,6 +114,7 @@ import {
   checkAndProcessFirebaseRedirectResult
 } from './services/authService';
 import { TripVerseProModal } from './components/subscription/TripVerseProModal';
+import { FounderDashboardModal } from './components/modals/FounderDashboardModal';
 import { AuthUser } from './types/auth';
 import {
   loadUserTripsFromSupabase,
@@ -250,6 +251,7 @@ export function App() {
   });
   const [isLiveNavOpen, setIsLiveNavOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(() => (initialRoute as any).openPro || false);
+  const [isFounderDashboardOpen, setIsFounderDashboardOpen] = useState(false);
   const [isBestDealModalOpen, setIsBestDealModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(() => initialRoute.openBooking || false);
@@ -2060,6 +2062,7 @@ export function App() {
         onSignOut={handleUserSignOut}
         isAuthenticated={currentUser !== null}
         onOpenProModal={() => setIsProModalOpen(true)}
+        onOpenFounderDashboard={() => setIsFounderDashboardOpen(true)}
       />
 
       {/* Pull down to refresh gesture wrapper */}
@@ -3154,6 +3157,14 @@ export function App() {
           }
         }}
       />
+
+      {/* VIP Founder Command Center Modal */}
+      {isFounderDashboardOpen && (
+        <FounderDashboardModal
+          isOpen={isFounderDashboardOpen}
+          onClose={() => setIsFounderDashboardOpen(false)}
+        />
+      )}
 
     </div>
   );

@@ -44,3 +44,7 @@ scratch/
 # User Data & Spreadsheets (PII Protection)
 *.xlsx
 *.csv
+
+# Mobile Binary Packages
+*.apk
+*.aab
