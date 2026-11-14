@@ -23,7 +23,8 @@ import {
   ChevronRight,
   AlertCircle,
   Globe,
-  Coins
+  Coins,
+  WifiOff
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Trip, CurrencyCode } from '../../types/trip';
@@ -125,6 +126,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
   // Gateway Processing States
   const [gatewayStage, setGatewayStage] = useState<'checkout' | 'authorizing' | 'unavailable' | 'success'>('checkout');
+  const [gatewayErrorType, setGatewayErrorType] = useState<'network' | 'unconfigured' | 'declined' | 'signature_mismatch' | null>(null);
   const [gatewayErrorMessage, setGatewayErrorMessage] = useState<string>('');
   const [confirmedBooking, setConfirmedBooking] = useState<BookingRecord | null>(null);
 
@@ -273,6 +275,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         setIsTimerActive(true);
         setSessionExpired(false);
         setGatewayStage('checkout');
+        setGatewayErrorType(null);
         setGatewayErrorMessage('');
         setCouponMessage(null);
       }
@@ -500,6 +503,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
               if (verifyRes?.verified) {
                 finalizeSuccessfulBooking(methodName, response.razorpay_payment_id);
               } else {
+                setGatewayErrorType('signature_mismatch');
                 setGatewayErrorMessage('Cryptographic payment signature verification failed. Your account was not charged.');
                 setGatewayStage('unavailable');
               }
@@ -509,6 +513,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
           if (typeof rzp.on === 'function') {
             rzp.on('payment.failed', (failure: any) => {
               const reason = failure?.error?.description || 'Payment authorization was declined by your bank or UPI app.';
+              setGatewayErrorType('declined');
               setGatewayErrorMessage(reason);
               setGatewayStage('unavailable');
             });
@@ -516,17 +521,37 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
           rzp.open();
           return;
+        } else {
+          // Razorpay checkout.js script failed to load (e.g. transient cellular drop)
+          setGatewayErrorType('network');
+          setGatewayErrorMessage('Could not load secure banking script (checkout.razorpay.com). Please verify your connection and tap Retry.');
+          setGatewayStage('unavailable');
+          return;
         }
       }
 
+      // Check if order creation failed due to network glitch
+      if (
+        orderRes?.error === 'NETWORK_ERROR' || 
+        orderRes?.message?.includes('Load failed') || 
+        orderRes?.message?.includes('Failed to fetch')
+      ) {
+        setGatewayErrorType('network');
+        setGatewayErrorMessage('Your device had a momentary connection drop while reaching the banking gateway.');
+        setGatewayStage('unavailable');
+        return;
+      }
+
+      setGatewayErrorType('unconfigured');
       setGatewayErrorMessage(
         orderRes?.message ||
         'Live Razorpay merchant credentials (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) are not configured on the server.'
       );
       setGatewayStage('unavailable');
     } catch {
+      setGatewayErrorType('network');
       setGatewayErrorMessage(
-        'Could not reach the payment gateway server. Please complete your booking directly with official partner portals below.'
+        'Could not reach the payment gateway server. Please verify your connection and tap Retry.'
       );
       setGatewayStage('unavailable');
     }
@@ -1641,23 +1666,48 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         )}
 
         {/* ================================================================ */}
-        {/* STAGE C: HONEST GATEWAY UNAVAILABLE STATE (NO FAKE PNR/OTP)       */}
+        {/* STAGE C: HONEST GATEWAY UNAVAILABLE / CONNECTION ERROR STATE     */}
         {/* ================================================================ */}
         {gatewayStage === 'unavailable' && (
           <div className="p-6 sm:p-8 space-y-5 max-w-lg mx-auto my-auto min-h-[400px] flex flex-col justify-center">
-            <div className="flex items-start gap-3 rounded-2xl border border-amber-300 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/40 p-4 text-left">
-              <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h3 className="text-sm font-black text-amber-950 dark:text-amber-200">
-                  Live In-App Payment Gateway Not Configured
-                </h3>
-                <p className="text-xs text-amber-900 dark:text-amber-300 leading-relaxed">
-                  {gatewayErrorMessage || 'RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are not configured on this server. No payment was charged and no PNR or hotel voucher has been issued.'}
-                </p>
-              </div>
-            </div>
+            {gatewayErrorType === 'network' ? (
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 rounded-2xl border border-sky-300 dark:border-sky-800/80 bg-sky-50 dark:bg-sky-950/40 p-4 text-left">
+                  <WifiOff className="w-6 h-6 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-black text-sky-950 dark:text-sky-200">
+                      Connection Timeout / Network Hiccup
+                    </h3>
+                    <p className="text-xs text-sky-900 dark:text-sky-300 leading-relaxed">
+                      {gatewayErrorMessage || 'Your device experienced a brief connection drop while contacting the secure banking gateway. Please check your signal and tap Retry.'}
+                    </p>
+                  </div>
+                </div>
 
-            {packageType === 'pro_subscription' ? (
+                <button
+                  type="button"
+                  onClick={() => initiatePayment('TripVerse Online Pay')}
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] hover:from-[#1E5237] hover:to-[#225C3C] text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Retry Payment Connection</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-300 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/40 p-4 text-left">
+                <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h3 className="text-sm font-black text-amber-950 dark:text-amber-200">
+                    {gatewayErrorType === 'declined' ? 'Payment Declined' : 'Live In-App Payment Gateway Not Configured'}
+                  </h3>
+                  <p className="text-xs text-amber-900 dark:text-amber-300 leading-relaxed">
+                    {gatewayErrorMessage || 'RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are not configured on this server. No payment was charged and no PNR or hotel voucher has been issued.'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {gatewayErrorType !== 'network' && (packageType === 'pro_subscription' ? (
               <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/40 p-4 space-y-3 text-left">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 block">
                   Complimentary Pro Preview Available
@@ -1741,7 +1791,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                   </a>
                 </div>
               </div>
-            )}
+            ))}
 
             <div className="flex gap-2">
               <button

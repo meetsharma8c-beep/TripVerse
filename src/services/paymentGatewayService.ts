@@ -408,6 +408,7 @@ export function loadRazorpayScript(): Promise<boolean> {
     script.onload = () => resolve(true);
     script.onerror = () => {
       razorpayScriptLoadPromise = null;
+      script.remove();
       resolve(false);
     };
     document.body.appendChild(script);
@@ -417,7 +418,7 @@ export function loadRazorpayScript(): Promise<boolean> {
 }
 
 /**
- * Create a Razorpay Order via serverless proxy
+ * Create a Razorpay Order via serverless proxy with automatic transient retry
  */
 export async function createRazorpayOrder(params: {
   amount: number;
@@ -425,16 +426,32 @@ export async function createRazorpayOrder(params: {
   receipt?: string;
   notes?: Record<string, string>;
 }): Promise<{ ok: boolean; mode: 'live' | 'test' | 'unavailable' | 'simulation'; keyId?: string; orderId?: string; order_id?: string; amount?: number; currency?: string; error?: string; message?: string }> {
-  try {
-    const res = await fetch('/api/create-razorpay-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params)
-    });
-    return await res.json();
-  } catch (err: any) {
-    return { ok: false, mode: 'unavailable', error: err?.message, message: err?.message };
+  const maxAttempts = 2;
+  let lastError: any = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch('/api/create-razorpay-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+      });
+      return await res.json();
+    } catch (err: any) {
+      lastError = err;
+      if (attempt < maxAttempts) {
+        // Wait 500ms before quick retry on transient mobile cellular blips (e.g. Safari "Load failed")
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    }
   }
+
+  return {
+    ok: false,
+    mode: 'unavailable',
+    error: 'NETWORK_ERROR',
+    message: lastError?.message || 'Load failed'
+  };
 }
 
 /**
