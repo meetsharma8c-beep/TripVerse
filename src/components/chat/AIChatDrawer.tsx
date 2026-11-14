@@ -632,12 +632,11 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         {/* Chat Drawer Header */}
         <div className="px-5 py-4 bg-gradient-to-r from-[#0B2545] to-[#133966] text-white flex items-center justify-between shadow-md shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-white/10 p-0.5 border border-white/20 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
+            <div className="w-11 h-11 flex items-center justify-center shrink-0">
               <ArgonAvatar
                 state={argonHeaderState}
                 size="sm"
-                baseImageUrl="/images/ai-robot-mascot.jpg"
-                className="w-10 h-10 scale-110"
+                className="w-11 h-11 drop-shadow-md"
               />
             </div>
             <div>
@@ -753,18 +752,17 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                 key={msg.id}
                 className={`flex items-start gap-2.5 ${isAi ? '' : 'flex-row-reverse'}`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  isAi ? 'bg-white border border-emerald-500/30 overflow-hidden shadow-xs' : 'bg-slate-200 text-slate-700'
-                }`}>
+                <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
                   {isAi ? (
                     <ArgonAvatar
                       state={inferArgonStateFromText(msg.text)}
                       size="sm"
-                      baseImageUrl="/images/ai-robot-mascot.jpg"
-                      className="w-8 h-8 scale-110"
+                      className="w-8 h-8 drop-shadow-xs"
                     />
                   ) : (
-                    <User className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center">
+                      <User className="w-4 h-4" />
+                    </div>
                   )}
                 </div>
 

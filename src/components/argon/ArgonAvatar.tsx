@@ -143,21 +143,9 @@ export const ArgonAvatar: React.FC<ArgonAvatarProps> = ({
         }}
       />
 
-      {/* Optional Hybrid 3D Base Render Layer */}
-      {baseImageUrl && (
-        <img
-          src={baseImageUrl}
-          alt="Argon Base"
-          className="
-            pointer-events-none absolute inset-0 h-full w-full rounded-2xl
-            object-cover opacity-20 mix-blend-luminosity
-          "
-        />
-      )}
-
-      {/* Sub-Pixel 3D Shaded Vector Rig */}
+      {/* Sub-Pixel 3D Shaded Vector Rig (100% Unboxed Transparent Silhouette) */}
       <svg
-        viewBox="0 0 200 200"
+        viewBox="0 0 200 216"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className={`relative z-10 h-full w-full overflow-visible ${
@@ -263,6 +251,17 @@ export const ArgonAvatar: React.FC<ArgonAvatarProps> = ({
           </g>
         )}
 
+        {/* Soft Anti-Gravity Hover Glow (Matches Character Energy) */}
+        <ellipse
+          cx="100"
+          cy="204"
+          rx="36"
+          ry="6"
+          fill={theme.ledHex}
+          opacity="0.45"
+          filter={`url(#ledGlow-${uid})`}
+        />
+
         {/* ================= TORSO, NECK & AVIATION SHOULDER BADGE ================= */}
         <g id="argon-torso">
           {/* Segmented Sage Neck */}
@@ -277,19 +276,15 @@ export const ArgonAvatar: React.FC<ArgonAvatarProps> = ({
           <line x1="86" y1="131" x2="114" y2="131" stroke="#537052" strokeWidth="1.8" />
           <line x1="86" y1="136" x2="114" y2="136" stroke="#537052" strokeWidth="1.8" />
 
+          {/* Smooth Rounded Lower Torso Pod (100% Unboxed Character Silhouette) */}
+          <path
+            d="M32 184 C30 200, 56 210, 100 210 C144 210, 170 200, 168 184 C166 170, 154 146, 146 146 C132 138, 68 138, 54 146 C46 146, 34 170, 32 184 Z"
+            fill={`url(#ivoryShell-${uid})`}
+          />
+
           {/* Left & Right Sage Shoulder Joints */}
           <ellipse cx="52" cy="162" rx="18" ry="20" fill={`url(#sageGreen-${uid})`} />
           <ellipse cx="148" cy="162" rx="18" ry="20" fill={`url(#sageGreen-${uid})`} />
-
-          {/* Left & Right Upper Ivory Arms */}
-          <path
-            d="M36 164 C32 176, 30 192, 30 198 L54 198 L58 172 Z"
-            fill={`url(#ivoryShell-${uid})`}
-          />
-          <path
-            d="M164 164 C168 176, 170 192, 170 198 L146 198 L142 172 Z"
-            fill={`url(#ivoryShell-${uid})`}
-          />
 
           {/* Glowing Right-Arm TripVerse Aviation Emblem (Matches Reference Image) */}
           <g transform="translate(41, 178)">
@@ -312,22 +307,17 @@ export const ArgonAvatar: React.FC<ArgonAvatarProps> = ({
             />
           </g>
 
-          {/* Main Ivory Chest Armor & Sage Yoke */}
-          <path
-            d="M54 146 C68 138, 132 138, 146 146 L154 198 L46 198 Z"
-            fill={`url(#ivoryShell-${uid})`}
-          />
           {/* Sage Green Collar Yoke */}
           <path
             d="M72 141 Q100 164 128 141 L118 138 Q100 150 82 138 Z"
             fill={`url(#sageGreen-${uid})`}
           />
           {/* Center & Lower Sage Seam Lines */}
-          <line x1="100" y1="152" x2="100" y2="184" stroke="#85A384" strokeWidth="2.5" />
+          <line x1="100" y1="152" x2="100" y2="192" stroke="#85A384" strokeWidth="2.5" />
           <path
-            d="M74 198 Q100 174 126 198"
+            d="M70 196 Q100 178 130 196"
             stroke="#85A384"
-            strokeWidth="3"
+            strokeWidth="2.5"
             fill="none"
           />
         </g>

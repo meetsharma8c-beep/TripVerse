@@ -107,28 +107,37 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
         </div>
       )}
 
-      {/* Floating Interactive Mascot Button */}
+      {/* Floating Interactive Character (100% Unboxed & Borderless) */}
       <button
         type="button"
         onClick={onOpenChat}
         onMouseEnter={() => setArgonState('excited')}
         onMouseLeave={() => setArgonState('idle')}
-        className="group relative flex h-16 w-16 sm:h-18 sm:w-18 items-center justify-center rounded-[24px] border-[3px] border-white dark:border-slate-800 bg-gradient-to-b from-[#F3F6F2] to-[#E2EAE0] dark:from-slate-800 dark:to-slate-900 shadow-[0_14px_34px_rgba(42,68,52,0.22)] dark:shadow-[0_14px_34px_rgba(0,0,0,0.6)] transition-all duration-300 hover:scale-108 active:scale-95 cursor-pointer"
+        className="group relative flex flex-col items-center bg-transparent border-0 p-0 shadow-none outline-none cursor-pointer focus:outline-none transition-transform duration-300 hover:scale-110 active:scale-95"
         title="Chat with Argon (TripVerse AI Co-Pilot)"
+        aria-label="Open AI Trip Assistant with Argon"
       >
-        <ArgonAvatar
-          state={argonState}
-          size="md"
-          baseImageUrl="/images/ai-robot-mascot.jpg"
-        />
+        <div className="relative">
+          <ArgonAvatar
+            state={argonState}
+            size="lg"
+            className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 drop-shadow-[0_12px_22px_rgba(15,23,42,0.3)] dark:drop-shadow-[0_14px_24px_rgba(0,0,0,0.7)]"
+          />
 
-        {/* Live Adaptive LED Status Ring */}
-        <span
-          className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-slate-900 transition-colors duration-300"
-          style={{
-            backgroundColor: activeTheme.ledHex,
-            boxShadow: `0 0 10px ${activeTheme.ledGlowRgba}`,
-          }}
+          {/* Micro Status Beacon Orbiting Argon */}
+          <span
+            className="absolute top-2 right-2 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-slate-900 transition-colors duration-300 z-20 pointer-events-none"
+            style={{
+              backgroundColor: activeTheme.ledHex,
+              boxShadow: `0 0 12px ${activeTheme.ledGlowRgba}`,
+            }}
+          />
+        </div>
+
+        {/* 3D Contact Elevation Ground Shadow Beneath Argon */}
+        <div
+          className="mt-0.5 h-2 w-14 sm:w-16 rounded-full bg-slate-900/25 dark:bg-black/50 blur-xs transition-all duration-300 group-hover:scale-75 group-hover:opacity-40"
+          aria-hidden="true"
         />
       </button>
     </div>
