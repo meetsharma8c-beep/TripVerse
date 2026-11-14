@@ -627,13 +627,13 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       className="fixed inset-0 z-50 overflow-hidden bg-slate-900/60 backdrop-blur-xs flex justify-end items-end sm:items-stretch"
     >
       
-      <div className="w-full sm:max-w-md md:max-w-lg bg-white dark:bg-slate-900 h-[92dvh] sm:h-full max-h-[100dvh] rounded-t-3xl sm:rounded-none sm:rounded-l-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden border-l border-emerald-950/10 dark:border-white/10">
+      <div className="w-full sm:max-w-md md:max-w-lg bg-white dark:bg-slate-900 h-[92dvh] sm:h-full max-h-[100dvh] rounded-t-3xl sm:rounded-none sm:rounded-l-3xl shadow-[0_-10px_40px_rgba(16,185,129,0.12)] sm:shadow-[-12px_0_40px_rgba(16,185,129,0.16)] flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden border-t sm:border-t-0 sm:border-l border-emerald-500/20 dark:border-emerald-500/25">
         
         {/* Mobile Pull Handle */}
         <div className="w-12 h-1.5 bg-slate-300/80 dark:bg-slate-700 rounded-full mx-auto my-2 sm:hidden shrink-0" />
 
         {/* Unified Luxury ConCode AI Header */}
-        <div className="relative px-4 sm:px-5 py-3.5 bg-gradient-to-r from-[#0C2415] via-[#163D25] to-[#0E2818] text-white flex items-center justify-between border-b border-emerald-500/20 shadow-md shrink-0 overflow-hidden">
+        <div className="relative px-4 sm:px-5 py-3.5 bg-gradient-to-r from-[#0C2415] via-[#163D25] to-[#0E2818] text-white flex items-center justify-between border-b border-emerald-500/20 shadow-[0_4px_24px_rgba(16,185,129,0.18)] shrink-0 overflow-hidden">
           {/* Subtle Ambient Radial Glow Behind Avatar */}
           <div 
             className="pointer-events-none absolute -left-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 transition-all duration-700"
@@ -733,7 +733,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               key={chip.label}
               type="button"
               onClick={() => handleSendMessage(chip.prompt)}
-              className="text-[11px] px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold whitespace-nowrap hover:border-emerald-500/70 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40 transition-all flex items-center gap-1.5 flex-shrink-0 shadow-2xs cursor-pointer active:scale-95"
+              className="text-[11px] px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/15 dark:border-emerald-500/20 text-slate-700 dark:text-slate-200 font-semibold whitespace-nowrap hover:border-emerald-500/50 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40 hover:shadow-[0_2px_12px_rgba(16,185,129,0.14)] transition-all flex items-center gap-1.5 flex-shrink-0 shadow-2xs cursor-pointer active:scale-95"
             >
               {chip.icon && <chip.icon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
               <span>{chip.label}</span>
@@ -811,7 +811,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   {/* Message Bubble */}
                   <div className={`p-4 sm:p-4.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed overflow-hidden break-words ${
                     isAi
-                      ? 'bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-slate-800 dark:text-slate-100 rounded-tl-xs border border-slate-200/80 dark:border-slate-700/80 shadow-[0_4px_24px_rgba(25,50,35,0.06)]'
+                      ? 'bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-slate-800 dark:text-slate-100 rounded-tl-xs border border-emerald-500/15 dark:border-emerald-500/20 shadow-[0_6px_28px_rgba(16,185,129,0.08)]'
                       : 'bg-gradient-to-br from-[#1E4D34] via-[#245D3F] to-[#2D6E4B] text-white font-medium rounded-tr-xs shadow-md shadow-emerald-950/20'
                   }`}>
                     {isAi ? (
@@ -967,7 +967,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                           <button
                             key={primaryBtn.label}
                             onClick={() => handleActionButton(primaryBtn.action, primaryBtn.payload)}
-                            className="w-full px-4 py-3 rounded-2xl text-xs font-bold text-left transition-all duration-200 shadow-md shadow-emerald-950/15 hover:shadow-lg hover:shadow-emerald-900/25 cursor-pointer active:scale-98 flex items-center justify-between group gap-2.5 bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] text-white border border-emerald-400/30"
+                            className="w-full px-4 py-3 rounded-2xl text-xs font-bold text-left transition-all duration-200 shadow-[0_8px_25px_rgba(16,185,129,0.22)] hover:shadow-[0_10px_32px_rgba(16,185,129,0.32)] cursor-pointer active:scale-98 flex items-center justify-between group gap-2.5 bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] text-white border border-emerald-400/30 backdrop-blur-md"
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
                               <div className="w-6 h-6 rounded-lg bg-emerald-400/20 border border-emerald-300/30 flex items-center justify-center shrink-0">
@@ -987,10 +987,10 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                               <button
                                 key={btn.label}
                                 onClick={() => handleActionButton(btn.action, btn.payload)}
-                                className="px-3.5 py-2.5 rounded-xl text-[11px] font-semibold text-left transition-all duration-150 cursor-pointer active:scale-98 flex items-center justify-between group gap-2 bg-white/95 dark:bg-slate-800/90 border border-emerald-500/15 hover:border-emerald-500/50 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/40 text-slate-700 dark:text-slate-200 shadow-2xs hover:shadow-xs"
+                                className="px-3.5 py-2.5 rounded-xl text-[11px] font-semibold text-left transition-all duration-200 cursor-pointer active:scale-98 flex items-center justify-between group gap-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/20 dark:border-emerald-500/25 shadow-[0_4px_16px_rgba(16,185,129,0.08)] hover:shadow-[0_6px_22px_rgba(16,185,129,0.20)] hover:border-emerald-500/50 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/50 text-slate-700 dark:text-slate-200"
                               >
                                 <span className="truncate">{btn.label}</span>
-                                <ArrowRight className="w-3 h-3 text-emerald-600/60 dark:text-emerald-400/60 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                                <ArrowRight className="w-3 h-3 text-emerald-600/70 dark:text-emerald-400/70 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all shrink-0" />
                               </button>
                             ))}
                           </div>
@@ -1026,9 +1026,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           )}
         </div>
 
-        {/* Input Bar - Elevated Floating Glass Capsule */}
-        <div className="p-3 sm:p-4 pb-safe bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800/80 shrink-0">
-          <div className="flex items-center gap-2 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 focus-within:border-emerald-500/70 focus-within:ring-2 focus-within:ring-emerald-500/20 rounded-2xl px-3 py-1.5 transition-all shadow-xs">
+        {/* Input Bar - Elevated Floating Glass Capsule with Soft Blurred Emerald Glow */}
+        <div className="p-3 sm:p-4 pb-safe bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-emerald-950/10 dark:border-white/10 shrink-0">
+          <div className="flex items-center gap-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/25 dark:border-emerald-500/30 shadow-[0_4px_20px_rgba(16,185,129,0.12)] focus-within:border-emerald-500/60 focus-within:shadow-[0_0_25px_rgba(16,185,129,0.25)] rounded-2xl px-3 py-1.5 transition-all">
             <Compass className="w-4 h-4 text-emerald-600/70 dark:text-emerald-400/70 shrink-0 hidden sm:block" />
             <input
               type="text"
