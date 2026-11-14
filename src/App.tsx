@@ -3099,7 +3099,7 @@ export function App() {
         onOpenChat={() => handleOpenAIChat()}
         onOpenChatWithQuery={(query) => handleOpenAIChat(query)}
         isChatOpen={isAIChatOpen}
-        destinationName={activeTrip?.destination || trips[0]?.destination}
+        destinationName={currentTab === 'trip-detail' && activeTrip ? activeTrip.destination : undefined}
       />
 
       {/* PWA Free Install Banner & iOS Guide */}

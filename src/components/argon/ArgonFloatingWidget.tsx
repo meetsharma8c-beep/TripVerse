@@ -24,26 +24,44 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
 
   const dynamicHints: ProactiveHint[] = [
     {
-      id: 'day-2',
-      text: destinationName ? `Plan Day 2 in ${destinationName.split(',')[0]}? 🗺️` : 'Ready to plan Day 2? 🗺️',
-      actionPrompt: destinationName ? `Plan Day 2 of my ${destinationName} itinerary with scenic pitstops.` : 'Plan Day 2 of my itinerary with scenic pitstops.',
+      id: 'welcome',
+      text: 'Hi! I’m ConCode, your AI Co-Pilot 👋',
+      actionPrompt: 'Hi ConCode! How can you help me plan my next trip?',
       emotion: 'excited',
     },
     {
-      id: 'weather-alert',
-      text: 'Weather radar on your route 🌦️',
-      actionPrompt: 'Check live weather alerts and road conditions on my route.',
-      emotion: 'warning',
+      id: 'explore',
+      text: 'Welcome to TripVerse! Where to next? ✈️',
+      actionPrompt: 'Help me discover top trending destinations for my vacation.',
+      emotion: 'idle',
+    },
+    ...(destinationName ? [{
+      id: 'trip-context',
+      text: `Need ideas for ${destinationName.split(',')[0]}? 🗺️`,
+      actionPrompt: `Give me top recommendations and hidden gems for ${destinationName}.`,
+      emotion: 'excited' as ArgonState,
+    }] : []),
+    {
+      id: 'ask-anything',
+      text: 'Ask me anything about travel! 🌍',
+      actionPrompt: 'What makes you unique as my AI travel co-pilot?',
+      emotion: 'idle',
     },
     {
-      id: 'local-gems',
-      text: 'Discover hidden food spots 🍜',
+      id: 'custom-itinerary',
+      text: 'Need an instant custom itinerary? 🗺️',
+      actionPrompt: 'Plan an amazing personalized multi-day trip for me.',
+      emotion: 'thinking',
+    },
+    {
+      id: 'hidden-gems',
+      text: 'Discover hidden gems & local food 🍜',
       actionPrompt: 'Suggest verified hidden gems and authentic local food.',
       emotion: 'excited',
     },
     {
       id: 'budget-opt',
-      text: 'Optimize group travel budget ₹',
+      text: 'Optimize your travel budget ₹',
       actionPrompt: 'Optimize our trip budget and suggest verified stays.',
       emotion: 'idle',
     },
@@ -85,7 +103,7 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
     >
       {/* Proactive Speech Bubble */}
       {showHintBubble && (
-        <div className="group relative flex items-center gap-2.5 rounded-2xl border border-emerald-900/10 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 shadow-[0_12px_32px_rgba(30,58,47,0.18)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 max-w-[280px]">
+        <div className="group relative flex items-center gap-2.5 rounded-2xl border border-emerald-900/10 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 shadow-[0_12px_32px_rgba(30,58,47,0.18)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 max-w-[340px] whitespace-nowrap">
           <span
             className="h-2 w-2 shrink-0 rounded-full animate-pulse"
             style={{ backgroundColor: ARGON_STATE_THEME[currentHint.emotion].ledHex }}
@@ -130,7 +148,7 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
             className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 drop-shadow-[0_12px_22px_rgba(15,23,42,0.3)] dark:drop-shadow-[0_14px_24px_rgba(0,0,0,0.7)]"
           />
 
-          {/* Micro Status Beacon Orbiting Argon */}
+          {/* Micro Status Beacon Orbiting ConCode */}
           <span
             className="absolute top-2 right-2 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-slate-900 transition-colors duration-300 z-20 pointer-events-none"
             style={{
@@ -140,7 +158,7 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
           />
         </div>
 
-        {/* 3D Contact Elevation Ground Shadow Beneath Argon */}
+        {/* 3D Contact Elevation Ground Shadow Beneath ConCode */}
         <div
           className="mt-0.5 h-2 w-14 sm:w-16 rounded-full bg-slate-900/25 dark:bg-black/50 blur-xs transition-all duration-300 group-hover:scale-75 group-hover:opacity-40"
           aria-hidden="true"
