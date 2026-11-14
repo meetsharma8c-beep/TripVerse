@@ -2127,8 +2127,11 @@ export function deleteAccount(userId: string): void {
 /**
  * Update authenticated user profile details
  */
-export async function updateAuthProfile(updates: Partial<UserProfile & AuthUser> & { displayName?: string; photoURL?: string; name?: string; avatar?: string }): Promise<AuthUser> {
-  const current = getCurrentUser();
+export async function updateAuthProfile(
+  updates: Partial<UserProfile & AuthUser> & { displayName?: string; photoURL?: string; name?: string; avatar?: string },
+  userParam?: AuthUser | null
+): Promise<AuthUser> {
+  const current = (userParam !== undefined && userParam) ? userParam : getCurrentUser();
   if (!current) {
     throw new Error('No user is currently signed in.');
   }
@@ -2880,7 +2883,7 @@ export async function upgradeUserToPro(userParam?: AuthUser | null, durationDays
     weeklyAssistantMinutesRemaining: 1800, // 30 hours per week full facility
     subscriptionExpiresAt: expiresAt,
     weeklyQuotaResetAt: nextReset
-  });
+  }, user);
 
   if (userParam) {
     userParam.subscriptionTier = 'pro';
@@ -2935,7 +2938,7 @@ export async function downgradeUserToFree(userParam?: AuthUser | null): Promise<
     lifetimeTripsCreated: effectiveLifetime,
     weeklyAssistantMinutesRemaining: 30,
     subscriptionExpiresAt: undefined
-  });
+  }, user);
 
   if (userParam) {
     userParam.subscriptionTier = 'free';

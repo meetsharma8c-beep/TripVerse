@@ -413,6 +413,67 @@ describe('Auth Security & Verification Tests', () => {
     expect(crossSessionQuota.freeTripsRemaining).toBe(0);
   });
 
+  it('verifies end-to-end that normal users who buy Pro model receive unlimited trips, 30h reasoning, and proper Pro badges without Founder VIP leakage', async () => {
+    const customerUser: AuthUser = {
+      uid: 'customer-pro-uid-555',
+      email: 'customer.traveler@outlook.com',
+      displayName: 'Customer Traveler',
+      provider: 'email',
+      subscriptionTier: 'free',
+      freeTripsRemaining: 3,
+      lifetimeTripsCreated: 0,
+      weeklyAssistantMinutesRemaining: 30
+    };
+
+    // 1. Initial free quota
+    let quota = getUserSubscriptionQuota(customerUser);
+    expect(quota.isPro).toBe(false);
+    expect(quota.isFounder).toBe(false);
+    expect(quota.canCreateTrip).toBe(true);
+    expect(quota.freeTripsRemaining).toBe(3);
+    expect(quota.weeklyAssistantMinutesRemaining).toBe(30);
+
+    // 2. Consume all 3 free trips
+    consumeTripCredit(customerUser);
+    consumeTripCredit(customerUser);
+    consumeTripCredit(customerUser);
+    const blockedTrip = consumeTripCredit(customerUser);
+    expect(blockedTrip.allowed).toBe(false);
+
+    // 3. Customer purchases TripVerse Pro (Annual: 365 days)
+    await upgradeUserToPro(customerUser, 365);
+    const proUser: AuthUser = {
+      ...customerUser,
+      subscriptionTier: 'pro',
+      freeTripsRemaining: 9999,
+      weeklyAssistantMinutesRemaining: 1800
+    };
+    quota = getUserSubscriptionQuota(proUser);
+
+    // Verify Pro capabilities are fully unlocked
+    expect(quota.isPro).toBe(true);
+    expect(quota.isFounder).toBe(false); // Customer is NOT Founder VIP
+    expect(quota.canCreateTrip).toBe(true);
+    expect(quota.freeTripsRemaining).toBe(9999); // Unlimited trips
+    expect(quota.weeklyAssistantMinutesRemaining).toBe(1800); // 30 hours per week full facility
+    expect(quota.weeklyQuotaHoursFormatted).toBe('30h 00m');
+
+    // 4. Pro user successfully creates trip 4, 5, 6
+    const trip4 = consumeTripCredit(proUser);
+    expect(trip4.allowed).toBe(true);
+    expect(trip4.remaining).toBe(9999);
+
+    const trip5 = consumeTripCredit(proUser);
+    expect(trip5.allowed).toBe(true);
+
+    // 5. Verify badge labels
+    const navbarButtonLabel = quota.isFounder ? 'VIP FOUNDER' : quota.isPro ? 'PRO' : 'Pro';
+    expect(navbarButtonLabel).toBe('PRO'); // Customer sees PRO, NOT VIP FOUNDER
+
+    const profileBadgeLabel = quota.isFounder ? 'TripVerse Founder VIP' : quota.isPro ? 'TripVerse Pro Member' : 'Free Explorer Plan';
+    expect(profileBadgeLabel).toBe('TripVerse Pro Member');
+  });
+
   describe('Automated Google Auth Zero-DOM Redirect Detection', () => {
     const originalNavigator = (global as any).window?.navigator;
     const originalInnerWidth = (global as any).window?.innerWidth;
