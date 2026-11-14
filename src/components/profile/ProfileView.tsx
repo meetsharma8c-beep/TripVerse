@@ -425,11 +425,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <div>
                   <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
                     <h3 className="font-display font-black text-lg text-white tracking-tight">
-                      TripVerse Pro Member
+                      {quota.isFounder ? 'TripVerse Founder VIP' : 'TripVerse Pro Member'}
                     </h3>
                     <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                       <Sparkles className="w-3 h-3 text-amber-300" />
-                      <span>VIP ALL-ACCESS</span>
+                      <span>{quota.isFounder ? 'FOUNDER VIP' : 'VIP ALL-ACCESS'}</span>
                     </span>
                   </div>
                   <p className="text-xs text-emerald-100/90 mt-1 flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">

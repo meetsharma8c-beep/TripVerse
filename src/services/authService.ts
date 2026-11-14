@@ -38,6 +38,24 @@ const VERIFICATION_STORAGE_KEY = 'tripverse_auth_verification_codes_v1';
 const AUTH_EVENT_KEY = 'tripverse_auth_state_change';
 
 /**
+ * Recognized VIP Founder & Creator Accounts (Lifetime Unlimited Access)
+ */
+export const FOUNDER_VIP_EMAILS = new Set([
+  'meet.sharma8c@gmail.com',
+  'ms.concode@gmail.com',
+  'concode.sys@gmail.com',
+  '25bt04065@gsfcuniversity.ac.in'
+]);
+
+export function isFounderVipUser(user?: AuthUser | null): boolean {
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('tripverse_founder_vip') === 'true') {
+    return true;
+  }
+  const emailNorm = user?.email ? user.email.toLowerCase().trim() : '';
+  return FOUNDER_VIP_EMAILS.has(emailNorm);
+}
+
+/**
  * Self-executing cleanup to permanently eradicate legacy test sessions & fake accounts from localStorage.
  */
 function purgeLegacyMockSessions(): void {
@@ -2577,8 +2595,9 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
   }
 
   // Logged-in user
-  let isPro = user.subscriptionTier === 'pro';
-  if (isPro && user.subscriptionExpiresAt) {
+  const isFounderVIP = isFounderVipUser(user);
+  let isPro = isFounderVIP || user.subscriptionTier === 'pro';
+  if (!isFounderVIP && isPro && user.subscriptionExpiresAt) {
     const expiresMs = new Date(user.subscriptionExpiresAt).getTime();
     if (!isNaN(expiresMs) && Date.now() > expiresMs) {
       isPro = false;
@@ -2630,9 +2649,11 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
     freeTripsRemaining = Math.max(0, 3 - effectiveLifetimeCreated);
   }
 
-  const assistantMinutes = typeof user.weeklyAssistantMinutesRemaining === 'number'
-    ? user.weeklyAssistantMinutesRemaining
-    : (isPro ? 1800 : 30);
+  const assistantMinutes = isFounderVIP
+    ? 1800
+    : (typeof user.weeklyAssistantMinutesRemaining === 'number'
+      ? user.weeklyAssistantMinutesRemaining
+      : (isPro ? 1800 : 30));
 
   const hours = Math.floor(assistantMinutes / 60);
   const mins = assistantMinutes % 60;
@@ -2641,6 +2662,7 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
   return {
     tier: isPro ? 'pro' : 'free',
     isPro,
+    isFounder: isFounderVIP,
     freeTripsRemaining,
     freeTripsTotal: 3,
     lifetimeTripsCreated: effectiveLifetimeCreated,
@@ -2648,7 +2670,7 @@ export function getUserSubscriptionQuota(userParam?: AuthUser | null): UserSubsc
     weeklyAssistantMinutesRemaining: assistantMinutes,
     weeklyAssistantMinutesTotal: isPro ? 1800 : 30, // 30 hours per week = 1800 mins
     weeklyQuotaHoursFormatted,
-    subscriptionExpiresAt: user.subscriptionExpiresAt
+    subscriptionExpiresAt: isFounderVIP ? '2099-12-31T23:59:59.999Z' : user.subscriptionExpiresAt
   };
 }
 
@@ -2805,11 +2827,17 @@ export async function upgradeUserToPro(userParam?: AuthUser | null, durationDays
     userParam.subscriptionExpiresAt = expiresAt;
   }
 
-  window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { isPro: true, user: updated } }));
+  const isFounder = isFounderVipUser(updated);
+  window.dispatchEvent(new CustomEvent('tripverse_quota_updated', { detail: { isPro: true, isFounder, user: updated } }));
   return updated;
 }
 
 export async function downgradeUserToFree(userParam?: AuthUser | null): Promise<AuthUser | null> {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('tripverse_founder_vip');
+    }
+  } catch {}
   const user = userParam !== undefined ? userParam : getCurrentUser();
   if (!user) {
     try {

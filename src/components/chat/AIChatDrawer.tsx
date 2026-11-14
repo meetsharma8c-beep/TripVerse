@@ -666,7 +666,17 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Co-Pilot
                 </span>
-                {quota.isPro ? (
+                {quota.isFounder ? (
+                  <button
+                    type="button"
+                    onClick={onOpenProModal}
+                    className="text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400/30 to-yellow-400/30 hover:from-amber-400/40 hover:to-yellow-400/40 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-300/40 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                    title={t('TripVerse VIP Founder Active • Lifetime Unlimited Trips & Full ConCode Brain')}
+                  >
+                    <Crown className="w-2.5 h-2.5 fill-amber-300" />
+                    <span>VIP Founder • 30h Pro</span>
+                  </button>
+                ) : quota.isPro ? (
                   <button
                     type="button"
                     onClick={onOpenProModal}

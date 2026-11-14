@@ -400,8 +400,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`}
                 title={quota.isPro ? t('TripVerse Pro Active') : t('Unlock Unlimited Trips with TripVerse Pro')}
               >
-                <Crown className={`w-3.5 h-3.5 shrink-0 ${quota.isPro ? 'text-amber-500 fill-amber-500' : 'text-[#2D5A3D] dark:text-emerald-400'}`} />
-                <span>{quota.isPro ? 'PRO' : 'Pro'}</span>
+                <Crown className={`w-3.5 h-3.5 shrink-0 ${quota.isFounder ? 'text-amber-400 fill-amber-400' : quota.isPro ? 'text-amber-500 fill-amber-500' : 'text-[#2D5A3D] dark:text-emerald-400'}`} />
+                <span>{quota.isFounder ? 'FOUNDER' : quota.isPro ? 'PRO' : 'Pro'}</span>
               </button>
             )}
 
@@ -704,16 +704,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className={`text-xs font-bold truncate ${quota.isPro ? 'text-white' : 'text-[#152A1C] dark:text-slate-100'}`}>
-                      {quota.isPro ? t('TripVerse Pro Member') : t('TripVerse Pro')}
+                      {quota.isFounder ? 'TripVerse Founder VIP' : quota.isPro ? t('TripVerse Pro Member') : t('TripVerse Pro')}
                     </p>
                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide shrink-0 ${
-                      quota.isPro ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' : 'bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-400'
+                      quota.isFounder ? 'bg-amber-400 text-amber-950 font-black' : quota.isPro ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' : 'bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-400'
                     }`}>
-                      {quota.isPro ? t('ACTIVE') : t('UPGRADE')}
+                      {quota.isFounder ? 'VIP FOUNDER' : quota.isPro ? t('ACTIVE') : t('UPGRADE')}
                     </span>
                   </div>
                   <p className={`text-[11px] truncate mt-0.5 ${quota.isPro ? 'text-emerald-200' : 'text-[#5A7362] dark:text-slate-400'}`}>
-                    {quota.isPro ? t('Unlimited Trips & 30h/week AI Active') : t('Unlock Unlimited Trips & AI Brain')}
+                    {quota.isFounder ? 'Lifetime Unlimited Trips & ConCode AI Brain Active' : quota.isPro ? t('Unlimited Trips & 30h/week AI Active') : t('Unlock Unlimited Trips & AI Brain')}
                   </p>
                 </div>
               </div>

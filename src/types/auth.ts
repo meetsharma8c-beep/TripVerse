@@ -4,6 +4,7 @@ export type SubscriptionTier = 'free' | 'pro';
 export interface UserSubscriptionQuota {
   tier: SubscriptionTier;
   isPro: boolean;
+  isFounder?: boolean;
   freeTripsRemaining: number;
   freeTripsTotal: number;
   lifetimeTripsCreated: number;
