@@ -103,7 +103,7 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
             ✕
           </button>
           {/* Speech Pointer Triangle */}
-          <div className="absolute -bottom-1.5 right-7 h-3 w-3 rotate-45 border-b border-r border-emerald-900/10 dark:border-slate-700 bg-white dark:bg-slate-900" />
+          <div className="absolute -bottom-1.5 right-8 sm:right-10 h-3 w-3 rotate-45 border-b border-r border-emerald-900/10 dark:border-slate-700 bg-white dark:bg-slate-900" />
         </div>
       )}
 
