@@ -4,7 +4,8 @@ import { X, Users, Copy, Check, Share2, ThumbsUp, ThumbsDown, Plus, Sparkles, Cr
 import confetti from 'canvas-confetti';
 import { Trip, CollaborationSession, TripCollaborator, GroupSuggestion } from '../../types/trip';
 import { AuthUser } from '../../types/auth';
-import { openExternalUrl } from '../../services/deviceService';
+import { openExternalUrl, triggerHaptic } from '../../services/deviceService';
+import { getTripPolls, createTripPoll, voteOnPoll, closePoll, GroupPoll } from '../../services/groupPollService';
 import { useLanguage } from '../../services/languageService';
 import { 
   getOrInitializeCollaborationSession,
@@ -45,6 +46,31 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
   const [suggestDay, setSuggestDay] = useState(1);
   const [suggestCategory, setSuggestCategory] = useState<'food' | 'spot' | 'activity' | 'stay'>('food');
   const [isSubmittingSuggest, setIsSubmittingSuggest] = useState(false);
+
+  // Group Decision Polls State
+  const [polls, setPolls] = useState<GroupPoll[]>(() => getTripPolls(trip.id));
+  const [isCreatingPoll, setIsCreatingPoll] = useState(false);
+  const [newPollQuestion, setNewPollQuestion] = useState('');
+  const [newPollOption1, setNewPollOption1] = useState('');
+  const [newPollOption2, setNewPollOption2] = useState('');
+
+  const handleCreatePoll = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPollQuestion.trim() || !newPollOption1.trim() || !newPollOption2.trim()) return;
+    const created = createTripPoll(trip.id, newPollQuestion, [newPollOption1, newPollOption2], currentUser?.email || 'traveler');
+    setPolls(prev => [created, ...prev]);
+    setNewPollQuestion('');
+    setNewPollOption1('');
+    setNewPollOption2('');
+    setIsCreatingPoll(false);
+    triggerHaptic('success');
+  };
+
+  const handleVotePoll = (pollId: string, optionId: string) => {
+    triggerHaptic('light');
+    const updated = voteOnPoll(trip.id, pollId, optionId, currentUser?.email || 'traveler');
+    setPolls(updated);
+  };
 
   const tripRef = useRef(trip);
   const onTripUpdatedRef = useRef(onTripUpdated);
@@ -392,6 +418,110 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                 <p>
                   Vote on activities with your travel buddies. Items with high group agreement get awarded the <strong className="text-[#0B2545]">Group Favorite</strong> badge!
                 </p>
+              </div>
+
+              {/* Group Decision Polls Card */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-emerald-500/5 to-slate-50 border border-amber-300/60 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🗳️</span>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">Group Decision Polls</h4>
+                      <p className="text-[10px] text-slate-500">Vote on restaurants, departures & itinerary trade-offs</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingPoll(!isCreatingPoll)}
+                    className="px-2.5 py-1 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer shadow-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{isCreatingPoll ? 'Cancel' : 'New Poll'}</span>
+                  </button>
+                </div>
+
+                {/* Create Poll Drawer */}
+                {isCreatingPoll && (
+                  <form onSubmit={handleCreatePoll} className="p-3 bg-white rounded-xl border border-slate-200 space-y-2 animate-in fade-in">
+                    <input
+                      type="text"
+                      placeholder="e.g. Where should we have dinner tonight?"
+                      value={newPollQuestion}
+                      onChange={(e) => setNewPollQuestion(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-emerald-600"
+                      required
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Option A (e.g. Seafood Market)"
+                        value={newPollOption1}
+                        onChange={(e) => setNewPollOption1(e.target.value)}
+                        className="px-2.5 py-1 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-emerald-600"
+                        required
+                      />
+                      <input
+                        type="text"
+                        placeholder="Option B (e.g. Italian Bistro)"
+                        value={newPollOption2}
+                        onChange={(e) => setNewPollOption2(e.target.value)}
+                        className="px-2.5 py-1 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-emerald-600"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs cursor-pointer"
+                    >
+                      Launch Group Poll
+                    </button>
+                  </form>
+                )}
+
+                {/* Polls List */}
+                <div className="space-y-3">
+                  {polls.map((poll) => {
+                    const totalVotes = poll.options.reduce((sum, o) => sum + o.votes.length, 0);
+                    return (
+                      <div key={poll.id} className="p-3.5 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-900">{poll.question}</span>
+                          <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                            {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {poll.options.map((opt) => {
+                            const count = opt.votes.length;
+                            const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+                            const hasVoted = opt.votes.includes(currentUser?.email || 'traveler');
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => handleVotePoll(poll.id, opt.id)}
+                                className={`w-full text-left p-2 rounded-lg border transition-all cursor-pointer relative overflow-hidden flex items-center justify-between ${
+                                  hasVoted
+                                    ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 font-bold'
+                                    : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 text-slate-700'
+                                }`}
+                              >
+                                <div
+                                  className="absolute left-0 top-0 bottom-0 bg-emerald-500/15 pointer-events-none transition-all duration-300"
+                                  style={{ width: `${pct}%` }}
+                                />
+                                <span className="text-xs relative z-10 truncate mr-2">{opt.text}</span>
+                                <span className="text-[11px] font-mono font-bold shrink-0 relative z-10 text-slate-500">
+                                  {pct}% ({count})
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {trip.itinerary.map((day) => (

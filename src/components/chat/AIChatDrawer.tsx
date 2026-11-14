@@ -11,8 +11,9 @@ import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/con
 import { ArgonAvatar } from '../argon/ArgonAvatar';
 import { inferArgonStateFromText, parseConCodeStreamResponse, ArgonState, ARGON_STATE_THEME } from '../argon/argon.types';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
-import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass, Mic, MicOff, FileText, Plane, Camera } from 'lucide-react';
+import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass, Mic, MicOff, FileText, Plane, Camera, Headphones, Pause, Play, Square } from 'lucide-react';
 import { scanTravelImage, VisualScanResult } from '../../services/visualAiScannerService';
+import { startAudioTour, pauseAudioTour, resumeAudioTour, stopAudioTour, setAudioTourListener, AudioTourState } from '../../services/audioTourService';
 import { triggerHaptic } from '../../services/deviceService';
 import { getUserSubscriptionQuota, consumeAssistantMinute } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
@@ -313,6 +314,23 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   const [activeItineraryDay, setActiveItineraryDay] = useState<Record<string, number>>({});
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
 
+  // Audio Tour Guide State
+  const [audioTour, setAudioTour] = useState<AudioTourState>({
+    isPlaying: false,
+    isPaused: false,
+    currentLandmark: null,
+    playbackRate: 1.0
+  });
+
+  useEffect(() => {
+    setAudioTourListener((state) => {
+      setAudioTour(state);
+    });
+    return () => {
+      setAudioTourListener(null);
+    };
+  }, []);
+
   const cleanTripDest = (trip?.destination && trip.destination !== 'Custom Spot' ? trip.destination : (trip?.name || 'your destination')).split(',')[0].trim();
 
   const getInitialMessages = (): ChatMessage[] => {
@@ -592,6 +610,11 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               primary: true
             },
             {
+              label: `🎧 Listen to Audio Tour`,
+              action: 'audio_tour',
+              payload: { landmark: scanResult.name }
+            },
+            {
               label: `🌐 View 3D Landmark`,
               action: 'view_3d',
               payload: { landmark: scanResult.name }
@@ -691,6 +714,18 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     } else if (action === 'START_NAV') {
       if (onAppAction) onAppAction({ type: 'START_NAVIGATION' });
       onClose();
+    } else if (action === 'audio_tour' || action === 'START_AUDIO_TOUR') {
+      const landmark = payload?.landmark || cleanTripDest || 'Eiffel Tower';
+      startAudioTour(landmark, cleanTripDest);
+      triggerHaptic('success');
+    } else if (action === 'STOP_AUDIO_TOUR') {
+      stopAudioTour();
+      triggerHaptic('light');
+    } else if (action === 'view_3d') {
+      const landmark = payload?.landmark || cleanTripDest || 'Eiffel Tower';
+      setViewer3DLandmark(landmark);
+      setIs3DViewerOpen(true);
+      triggerHaptic('light');
     } else if (action === 'OPEN_PRINT' || action === 'PRINT_GUIDE') {
       if (onAppAction) onAppAction({ type: 'OPEN_MODAL', payload: { modal: 'print' } });
       onClose();
@@ -871,6 +906,57 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Floating Live Audio Tour HUD Bar */}
+        {audioTour.isPlaying && (
+          <div className="px-4 py-2.5 bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-950 border-b border-emerald-500/30 flex items-center justify-between text-white animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+                <Headphones className="w-4 h-4 text-emerald-300 animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                  <span className="text-xs font-bold text-emerald-200 truncate block">
+                    Audio Tour: {audioTour.currentLandmark}
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-300 block font-mono">
+                  {audioTour.isPaused ? 'Paused' : 'Playing Narration via ConCode'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('light');
+                  if (audioTour.isPaused) {
+                    resumeAudioTour();
+                  } else {
+                    pauseAudioTour();
+                  }
+                }}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors"
+                title={audioTour.isPaused ? 'Resume Audio' : 'Pause Audio'}
+              >
+                {audioTour.isPaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('light');
+                  stopAudioTour();
+                }}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-rose-300 hover:text-white cursor-pointer transition-colors"
+                title="Stop Audio Tour"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Quick Scenario Chips Carousel */}
         <div className="px-3.5 py-2.5 bg-gradient-to-r from-[#F4F7F3] via-white to-[#F4F7F3] dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 border-b border-emerald-950/5 dark:border-slate-800 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0 shadow-2xs">

@@ -117,6 +117,7 @@ import { TripVerseProModal } from './components/subscription/TripVerseProModal';
 import { FounderDashboardModal } from './components/modals/FounderDashboardModal';
 import { DigitalPassportModal } from './components/passport/DigitalPassportModal';
 import { EmergencySosModal } from './components/safety/EmergencySosModal';
+import { TripWrappedModal } from './components/wrapped/TripWrappedModal';
 import { AuthUser } from './types/auth';
 import {
   loadUserTripsFromSupabase,
@@ -256,6 +257,7 @@ export function App() {
   const [isFounderDashboardOpen, setIsFounderDashboardOpen] = useState(false);
   const [isPassportModalOpen, setIsPassportModalOpen] = useState(false);
   const [isEmergencySosOpen, setIsEmergencySosOpen] = useState(false);
+  const [isWrappedModalOpen, setIsWrappedModalOpen] = useState(false);
   const [isBestDealModalOpen, setIsBestDealModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(() => initialRoute.openBooking || false);
@@ -2069,6 +2071,7 @@ export function App() {
         onOpenFounderDashboard={() => setIsFounderDashboardOpen(true)}
         onOpenPassport={() => setIsPassportModalOpen(true)}
         onOpenEmergencySos={() => setIsEmergencySosOpen(true)}
+        onOpenWrapped={() => setIsWrappedModalOpen(true)}
       />
 
       {/* Pull down to refresh gesture wrapper */}
@@ -3188,6 +3191,16 @@ export function App() {
           isOpen={isEmergencySosOpen}
           onClose={() => setIsEmergencySosOpen(false)}
           destinationCountry={activeTrip?.destination?.includes('France') || activeTrip?.destination?.includes('Paris') ? 'FR' : activeTrip?.destination?.includes('Dubai') ? 'AE' : activeTrip?.destination?.includes('Kyoto') || activeTrip?.destination?.includes('Japan') ? 'JP' : activeTrip?.destination?.includes('USA') ? 'US' : 'IN'}
+        />
+      )}
+
+      {/* 2026 Travel Wrapped Modal */}
+      {isWrappedModalOpen && (
+        <TripWrappedModal
+          isOpen={isWrappedModalOpen}
+          onClose={() => setIsWrappedModalOpen(false)}
+          trips={trips}
+          userEmail={currentUser?.email}
         />
       )}
 

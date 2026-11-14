@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Trip, PackingItem, PackingCategory, WeatherDay, WeatherForecast } from '../../types/trip';
 import { getDestinationWeather, fetchLiveDestinationWeather } from '../../services/weatherService';
 import { generateSmartPackingList } from '../../services/packingService';
 import { loadTripPacking, saveTripPacking } from '../../services/storageService';
 import { openExternalUrl, triggerHaptic } from '../../services/deviceService';
+import { calculateBaggageWeight, AIRLINE_POLICIES } from '../../services/baggageWeightService';
 import confetti from 'canvas-confetti';
 import { Sun, CloudRain, Wind, Droplets, CheckCircle2, Circle, Plus, Trash2, RotateCcw, Sparkles, Thermometer, Share2, Check, Luggage, Compass, Umbrella, Shirt } from 'lucide-react';
 import { useLanguage } from '../../services/languageService';
@@ -48,6 +49,14 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
   const [newCustomItemCat, setNewCustomItemCat] = useState<PackingCategory>('essentials');
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
+  const [selectedAirline, setSelectedAirline] = useState<string>('INDIGO');
+
+  const baggageResult = useMemo(() => {
+    return calculateBaggageWeight(
+      packingItems.map(i => ({ title: i.name, packed: i.isPacked, category: i.category })),
+      selectedAirline
+    );
+  }, [packingItems, selectedAirline]);
 
   useEffect(() => {
     const refreshPacking = () => {
@@ -499,11 +508,9 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
           </div>
         </div>
 
-        {/* Luggage Weight & Boarding Tag Scale (Creative Tourist Motif) */}
+        {/* Smart Luggage Weight & Airline Allowance Radar */}
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-50 via-emerald-50/30 to-slate-50 border border-slate-200/90 shadow-xs space-y-4">
-          
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            
             {/* Bag weight indicator */}
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-200">
@@ -512,7 +519,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400">
-                    Est. Luggage Weight
+                    Smart Airline Baggage Scale
                   </span>
                   <span className="text-[9px] font-mono font-medium px-2 py-0.5 rounded bg-slate-200/70 text-slate-600">
                     TAG #TV-{trip.destination.slice(0, 3).toUpperCase()}-BAG
@@ -520,35 +527,51 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
                 </div>
                 <div className="flex items-baseline gap-1.5 mt-0.5">
                   <span className="text-xl sm:text-2xl font-semibold font-display text-[#0B2545] tracking-tight">
-                    ~{currentWeightKg} kg
+                    ~{baggageResult.estimatedWeightKg} kg
                   </span>
                   <span className="text-xs text-slate-500 font-normal">
-                    of {totalWeightKg} kg total planned pack
+                    estimated luggage total
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Allowance Pill & Packing Status */}
+            {/* Airline Selector */}
             <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-              <span className={`text-xs font-medium px-3 py-1 rounded-full border ${
-                parseFloat(currentWeightKg) <= 7.0
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : 'bg-amber-50 text-amber-800 border-amber-200'
-              }`}>
-                {parseFloat(currentWeightKg) <= 7.0 ? 'Cabin Friendly (<7 kg)' : 'Standard Checked Luggage'}
-              </span>
+              <select
+                value={selectedAirline}
+                onChange={(e) => {
+                  setSelectedAirline(e.target.value);
+                  triggerHaptic('light');
+                }}
+                className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 shadow-2xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              >
+                {Object.values(AIRLINE_POLICIES).map(a => (
+                  <option key={a.airlineCode} value={a.airlineCode}>
+                    ✈️ {a.airlineName} (Cabin: {a.cabinLimitKg}kg / Check-in: {a.checkInLimitKg}kg)
+                  </option>
+                ))}
+              </select>
 
-              <span className="text-xs font-serif italic text-slate-600 px-2">
-                {progressPercent === 100 
-                  ? '100% Ready for Departure' 
-                  : progressPercent >= 50 
-                    ? `Halfway Packed (${packedCount}/${totalCount})` 
-                    : `In Progress (${packedCount}/${totalCount})`}
+              <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                baggageResult.cabinStatus === 'safe'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : baggageResult.cabinStatus === 'near_limit'
+                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                  : 'bg-rose-50 text-rose-800 border-rose-300 animate-pulse'
+              }`}>
+                {baggageResult.cabinStatus === 'safe' ? 'Cabin Safe' : baggageResult.cabinStatus === 'near_limit' ? 'Near Cabin Limit' : 'Over Cabin Limit'}
               </span>
             </div>
-
           </div>
+
+          {/* Excess warning notice if overweight */}
+          {baggageResult.warningNotice && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 font-medium flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{baggageResult.warningNotice}</span>
+            </div>
+          )}
 
           {/* Visual Packing Progress Bar */}
           <div className="space-y-1.5">

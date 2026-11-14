@@ -24,6 +24,7 @@ interface NavbarProps {
   onOpenFounderDashboard?: () => void;
   onOpenPassport?: () => void;
   onOpenEmergencySos?: () => void;
+  onOpenWrapped?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -41,7 +42,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProModal,
   onOpenFounderDashboard,
   onOpenPassport,
-  onOpenEmergencySos
+  onOpenEmergencySos,
+  onOpenWrapped
 }) => {
   const [quota, setQuota] = useState(() => {
     return getUserSubscriptionQuota(userProfile ? {
@@ -574,6 +576,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </button>
                       )}
 
+                      {onOpenWrapped && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            onOpenWrapped();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors cursor-pointer"
+                        >
+                          <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500" />
+                          <span>{t('2026 Travel Wrapped')}</span>
+                        </button>
+                      )}
+
                       <a
                         href="/downloads/TripVerse-v1.0.apk"
                         download="TripVerse-v1.0.apk"
@@ -866,6 +882,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="min-w-0">
                     <span className="text-xs font-bold text-rose-900 dark:text-rose-200 block truncate">{t('SOS Help')}</span>
                     <span className="text-[10px] text-rose-700/70 dark:text-rose-400 block truncate">{t('Emergency')}</span>
+                  </div>
+                </button>
+              )}
+              {onOpenWrapped && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenWrapped();
+                  }}
+                  className="p-2.5 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-300/30 text-left transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 block truncate">{t('Wrapped')}</span>
+                    <span className="text-[10px] text-emerald-700/70 dark:text-emerald-400 block truncate">{t('Year in Travel')}</span>
                   </div>
                 </button>
               )}

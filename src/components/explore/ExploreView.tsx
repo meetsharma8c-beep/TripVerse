@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { Destination, UserProfile } from '../../types/trip';
-import { Search, Compass, Star, Sparkles, Bookmark } from 'lucide-react';
+import { Search, Compass, Star, Sparkles, Bookmark, Crown, ArrowRight, Copy } from 'lucide-react';
+import { COMMUNITY_ITINERARIES, CreatorItinerary } from '../../services/communityItinerariesService';
+import { triggerHaptic } from '../../services/deviceService';
+import confetti from 'canvas-confetti';
 import { handleImageError, synthesizeDestination } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
@@ -40,6 +43,20 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
         filterSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }
+  };
+
+  const handleCloneCreatorItinerary = (itinerary: CreatorItinerary, e: React.MouseEvent) => {
+    e.stopPropagation();
+    triggerHaptic('success');
+    try {
+      confetti({
+        particleCount: 65,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: ['#2D5A3D', '#D4AF37', '#10B981']
+      });
+    } catch {}
+    onPlanTripForDestination(itinerary.destination);
   };
 
   useEffect(() => {
@@ -296,6 +313,93 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Featured Creator Playbooks & Community Itineraries */}
+      {selectedTag === 'all' && !searchQuery.trim() && (
+        <div className="bg-gradient-to-br from-[#122B1E] via-[#1A3D2B] to-[#0E2419] text-white rounded-3xl p-5 sm:p-6 border border-emerald-500/30 shadow-lg space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shadow-xs">
+                <Crown className="w-4 h-4 fill-slate-950" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-amber-200">
+                  Creator Playbooks & Verified Itineraries
+                </h3>
+                <p className="text-xs text-emerald-200/80">
+                  Pre-crafted journeys by local explorers and the Founder. 1-click clone to your trips.
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-amber-300 bg-amber-400/20 border border-amber-300/40 px-3 py-1 rounded-full self-start sm:self-auto">
+              Ready to Clone
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+            {COMMUNITY_ITINERARIES.map(itinerary => (
+              <div
+                key={itinerary.id}
+                className="bg-black/30 backdrop-blur-md rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-amber-400/50 transition-all flex flex-col justify-between group shadow-xs"
+              >
+                <div className="relative h-36 overflow-hidden">
+                  <img
+                    src={itinerary.coverImage}
+                    alt={itinerary.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                    {itinerary.isFounder && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-400 text-slate-950 flex items-center gap-0.5 shadow-xs">
+                        <Crown className="w-3 h-3 fill-slate-950" />
+                        VIP FOUNDER
+                      </span>
+                    )}
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-black/60 backdrop-blur-md text-emerald-300">
+                      {itinerary.durationDays} Days
+                    </span>
+                  </div>
+                  <div className="absolute bottom-2 left-2 right-2 text-left">
+                    <span className="text-[10px] text-amber-300 font-mono block">{itinerary.vibe}</span>
+                    <h4 className="text-xs font-bold text-white line-clamp-1">{itinerary.title}</h4>
+                  </div>
+                </div>
+
+                <div className="p-3 space-y-2.5 flex-1 flex flex-col justify-between text-left">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] text-slate-300 font-mono">
+                      <span className="flex items-center gap-1">
+                        <span>{itinerary.avatar}</span>
+                        <strong className="text-white">{itinerary.author}</strong>
+                      </span>
+                      <span className="text-amber-300 font-bold">★ {itinerary.rating}</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 line-clamp-1">
+                      {itinerary.highlights.join(' • ')}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-emerald-300">
+                      ~{itinerary.estimatedCost}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCloneCreatorItinerary(itinerary, e)}
+                      className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-[10px] flex items-center gap-1 shadow-md transition-all cursor-pointer active:scale-95"
+                    >
+                      <Copy className="w-3 h-3" />
+                      <span>Clone Itinerary</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
