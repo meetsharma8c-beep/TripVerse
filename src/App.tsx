@@ -255,9 +255,18 @@ export function App() {
   const [isLiveNavOpen, setIsLiveNavOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(() => (initialRoute as any).openPro || false);
   const [isFounderDashboardOpen, setIsFounderDashboardOpen] = useState(false);
-  const [isPassportModalOpen, setIsPassportModalOpen] = useState(false);
-  const [isEmergencySosOpen, setIsEmergencySosOpen] = useState(false);
-  const [isWrappedModalOpen, setIsWrappedModalOpen] = useState(false);
+  const [isPassportModalOpen, setIsPassportModalOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.location.search.includes('openPassport=true') || window.location.hash.includes('openPassport=true');
+  });
+  const [isEmergencySosOpen, setIsEmergencySosOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.location.search.includes('openSos=true') || window.location.hash.includes('openSos=true');
+  });
+  const [isWrappedModalOpen, setIsWrappedModalOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.location.search.includes('openWrapped=true') || window.location.hash.includes('openWrapped=true');
+  });
   const [isBestDealModalOpen, setIsBestDealModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(() => initialRoute.openBooking || false);
@@ -998,6 +1007,15 @@ export function App() {
       }
       if (route.openResetPassword) {
         setIsResetPasswordModalOpen(true);
+      }
+      if (window.location.search.includes('openPassport=true') || window.location.hash.includes('openPassport=true')) {
+        setIsPassportModalOpen(true);
+      }
+      if (window.location.search.includes('openSos=true') || window.location.hash.includes('openSos=true')) {
+        setIsEmergencySosOpen(true);
+      }
+      if (window.location.search.includes('openWrapped=true') || window.location.hash.includes('openWrapped=true')) {
+        setIsWrappedModalOpen(true);
       }
       if (route.openPlanner) {
         const activeUser = currentUser ?? getCurrentUser();
