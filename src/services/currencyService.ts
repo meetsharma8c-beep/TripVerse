@@ -286,6 +286,72 @@ export function setActiveCurrency(currency: CurrencyCode): void {
   }
 }
 
+export const COUNTRY_TO_CURRENCY_MAP: Record<string, CurrencyCode> = {
+  IN: 'INR',
+  US: 'USD',
+  GB: 'GBP',
+  AE: 'AED',
+  CA: 'CAD',
+  AU: 'AUD',
+  SG: 'SGD',
+  JP: 'JPY',
+  CH: 'CHF',
+  NZ: 'NZD',
+  TH: 'THB',
+  DE: 'EUR',
+  FR: 'EUR',
+  IT: 'EUR',
+  ES: 'EUR',
+  NL: 'EUR',
+  BE: 'EUR',
+  AT: 'EUR',
+  IE: 'EUR',
+  FI: 'EUR',
+  PT: 'EUR',
+  GR: 'EUR'
+};
+
+/**
+ * Automatically fetch visitor geolocation from server edge and apply local currency
+ * if the user has not manually overridden it.
+ */
+export async function detectAndApplyGeoCurrency(): Promise<CurrencyCode> {
+  if (typeof window === 'undefined') return 'USD';
+
+  // If user already picked manually, preserve their choice
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_CURRENCY);
+    if (saved && (saved in CURRENCIES)) {
+      return saved as CurrencyCode;
+    }
+  } catch {}
+
+  try {
+    const res = await fetch('/api/geo');
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.country && COUNTRY_TO_CURRENCY_MAP[data.country]) {
+        const detected = COUNTRY_TO_CURRENCY_MAP[data.country];
+        setActiveCurrency(detected);
+        return detected;
+      }
+    }
+  } catch (err) {
+    // Fallback to client-side locale & timezone detection
+  }
+
+  const clientFallback = detectDefaultCurrency();
+  setActiveCurrency(clientFallback);
+  return clientFallback;
+}
+
+// Background geo currency detection
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    detectAndApplyGeoCurrency();
+  }, 500);
+}
+
 /**
  * Converts an amount in INR to the selected currency with NaN & undefined resilience
  */
