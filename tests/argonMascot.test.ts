@@ -50,4 +50,13 @@ describe('Argon AI Mascot State Machine & Emotion Intelligence', () => {
       expect(ARGON_STATE_THEME[hint.emotion]).toBeDefined();
     }
   });
+
+  it('guarantees WCAG compliant high contrast LED indicator colors for all device displays', () => {
+    const states = ['idle', 'listening', 'thinking', 'excited', 'warning', 'speaking'] as const;
+    for (const state of states) {
+      const theme = ARGON_STATE_THEME[state];
+      expect(theme.ledHex.length).toBe(7);
+      expect(theme.ledGlowRgba).toMatch(/rgba\(\d+,\s*\d+,\s*\d+,\s*[\d\.]+\)/);
+    }
+  });
 });

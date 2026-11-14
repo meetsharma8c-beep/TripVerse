@@ -74,7 +74,13 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
 
   return (
     <div
-      className={`fixed bottom-22 right-4 md:bottom-7 md:right-7 z-40 flex flex-col items-end gap-2.5 select-none ${className}`}
+      className={`fixed z-40 flex flex-col items-end gap-2.5 select-none ${className}`}
+      style={{
+        bottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))',
+        right: 'calc(1rem + env(safe-area-inset-right, 0px))',
+        WebkitTouchCallout: 'none',
+        WebkitTapHighlightColor: 'transparent',
+      }}
       aria-label="ConCode AI Co-Pilot"
     >
       {/* Proactive Speech Bubble */}
@@ -107,13 +113,13 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
         </div>
       )}
 
-      {/* Floating Interactive Character (100% Unboxed & Borderless) */}
+      {/* Floating Interactive Character (100% Unboxed & Borderless, Mobile & Touch Optimized) */}
       <button
         type="button"
         onClick={onOpenChat}
         onMouseEnter={() => setArgonState('excited')}
         onMouseLeave={() => setArgonState('idle')}
-        className="group relative flex flex-col items-center bg-transparent border-0 p-0 shadow-none outline-none cursor-pointer focus:outline-none transition-transform duration-300 hover:scale-110 active:scale-95"
+        className="group relative flex flex-col items-center bg-transparent border-0 p-0 shadow-none outline-none cursor-pointer focus:outline-none transition-transform duration-300 hover:scale-110 active:scale-95 touch-manipulation"
         title="Chat with ConCode (TripVerse AI Co-Pilot)"
         aria-label="Open ConCode AI Travel Assistant"
       >

@@ -96,39 +96,54 @@ export const ArgonAvatar: React.FC<ArgonAvatarProps> = ({
         onClick ? 'cursor-pointer' : ''
       } ${className}`}
     >
-      {/* Scoped Keyframe Physics */}
+      {/* Scoped Keyframe Physics (GPU-Accelerated & Reduced-Motion Compliant) */}
       <style>{`
         @keyframes argonFloat {
-          0%, 100% { transform: translateY(0px) scale(1); }
-          50% { transform: translateY(-4px) scale(1.015); }
+          0%, 100% { transform: translate3d(0, 0px, 0) scale(1); }
+          50% { transform: translate3d(0, -4px, 0) scale(1.015); }
         }
         @keyframes argonExcitedBounce {
-          0%, 100% { transform: translateY(0px) scale(1); }
-          35% { transform: translateY(-7px) scale(1.05, 0.96); }
-          70% { transform: translateY(-2px) scale(0.98, 1.03); }
+          0%, 100% { transform: translate3d(0, 0px, 0) scale(1); }
+          35% { transform: translate3d(0, -7px, 0) scale(1.05, 0.96); }
+          70% { transform: translate3d(0, -2px, 0) scale(0.98, 1.03); }
         }
         @keyframes argonRadarSpin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
         @keyframes argonConfettiPop {
-          0% { transform: translateY(4px) scale(0); opacity: 0; }
+          0% { transform: translate3d(0, 4px, 0) scale(0); opacity: 0; }
           40% { opacity: 1; }
-          100% { transform: translateY(-18px) scale(1.15); opacity: 0; }
+          100% { transform: translate3d(0, -18px, 0) scale(1.15); opacity: 0; }
         }
         .argon-anim-idle {
           animation: argonFloat 3.6s ease-in-out infinite;
+          will-change: transform;
+          -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
         }
         .argon-anim-excited {
           animation: argonExcitedBounce 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+          will-change: transform;
+          -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
         }
         .argon-radar-halo {
           transform-origin: 100px 64px;
           animation: argonRadarSpin 3.2s linear infinite;
+          will-change: transform;
         }
         .argon-confetti-1 { animation: argonConfettiPop 1.3s ease-out infinite; }
         .argon-confetti-2 { animation: argonConfettiPop 1.3s ease-out 0.35s infinite; }
         .argon-confetti-3 { animation: argonConfettiPop 1.3s ease-out 0.7s infinite; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .argon-anim-idle, .argon-anim-excited, .argon-radar-halo,
+          .argon-confetti-1, .argon-confetti-2, .argon-confetti-3 {
+            animation: none !important;
+            transform: none !important;
+          }
+        }
       `}</style>
 
       {/* Ambient Adaptive Halo Behind Argon */}
