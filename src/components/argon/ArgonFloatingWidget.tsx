@@ -26,42 +26,49 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
     {
       id: 'welcome',
       text: 'Hi! I’m ConCode, your AI Co-Pilot 👋',
+      mobileText: 'Hi! I’m ConCode 👋',
       actionPrompt: 'Hi ConCode! How can you help me plan my next trip?',
       emotion: 'excited',
     },
     {
       id: 'explore',
       text: 'Welcome to TripVerse! Where to next? ✈️',
+      mobileText: 'Where to next? ✈️',
       actionPrompt: 'Help me discover top trending destinations for my vacation.',
       emotion: 'idle',
     },
     ...(destinationName ? [{
       id: 'trip-context',
       text: `Need ideas for ${destinationName.split(',')[0]}? 🗺️`,
+      mobileText: `${destinationName.split(',')[0]} ideas? 🗺️`,
       actionPrompt: `Give me top recommendations and hidden gems for ${destinationName}.`,
       emotion: 'excited' as ArgonState,
     }] : []),
     {
       id: 'ask-anything',
       text: 'Ask me anything about travel! 🌍',
+      mobileText: 'Ask me anything! 🌍',
       actionPrompt: 'What makes you unique as my AI travel co-pilot?',
       emotion: 'idle',
     },
     {
       id: 'custom-itinerary',
       text: 'Need an instant custom itinerary? 🗺️',
+      mobileText: 'Custom itinerary? 🗺️',
       actionPrompt: 'Plan an amazing personalized multi-day trip for me.',
       emotion: 'thinking',
     },
     {
       id: 'hidden-gems',
       text: 'Discover hidden gems & local food 🍜',
+      mobileText: 'Hidden gems & food 🍜',
       actionPrompt: 'Suggest verified hidden gems and authentic local food.',
       emotion: 'excited',
     },
     {
       id: 'budget-opt',
       text: 'Optimize your travel budget ₹',
+      mobileText: 'Optimize budget ₹',
       actionPrompt: 'Optimize our trip budget and suggest verified stays.',
       emotion: 'idle',
     },
@@ -101,11 +108,11 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
       }}
       aria-label="ConCode AI Co-Pilot"
     >
-      {/* Proactive Speech Bubble */}
+      {/* Proactive Speech Bubble - Compact & Proportional on Mobile */}
       {showHintBubble && (
-        <div className="group relative flex items-center gap-2.5 rounded-2xl border border-emerald-900/10 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 shadow-[0_12px_32px_rgba(30,58,47,0.18)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 max-w-[340px] whitespace-nowrap">
+        <div className="group relative flex items-center gap-1.5 sm:gap-2.5 rounded-xl sm:rounded-2xl border border-emerald-900/10 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-slate-800 dark:text-slate-100 shadow-[0_8px_24px_rgba(30,58,47,0.14)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 max-w-[210px] sm:max-w-[340px] whitespace-nowrap">
           <span
-            className="h-2 w-2 shrink-0 rounded-full animate-pulse"
+            className="h-1.5 w-1.5 sm:h-2 sm:w-2 shrink-0 rounded-full animate-pulse"
             style={{ backgroundColor: ARGON_STATE_THEME[currentHint.emotion].ledHex }}
           />
           <button
@@ -113,7 +120,8 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
             onClick={() => handleHintClick(currentHint)}
             className="text-left hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer truncate"
           >
-            {currentHint.text}
+            <span className="sm:hidden">{currentHint.mobileText || currentHint.text}</span>
+            <span className="hidden sm:inline">{currentHint.text}</span>
           </button>
           <button
             type="button"
@@ -122,12 +130,12 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
               setShowHintBubble(false);
             }}
             aria-label="Dismiss hint"
-            className="ml-1 rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 cursor-pointer shrink-0"
+            className="ml-0.5 sm:ml-1 rounded-full p-0.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 cursor-pointer shrink-0 text-[10px] sm:text-xs leading-none"
           >
             ✕
           </button>
           {/* Speech Pointer Triangle */}
-          <div className="absolute -bottom-1.5 right-8 sm:right-10 h-3 w-3 rotate-45 border-b border-r border-emerald-900/10 dark:border-slate-700 bg-white dark:bg-slate-900" />
+          <div className="absolute -bottom-1 right-6 sm:right-10 h-2.5 w-2.5 sm:h-3 sm:w-3 rotate-45 border-b border-r border-emerald-900/10 dark:border-slate-700 bg-white dark:bg-slate-900" />
         </div>
       )}
 

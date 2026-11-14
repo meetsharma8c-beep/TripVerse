@@ -57,6 +57,7 @@ export const ARGON_STATE_THEME: Record<ArgonState, ArgonThemeConfig> = {
 export interface ProactiveHint {
   id: string;
   text: string;
+  mobileText?: string;
   actionPrompt: string;
   emotion: ArgonState;
 }
