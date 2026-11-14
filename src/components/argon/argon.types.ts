@@ -134,3 +134,32 @@ export function inferArgonStateFromText(text: string): ArgonState {
   // 5. Default conversational speech
   return 'speaking';
 }
+
+/**
+ * Parses ConCode response stream prefix tag [STATE:...] or [EMOTION:...] into a clean state and user-facing text.
+ * e.g., "[STATE:warning] Heavy showers expected..." -> { state: 'warning', cleanText: 'Heavy showers expected...' }
+ * Also gracefully supports decided -> excited and confused -> warning aliases.
+ */
+export function parseConCodeStreamResponse(rawText: string): {
+  state: ArgonState;
+  cleanText: string;
+} {
+  if (!rawText) return { state: 'idle', cleanText: '' };
+  const match = rawText.match(
+    /^\[(?:STATE|EMOTION):(idle|listening|thinking|excited|warning|speaking|decided|confused)\]\s*/i
+  );
+  if (match) {
+    let matched = match[1].toLowerCase();
+    if (matched === 'decided') matched = 'excited';
+    if (matched === 'confused') matched = 'warning';
+    return {
+      state: matched as ArgonState,
+      cleanText: rawText.replace(match[0], '').trimStart(),
+    };
+  }
+  return {
+    state: inferArgonStateFromText(rawText),
+    cleanText: rawText,
+  };
+}
+

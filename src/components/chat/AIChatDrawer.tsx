@@ -9,7 +9,7 @@ import {
 } from '../../services/concodeBrainService';
 import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/concodeSession';
 import { ArgonAvatar } from '../argon/ArgonAvatar';
-import { inferArgonStateFromText, ArgonState } from '../argon/argon.types';
+import { inferArgonStateFromText, parseConCodeStreamResponse, ArgonState } from '../argon/argon.types';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
 import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
@@ -315,7 +315,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       {
         id: 'welcome-1',
         sender: 'ai',
-        text: `Hello! I'm your **TripVerse ConCode AI Co-Pilot**.\n\nI can draft itineraries, adjust suggested schedules and budgets, and hand your route off to an external navigation app. Place and route details should be checked with providers before you travel.\n\nWhat would you like to explore?`,
+        text: `[STATE:idle] Hi there! I'm your ConCode travel companion. Whether you have a destination in mind or just a weekend and a rough budget, I'd love to help you map it out. Where shall we begin?`,
         timestamp: 'Just now',
         engine: 'concode_brain',
         guild: 'fullstack',
@@ -430,7 +430,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       {
         id: `welcome-${Date.now()}`,
         sender: 'ai',
-        text: `Conversation cleared. I'm ready for your next travel adventure! What would you like to plan?`,
+        text: `[STATE:idle] Conversation cleared. I'm ready for your next travel adventure! What would you like to plan?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         engine: 'concode_brain',
         guild: 'fullstack',
@@ -606,12 +606,15 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     { label: 'PDF Guide', prompt: 'Print official travel guide and offline itinerary' }
   ];
 
+  const latestAiMsg = [...messages].reverse().find(m => m.sender === 'ai');
+  const parsedLatestAi = latestAiMsg ? parseConCodeStreamResponse(latestAiMsg.text) : null;
+
   const argonHeaderState: ArgonState = isProcessing
     ? 'thinking'
     : inputQuery.trim()
     ? 'listening'
-    : messages.length > 0 && messages[messages.length - 1].sender === 'ai'
-    ? inferArgonStateFromText(messages[messages.length - 1].text)
+    : parsedLatestAi
+    ? parsedLatestAi.state
     : 'idle';
 
   if (!isOpen) return null;
@@ -743,6 +746,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
           {messages.map((msg) => {
             const isAi = msg.sender === 'ai';
+            const parsed = isAi
+              ? parseConCodeStreamResponse(msg.text)
+              : { state: 'idle' as ArgonState, cleanText: msg.text };
             const guildInfo = msg.guild ? GUILD_LABELS[msg.guild] : null;
             const currentSelectedDay = activeItineraryDay[msg.id] || 1;
 
@@ -754,7 +760,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                 <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
                   {isAi ? (
                     <ArgonAvatar
-                      state={inferArgonStateFromText(msg.text)}
+                      state={parsed.state}
                       size="sm"
                       className="w-8 h-8 drop-shadow-xs"
                     />
@@ -782,7 +788,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                       </div>
 
                       <button
-                        onClick={() => handleCopyMessage(msg.id, msg.text)}
+                        onClick={() => handleCopyMessage(msg.id, parsed.cleanText)}
                         className="text-slate-400 hover:text-slate-600 transition-colors p-1 shrink-0 cursor-pointer"
                         title="Copy message"
                       >
@@ -807,7 +813,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                       : 'bg-[#2D5A3D] text-white font-medium rounded-tr-xs'
                   }`}>
                     {isAi ? (
-                      <FormattedAIMessage text={msg.text} />
+                      <FormattedAIMessage text={parsed.cleanText} />
                     ) : (
                       <div className="whitespace-pre-line break-words">{msg.text}</div>
                     )}

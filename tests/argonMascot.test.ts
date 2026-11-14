@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { inferArgonStateFromText, ARGON_STATE_THEME, DEFAULT_PROACTIVE_HINTS } from '../src/components/argon/argon.types';
+import {
+  inferArgonStateFromText,
+  parseConCodeStreamResponse,
+  ARGON_STATE_THEME,
+  DEFAULT_PROACTIVE_HINTS,
+} from '../src/components/argon/argon.types';
 import { isGuestUser } from '../src/services/authService';
 
 describe('Argon AI Mascot State Machine & Emotion Intelligence', () => {
@@ -83,5 +88,62 @@ describe('Argon AI Mascot State Machine & Emotion Intelligence', () => {
       email: 'traveler@tripverse.com',
       displayName: 'Alice Traveler'
     } as any)).toBe(false);
+  });
+
+  describe('ConCode Response Stream Parser & State Contract', () => {
+    it('parses [STATE:idle] and strips the tag cleanly', () => {
+      const raw = "[STATE:idle] Hi there! I'm your ConCode travel companion. Where shall we begin?";
+      const result = parseConCodeStreamResponse(raw);
+      expect(result.state).toBe('idle');
+      expect(result.cleanText).toBe("Hi there! I'm your ConCode travel companion. Where shall we begin?");
+      expect(result.cleanText).not.toContain('[STATE:');
+    });
+
+    it('parses [STATE:warning] for weather, road, or budget alerts', () => {
+      const raw = "[STATE:warning] Please don't cancel just yet—we can definitely make ₹12,000 work comfortably for your group.";
+      const result = parseConCodeStreamResponse(raw);
+      expect(result.state).toBe('warning');
+      expect(result.cleanText).toBe("Please don't cancel just yet—we can definitely make ₹12,000 work comfortably for your group.");
+    });
+
+    it('parses [STATE:excited] for route/itinerary confirmation', () => {
+      const raw = "[STATE:excited] Done! I have locked the coastal highway route and added the noon café pitstop to your guide.";
+      const result = parseConCodeStreamResponse(raw);
+      expect(result.state).toBe('excited');
+      expect(result.cleanText).toBe("Done! I have locked the coastal highway route and added the noon café pitstop to your guide.");
+    });
+
+    it('parses [STATE:thinking] and [STATE:listening] states', () => {
+      expect(parseConCodeStreamResponse("[STATE:thinking] Calculating safest mountain passes...").state).toBe('thinking');
+      expect(parseConCodeStreamResponse("[STATE:listening] What kind of stays does your group prefer?").state).toBe('listening');
+      expect(parseConCodeStreamResponse("[STATE:speaking] Here are your turn-by-turn route notes.").state).toBe('speaking');
+    });
+
+    it('gracefully aliases decided to excited and confused to warning', () => {
+      const decidedRes = parseConCodeStreamResponse("[STATE:decided] Itinerary locked!");
+      expect(decidedRes.state).toBe('excited');
+      expect(decidedRes.cleanText).toBe("Itinerary locked!");
+
+      const confusedRes = parseConCodeStreamResponse("[EMOTION:confused] I could not find that destination. Did you mean Manali?");
+      expect(confusedRes.state).toBe('warning');
+      expect(confusedRes.cleanText).toBe("I could not find that destination. Did you mean Manali?");
+    });
+
+    it('falls back to inferArgonStateFromText when no state tag is prefixed', () => {
+      const rawAlert = "Warning: road closure on NH-3 due to rainfall.";
+      const resAlert = parseConCodeStreamResponse(rawAlert);
+      expect(resAlert.state).toBe('warning');
+      expect(resAlert.cleanText).toBe(rawAlert);
+
+      const rawBooked = "Congratulations, your ticket is booked and confirmed! 🎉";
+      const resBooked = parseConCodeStreamResponse(rawBooked);
+      expect(resBooked.state).toBe('excited');
+      expect(resBooked.cleanText).toBe(rawBooked);
+    });
+
+    it('handles empty or blank string gracefully', () => {
+      expect(parseConCodeStreamResponse("").state).toBe('idle');
+      expect(parseConCodeStreamResponse("").cleanText).toBe("");
+    });
   });
 });
