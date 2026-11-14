@@ -5,7 +5,7 @@ import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js'
 // The CONCODE key exists only in Vercel environment variables, never in the app bundle.
 
 const MAX_QUERY_LENGTH = 12_000;
-const UPSTREAM_TIMEOUT_MS = 45_000;
+const UPSTREAM_TIMEOUT_MS = 8_000;
 
 // In-memory LRU / TTL Cache for cloud LLM travel responses to conserve free-tier API quotas
 const LLM_CACHE = new Map();
@@ -507,7 +507,7 @@ async function callRemoteCloudLLM(query, ctx, mode) {
   if (!baseUrl) {
     if (process.env.GROQ_API_KEY || apiKey.startsWith('gsk_')) {
       baseUrl = 'https://api.groq.com/openai/v1';
-      model = model || 'llama-3.3-70b-versatile';
+      model = model || process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     } else if (process.env.OPENROUTER_API_KEY || apiKey.startsWith('sk-or-')) {
       baseUrl = 'https://openrouter.ai/api/v1';
       model = model || 'meta-llama/llama-3.3-70b-instruct';
@@ -516,7 +516,7 @@ async function callRemoteCloudLLM(query, ctx, mode) {
       model = model || 'gemini-1.5-flash';
     } else {
       baseUrl = 'https://api.groq.com/openai/v1';
-      model = model || 'llama-3.3-70b-versatile';
+      model = model || process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     }
   }
 
@@ -545,15 +545,15 @@ async function callRemoteCloudLLM(query, ctx, mode) {
 
   // 4. Dynamic max_tokens: scale output token reservation based on query mode
   const maxTokens = mode === 'itinerary'
-    ? Math.min(1800, Math.max(650, (ctx.duration_days || 3) * 350))
+    ? Math.min(2500, Math.max(1200, (ctx.duration_days || 3) * 500))
     : mode === 'budget'
-      ? 700
+      ? 1200
       : mode === 'safety'
-        ? 600
-        : 500;
+        ? 1000
+        : 1200;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 6500);
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
     const res = await fetch(`${baseUrl}/chat/completions`, {
@@ -670,7 +670,7 @@ export default async function handler(req, res) {
       const cloudLLMKey = (process.env.CONCODE_REMOTE_LLM_API_KEY || process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY || '').trim();
       if (cloudLLMKey) {
         const cloudEngineName = process.env.GROQ_API_KEY || cloudLLMKey.startsWith('gsk_')
-          ? 'Groq Cloud Engine (Llama-3.3-70B)'
+          ? 'Groq Cloud Engine (GPT-OSS-120B)'
           : (process.env.GEMINI_API_KEY || cloudLLMKey.startsWith('AIza')
             ? 'Google Gemini Cloud Engine'
             : (process.env.OPENROUTER_API_KEY ? 'OpenRouter Cloud Engine' : 'High-Speed Cloud LLM'));
@@ -693,7 +693,7 @@ export default async function handler(req, res) {
       clearTimeout(timeout);
       const cloudLLMKey = (process.env.CONCODE_REMOTE_LLM_API_KEY || process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY || '').trim();
       const cloudEngineName = process.env.GROQ_API_KEY || cloudLLMKey.startsWith('gsk_')
-        ? 'Groq Cloud Engine (Llama-3.3-70B)'
+        ? 'Groq Cloud Engine (GPT-OSS-120B)'
         : (process.env.GEMINI_API_KEY || cloudLLMKey.startsWith('AIza')
           ? 'Google Gemini Cloud Engine'
           : (process.env.OPENROUTER_API_KEY ? 'OpenRouter Cloud Engine' : 'High-Speed Cloud LLM'));
