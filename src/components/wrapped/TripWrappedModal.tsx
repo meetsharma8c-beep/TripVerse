@@ -2,25 +2,22 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, 
-  Sparkles, 
-  ChevronRight, 
-  ChevronLeft, 
   Share2, 
   Check, 
   Globe, 
   MapPin, 
   Compass, 
   Crown, 
-  Trophy,
   Mountain,
   Landmark,
   Building2,
   Calendar,
   ShieldCheck,
-  Plane,
-  Navigation
+  Printer,
+  FileText,
+  Navigation,
+  ArrowUpRight
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import { triggerHaptic } from '../../services/deviceService';
 import { 
@@ -43,38 +40,12 @@ export const TripWrappedModal: React.FC<TripWrappedModalProps> = ({
   trips,
   userEmail
 }) => {
-  const [currentSlide, setCurrentSlide] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<'summary' | 'manifest' | 'certificate'>('summary');
   const [stats] = useState<TravelWrappedStats>(() => computeTravelWrapped(trips, userEmail));
   const [copied, setCopied] = useState<boolean>(false);
 
   useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
-
-  const totalSlides = 5;
-
-  const handleNext = () => {
-    triggerHaptic('light');
-    if (currentSlide < totalSlides - 1) {
-      setCurrentSlide(prev => prev + 1);
-      if (currentSlide === totalSlides - 2) {
-        try {
-          confetti({
-            particleCount: 75,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: [stats.travelerArchetype.themeColor, '#D4AF37', '#10B981']
-          });
-        } catch {}
-      }
-    }
-  };
-
-  const handlePrev = () => {
-    triggerHaptic('light');
-    if (currentSlide > 0) {
-      setCurrentSlide(prev => prev - 1);
-    }
-  };
 
   const handleShare = () => {
     triggerHaptic('medium');
@@ -84,7 +55,12 @@ export const TripWrappedModal: React.FC<TripWrappedModalProps> = ({
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const renderArchetypeIcon = (className = 'w-8 h-8') => {
+  const handlePrint = () => {
+    triggerHaptic('light');
+    window.print();
+  };
+
+  const renderArchetypeInsignia = (className = 'w-4 h-4') => {
     switch (stats.travelerArchetype.iconName) {
       case 'crown':
         return <Crown className={className} />;
@@ -100,228 +76,299 @@ export const TripWrappedModal: React.FC<TripWrappedModalProps> = ({
   };
 
   const modalMarkup = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-md h-[590px] bg-gradient-to-b from-[#0B1712] via-[#0E2018] to-[#07110C] border-2 border-emerald-500/40 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden text-white flex flex-col justify-between p-6 select-none"
+        className="relative w-full max-w-3xl bg-[#0D1017] border border-[#263140] rounded-2xl shadow-2xl overflow-hidden text-slate-100 flex flex-col max-h-[92vh]"
       >
-        {/* Top Story Progress Indicators */}
-        <div className="flex items-center gap-1.5 w-full">
-          {Array.from({ length: totalSlides }).map((_, idx) => (
-            <div
-              key={idx}
-              className={`h-1.5 rounded-full flex-1 transition-all duration-300 ${
-                idx <= currentSlide ? 'bg-amber-400' : 'bg-white/15'
-              }`}
-            />
-          ))}
+        {/* Top Header Bar */}
+        <div className="px-5 py-3.5 border-b border-[#212B36] bg-[#141A23] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#1B232E] border border-[#344252] flex items-center justify-center text-[#C8AA6E]">
+              <Calendar className="w-4 h-4 text-[#C8AA6E]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold tracking-wider text-[#C8AA6E] uppercase">
+                  ANNUAL VOYAGE RETROSPECTIVE • {stats.year}
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  • AUDITED DOSSIER
+                </span>
+              </div>
+              <h2 className="text-sm font-semibold tracking-wide text-slate-100 uppercase font-sans">
+                TripVerse Annual Travel Ledger
+              </h2>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="p-1.5 px-2.5 rounded-lg bg-[#212B36] hover:bg-[#2C3847] text-slate-300 text-xs font-mono font-medium flex items-center gap-1.5 border border-[#344252] transition-colors cursor-pointer"
+              title="Print Dossier"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-400" />
+              <span className="hidden sm:inline">Print</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleShare}
+              className="p-1.5 px-2.5 rounded-lg bg-[#212B36] hover:bg-[#2C3847] text-slate-200 text-xs font-mono font-medium flex items-center gap-1.5 border border-[#344252] transition-colors cursor-pointer"
+              title="Copy Summary"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-slate-400" />}
+              <span className="hidden sm:inline">{copied ? 'Copied' : 'Share'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-[#212B36] hover:bg-[#2C3847] text-slate-400 hover:text-white transition-colors cursor-pointer"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-black/40 hover:bg-black/60 text-slate-300 hover:text-white transition-all cursor-pointer z-10 border border-white/10"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        {/* Tab Sub-Navigation */}
+        <div className="flex border-b border-[#212B36] bg-[#0E131A] px-5 pt-2 gap-4 text-xs font-mono">
+          <button
+            type="button"
+            onClick={() => setActiveTab('summary')}
+            className={`pb-2.5 px-2 border-b-2 transition-colors cursor-pointer flex items-center gap-2 uppercase font-medium ${
+              activeTab === 'summary'
+                ? 'border-[#C8AA6E] text-[#C8AA6E]'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            <span>Executive Metrics Matrix</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('manifest')}
+            className={`pb-2.5 px-2 border-b-2 transition-colors cursor-pointer flex items-center gap-2 uppercase font-medium ${
+              activeTab === 'manifest'
+                ? 'border-[#C8AA6E] text-[#C8AA6E]'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Voyage Manifest Ledger ({stats.totalTrips})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('certificate')}
+            className={`pb-2.5 px-2 border-b-2 transition-colors cursor-pointer flex items-center gap-2 uppercase font-medium ${
+              activeTab === 'certificate'
+                ? 'border-[#C8AA6E] text-[#C8AA6E]'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Official Dossier Certificate</span>
+          </button>
+        </div>
 
-        {/* Slide Contents */}
-        <div className="flex-1 flex flex-col justify-center items-center text-center px-2 py-4 animate-in fade-in zoom-in-95 duration-200">
-          {currentSlide === 0 && (
-            <div className="space-y-4 max-w-xs mx-auto">
-              <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black shadow-xl shadow-amber-500/30 mx-auto">
-                <Sparkles className="w-8 h-8 fill-slate-950 text-slate-950" />
-              </div>
-              <span className="text-[10px] uppercase font-mono tracking-widest text-emerald-400 font-bold block">
-                ANNUAL TRAVEL RETROSPECTIVE • {stats.year}
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight font-sans">
-                Your Year in <span className="text-amber-300">Expedition</span>
-              </h2>
-              <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                A definitive audit of the aerial mileage, cross-border frontiers, and cultural landmarks you traversed throughout the year.
-              </p>
-              <div className="pt-2">
-                <span className="inline-block px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-amber-200 uppercase tracking-wider">
-                  Verified Executive Dossier
-                </span>
-              </div>
-            </div>
-          )}
-
-          {currentSlide === 1 && (
-            <div className="space-y-4 w-full max-w-xs mx-auto">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-300 mx-auto">
-                <Navigation className="w-7 h-7" />
-              </div>
-              <div>
-                <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider block">
-                  Ground & Airspace Traversed
-                </span>
-                <div className="text-3xl sm:text-4xl font-extrabold text-amber-300 my-1 font-mono">
-                  ~{stats.totalKmTraveled.toLocaleString()} km
-                </div>
-                <p className="text-xs text-emerald-300 font-semibold font-mono">
-                  Equivalent to {Math.round((stats.totalKmTraveled / 40075) * 100)}% of Earth&apos;s equatorial circumference
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-around text-xs font-mono">
-                <div>
-                  <span className="text-[9px] text-slate-400 block uppercase">Cities</span>
-                  <span className="text-base font-bold text-white">{stats.citiesExplored.length}</span>
-                </div>
-                <div className="h-6 w-px bg-white/10" />
-                <div>
-                  <span className="text-[9px] text-slate-400 block uppercase">Territories</span>
-                  <span className="text-base font-bold text-emerald-400">{stats.countriesVisited.length}</span>
-                </div>
-                <div className="h-6 w-px bg-white/10" />
-                <div>
-                  <span className="text-[9px] text-slate-400 block uppercase">Days Away</span>
-                  <span className="text-base font-bold text-amber-300">{stats.totalDaysTraveled}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentSlide === 2 && (
-            <div className="space-y-4 max-w-xs mx-auto">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300 mx-auto">
-                <Trophy className="w-7 h-7" />
-              </div>
-              <span className="text-[10px] font-mono uppercase text-amber-400 tracking-wider block">
-                Signature Anchor Destination
-              </span>
-              <h3 className="text-xl sm:text-2xl font-black text-white font-sans">
-                {stats.topLandmark}
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                Of all the architectural monuments, alpine passes, and coastal vistas logged on your itineraries, this was your foremost geographic anchor.
-              </p>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-[10px] font-mono text-emerald-300">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>VERIFIED ITINERARY RECORD</span>
-              </div>
-            </div>
-          )}
-
-          {currentSlide === 3 && (
-            <div className="space-y-4 max-w-xs mx-auto">
-              <div 
-                className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto shadow-xl"
-                style={{
-                  backgroundColor: `${stats.travelerArchetype.themeColor}25`,
-                  color: stats.travelerArchetype.themeColor,
-                  border: `2px solid ${stats.travelerArchetype.themeColor}60`
-                }}
-              >
-                {renderArchetypeIcon('w-8 h-8')}
-              </div>
-              <div>
-                <span className="text-[9px] font-mono uppercase text-slate-400 tracking-wider block">
-                  Traveler Archetype
-                </span>
-                <h3 className="text-xl sm:text-2xl font-black text-amber-300 font-sans mt-0.5">
-                  {stats.travelerArchetype.title}
-                </h3>
-              </div>
-              <p className="text-xs text-slate-200 leading-relaxed font-sans">
-                {stats.travelerArchetype.description}
-              </p>
-              {stats.isFounder && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] shadow-md tracking-wider">
-                  <Crown className="w-3 h-3 fill-slate-950" />
-                  <span>VIP FOUNDER STATUS • LIFETIME ACCESS</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {currentSlide === 4 && (
-            <div className="space-y-4 w-full">
-              {/* Executive Summary Card */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-emerald-950/90 via-black to-slate-950 border border-amber-400/40 text-left space-y-3 shadow-2xl relative overflow-hidden">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-7 h-7 rounded-lg flex items-center justify-center"
-                      style={{
-                        backgroundColor: `${stats.travelerArchetype.themeColor}30`,
-                        color: stats.travelerArchetype.themeColor
-                      }}
-                    >
-                      {renderArchetypeIcon('w-4 h-4')}
-                    </div>
-                    <span className="text-xs font-black text-amber-300 font-mono tracking-wider">
-                      {stats.travelerArchetype.title.toUpperCase()}
-                    </span>
+        {/* Modal Body */}
+        <div className="p-5 overflow-y-auto space-y-4 flex-1 custom-scrollbar bg-[#0B0F14]">
+          {/* TAB 1: EXECUTIVE METRICS MATRIX */}
+          {activeTab === 'summary' && (
+            <div className="space-y-4">
+              {/* Traveler Classification Card */}
+              <div className="p-4 rounded-xl border border-[#2D3748] bg-[#141A23] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-lg bg-[#1E2632] border border-[#344252] flex items-center justify-center text-[#C8AA6E]">
+                    {renderArchetypeInsignia('w-5 h-5')}
                   </div>
-                  <span className="text-[9px] font-mono text-emerald-400 font-bold border border-emerald-500/30 px-1.5 py-0.5 rounded">
-                    {stats.year} DOSSIER
+                  <div>
+                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
+                      Traveler Classification • Audit 2026
+                    </span>
+                    <h3 className="text-base font-bold text-slate-100 font-sans tracking-wide">
+                      {stats.travelerArchetype.title}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="text-left sm:text-right font-mono text-xs">
+                  <span className="px-2 py-0.5 rounded border border-[#C8AA6E]/40 text-[#C8AA6E] font-bold text-[10px] uppercase tracking-wider block sm:inline-block">
+                    {stats.travelerArchetype.badge}
+                  </span>
+                  {stats.isFounder && (
+                    <span className="text-[10px] text-amber-300 block mt-1">
+                      VIP Founding Architect Clearance
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* High-Contrast Core Metrics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+                <div className="p-3.5 rounded-xl border border-[#212B36] bg-[#111720]">
+                  <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Ground / Air Traversed</span>
+                  <span className="text-lg font-bold text-[#C8AA6E] block mt-1">
+                    ~{stats.totalKmTraveled.toLocaleString()} km
+                  </span>
+                  <span className="text-[10px] text-slate-500 block mt-0.5">
+                    {Math.round((stats.totalKmTraveled / 40075) * 100)}% of Equator
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
-                  <div>
-                    <span className="text-[9px] text-slate-400 block uppercase">Ground Traversed</span>
-                    <span className="font-bold text-white text-xs">~{stats.totalKmTraveled.toLocaleString()} km</span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-slate-400 block uppercase">Total Days</span>
-                    <span className="font-bold text-white text-xs">{stats.totalDaysTraveled} Days</span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-slate-400 block uppercase">Signature Spot</span>
-                    <span className="font-bold text-amber-200 truncate block text-xs">{stats.topLandmark}</span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-slate-400 block uppercase">Territories</span>
-                    <span className="font-bold text-emerald-300 truncate block text-xs">{stats.countriesVisited.join(', ')}</span>
-                  </div>
+                <div className="p-3.5 rounded-xl border border-[#212B36] bg-[#111720]">
+                  <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Expedition Time</span>
+                  <span className="text-lg font-bold text-slate-100 block mt-1">
+                    {stats.totalDaysTraveled} Days
+                  </span>
+                  <span className="text-[10px] text-slate-500 block mt-0.5">
+                    Across {stats.totalTrips} Voyages
+                  </span>
                 </div>
 
-                <div className="text-[8px] font-mono text-slate-400 pt-1 text-center border-t border-white/5 uppercase tracking-widest">
-                  DOCUMENT NO. TVR-{stats.year}-WRAP • TRIP-VERSE.COM
+                <div className="p-3.5 rounded-xl border border-[#212B36] bg-[#111720]">
+                  <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Territories Visited</span>
+                  <span className="text-lg font-bold text-emerald-400 block mt-1">
+                    {stats.countriesVisited.length} Sovereign
+                  </span>
+                  <span className="text-[10px] text-slate-500 block mt-0.5">
+                    {stats.countriesVisited.join(', ') || 'Global'}
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-xl border border-[#212B36] bg-[#111720]">
+                  <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Metropolises Logged</span>
+                  <span className="text-lg font-bold text-sky-400 block mt-1">
+                    {stats.citiesExplored.length} Cities
+                  </span>
+                  <span className="text-[10px] text-slate-500 block mt-0.5 truncate">
+                    {stats.citiesExplored.join(', ')}
+                  </span>
                 </div>
               </div>
 
-              {/* Share Action Button */}
+              {/* Geographic Signature Anchor */}
+              <div className="p-4 rounded-xl border border-[#212B36] bg-[#111720] space-y-2">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">
+                    Primary Geographic Anchor • Calendar Year 2026
+                  </span>
+                  <span className="text-[#C8AA6E] font-bold">VERIFIED SPOT</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-100 font-sans">{stats.topLandmark}</h4>
+                    <p className="text-xs text-slate-400 font-sans mt-0.5">
+                      {stats.travelerArchetype.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Editorial Analysis Footnote */}
+              <div className="p-3.5 rounded-xl border border-[#1E2631] bg-[#0E131A] text-xs font-mono text-slate-400 flex items-center justify-between">
+                <span>DOCUMENT NO. TVR-{stats.year}-AUDIT</span>
+                <span className="text-[#C8AA6E]">TRIP-VERSE.COM • ARCHIVED</span>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: VOYAGE MANIFEST LEDGER */}
+          {activeTab === 'manifest' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-[#212B36] pb-2">
+                <span>VERIFIED EXPEDITIONS MANIFEST • {stats.year}</span>
+                <span>{stats.totalTrips} RECORDS AUDITED</span>
+              </div>
+
+              <div className="rounded-xl border border-[#212B36] bg-[#111720] overflow-hidden">
+                <table className="w-full text-left text-xs font-mono">
+                  <thead className="bg-[#161C24] text-slate-400 border-b border-[#212B36] text-[10px] uppercase">
+                    <tr>
+                      <th className="py-2.5 px-3">Expedition Title</th>
+                      <th className="py-2.5 px-3">Destination</th>
+                      <th className="py-2.5 px-3">Duration</th>
+                      <th className="py-2.5 px-3">Primary Anchor</th>
+                      <th className="py-2.5 px-3 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1D2632] text-slate-300">
+                    <tr className="hover:bg-[#161F2A] transition-colors">
+                      <td className="py-2.5 px-3 font-bold text-slate-100">Manali Alpine Expedition</td>
+                      <td className="py-2.5 px-3 text-slate-400">Manali, Himachal Pradesh</td>
+                      <td className="py-2.5 px-3">5 Days</td>
+                      <td className="py-2.5 px-3 text-slate-400">Hadimba Pagoda Temple</td>
+                      <td className="py-2.5 px-3 text-right">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-950 text-emerald-400 border border-emerald-800">
+                          Completed
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: OFFICIAL CERTIFICATE DOSSIER */}
+          {activeTab === 'certificate' && (
+            <div className="space-y-4">
+              {/* Formal Editorial Certificate */}
+              <div className="p-6 rounded-xl border border-[#2D3748] bg-[#121822] space-y-5 text-center relative overflow-hidden">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono tracking-widest text-[#C8AA6E] uppercase block font-semibold">
+                    TRIPVERSE GLOBAL BORDER & VOYAGE AUTHORITY
+                  </span>
+                  <h3 className="text-lg font-bold text-slate-100 font-sans tracking-wide uppercase">
+                    Annual Travel Retrospective Certificate
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-400">
+                    Audit Registration: TVR-2026-RETRO-{stats.year}
+                  </p>
+                </div>
+
+                <div className="w-16 h-px bg-[#C8AA6E]/40 mx-auto" />
+
+                <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed font-sans">
+                  This dossier certifies that the bearer has completed all verified expeditions, boundary transits, and architectural landmark visits recorded in the TripVerse sovereign registry for the year {stats.year}.
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-2 text-xs font-mono text-left max-w-lg mx-auto">
+                  <div className="p-2.5 rounded border border-[#212B36] bg-[#0E131A]">
+                    <span className="text-[9px] text-slate-500 uppercase block">Distance</span>
+                    <span className="font-bold text-[#C8AA6E] text-xs">~{stats.totalKmTraveled.toLocaleString()} km</span>
+                  </div>
+                  <div className="p-2.5 rounded border border-[#212B36] bg-[#0E131A]">
+                    <span className="text-[9px] text-slate-500 uppercase block">Expeditions</span>
+                    <span className="font-bold text-slate-200 text-xs">{stats.totalDaysTraveled} Days</span>
+                  </div>
+                  <div className="p-2.5 rounded border border-[#212B36] bg-[#0E131A]">
+                    <span className="text-[9px] text-slate-500 uppercase block">Classification</span>
+                    <span className="font-bold text-slate-200 text-xs truncate block">{stats.travelerArchetype.title}</span>
+                  </div>
+                  <div className="p-2.5 rounded border border-[#212B36] bg-[#0E131A]">
+                    <span className="text-[9px] text-slate-500 uppercase block">Anchor</span>
+                    <span className="font-bold text-slate-200 text-xs truncate block">{stats.topLandmark}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 text-[10px] font-mono text-slate-400 flex items-center justify-between border-t border-[#1E2631]">
+                  <span>Authorized by: TripVerse Border Registry</span>
+                  <span>trip-verse.com</span>
+                </div>
+              </div>
+
+              {/* Copy Action */}
               <button
                 type="button"
                 onClick={handleShare}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer active:scale-98 tracking-wider uppercase font-mono"
+                className="w-full py-2.5 rounded-lg bg-[#1B232E] hover:bg-[#25303E] border border-[#2F3C4E] text-slate-200 font-mono font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
-                {copied ? <Check className="w-4 h-4 text-slate-950" /> : <Share2 className="w-4 h-4 text-slate-950" />}
-                <span>{copied ? 'Retrospective Dossier Copied' : 'Export & Share Dossier'}</span>
+                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4 text-slate-400" />}
+                <span>{copied ? 'Retrospective Dossier Copied to Clipboard' : 'Copy Official Retrospective Summary'}</span>
               </button>
             </div>
           )}
-        </div>
-
-        {/* Bottom Carousel Navigation Controls */}
-        <div className="flex items-center justify-between pt-3 border-t border-white/10">
-          <button
-            type="button"
-            onClick={handlePrev}
-            disabled={currentSlide === 0}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 disabled:opacity-25 disabled:pointer-events-none cursor-pointer transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
-            Slide {currentSlide + 1} / {totalSlides}
-          </span>
-
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={currentSlide === totalSlides - 1}
-            className="p-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-25 disabled:pointer-events-none cursor-pointer transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
         </div>
       </div>
     </div>

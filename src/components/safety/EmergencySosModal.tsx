@@ -13,9 +13,9 @@ import {
   Globe, 
   Info, 
   PhoneCall,
-  Compass,
   Radio,
-  Share2
+  Share2,
+  AlertTriangle
 } from 'lucide-react';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import { triggerHaptic } from '../../services/deviceService';
@@ -31,7 +31,7 @@ import { useLanguage } from '../../services/languageService';
 interface EmergencySosModalProps {
   isOpen: boolean;
   onClose: () => void;
-  destinationCountry?: string; // e.g. 'FR', 'IN', 'JP', 'AE', 'US'
+  destinationCountry?: string;
 }
 
 export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
@@ -47,7 +47,6 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
 
   const emergencyData: CountryEmergencyNumbers = getEmergencyNumbersForCountry(selectedCountry);
   const phrases: EmergencyPhrase[] = EMERGENCY_PHRASES[selectedCountry] || EMERGENCY_PHRASES['IN'] || [];
-
   const availableCountryCodes = Object.keys(COUNTRY_EMERGENCY_REGISTRY);
 
   useEffect(() => {
@@ -62,7 +61,6 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
             });
           },
           () => {
-            // High-altitude or fallback GPS coordinates
             setCoords({ lat: 28.6139, lng: 77.2090 });
           },
           { timeout: 5000, enableHighAccuracy: false }
@@ -86,13 +84,16 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
   const handleCopySosBroadcast = () => {
     triggerHaptic('medium');
     const msg = 
-      `GLOBAL SOS DISPATCH:\n` +
-      `Emergency distress beacon activated.\n` +
-      `Country Jurisdiction: ${emergencyData.countryName} (${emergencyData.countryCode})\n` +
-      `Universal Emergency Service: ${emergencyData.universalOrPolice}\n` +
-      (coords ? `Coordinates: ${coords.lat} N, ${coords.lng} E\n` : '') +
-      `Timestamp: ${new Date().toISOString()}\n` +
-      `TripVerse Incident Verification: https://trip-verse.com`;
+      `EMERGENCY DISTRESS BEACON\n` +
+      `----------------------------------------\n` +
+      `Incident Jurisdiction: ${emergencyData.countryName.toUpperCase()} (${emergencyData.countryCode})\n` +
+      `Primary Dispatch Line: ${emergencyData.universalOrPolice}\n` +
+      `Medical Dispatch     : ${emergencyData.ambulance}\n` +
+      (coords ? `Coordinates (WGS84)  : ${coords.lat} N, ${coords.lng} E\n` : '') +
+      `Timestamp (UTC)      : ${new Date().toISOString()}\n` +
+      `Incident Protocol    : Immediate responder dispatch requested.\n` +
+      `TripVerse Verification: https://trip-verse.com\n` +
+      `----------------------------------------`;
 
     navigator.clipboard.writeText(msg);
     setCopiedSosMessage(true);
@@ -115,217 +116,238 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
   };
 
   const modalMarkup = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-gradient-to-b from-[#160B0E] via-[#1A0D11] to-[#0E0608] border-2 border-rose-500/40 rounded-3xl shadow-[0_25px_60px_rgba(225,29,72,0.4)] overflow-hidden text-slate-100 flex flex-col max-h-[92vh]">
-        {/* Consular Dispatch Header Bar */}
-        <div className="px-5 py-4 border-b border-rose-500/20 bg-rose-950/40 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl bg-[#0D1017] border border-[#263140] rounded-2xl shadow-2xl overflow-hidden text-slate-100 flex flex-col max-h-[92vh]">
+        {/* Authoritative Consular Header Bar */}
+        <div className="px-5 py-3.5 border-b border-[#212B36] bg-[#141A23] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-600 to-red-700 flex items-center justify-center text-white shadow-lg shadow-rose-600/40 animate-pulse">
-              <ShieldAlert className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-[#2A1519] border border-[#521E24] flex items-center justify-center text-[#E05260]">
+              <ShieldAlert className="w-4 h-4 text-[#E05260]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-black tracking-wider text-rose-200 uppercase font-sans">
-                  {t('Global Emergency SOS')}
-                </h2>
-                <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1">
-                  <Radio className="w-2.5 h-2.5 animate-ping" />
-                  DISPATCH READY
+                <span className="text-xs font-mono font-bold tracking-wider text-[#E05260] uppercase">
+                  CONSULAR ASSISTANCE & RESCUE DESK
+                </span>
+                <span className="text-[10px] text-emerald-400 font-mono font-semibold">
+                  • 24/7 ACTIVE
                 </span>
               </div>
-              <p className="text-xs text-rose-300/80 font-mono tracking-wider">
-                {emergencyData.countryName.toUpperCase()} • VERIFIED EMBASSY & RESCUE DISPATCH
-              </p>
+              <h2 className="text-sm font-semibold tracking-wide text-slate-100 uppercase">
+                Global Emergency Dispatch Console
+              </h2>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all cursor-pointer"
+            className="p-1.5 rounded-lg bg-[#212B36] hover:bg-[#2C3847] text-slate-400 hover:text-white transition-colors cursor-pointer"
+            title="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Global Jurisdiction Country Selector */}
-        <div className="px-5 py-2.5 bg-black/40 border-b border-white/10 overflow-x-auto whitespace-nowrap flex items-center gap-2 custom-scrollbar">
-          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider shrink-0 font-bold">
-            Select Jurisdiction:
+        {/* Global Sovereign Jurisdiction Selector Bar */}
+        <div className="px-5 py-2.5 bg-[#0F141C] border-b border-[#212B36] flex items-center justify-between gap-3 text-xs font-mono overflow-x-auto custom-scrollbar">
+          <span className="text-slate-400 text-[10px] uppercase tracking-wider shrink-0">
+            Selected Jurisdiction:
           </span>
-          {availableCountryCodes.map((code) => {
-            const isSelected = selectedCountry === code;
-            const reg = COUNTRY_EMERGENCY_REGISTRY[code];
-            return (
-              <button
-                key={code}
-                type="button"
-                onClick={() => setSelectedCountry(code)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer shrink-0 border ${
-                  isSelected
-                    ? 'bg-rose-600 text-white border-rose-400 shadow-sm'
-                    : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
-                }`}
-              >
-                [{code}] {reg.countryName}
-              </button>
-            );
-          })}
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            {availableCountryCodes.map((code) => {
+              const isSelected = selectedCountry === code;
+              const reg = COUNTRY_EMERGENCY_REGISTRY[code];
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setSelectedCountry(code)}
+                  className={`px-2 py-1 rounded text-xs font-mono font-medium transition-colors cursor-pointer shrink-0 border ${
+                    isSelected
+                      ? 'bg-[#1E293B] text-slate-100 border-[#475569] font-bold'
+                      : 'bg-[#131922] text-slate-400 border-[#1E2631] hover:bg-[#1A222D] hover:text-slate-300'
+                  }`}
+                >
+                  {code} • {reg.countryName}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Content Body */}
-        <div className="p-5 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
-          {/* Live Coordinates Readout */}
-          <div className="p-3.5 rounded-2xl bg-black/60 border border-rose-500/30 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
+        {/* Body Content */}
+        <div className="p-5 overflow-y-auto space-y-4 flex-1 custom-scrollbar bg-[#0B0F14]">
+          {/* Coordinates & Telemetry Dispatch Panel */}
+          <div className="p-3.5 rounded-xl border border-[#212B36] bg-[#121720] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+            <div className="flex items-center gap-2.5">
               <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
-              <div className="min-w-0">
-                <span className="text-[9px] font-mono text-slate-400 block uppercase tracking-wider">
-                  Live Emergency Dispatch Coordinates
+              <div>
+                <span className="text-[9px] text-slate-400 block uppercase tracking-wider">
+                  Live Dispatch Geolocation (WGS-84 Datum)
                 </span>
-                <span className="text-xs sm:text-sm font-mono font-bold text-rose-200 truncate block">
-                  {coords ? `${coords.lat}° N, ${coords.lng}° E` : 'Calibrating GPS positioning...'}
+                <span className="font-bold text-slate-200 text-xs sm:text-sm">
+                  {coords ? `${coords.lat}° N, ${coords.lng}° E` : 'Acquiring satellite coordinate fix...'}
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={handleCopyCoords}
-                className="px-2.5 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-200 font-bold text-[11px] font-mono flex items-center gap-1 transition-all cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-[#1B232E] hover:bg-[#25303E] border border-[#2F3C4E] text-slate-200 text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                {copiedCoords ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedCoords ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
                 <span>{copiedCoords ? 'Copied' : 'Copy GPS'}</span>
               </button>
               <button
                 type="button"
                 onClick={handleCopySosBroadcast}
-                className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-slate-200 font-bold text-[11px] font-mono flex items-center gap-1 transition-all cursor-pointer"
-                title="Copy Full SOS Broadcast Message"
+                className="px-2.5 py-1 rounded-lg bg-[#1B232E] hover:bg-[#25303E] border border-[#2F3C4E] text-slate-200 text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                {copiedSosMessage ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
-                <span>{copiedSosMessage ? 'Broadcast Copied' : 'SOS Text'}</span>
+                {copiedSosMessage ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-slate-400" />}
+                <span>{copiedSosMessage ? 'Beacon Copied' : 'Generate Distress SMS'}</span>
               </button>
             </div>
           </div>
 
-          {/* 1-Tap Emergency Quick Dial Buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Police / Universal Emergency */}
-            <button
-              type="button"
-              onClick={() => handleCall(emergencyData.universalOrPolice)}
-              className="p-4 rounded-2xl bg-gradient-to-br from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white flex flex-col justify-between items-start shadow-lg shadow-rose-600/30 transition-all cursor-pointer active:scale-98 border border-rose-400/30"
-            >
-              <div className="flex items-center justify-between w-full">
-                <PhoneCall className="w-5 h-5" />
-                <span className="text-xs font-mono font-black px-2 py-0.5 rounded-md bg-black/40 border border-white/20">
-                  {emergencyData.universalOrPolice}
-                </span>
-              </div>
-              <div className="mt-3 text-left">
-                <span className="text-xs font-black block tracking-wider uppercase font-sans">Police / Universal</span>
-                <span className="text-[10px] text-rose-100/80 block mt-0.5">Emergency Command Center</span>
-              </div>
-            </button>
+          {/* Direct Emergency Telephone Directory */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-[#212B36] pb-1.5">
+              <span className="uppercase text-[10px] tracking-wider">Direct Dispatch Lines • {emergencyData.countryName.toUpperCase()}</span>
+              <span className="text-[10px]">Instant 1-Tap Voice Dial</span>
+            </div>
 
-            {/* Ambulance / Medical Emergency */}
-            <button
-              type="button"
-              onClick={() => handleCall(emergencyData.ambulance)}
-              className="p-4 rounded-2xl bg-gradient-to-br from-red-800 to-red-900 hover:from-red-700 hover:to-red-800 text-white flex flex-col justify-between items-start shadow-lg shadow-red-800/30 transition-all cursor-pointer active:scale-98 border border-red-500/30"
-            >
-              <div className="flex items-center justify-between w-full">
-                <HeartPulse className="w-5 h-5 text-red-200" />
-                <span className="text-xs font-mono font-black px-2 py-0.5 rounded-md bg-black/40 border border-white/20">
-                  {emergencyData.ambulance}
-                </span>
-              </div>
-              <div className="mt-3 text-left">
-                <span className="text-xs font-black block tracking-wider uppercase font-sans">Medical Ambulance</span>
-                <span className="text-[10px] text-red-200/80 block mt-0.5">Paramedics & Trauma Response</span>
-              </div>
-            </button>
-
-            {/* Fire & Rescue Brigade */}
-            <button
-              type="button"
-              onClick={() => handleCall(emergencyData.fire)}
-              className="p-4 rounded-2xl bg-gradient-to-br from-amber-700 to-amber-800 hover:from-amber-600 hover:to-amber-700 text-white flex flex-col justify-between items-start shadow-lg shadow-amber-700/30 transition-all cursor-pointer active:scale-98 border border-amber-500/30"
-            >
-              <div className="flex items-center justify-between w-full">
-                <Flame className="w-5 h-5 text-amber-200" />
-                <span className="text-xs font-mono font-black px-2 py-0.5 rounded-md bg-black/40 border border-white/20">
-                  {emergencyData.fire}
-                </span>
-              </div>
-              <div className="mt-3 text-left">
-                <span className="text-xs font-black block tracking-wider uppercase font-sans">Fire & Rescue</span>
-                <span className="text-[10px] text-amber-100/80 block mt-0.5">Civil Evacuation & Hazards</span>
-              </div>
-            </button>
-
-            {/* Tourist Assistance & Consular Helpline */}
-            {emergencyData.touristPoliceOrHelp ? (
-              <button
-                type="button"
-                onClick={() => handleCall(emergencyData.touristPoliceOrHelp!)}
-                className="p-4 rounded-2xl bg-gradient-to-br from-emerald-800 to-emerald-900 hover:from-emerald-700 hover:to-emerald-800 text-white flex flex-col justify-between items-start shadow-lg shadow-emerald-800/30 transition-all cursor-pointer active:scale-98 border border-emerald-500/30"
-              >
-                <div className="flex items-center justify-between w-full">
-                  <Globe className="w-5 h-5 text-emerald-200" />
-                  <span className="text-xs font-mono font-black px-2 py-0.5 rounded-md bg-black/40 border border-white/20">
-                    {emergencyData.touristPoliceOrHelp}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Universal / Police Emergency */}
+              <div className="p-3.5 rounded-xl border border-[#263140] bg-[#121720] flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <span className="text-xs font-bold text-slate-200 uppercase font-sans">
+                      Police / Universal Emergency
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
+                    National Emergency Dispatch Network
                   </span>
                 </div>
-                <div className="mt-3 text-left">
-                  <span className="text-xs font-black block tracking-wider uppercase font-sans">Tourist Helpline</span>
-                  <span className="text-[10px] text-emerald-100/80 block mt-0.5">Multilingual Assistance</span>
-                </div>
-              </button>
-            ) : (
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col justify-between items-start text-slate-400">
-                <Globe className="w-5 h-5 opacity-40" />
-                <div className="mt-3">
-                  <span className="text-xs font-bold block">Consular Standby</span>
-                  <span className="text-[10px] opacity-70 block">Refer to universal 112 line</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCall(emergencyData.universalOrPolice)}
+                  className="px-3 py-1.5 rounded-lg bg-[#1F2937] hover:bg-[#374151] border border-[#4B5563] text-slate-100 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                >
+                  <PhoneCall className="w-3 h-3 text-rose-400" />
+                  <span>{emergencyData.universalOrPolice}</span>
+                </button>
               </div>
-            )}
+
+              {/* Medical Ambulance */}
+              <div className="p-3.5 rounded-xl border border-[#263140] bg-[#121720] flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <HeartPulse className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                    <span className="text-xs font-bold text-slate-200 uppercase font-sans">
+                      Medical Ambulance & Trauma
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
+                    Central Paramedic Response
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCall(emergencyData.ambulance)}
+                  className="px-3 py-1.5 rounded-lg bg-[#1F2937] hover:bg-[#374151] border border-[#4B5563] text-slate-100 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                >
+                  <PhoneCall className="w-3 h-3 text-red-400" />
+                  <span>{emergencyData.ambulance}</span>
+                </button>
+              </div>
+
+              {/* Fire & Rescue */}
+              <div className="p-3.5 rounded-xl border border-[#263140] bg-[#121720] flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <Flame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="text-xs font-bold text-slate-200 uppercase font-sans">
+                      Fire & Civil Rescue
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
+                    Hazard Mitigation & Evacuation
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCall(emergencyData.fire)}
+                  className="px-3 py-1.5 rounded-lg bg-[#1F2937] hover:bg-[#374151] border border-[#4B5563] text-slate-100 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                >
+                  <PhoneCall className="w-3 h-3 text-amber-400" />
+                  <span>{emergencyData.fire}</span>
+                </button>
+              </div>
+
+              {/* Tourist & Diplomatic Police */}
+              <div className="p-3.5 rounded-xl border border-[#263140] bg-[#121720] flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="text-xs font-bold text-slate-200 uppercase font-sans">
+                      Tourist Police & Consular
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
+                    Multilingual Tourist Assistance
+                  </span>
+                </div>
+                {emergencyData.touristPoliceOrHelp ? (
+                  <button
+                    type="button"
+                    onClick={() => handleCall(emergencyData.touristPoliceOrHelp!)}
+                    className="px-3 py-1.5 rounded-lg bg-[#1F2937] hover:bg-[#374151] border border-[#4B5563] text-slate-100 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  >
+                    <PhoneCall className="w-3 h-3 text-emerald-400" />
+                    <span className="truncate max-w-[100px]">{emergencyData.touristPoliceOrHelp}</span>
+                  </button>
+                ) : (
+                  <span className="text-[10px] text-slate-500 font-mono">Use 112 Universal</span>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Phonetical Emergency Translation Cards */}
+          {/* Official Phonetic Phrasebook for Emergency Situations */}
           {phrases.length > 0 && (
-            <div className="space-y-2 pt-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-rose-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                  <Volume2 className="w-3.5 h-3.5" />
-                  <span>Phonetic Emergency Translations</span>
-                </h3>
-                <span className="text-[10px] font-mono text-slate-400">Audio Synthesis Available</span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-[#212B36] pb-1.5">
+                <span className="uppercase text-[10px] tracking-wider">Phonetic Emergency Phrasebook ({phrases[0]?.targetLanguage})</span>
+                <span className="text-[10px]">Speech Synthesis Supported</span>
               </div>
 
               <div className="space-y-2">
                 {phrases.map((phrase, idx) => (
                   <div
                     key={idx}
-                    className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between gap-3 hover:bg-white/[0.08] transition-colors"
+                    className="p-3 rounded-xl border border-[#212B36] bg-[#121720] flex items-center justify-between gap-4"
                   >
                     <div className="min-w-0">
-                      <span className="text-[9px] font-mono uppercase text-slate-400 block tracking-wider">
-                        {phrase.situation} • {phrase.targetLanguage}
+                      <span className="text-[9px] font-mono uppercase text-slate-400 block">
+                        {phrase.situation}
                       </span>
-                      <p className="text-xs sm:text-sm font-bold text-white mt-0.5 font-sans">
+                      <p className="text-xs sm:text-sm font-medium text-slate-100 mt-0.5">
                         {phrase.translatedText}
                       </p>
-                      <p className="text-[11px] text-amber-300 font-mono italic mt-0.5">
-                        &quot;{phrase.phoneticPronunciation}&quot;
+                      <p className="text-[11px] font-mono text-slate-400 mt-0.5">
+                        Phonetic: &quot;{phrase.phoneticPronunciation}&quot;
                       </p>
                     </div>
+
                     <button
                       type="button"
                       onClick={() => handleSpeakPhrase(phrase.translatedText)}
-                      className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-rose-300 hover:text-white shrink-0 transition-colors cursor-pointer border border-white/10"
-                      title="Speak Out Loud"
+                      className="p-2 rounded-lg bg-[#1B232E] hover:bg-[#25303E] text-slate-300 hover:text-white border border-[#2F3C4E] transition-colors cursor-pointer shrink-0"
+                      title="Speak phrase"
                     >
                       <Volume2 className="w-4 h-4" />
                     </button>
@@ -335,14 +357,16 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
             </div>
           )}
 
-          {/* Consular Legal Protocol Guidance */}
-          <div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-900/40 text-[11px] text-rose-200/90 leading-relaxed font-sans flex items-start gap-2.5">
-            <Info className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold text-rose-200 block uppercase font-mono text-[10px] mb-0.5">
-                Consular Operational Notes
+          {/* Consular Operational Advisory */}
+          <div className="p-3.5 rounded-xl border border-[#212B36] bg-[#10141C] text-xs font-sans text-slate-300 flex items-start gap-3">
+            <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block font-semibold">
+                Consular Guidance & Jurisdiction Protocol
               </span>
-              <span>{emergencyData.embassyNotes}</span>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {emergencyData.embassyNotes}
+              </p>
             </div>
           </div>
         </div>
