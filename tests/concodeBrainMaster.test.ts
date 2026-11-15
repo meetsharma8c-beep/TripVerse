@@ -97,4 +97,17 @@ describe('ConCode AI Brain Master Architecture & Training Suite', () => {
       expect(parsed.messages[2].content).toMatch(/^\[STATE:(idle|excited|warning)\]/);
     }
   });
+
+  it('verifies the Unsloth QLoRA training script supports Llama-3.1 and Qwen-2.5 architectures', () => {
+    const loraScriptPath = path.resolve(__dirname, '../scripts/train_concode_lora.py');
+    expect(fs.existsSync(loraScriptPath)).toBe(true);
+
+    const content = fs.readFileSync(loraScriptPath, 'utf-8');
+    expect(content).toContain('MODEL_CATALOG');
+    expect(content).toContain('llama3.1');
+    expect(content).toContain('qwen2.5');
+    expect(content).toContain('unsloth/Meta-Llama-3.1-8B-Instruct-bnb-4bit');
+    expect(content).toContain('unsloth/Qwen2.5-7B-Instruct-bnb-4bit');
+    expect(content).toContain('save_pretrained_gguf');
+  });
 });
