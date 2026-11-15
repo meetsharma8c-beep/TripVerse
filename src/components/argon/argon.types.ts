@@ -6,7 +6,9 @@ export type ArgonState =
   | 'thinking'
   | 'excited'
   | 'warning'
-  | 'speaking';
+  | 'speaking'
+  | 'decided'
+  | 'confused';
 
 export interface ArgonThemeConfig {
   ledHex: string;
@@ -40,10 +42,22 @@ export const ARGON_STATE_THEME: Record<ArgonState, ArgonThemeConfig> = {
     badgeLabel: 'Itinerary Locked!',
     visorTint: '#FFF1D0',
   },
+  decided: {
+    ledHex: '#10B981', // Emerald
+    ledGlowRgba: 'rgba(16, 185, 129, 0.85)',
+    badgeLabel: 'Decision Confirmed',
+    visorTint: '#FFF1D0',
+  },
   warning: {
     ledHex: '#F59E0B', // Amber
     ledGlowRgba: 'rgba(245, 158, 11, 0.75)',
     badgeLabel: 'Travel Advisory',
+    visorTint: '#FFF7E6',
+  },
+  confused: {
+    ledHex: '#F59E0B', // Amber
+    ledGlowRgba: 'rgba(245, 158, 11, 0.75)',
+    badgeLabel: 'Clarifying Details...',
     visorTint: '#FFF7E6',
   },
   speaking: {

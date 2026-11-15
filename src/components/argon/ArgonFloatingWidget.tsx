@@ -1,6 +1,6 @@
 // src/components/argon/ArgonFloatingWidget.tsx
 import React, { useState, useEffect } from 'react';
-import { ArgonAvatar } from './ArgonAvatar';
+import { ConCode3DAvatar } from './ConCode3DAvatar';
 import { ARGON_STATE_THEME, ArgonState, ProactiveHint } from './argon.types';
 
 export interface ArgonFloatingWidgetProps {
@@ -150,8 +150,8 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
         aria-label="Open ConCode AI Travel Assistant"
       >
         <div className="relative">
-          <ArgonAvatar
-            state={argonState}
+          <ConCode3DAvatar
+            emotion={argonState}
             size="lg"
             className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 drop-shadow-[0_12px_22px_rgba(15,23,42,0.3)] dark:drop-shadow-[0_14px_24px_rgba(0,0,0,0.7)]"
           />

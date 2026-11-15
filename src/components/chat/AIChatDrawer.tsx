@@ -9,6 +9,8 @@ import {
 } from '../../services/concodeBrainService';
 import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/concodeSession';
 import { ArgonAvatar } from '../argon/ArgonAvatar';
+import { ConCode3DAvatar } from '../argon/ConCode3DAvatar';
+import { preparePromptForConCode } from '../../services/concode/normalizeUserPrompt';
 import { inferArgonStateFromText, parseConCodeStreamResponse, ArgonState, ARGON_STATE_THEME } from '../argon/argon.types';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
 import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass, Mic, MicOff, FileText, Plane, Camera, Headphones, Pause, Play, Square } from 'lucide-react';
@@ -624,7 +626,8 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
         setMessages(prev => [...prev, aiMessage]);
       } else {
-        const response = await processTravelCoPilotQuery(query, trip);
+        const preparedQuery = preparePromptForConCode(query);
+        const response = await processTravelCoPilotQuery(preparedQuery, trip);
 
         setMessages(prev => [...prev, response.message]);
 
@@ -814,8 +817,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           <div className="relative z-10 flex items-center gap-3">
             {/* Living 3D Avatar (100% Unboxed & Borderless) */}
             <div className="relative flex items-center justify-center shrink-0">
-              <ArgonAvatar
-                state={argonHeaderState}
+              <ConCode3DAvatar
+                emotion={argonHeaderState}
+                isSpeaking={Boolean(audioTour.isPlaying || argonHeaderState === 'speaking')}
                 size="sm"
                 className="w-12 h-12 sm:w-13 sm:h-13 drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-105"
               />
