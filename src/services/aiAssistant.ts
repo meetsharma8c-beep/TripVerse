@@ -3,6 +3,7 @@ import { queryConcodeBrain } from './concodeBrainService';
 import { generateAITrip } from './plannerEngine';
 import { generateTransportDeals } from './dealService';
 import { evaluateTransportFeasibility } from './transportFeasibilityEngine';
+import { inferArgonStateFromText } from '../components/argon/argon.types';
 import { 
   loadTrips, 
   loadTripExpenses, 
@@ -1599,11 +1600,17 @@ export async function processTravelCoPilotQuery(
           { label: 'Food Trails & Dhabas', action: 'EXPLORE_FOOD' }
         ];
 
+    let responseText = brainRes.response;
+    if (!/^\[(?:STATE|EMOTION):/i.test(responseText.trim())) {
+      const inferred = inferArgonStateFromText(responseText);
+      responseText = `[STATE:${inferred}] ${responseText}`;
+    }
+
     return {
       message: {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: brainRes.response,
+        text: responseText,
         timestamp,
         engine: 'concode_brain',
         guild: brainRes.guild,
@@ -1621,7 +1628,7 @@ export async function processTravelCoPilotQuery(
     console.warn('[TripVerse] CONCODE unavailable; using clearly-labelled offline rules.', err);
     const offlineRes = processUserChatQuery(query, currentTrip);
     offlineRes.message.engine = 'offline';
-    offlineRes.message.text = `**Offline trip guidance — CONCODE is currently unavailable.**\n\n${offlineRes.message.text}`;
+    offlineRes.message.text = `[STATE:warning] **Offline trip guidance — CONCODE is currently unavailable.**\n\n${offlineRes.message.text}`;
     return offlineRes;
   }
 }

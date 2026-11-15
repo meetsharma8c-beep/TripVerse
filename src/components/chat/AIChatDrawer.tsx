@@ -348,17 +348,29 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       }
     } catch {}
 
+    const hasDestination = Boolean(trip.destination && trip.destination !== 'Custom Spot' && trip.destination.trim());
+    const destName = (trip.destination || '').split(',')[0].trim();
+    const hasActivities = Boolean(trip.itinerary && trip.itinerary.length > 0 && trip.itinerary[0]?.activities?.length > 0);
+
+    let welcomeText = `[STATE:idle] Hi there! I'm your ConCode travel companion. Whether you have a destination in mind or just a weekend and a rough budget, I'd love to help you map it out. Where shall we begin?`;
+
+    if (hasDestination && hasActivities) {
+      welcomeText = `[STATE:excited] Welcome back! Your itinerary for ${destName} is looking great. Whenever you feel ready, I can line up verified highway pitstops, budget checks, or weather forecasts—no rush at all.`;
+    } else if (hasDestination) {
+      welcomeText = `[STATE:listening] Heading to ${destName}? I can help map out your day-by-day pacing, budget allocation, and highway routes. Where would you like to start?`;
+    }
+
     return [
       {
         id: 'welcome-1',
         sender: 'ai',
-        text: `[STATE:idle] Hi there! I'm your ConCode travel companion. Whether you have a destination in mind or just a weekend and a rough budget, I'd love to help you map it out. Where shall we begin?`,
+        text: welcomeText,
         timestamp: 'Just now',
         engine: 'concode_brain',
         guild: 'fullstack',
         confidence: 0.99,
         actionButtons: [
-          { label: 'Plan a 5-day trip to Dubai', action: 'PLAN_DUBAI', primary: true },
+          { label: hasDestination ? `Plan a 5-day trip to ${destName}` : 'Plan a 5-day trip to Dubai', action: 'PLAN_DUBAI', primary: true },
           { label: 'What will this trip approximately cost?', action: 'CHECK_BUDGET' },
           { label: 'Make Day 3 cheaper', action: 'MAKE_CHEAPER' },
           { label: 'Rainy-day alternative', action: 'RAINY_DAY_ALT' },
