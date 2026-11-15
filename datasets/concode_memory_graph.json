@@ -1,0 +1,278 @@
+{
+  "version": "4.0.0-argon-frontier",
+  "saved_at": 1794761663.477254,
+  "nodes": [
+    {
+      "node_id": "repo:fintech_core",
+      "entity_type": "Repository",
+      "label": "TripVerse & Fintech Core Ledger Service",
+      "domain": "system_architecture",
+      "attributes": {},
+      "aliases": [
+        "fintech",
+        "payout service",
+        "billing repo"
+      ],
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1700000000.0,
+      "last_accessed": 1700000000.0,
+      "pinned": true
+    },
+    {
+      "node_id": "table:payouts",
+      "entity_type": "DatabaseTable",
+      "label": "payouts",
+      "domain": "system_architecture",
+      "attributes": {
+        "schema": "public",
+        "rls_enabled": true,
+        "pk": "id"
+      },
+      "aliases": [
+        "db.payout",
+        "payouts table",
+        "payout"
+      ],
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1700000000.0,
+      "last_accessed": 1700000000.0,
+      "pinned": true
+    },
+    {
+      "node_id": "col:payouts.tenant_id",
+      "entity_type": "TableColumn",
+      "label": "payouts.tenant_id (UUID NOT NULL)",
+      "domain": "system_architecture",
+      "attributes": {
+        "type": "UUID",
+        "nullable": false,
+        "indexed": true
+      },
+      "aliases": [
+        "tenant_id",
+        "tenantid"
+      ],
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1700000000.0,
+      "last_accessed": 1700000000.0,
+      "pinned": true
+    },
+    {
+      "node_id": "inv:cwe_639_tenant_scope",
+      "entity_type": "SecurityInvariant",
+      "label": "CWE-639 Composite Tenant Isolation Invariant",
+      "domain": "system_architecture",
+      "attributes": {
+        "rule_type": "composite_tenant_scope",
+        "required_column": "tenant_id",
+        "remediation": "Bind WHERE id = $1 AND tenant_id = $2 on every query/mutation against payouts."
+      },
+      "aliases": [
+        "idor",
+        "bola"
+      ],
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1700000000.0,
+      "last_accessed": 1700000000.0,
+      "pinned": true
+    },
+    {
+      "node_id": "inv:split_brain_fencing",
+      "entity_type": "SecurityInvariant",
+      "label": "Monotonic Fencing Token Lease Invariant",
+      "domain": "system_architecture",
+      "attributes": {
+        "rule_type": "monotonic_fencing_token",
+        "required_column": "fencing_token",
+        "remediation": "Reject wall-clock Date.now() lease checks; enforce WHERE fencing_token < $new_token in Postgres."
+      },
+      "aliases": [
+        "fencing_token",
+        "lease",
+        "split-brain"
+      ],
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1700000000.0,
+      "last_accessed": 1700000000.0,
+      "pinned": true
+    },
+    {
+      "node_id": "ephemeral:staging_log_note_42",
+      "entity_type": "EpisodicDebugNote",
+      "label": "Temporary staging CSS tweak note from last month",
+      "domain": "system_architecture",
+      "attributes": {},
+      "aliases": [],
+      "base_weight": 1.0,
+      "decay_lambda": 0.05,
+      "created_at": 1700000000.0,
+      "last_accessed": 1700000000.0,
+      "pinned": false
+    },
+    {
+      "node_id": "traveler:group_mumbai_4pax",
+      "entity_type": "TravelerProfile",
+      "label": "Mumbai 4-Friends Group Profile (Sea-Level Origin)",
+      "domain": "travel_logistics",
+      "attributes": {
+        "origin_city": "Mumbai",
+        "origin_elevation_m": 14,
+        "pax_count": 4,
+        "max_daily_drive_hours": 6
+      },
+      "aliases": [
+        "mumbai",
+        "4 friends",
+        "pangong",
+        "leh"
+      ],
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1700000000.0,
+      "last_accessed": 1700000000.0,
+      "pinned": true
+    },
+    {
+      "node_id": "route:leh_pangong_changla",
+      "entity_type": "MountainCorridor",
+      "label": "Leh (3,500m) -> Chang La (5,360m) -> Pangong Lake (4,350m)",
+      "domain": "travel_logistics",
+      "attributes": {
+        "pass_elevation_m": 5360,
+        "sleep_elevation_m": 4350,
+        "min_vehicle_clearance_mm": 185,
+        "monsoon_landslide_risk": "HIGH on Manali-Leh approach, LOW in Sham Valley rain-shadow"
+      },
+      "aliases": [
+        "pangong lake",
+        "chang la",
+        "ladakh"
+      ],
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1700000000.0,
+      "last_accessed": 1700000000.0,
+      "pinned": true
+    },
+    {
+      "node_id": "inv:ams_altitude_safety",
+      "entity_type": "SafetyThreshold",
+      "label": "AMS Acute Mountain Sickness Acclimatization Rule (>3,000m)",
+      "domain": "travel_logistics",
+      "attributes": {
+        "rule_type": "ams_altitude_ceiling",
+        "max_unacclimatized_meters": 3000,
+        "mandatory_rest_hours_at_3500m": 48,
+        "remediation": "Require 48h acclimatization at <=3,500m (Leh / Sham Valley 3,100m) before sleeping at Pangong (4,350m)."
+      },
+      "aliases": [
+        "ams",
+        "altitude",
+        "acclimatization"
+      ],
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1700000000.0,
+      "last_accessed": 1700000000.0,
+      "pinned": true
+    },
+    {
+      "node_id": "inv:group_budget_22k",
+      "entity_type": "BudgetCeiling",
+      "label": "Group Land Budget Ceiling ₹22,000 (4 Pax)",
+      "domain": "travel_logistics",
+      "attributes": {
+        "rule_type": "budget_ceiling_inr",
+        "max_budget_inr": 22000,
+        "estimated_route_min_inr": 32000,
+        "remediation": "Private SUV to Pangong + Manali costs ₹32,000 alone; pivot to shared tempo + Sham Valley homestay split inside ₹22,000."
+      },
+      "aliases": [
+        "₹22,000",
+        "22k"
+      ],
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1700000000.0,
+      "last_accessed": 1700000000.0,
+      "pinned": true
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "repo:fintech_core",
+      "target_id": "table:payouts",
+      "relation": "OWNS_TABLE",
+      "metadata": {},
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1794761663.477223,
+      "pinned": true
+    },
+    {
+      "source_id": "table:payouts",
+      "target_id": "col:payouts.tenant_id",
+      "relation": "HAS_COLUMN",
+      "metadata": {},
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1794761663.4772239,
+      "pinned": true
+    },
+    {
+      "source_id": "table:payouts",
+      "target_id": "inv:cwe_639_tenant_scope",
+      "relation": "ENFORCES_INVARIANT",
+      "metadata": {},
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1794761663.477226,
+      "pinned": true
+    },
+    {
+      "source_id": "table:payouts",
+      "target_id": "inv:split_brain_fencing",
+      "relation": "ENFORCES_INVARIANT",
+      "metadata": {},
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1794761663.477227,
+      "pinned": true
+    },
+    {
+      "source_id": "traveler:group_mumbai_4pax",
+      "target_id": "route:leh_pangong_changla",
+      "relation": "REQUESTS_CORRIDOR",
+      "metadata": {},
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1794761663.477231,
+      "pinned": true
+    },
+    {
+      "source_id": "route:leh_pangong_changla",
+      "target_id": "inv:ams_altitude_safety",
+      "relation": "GOVERNED_BY_SAFETY_RULE",
+      "metadata": {},
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1794761663.477231,
+      "pinned": true
+    },
+    {
+      "source_id": "traveler:group_mumbai_4pax",
+      "target_id": "inv:group_budget_22k",
+      "relation": "HAS_BUDGET_CEILING",
+      "metadata": {},
+      "base_weight": 1.0,
+      "decay_lambda": 0.0001,
+      "created_at": 1794761663.4772322,
+      "pinned": true
+    }
+  ]
+}

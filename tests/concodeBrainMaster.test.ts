@@ -77,7 +77,7 @@ describe('ConCode AI Brain Master Architecture & Training Suite', () => {
       expect(roles).toEqual(expect.arrayContaining(['system', 'user', 'assistant']));
 
       const assistantMsg = parsed.messages.find((m: any) => m.role === 'assistant');
-      expect(assistantMsg.content).toMatch(/^\[STATE:(idle|excited|warning)\]/);
+      expect(assistantMsg.content).toMatch(/^(<concode_think>[\s\S]*?<\/concode_think>\s*)?\[STATE:(idle|excited|warning)\]/);
     }
   });
 

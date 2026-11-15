@@ -40,6 +40,8 @@ GoogleService-Info.plist
 
 # Scratch, intermediate testing assets
 scratch/
+__pycache__/
+*.pyc
 
 # User Data & Spreadsheets (PII Protection)
 *.xlsx
