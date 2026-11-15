@@ -110,4 +110,43 @@ describe('ConCode AI Brain Master Architecture & Training Suite', () => {
     expect(content).toContain('unsloth/Qwen2.5-7B-Instruct-bnb-4bit');
     expect(content).toContain('save_pretrained_gguf');
   });
+
+  it('verifies the Interactive Google Colab / Kaggle Training Notebook', () => {
+    const nbPath = path.resolve(__dirname, '../notebooks/Train_ConCode_AI_Brain.ipynb');
+    expect(fs.existsSync(nbPath)).toBe(true);
+
+    const raw = fs.readFileSync(nbPath, 'utf-8');
+    const parsed = JSON.parse(raw);
+    expect(parsed).toHaveProperty('cells');
+    expect(parsed.cells.length).toBeGreaterThanOrEqual(15);
+
+    const fullText = raw;
+    expect(fullText).toContain('FastLanguageModel');
+    expect(fullText).toContain('SFTTrainer');
+    expect(fullText).toContain('save_pretrained_gguf');
+    expect(fullText).toContain('llama-3.1');
+    expect(fullText).toContain('concode_sft_dataset.jsonl');
+  });
+
+  it('verifies the ConCode Training Documentation and Architecture guide', () => {
+    const readmePath = path.resolve(__dirname, '../notebooks/README.md');
+    expect(fs.existsSync(readmePath)).toBe(true);
+
+    const content = fs.readFileSync(readmePath, 'utf-8');
+    expect(content).toContain('LAYER 1: SLANG & HINGLISH SHORTHAND DECODER');
+    expect(content).toContain('LAYER 2: LONG-QUERY & MULTI-CONSTRAINT DECOMPOSITION');
+    expect(content).toContain('LAYER 3: EMOTIONAL & DECISION HUMILITY');
+    expect(content).toContain('LAYER 4: REAL-TIME AVATAR STATE CONTRACT');
+    expect(content).toContain('ollama create concode-argon -f Modelfile');
+  });
+
+  it('verifies the high-scale synthetic dataset expander script and gold dataset size', () => {
+    const expanderPath = path.resolve(__dirname, '../scripts/expand_concode_dataset.py');
+    expect(fs.existsSync(expanderPath)).toBe(true);
+
+    const sftPath = path.resolve(__dirname, '../datasets/concode_sft_dataset.jsonl');
+    const lines = fs.readFileSync(sftPath, 'utf-8').trim().split('\n').filter(Boolean);
+    // Verified 26 rich multi-turn dialogues
+    expect(lines.length).toBeGreaterThanOrEqual(20);
+  });
 });
