@@ -12,7 +12,7 @@ import {
 } from './concodeSession';
 import { generateAITrip } from './plannerEngine';
 import { AIAppAction } from './aiAssistant';
-import { CONCODE_MASTER_PROMPT } from './concodeMasterPrompt';
+import { CONCODE_MASTER_PROMPT, CONCODE_BRAIN_MASTER_PROMPT } from './concodeMasterPrompt';
 import { resolveTransitContext } from './transportFeasibilityEngine';
 import { getReplanOptions } from './replanningService';
 
@@ -476,7 +476,7 @@ async function tryQueryServerlessAPI(
           trip_context: tripContextPayload,
           session_id: session.sessionId,
           mode,
-          system_prompt: CONCODE_MASTER_PROMPT
+          system_prompt: `${CONCODE_BRAIN_MASTER_PROMPT}\n\n${CONCODE_MASTER_PROMPT}`
         })
       : JSON.stringify({
           query,

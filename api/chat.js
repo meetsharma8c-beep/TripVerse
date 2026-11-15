@@ -1,4 +1,4 @@
-import { CONCODE_MASTER_PROMPT, CONCODE_COMPACT_PROMPT, CONCODE_ITINERARY_PROMPT } from './concodePrompt.js';
+import { CONCODE_MASTER_PROMPT, CONCODE_COMPACT_PROMPT, CONCODE_ITINERARY_PROMPT, CONCODE_BRAIN_MASTER_PROMPT } from './concodePrompt.js';
 import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js';
 
 // Vercel Serverless Function: private TripVerse-to-CONCODE travel proxy.
@@ -767,7 +767,7 @@ export default async function handler(req, res) {
         trip_context: travelContext,
         session_id: sessionId,
         mode,
-        system_prompt: CONCODE_MASTER_PROMPT
+        system_prompt: `${CONCODE_BRAIN_MASTER_PROMPT}\n\n${CONCODE_MASTER_PROMPT}`
       }),
       signal: controller.signal
     });

@@ -607,3 +607,5 @@ Because your responses drive your live ConCode 3D robot avatar in the corner of 
 - [STATE:speaking] -> Conversational speech during active guidance.
 
 `;
+
+export { CONCODE_BRAIN_MASTER_PROMPT } from './concode/concodeBrainMasterPrompt';
