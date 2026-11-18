@@ -142,20 +142,20 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
     <div className="space-y-4 font-sans">
       
       {/* Reference Screen 2: Top Destination & Travelers Header */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E2EBE1] shadow-[0_4px_24px_rgba(45,90,61,0.05)]">
+      <div className="liquid-glass-surface rounded-3xl p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           
           {/* Destination Details */}
           <div className="space-y-2 flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#152A1C] tracking-tight truncate">
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#152A1C] dark:text-slate-100 tracking-tight truncate">
                 {trip.destination}
               </h1>
               {onOpenReplanning && (
                 <button
                   type="button"
                   onClick={onOpenReplanning}
-                  className="p-1.5 rounded-full text-[#2D5A3D] bg-[#E8EFE7] hover:bg-[#d9e5d8] transition-colors cursor-pointer"
+                  className="spring-tap min-h-0 p-1.5 rounded-full text-[#2D5A3D] dark:text-emerald-300 bg-[#E8EFE7] dark:bg-emerald-950/60 hover:bg-[#d9e5d8] transition-colors cursor-pointer"
                   title="Modify or replan trip"
                   aria-label="Modify or replan trip"
                 >
@@ -234,7 +234,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
       </div>
 
       {/* Reference Screen 2: Signature "AI Route Optimized" Card */}
-      <div className="bg-white rounded-3xl p-5 border border-[#E2EBE1] shadow-[0_4px_24px_rgba(45,90,61,0.06)] space-y-4">
+      <div className="liquid-glass-surface rounded-3xl p-5 space-y-4">
         
         {/* Top Header & Route Diagram */}
         <div className="flex items-center justify-between gap-4">
@@ -341,7 +341,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           {onOpenLiveNav && (
             <button
               onClick={onOpenLiveNav}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
+              className="spring-tap flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer"
               title="Open directions in a navigation app"
             >
               <Navigation className="w-3.5 h-3.5 animate-pulse text-white" />
@@ -352,7 +352,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           {onOpenReplanning && (
             <button
               onClick={onOpenReplanning}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium text-xs sm:text-sm border border-rose-200 transition-all cursor-pointer active:scale-95"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium text-xs sm:text-sm border border-rose-200 transition-all cursor-pointer"
               title="Handle flight/train cancellations, emergency stays & complete trip replanning"
             >
               <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
@@ -363,7 +363,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           {onOpenSafety && (
             <button
               onClick={onOpenSafety}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold text-xs sm:text-sm border border-amber-200 transition-all cursor-pointer active:scale-95 shadow-2xs"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold text-xs sm:text-sm border border-amber-200 transition-all cursor-pointer shadow-2xs"
               title="View local scams, tourist traps, and emergency hotlines"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
@@ -373,7 +373,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
 
           <button
             onClick={onOpenChat}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D] font-medium text-xs sm:text-sm border border-[#8EA78D]/30 transition-all cursor-pointer active:scale-95"
+            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D] font-medium text-xs sm:text-sm border border-[#8EA78D]/30 transition-all cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#2D5A3D]" />
             <span>AI Assistant</span>
@@ -382,13 +382,13 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           {onOpenMemories && (
             <button
               onClick={onOpenMemories}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs sm:text-sm border border-[#E2EBE1] transition-all cursor-pointer active:scale-95"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs sm:text-sm border border-[#E2EBE1] transition-all cursor-pointer"
               title="Trip Photo Scrapbook & Memories"
             >
               <Camera className="w-3.5 h-3.5 text-slate-500" />
               <span>Memories</span>
               {trip.photos && trip.photos.length > 0 && (
-                <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-[#2D5A3D] text-white">
+                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-[#2D5A3D] text-white">
                   {trip.photos.length}
                 </span>
               )}
@@ -398,7 +398,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           {onOpenReview && (
             <button
               onClick={onOpenReview}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50/70 hover:bg-amber-100 text-amber-800 font-medium text-xs sm:text-sm border border-amber-200 transition-all cursor-pointer active:scale-95"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50/70 hover:bg-amber-100 text-amber-800 font-medium text-xs sm:text-sm border border-amber-200 transition-all cursor-pointer"
               title={trip.review ? `Rated ${trip.review.rating} Stars` : "Rate & Review Trip"}
             >
               <Star className={`w-3.5 h-3.5 ${trip.review ? 'text-amber-500 fill-amber-500' : 'text-amber-500'}`} />
@@ -412,7 +412,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           {onOpenCollaboration && (
             <button
               onClick={onOpenCollaboration}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D] font-bold text-xs border border-[#8EA78D]/30 transition-all cursor-pointer active:scale-95"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D] font-bold text-xs border border-[#8EA78D]/30 transition-all cursor-pointer"
               title="Plan together in real-time with friends"
             >
               <Users className="w-3.5 h-3.5 text-[#2D5A3D]" />
@@ -423,7 +423,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
 
           <button
             onClick={onOpenShare}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs border border-[#E2EBE1] transition-colors cursor-pointer"
+            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs border border-[#E2EBE1] transition-colors cursor-pointer"
             title="Share Trip"
           >
             <Share2 className="w-3.5 h-3.5 text-slate-500" />
@@ -433,7 +433,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           {onOpenPrintDossier && (
             <button
               onClick={onOpenPrintDossier}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs border border-[#E2EBE1] transition-colors cursor-pointer"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs border border-[#E2EBE1] transition-colors cursor-pointer"
               title="Print or Save as PDF Dossier"
             >
               <Download className="w-3.5 h-3.5 text-slate-500" />
@@ -514,10 +514,12 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-[#E2EBE1] rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-[#E2EBE1] dark:bg-slate-800 rounded-full h-2 overflow-hidden">
           <div
-            className={`h-2 rounded-full transition-all duration-500 ${
-              isOverBudget ? 'bg-red-500' : 'bg-[#2D5A3D]'
+            className={`h-2 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+              isOverBudget
+                ? 'bg-gradient-to-r from-red-500 via-rose-400 to-red-500 liquid-progress-bar'
+                : 'bg-gradient-to-r from-[#2D5A3D] via-emerald-500 to-[#2D5A3D] liquid-progress-bar'
             }`}
             style={{ width: `${Math.min(100, budgetUsagePercent)}%` }}
           />

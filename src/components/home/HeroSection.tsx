@@ -396,10 +396,40 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }
   };
 
+  const solarContext = (() => {
+    const hr = new Date().getHours();
+    if (hr >= 5 && hr < 10) {
+      return {
+        label: 'Morning Mist Window',
+        aura: 'from-teal-200/45 via-[#E2EBE1]/35 to-transparent dark:from-teal-900/35 dark:via-emerald-950/20',
+        dot: 'bg-teal-400',
+      };
+    }
+    if (hr >= 10 && hr < 16) {
+      return {
+        label: 'Peak Daylight Routes',
+        aura: 'from-[#DCEBDB]/65 via-[#EAF0E9]/35 to-transparent dark:from-emerald-900/30 dark:via-slate-900/20',
+        dot: 'bg-emerald-500',
+      };
+    }
+    if (hr >= 16 && hr < 19) {
+      return {
+        label: 'Golden Hour Window',
+        aura: 'from-amber-200/45 via-[#EAF0E9]/30 to-transparent dark:from-amber-900/25 dark:via-emerald-950/20',
+        dot: 'bg-amber-400',
+      };
+    }
+    return {
+      label: 'Night Travel & Safe Stays',
+      aura: 'from-emerald-900/18 via-slate-200/30 to-transparent dark:from-emerald-950/45 dark:via-slate-900/35',
+      dot: 'bg-emerald-400',
+    };
+  })();
+
   return (
     <section className="relative overflow-hidden pt-2 pb-12 sm:pb-16 lg:pb-20">
-      {/* Background soft sage gradients */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-[#E2EBE1]/60 via-[#EAF0E9]/30 to-transparent pointer-events-none -z-10 blur-3xl" />
+      {/* Adaptive Solar-Synchronized Ambient Aura Wash */}
+      <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b ${solarContext.aura} pointer-events-none -z-10 blur-3xl transition-colors duration-1000`} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -424,16 +454,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {/* Ambient Live Telemetry Floating Pill (Solar Window & Route Readiness) */}
             <div className="absolute top-3.5 left-3.5 right-3.5 z-20 flex items-center justify-between gap-2 pointer-events-none">
               <div className="liquid-glass-pill pointer-events-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#152A1C] dark:text-slate-100">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                <span>
-                  {(() => {
-                    const hr = new Date().getHours();
-                    if (hr >= 5 && hr < 10) return 'Morning Mist Window';
-                    if (hr >= 10 && hr < 16) return 'Peak Daylight Routes';
-                    if (hr >= 16 && hr < 19) return 'Golden Hour Window';
-                    return 'Night Travel & Safe Stays';
-                  })()}
-                </span>
+                <span className={`w-2 h-2 rounded-full ${solarContext.dot} animate-pulse shrink-0`} />
+                <span>{solarContext.label}</span>
                 {activeTrip?.destination && (
                   <span className="hidden sm:inline font-serif italic font-normal text-[#2D5A3D] dark:text-emerald-300 border-l border-slate-300/60 dark:border-white/15 pl-2">
                     Active: {activeTrip.destination.split(',')[0]}
@@ -444,7 +466,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <button
                 type="button"
                 onClick={onExplore}
-                className="min-h-0 pointer-events-auto liquid-glass-pill hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#2D5A3D] dark:text-emerald-300 hover:scale-[1.03] cursor-pointer"
+                className="min-h-0 pointer-events-auto liquid-glass-pill spring-tap hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#2D5A3D] dark:text-emerald-300 hover:scale-[1.03] cursor-pointer"
               >
                 <Compass className="w-3.5 h-3.5" />
                 <span>{t('hero.exploreDestinations')}</span>

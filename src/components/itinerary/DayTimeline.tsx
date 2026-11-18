@@ -454,7 +454,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                               e.stopPropagation();
                               handleToggleWeatherMode(day.dayNumber);
                             }}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 ${
+                            className={`spring-tap px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
                               isRainActive
                                 ? 'bg-sky-600 text-white border border-sky-700 shadow-sm'
                                 : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200'
@@ -473,7 +473,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                               triggerHaptic('light');
                               onAddActivity(day.dayNumber);
                             }}
-                            className="px-3 py-1.5 rounded-xl bg-[#2D5A3D] hover:bg-[#234730] text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-xs active:scale-95"
+                            className="spring-tap px-3 py-1.5 rounded-xl bg-[#2D5A3D] hover:bg-[#234730] text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
                           >
                             <Plus className="w-3.5 h-3.5" />
                             <span>Add Stop</span>
@@ -481,6 +481,25 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                         )}
                       </div>
                     </div>
+
+                    {/* Elastic Day Progress Track */}
+                    {activeDay.activities.length > 0 && (() => {
+                      const doneCount = activeDay.activities.filter(a => a.completed).length;
+                      const pct = Math.round((doneCount / activeDay.activities.length) * 100);
+                      return (
+                        <div className="flex items-center gap-2.5 pb-1">
+                          <div className="flex-1 h-1.5 rounded-full bg-[#E8EFE7] dark:bg-slate-800 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-[#2D5A3D] via-emerald-500 to-[#2D5A3D] liquid-progress-bar transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-bold text-[#5A7362] dark:text-slate-400 tabular-nums shrink-0">
+                            {doneCount}/{activeDay.activities.length} done
+                          </span>
+                        </div>
+                      );
+                    })()}
 
                     {/* Timeline items for this day */}
                     <div className="space-y-3">
@@ -553,7 +572,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                                       triggerHaptic('light');
                                       onToggleComplete(day.dayNumber, act.id);
                                     }}
-                                    className="cursor-pointer shrink-0"
+                                    className="spring-tap min-h-0 cursor-pointer shrink-0 p-0.5 rounded-full"
                                     title={act.completed ? 'Mark uncompleted' : 'Mark completed'}
                                   >
                                     {act.completed ? (

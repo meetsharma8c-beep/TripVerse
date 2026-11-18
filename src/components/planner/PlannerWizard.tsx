@@ -1845,19 +1845,19 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         </div>
 
         {/* Live Journey Receipt Preview Strip */}
-        <div className="px-4 sm:px-6 py-2 border-t border-slate-100/90 bg-gradient-to-r from-[#F4F6F2] via-[#EAF0E9]/70 to-[#F4F6F2] flex items-center justify-between gap-2 text-[11px] text-[#2D5A3D] font-semibold overflow-x-auto scrollbar-none shrink-0">
+        <div className="liquid-scroll-mask px-4 sm:px-6 py-2 border-t border-slate-100/90 dark:border-slate-800/80 bg-gradient-to-r from-[#F4F6F2] via-[#EAF0E9]/70 to-[#F4F6F2] dark:from-slate-900 dark:via-emerald-950/30 dark:to-slate-900 flex items-center justify-between gap-3 text-[11px] text-[#2D5A3D] dark:text-emerald-300 font-semibold overflow-x-auto scrollbar-none shrink-0">
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="font-bold text-[#152A1C] truncate max-w-[140px] sm:max-w-[200px]">
+            <span className="font-bold text-[#152A1C] dark:text-slate-100 truncate max-w-[140px] sm:max-w-[200px]">
               {origin.split(',')[0] || 'Origin'} → {destination.split(',')[0] || 'Any Spot'}
             </span>
           </div>
-          <div className="flex items-center gap-2 whitespace-nowrap text-slate-600">
+          <div className="flex items-center gap-2 whitespace-nowrap text-slate-600 dark:text-slate-300">
             <span>{duration}d</span>
             <span>•</span>
             <span>{travelersCount} {travelersCount === 1 ? 'traveler' : 'travelers'}</span>
             <span>•</span>
-            <span className="font-bold text-[#2D5A3D]">{formatCurrency(budgetAmount, currency)}</span>
+            <span className="font-bold text-[#2D5A3D] dark:text-emerald-400">{formatCurrency(budgetAmount, currency)}</span>
           </div>
         </div>
 

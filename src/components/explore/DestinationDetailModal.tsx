@@ -154,7 +154,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-[#0C1523] rounded-[32px] max-w-2xl w-full shadow-2xl border border-[#E2EBE1] dark:border-slate-800 overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200"
+        className="liquid-glass-surface rounded-[32px] max-w-2xl w-full shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         
@@ -169,27 +169,27 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10" />
 
           {/* Top Bar Floating Controls */}
-          <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black text-slate-800 shadow-sm">
+          <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2 z-10">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="liquid-glass-pill flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black text-slate-800 dark:text-slate-100">
                 <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                 <span>{effectiveDest.rating} / 5.0</span>
-                <span className="text-[10px] text-slate-500 font-semibold">(Curated Index)</span>
+                <span className="hidden sm:inline text-[10px] text-slate-500 dark:text-slate-300 font-semibold">(Curated Index)</span>
               </span>
 
-              <span className="bg-emerald-500/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider backdrop-blur-md">
+              <span className="bg-emerald-600/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider backdrop-blur-md">
                 {effectiveDest.category}
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => {
                   triggerHaptic('medium');
                   setIs3DViewerOpen(true);
                 }}
-                className="px-3 py-2 rounded-full bg-emerald-600/95 hover:bg-emerald-500 text-white backdrop-blur-md transition-all shadow-md cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+                className="min-h-0 spring-tap px-3 py-2 rounded-full bg-emerald-600/95 hover:bg-emerald-500 text-white backdrop-blur-md shadow-md cursor-pointer flex items-center gap-1.5 text-xs font-bold"
                 title="Explore in interactive 3D WebGL"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -203,10 +203,10 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
                     triggerHaptic('medium');
                     onToggleSaved(effectiveDest.id);
                   }}
-                  className={`p-2.5 rounded-full backdrop-blur-md transition-all shadow-md cursor-pointer ${
+                  className={`min-h-0 spring-tap p-2.5 rounded-full backdrop-blur-md shadow-md cursor-pointer ${
                     isSaved 
                       ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
-                      : 'bg-white/90 text-slate-700 hover:bg-white hover:text-[#2D5A3D]'
+                      : 'liquid-glass-pill text-slate-700 dark:text-slate-100 hover:text-[#2D5A3D]'
                   }`}
                   title={isSaved ? 'Remove from Wishlist' : 'Save to Wishlist'}
                 >
@@ -217,16 +217,16 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
               <button
                 type="button"
                 onClick={handleShare}
-                className="p-2.5 rounded-full bg-white/90 text-slate-700 hover:bg-white hover:text-[#2D5A3D] backdrop-blur-md transition-all shadow-md cursor-pointer"
+                className="min-h-0 spring-tap liquid-glass-pill p-2.5 rounded-full text-slate-700 dark:text-slate-100 hover:text-[#2D5A3D] shadow-md cursor-pointer"
                 title="Share Destination"
               >
-                {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
+                {copiedLink ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Share2 className="w-4 h-4" />}
               </button>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2.5 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-md transition-all shadow-md cursor-pointer"
+                className="min-h-0 spring-tap p-2.5 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-md shadow-md cursor-pointer"
                 title="Close"
               >
                 <X className="w-4 h-4" />
@@ -354,7 +354,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
               {effectiveDest.popularActivities.map((activity, idx) => (
                 <div 
                   key={idx}
-                  className="p-3 rounded-2xl bg-white dark:bg-[#0C1523] border border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-xs transition-all flex items-center gap-2.5"
+                  className="liquid-bento-card p-3 rounded-2xl bg-white dark:bg-[#0C1523] border border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 flex items-center gap-2.5"
                 >
                   <div className="w-7 h-7 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-400 flex items-center justify-center shrink-0 font-bold text-xs">
                     {idx + 1}
