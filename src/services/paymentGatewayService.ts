@@ -1,5 +1,6 @@
 import { CurrencyCode } from '../types/trip';
 import { formatCurrency } from './currencyService';
+import { resolveApiUrl } from './deviceService';
 
 export type PaymentMethodType = 
   | 'card'
@@ -431,7 +432,7 @@ export async function createRazorpayOrder(params: {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const res = await fetch('/api/create-razorpay-order', {
+      const res = await fetch(resolveApiUrl('/api/create-razorpay-order'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params)
@@ -463,7 +464,7 @@ export async function verifyRazorpayPayment(params: {
   razorpay_signature: string;
 }): Promise<{ ok: boolean; verified: boolean; error?: string }> {
   try {
-    const res = await fetch('/api/verify-razorpay-payment', {
+    const res = await fetch(resolveApiUrl('/api/verify-razorpay-payment'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)

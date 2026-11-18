@@ -1,4 +1,5 @@
 import { CurrencyCode } from '../types/trip';
+import { resolveApiUrl } from './deviceService';
 
 export type Currency = CurrencyCode;
 export type SupportedCurrency = CurrencyCode;
@@ -327,7 +328,7 @@ export async function detectAndApplyGeoCurrency(): Promise<CurrencyCode> {
   } catch {}
 
   try {
-    const res = await fetch('/api/geo');
+    const res = await fetch(resolveApiUrl('/api/geo'));
     if (res.ok) {
       const data = await res.json();
       if (data?.country && COUNTRY_TO_CURRENCY_MAP[data.country]) {

@@ -1,6 +1,7 @@
 import { LocalFoodGem, HiddenGem, Coordinates } from '../types/trip';
 import { getStoredConcodeConfig } from './concodeBrainService';
 import { resolveCanonicalDestination } from './canonicalCityService';
+import { resolveApiUrl } from './deviceService';
 
 export interface DestinationGems {
   destination: string;
@@ -119,7 +120,7 @@ async function queryAIForDestinationGems(
   const timeoutId = setTimeout(() => controller.abort(), 18_000);
 
   const customConfig = getStoredConcodeConfig();
-  const targetUrl = customConfig?.url ? `${customConfig.url}/api/v1/travel` : '/api/chat';
+  const targetUrl = customConfig?.url ? `${customConfig.url}/api/v1/travel` : resolveApiUrl('/api/chat');
 
   const prompt = `You are a native local food and travel discovery guide for "${destination}".
 Generate a genuine list of 4 real local food specialties & eateries, and 3 genuine hidden secret viewpoints/spots for "${destination}".

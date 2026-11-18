@@ -31,6 +31,7 @@ import {
   saveProfileToSupabase, 
   loadProfileFromSupabase 
 } from './supabaseSyncService';
+import { resolveApiUrl } from './deviceService';
 
 const USERS_STORAGE_KEY = 'tripverse_auth_users_v3';
 const SESSION_STORAGE_KEY = 'tripverse_auth_session_v3';
@@ -374,8 +375,7 @@ export async function notifyAuthActivity(user: AuthUser, event: 'signin' | 'sign
         travelerStyle: user.travelerStyle
       }
     };
-    const apiBase = typeof window !== 'undefined' ? window.location.origin : '';
-    await fetch(`${apiBase}/api/auth-activity`, {
+    await fetch(resolveApiUrl('/api/auth-activity'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -1146,7 +1146,7 @@ export async function sendPasswordResetCode(email: string): Promise<{
   let otpDispatched = false;
   let otpData: any = null;
   try {
-    const res = await fetch('/api/email-otp', {
+    const res = await fetch(resolveApiUrl('/api/email-otp'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1292,7 +1292,7 @@ export async function resetPasswordWithEmailOtp(
       : '';
 
     try {
-      const res = await fetch('/api/email-otp', {
+      const res = await fetch(resolveApiUrl('/api/email-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1695,7 +1695,7 @@ export async function verifyEmailOtp(email: string, token: string): Promise<Auth
       const storedToken = typeof window !== 'undefined'
         ? localStorage.getItem(`tripverse_email_otp_token_${emailNorm}`) || ''
         : '';
-      const resendRes = await fetch('/api/email-otp', {
+      const resendRes = await fetch(resolveApiUrl('/api/email-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1783,7 +1783,7 @@ export async function resendEmailConfirmation(email: string, name?: string): Pro
   // 1. Dispatch authentic 6-digit confirmation code via Resend
   let resendDispatched = false;
   try {
-    const res = await fetch('/api/email-otp', {
+    const res = await fetch(resolveApiUrl('/api/email-otp'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'send', email: emailNorm, name })
@@ -1844,7 +1844,7 @@ export async function sendTwoFactorOtp(email: string, name?: string): Promise<Se
     throw new Error('A valid email address is required to receive a 2FA verification code.');
   }
 
-  const res = await fetch('/api/email-otp', {
+  const res = await fetch(resolveApiUrl('/api/email-otp'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1888,7 +1888,7 @@ export async function verifyTwoFactorOtp(email: string, code: string, token?: st
 
   const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem(`tripverse_email_otp_token_${emailNorm}`) : null);
 
-  const res = await fetch('/api/email-otp', {
+  const res = await fetch(resolveApiUrl('/api/email-otp'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

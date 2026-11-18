@@ -10,6 +10,7 @@ import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
 import { getDestinationHighlights, isLandmarkRemoteFromDestination } from './landmarkAtlasService';
 import { resolveGlobalDestination, ResolvedGlobalLocation } from './globalLocationResolver';
 import { buildItinerarySignature, getCachedAiItinerary, setCachedAiItinerary } from './edgeCacheService';
+import { resolveApiUrl } from './deviceService';
 
 const ACTIVITY_TYPES = new Set(['food', 'attraction', 'viewpoint', 'nightlife', 'rest']);
 
@@ -118,7 +119,7 @@ async function requestPersonalizedItinerary(prompt: string, trip: Trip, input: P
         if (!customConfig?.url && typeof window === 'undefined') {
             return null;
         }
-        const targetUrl = customConfig?.url ? `${customConfig.url}/api/v1/travel` : '/api/chat';
+        const targetUrl = customConfig?.url ? `${customConfig.url}/api/v1/travel` : resolveApiUrl('/api/chat');
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
             'ngrok-skip-browser-warning': 'true',

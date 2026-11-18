@@ -1,8 +1,39 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
+
+const NativeSystemUI = registerPlugin<{ setTheme: (options: { dark: boolean }) => Promise<void> }>('NativeSystemUI');
+
+const PRODUCTION_API_ORIGIN = 'https://trip-verse.com';
+
+/**
+ * Returns the canonical API origin when executing inside Capacitor iOS (`capacitor://localhost`)
+ * or Capacitor Android (`https://localhost`), keeping relative `/api/*` paths on web hosts.
+ */
+export function getApiBaseUrl(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    const protocol = window.location?.protocol || '';
+    const hostname = window.location?.hostname || '';
+    if (
+      protocol === 'capacitor:' ||
+      protocol === 'ionic:' ||
+      (Capacitor.isNativePlatform() && (hostname === 'localhost' || hostname === '127.0.0.1'))
+    ) {
+      return PRODUCTION_API_ORIGIN;
+    }
+  } catch {
+    // Ignore window access issues in non-browser tests
+  }
+  return '';
+}
+
+export function resolveApiUrl(path: string): string {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${getApiBaseUrl()}${normalizedPath}`;
+}
 
 let deferredInstallPrompt: any = null;
 
@@ -208,6 +239,9 @@ export function syncThemeStatusBar(isDark?: boolean): void {
     try {
       StatusBar.setStyle({ style: darkActive ? Style.Dark : Style.Light }).catch(() => {});
       StatusBar.setBackgroundColor({ color: darkActive ? '#070C16' : '#FFFFFF' }).catch(() => {});
+      if (Capacitor.getPlatform() === 'android') {
+        NativeSystemUI.setTheme({ dark: darkActive }).catch(() => {});
+      }
     } catch {
       // Ignore on unsupported platforms
     }

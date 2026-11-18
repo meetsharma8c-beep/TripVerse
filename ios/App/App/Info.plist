@@ -68,6 +68,14 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>TripVerse uses your location to discover nearby highway break stops, fuel stations, and restaurants along your route.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>TripVerse uses your camera to capture travel photos for your trip journal.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>TripVerse uses your microphone for voice-activated AI travel assistance.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>TripVerse accesses your photo library so you can attach travel memories to your itineraries.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>TripVerse uses speech recognition to transcribe your voice travel questions.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

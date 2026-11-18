@@ -15,6 +15,7 @@ import { AIAppAction } from './aiAssistant';
 import { CONCODE_MASTER_PROMPT, CONCODE_BRAIN_MASTER_PROMPT } from './concodeMasterPrompt';
 import { resolveTransitContext } from './transportFeasibilityEngine';
 import { getReplanOptions } from './replanningService';
+import { resolveApiUrl } from './deviceService';
 
 export interface BrainStatus {
   online: boolean;
@@ -219,7 +220,7 @@ export async function checkBrainStatus(): Promise<BrainStatus> {
       isOnline = res.ok && (data.status === 'online' || data.status === 'healthy' || data.ok === true || data.status === 'ok');
     } else {
       // Query local or serverless proxy /api/chat
-      const res = await fetch('/api/chat', {
+      const res = await fetch(resolveApiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'health', query: '__ping__' }),
@@ -427,7 +428,7 @@ async function tryQueryServerlessAPI(
   if (typeof window === 'undefined') return null;
 
   const customConfig = getStoredConcodeConfig();
-  const targetUrl = customConfig?.url ? `${customConfig.url}/api/v1/travel` : '/api/chat';
+  const targetUrl = customConfig?.url ? `${customConfig.url}/api/v1/travel` : resolveApiUrl('/api/chat');
 
   try {
     const controller = new AbortController();

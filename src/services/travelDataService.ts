@@ -1,4 +1,5 @@
 import { BreakStop, BreakStopSection, Coordinates, Trip } from '../types/trip';
+import { resolveApiUrl } from './deviceService';
 
 interface GeoapifyTravelDataResponse {
   route: {
@@ -49,10 +50,7 @@ export async function fetchGeoapifyTravelData(
   destination: string,
   destinationCoordinates?: Coordinates
 ): Promise<GeoapifyTravelDataResponse> {
-  const apiBase = window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:'
-    ? 'https://trip-verse.com'
-    : '';
-  const response = await fetch(`${apiBase}/api/route`, {
+  const response = await fetch(resolveApiUrl('/api/route'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

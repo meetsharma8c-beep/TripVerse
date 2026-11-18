@@ -223,7 +223,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
         </div>
 
         {/* Slide Visual Presentation */}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-8 space-y-4 sm:space-y-6">
+        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none overscroll-contain p-4 sm:p-8 space-y-4 sm:space-y-6">
           {/* First Step Quick Language Selection Grid */}
           {currentStepIndex === 0 && (
             <div className="p-3.5 rounded-2xl bg-[#EAF0E9] border border-[#C4D9C3] space-y-2">

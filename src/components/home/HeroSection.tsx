@@ -441,7 +441,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-black text-[#152A1C] dark:text-slate-100 tracking-tight leading-[1.08] mb-3.5 text-balance tv-stagger-1">
-            Your Journey,<br className="hidden sm:inline" />
+            Your Journey,{' '}<br className="hidden sm:inline" />
             <span className="font-serif italic font-normal text-[#2D5A3D] dark:text-[#34D399]">Intelligently </span>Planned.
           </h1>
 

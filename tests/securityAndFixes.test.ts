@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { resolveEmergencyCountryCode } from '../src/services/emergencySosService';
+import { resolveApiUrl } from '../src/services/deviceService';
 
 function createMockReqRes(options: {
   method?: string;
@@ -148,5 +149,31 @@ describe('Security, API & UX Fixes Verification', () => {
     expect(resolveEmergencyCountryCode('Paris, France')).toBe('FR');
     expect(resolveEmergencyCountryCode('New York, USA')).toBe('US');
     expect(resolveEmergencyCountryCode('Udaipur, Rajasthan')).toBe('IN');
+  });
+
+  it('api/rateLimiter allows Capacitor iOS and Android WebView origins in CORS headers', async () => {
+    const { applyCorsHeaders } = await import('../api/rateLimiter.js');
+    for (const nativeOrigin of ['https://localhost', 'capacitor://localhost', 'ionic://localhost']) {
+      const { req, res, getResult } = createMockReqRes({
+        method: 'OPTIONS',
+        headers: { origin: nativeOrigin },
+      });
+      applyCorsHeaders(req, res, 'POST, OPTIONS');
+      expect(getResult().resHeaders['Access-Control-Allow-Origin']).toBe(nativeOrigin);
+    }
+  });
+
+  it('resolveApiUrl keeps relative /api paths on web and resolves production host on native capacitor:// protocol', () => {
+    const origWindow = globalThis.window;
+    try {
+      (globalThis as any).window = { location: { protocol: 'https:', hostname: 'trip-verse.com' } };
+      expect(resolveApiUrl('/api/chat')).toBe('/api/chat');
+
+      (globalThis as any).window = { location: { protocol: 'capacitor:', hostname: 'localhost' } };
+      expect(resolveApiUrl('/api/chat')).toBe('https://trip-verse.com/api/chat');
+      expect(resolveApiUrl('api/geo')).toBe('https://trip-verse.com/api/geo');
+    } finally {
+      (globalThis as any).window = origWindow;
+    }
   });
 });

@@ -125,20 +125,20 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
 
   return (
     <div
-      className={`fixed z-[41] flex flex-col items-end gap-2.5 select-none ${className}`}
+      className={`fixed z-[41] flex flex-col items-end gap-2 select-none ${className}`}
       style={{
-        bottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))',
-        right: 'calc(1rem + env(safe-area-inset-right, 0px))',
+        bottom: 'calc(4.65rem + env(safe-area-inset-bottom, 0px))',
+        right: 'calc(0.75rem + env(safe-area-inset-right, 0px))',
         WebkitTouchCallout: 'none',
         WebkitTapHighlightColor: 'transparent',
       }}
       aria-label="ConCode AI Co-Pilot"
     >
-      {/* Proactive Speech Bubble - Compact & Proportional on Mobile */}
+      {/* Proactive Speech Bubble - Shown on tablet/desktop to avoid covering mobile search CTA */}
       {showHintBubble && (
-        <div className="group relative flex items-center gap-1.5 sm:gap-2.5 rounded-xl sm:rounded-2xl border border-emerald-900/10 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-slate-800 dark:text-slate-100 shadow-[0_8px_24px_rgba(30,58,47,0.14)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 max-w-[210px] sm:max-w-[340px] whitespace-nowrap">
+        <div className="hidden sm:flex group relative items-center gap-2 rounded-2xl border border-emerald-900/10 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-3.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-100 shadow-[0_8px_24px_rgba(30,58,47,0.14)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 max-w-[340px] whitespace-nowrap">
           <span
-            className="h-1.5 w-1.5 sm:h-2 sm:w-2 shrink-0 rounded-full animate-pulse"
+            className="h-2 w-2 shrink-0 rounded-full animate-pulse"
             style={{ backgroundColor: ARGON_STATE_THEME[currentHint.emotion].ledHex }}
           />
           <button
@@ -146,8 +146,7 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
             onClick={() => handleHintClick(currentHint)}
             className="text-left hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer truncate"
           >
-            <span className="sm:hidden">{currentHint.mobileText || currentHint.text}</span>
-            <span className="hidden sm:inline">{currentHint.text}</span>
+            {currentHint.text}
           </button>
           <button
             type="button"
@@ -156,12 +155,12 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
               setShowHintBubble(false);
             }}
             aria-label="Dismiss hint"
-            className="ml-0.5 sm:ml-1 rounded-full p-0.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 cursor-pointer shrink-0 text-[10px] sm:text-xs leading-none"
+            className="min-h-0 ml-1 rounded-full p-0.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 cursor-pointer shrink-0 text-xs leading-none"
           >
             ✕
           </button>
           {/* Speech Pointer Triangle */}
-          <div className="absolute -bottom-1 right-6 sm:right-10 h-2.5 w-2.5 sm:h-3 sm:w-3 rotate-45 border-b border-r border-emerald-900/10 dark:border-slate-700 bg-white dark:bg-slate-900" />
+          <div className="absolute -bottom-1 right-10 h-3 w-3 rotate-45 border-b border-r border-emerald-900/10 dark:border-slate-700 bg-white dark:bg-slate-900" />
         </div>
       )}
 
@@ -179,12 +178,12 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
           <ConCode3DAvatar
             emotion={argonState}
             size="lg"
-            className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 drop-shadow-[0_12px_22px_rgba(15,23,42,0.3)] dark:drop-shadow-[0_14px_24px_rgba(0,0,0,0.7)]"
+            className="w-14 h-14 sm:w-22 sm:h-22 md:w-26 md:h-26 drop-shadow-[0_10px_18px_rgba(15,23,42,0.28)] dark:drop-shadow-[0_12px_22px_rgba(0,0,0,0.7)]"
           />
 
           {/* Micro Status Beacon Orbiting ConCode */}
           <span
-            className="absolute top-2 right-2 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-slate-900 transition-colors duration-300 z-20 pointer-events-none"
+            className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-full border-2 border-white dark:border-slate-900 transition-colors duration-300 z-20 pointer-events-none"
             style={{
               backgroundColor: activeTheme.ledHex,
               boxShadow: `0 0 12px ${activeTheme.ledGlowRgba}`,
@@ -194,7 +193,7 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
 
         {/* 3D Contact Elevation Ground Shadow Beneath ConCode */}
         <div
-          className="mt-0.5 h-2 w-14 sm:w-16 rounded-full bg-slate-900/25 dark:bg-black/50 blur-xs transition-all duration-300 group-hover:scale-75 group-hover:opacity-40"
+          className="mt-0.5 h-1.5 sm:h-2 w-10 sm:w-16 rounded-full bg-slate-900/25 dark:bg-black/50 blur-xs transition-all duration-300 group-hover:scale-75 group-hover:opacity-40"
           aria-hidden="true"
         />
       </button>

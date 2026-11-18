@@ -13,6 +13,7 @@
 
 import { ARGON_HIGH_SYSTEM_PROMPT } from './argonHighPrompt';
 import { preparePromptForConCode } from './normalizeUserPrompt';
+import { resolveApiUrl } from '../deviceService';
 
 export interface ConCodeMessage {
   role: 'system' | 'user' | 'assistant';
@@ -145,7 +146,7 @@ export async function streamConCodeArgonHigh(
     rawBuffer = '';
 
     try {
-      const cloudRes = await fetch('/api/chat', {
+      const cloudRes = await fetch(resolveApiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
