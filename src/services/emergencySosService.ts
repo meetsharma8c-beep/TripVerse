@@ -170,3 +170,28 @@ export function getEmergencyNumbersForCountry(countryCode?: string): CountryEmer
   const code = (countryCode || 'IN').toUpperCase();
   return COUNTRY_EMERGENCY_REGISTRY[code] || COUNTRY_EMERGENCY_REGISTRY['IN'];
 }
+
+const DESTINATION_COUNTRY_MATCHERS: Array<{ code: string; pattern: RegExp }> = [
+  { code: 'FR', pattern: /\b(france|paris|nice|lyon|marseille|bordeaux|chamonix|riviera)\b/i },
+  { code: 'AE', pattern: /\b(uae|united arab emirates|dubai|abu dhabi|sharjah)\b/i },
+  { code: 'JP', pattern: /\b(japan|tokyo|kyoto|osaka|sapporo|hiroshima|fukuoka|nara|okinawa)\b/i },
+  { code: 'US', pattern: /\b(usa|u\.s\.a\.|united states|new york|nyc|los angeles|san francisco|chicago|miami|seattle|las vegas|hawaii|california|texas|florida)\b/i },
+  { code: 'GB', pattern: /\b(uk|u\.k\.|united kingdom|england|scotland|wales|london|edinburgh|manchester|liverpool|bath|oxford)\b/i },
+  { code: 'SG', pattern: /\b(singapore|sentosa|marina bay)\b/i },
+  { code: 'TH', pattern: /\b(thailand|bangkok|phuket|chiang mai|krabi|pattaya|koh samui)\b/i },
+  { code: 'IT', pattern: /\b(italy|rome|venice|florence|milan|naples|amalfi|tuscany|sicily)\b/i },
+  { code: 'CH', pattern: /\b(switzerland|zurich|zürich|geneva|interlaken|lucerne|zermatt|bern|basel)\b/i },
+  { code: 'IN', pattern: /\b(india|delhi|mumbai|goa|jaipur|udaipur|bengaluru|bangalore|kerala|kashmir|manali|ladakh|varanasi|kolkata|chennai|hyderabad|agra|rishikesh)\b/i },
+];
+
+export function resolveEmergencyCountryCode(destination?: string): string {
+  if (!destination) return 'IN';
+  const normalized = destination.trim();
+  if (/^[A-Z]{2}$/.test(normalized) && COUNTRY_EMERGENCY_REGISTRY[normalized]) {
+    return normalized;
+  }
+  for (const { code, pattern } of DESTINATION_COUNTRY_MATCHERS) {
+    if (pattern.test(normalized)) return code;
+  }
+  return 'IN';
+}

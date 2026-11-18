@@ -64,8 +64,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 aria-label={t('hero.aiItinerary')}
                 className="pointer-events-auto relative flex flex-col items-center justify-end pt-1 pb-3 cursor-pointer group active:scale-95 transition-transform duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#244931]/40 rounded-xl"
               >
-                {/* Floating flat matte forest green circle with glowing white sparkle & soft ambient drop shadow */}
-                <div className="-mt-5 w-10 h-10 rounded-full bg-[#244931] dark:bg-[#2A6040] flex items-center justify-center shadow-[0_8px_20px_-2px_rgba(36,73,49,0.42),0_3px_8px_-2px_rgba(36,73,49,0.22)] dark:shadow-[0_8px_20px_-2px_rgba(16,185,129,0.34)] transition-transform duration-200 group-hover:scale-105">
+                {/* Floating Liquid Glass Emerald Orb with specular catchlight */}
+                <div className="-mt-5 w-11 h-11 rounded-full bg-gradient-to-br from-[#386B49] via-[#244931] to-[#173321] dark:from-emerald-500 dark:via-[#2A6040] dark:to-[#183E28] border border-white/40 dark:border-emerald-300/30 flex items-center justify-center shadow-[0_10px_24px_-3px_rgba(36,73,49,0.5),inset_0_1.5px_1.5px_rgba(255,255,255,0.45)] dark:shadow-[0_10px_24px_-3px_rgba(16,185,129,0.42),inset_0_1px_1px_rgba(255,255,255,0.3)] transition-transform duration-200 group-hover:scale-105">
                   <Sparkles
                     className="w-[18px] h-[18px] text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.88)]"
                     strokeWidth={2}
@@ -88,9 +88,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               onClick={() => handleTabClick(tab.id)}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
-              className={`pointer-events-auto relative flex flex-col items-center justify-end pt-1 pb-3 cursor-pointer active:scale-95 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#244931]/40 rounded-xl ${
+              className={`pointer-events-auto relative flex flex-col items-center justify-end pt-1.5 pb-2.5 my-0.5 mx-0.5 cursor-pointer active:scale-95 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#244931]/40 rounded-2xl ${
                 isActive
-                  ? 'text-[#244931] dark:text-emerald-400'
+                  ? 'text-[#1E3E2B] dark:text-emerald-300 bg-[#E2EBE1]/75 dark:bg-emerald-950/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
             >

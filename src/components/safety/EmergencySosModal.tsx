@@ -116,7 +116,7 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
   };
 
   const modalMarkup = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[130] flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div className="relative w-full max-w-2xl bg-[#0D1017] border border-[#263140] rounded-2xl shadow-2xl overflow-hidden text-slate-100 flex flex-col max-h-[92vh]">
         {/* Authoritative Consular Header Bar */}
         <div className="px-5 py-3.5 border-b border-[#212B36] bg-[#141A23] flex items-center justify-between">

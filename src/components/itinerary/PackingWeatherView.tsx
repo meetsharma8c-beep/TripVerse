@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Trip, PackingItem, PackingCategory, WeatherDay, WeatherForecast } from '../../types/trip';
 import { getDestinationWeather, fetchLiveDestinationWeather } from '../../services/weatherService';
 import { generateSmartPackingList } from '../../services/packingService';
@@ -19,11 +19,17 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
   const [weather, setWeather] = useState<WeatherForecast>(() => 
     getDestinationWeather(trip.destination, trip.durationDays)
   );
-  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-
+  const tripKey = `${trip.id}:${trip.durationDays}`;
+  const [daySelection, setDaySelection] = useState<{ tripKey: string; index: number }>({
+    tripKey,
+    index: 0,
+  });
+  const selectedDayIndex = daySelection.tripKey === tripKey ? daySelection.index : 0;
+  const setSelectedDayIndex = (index: number) => setDaySelection({ tripKey, index });
+  const latestTripRef = useRef(trip);
   useEffect(() => {
-    setSelectedDayIndex(0);
-  }, [trip.id, trip.durationDays]);
+    latestTripRef.current = trip;
+  }, [trip]);
 
   useEffect(() => {
     let isMounted = true;
@@ -64,7 +70,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
       if (saved && saved.length > 0) {
         setPackingItems(saved);
       } else {
-        const generated = generateSmartPackingList(trip);
+        const generated = generateSmartPackingList(latestTripRef.current);
         setPackingItems(generated);
         saveTripPacking(trip.id, generated);
       }

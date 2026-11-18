@@ -58,12 +58,18 @@ export default async function handler(req, res) {
   const expectedKey = RESEND_API_KEY
     ? crypto.createHmac('sha256', RESEND_API_KEY).update('tripverse-admin-read').digest('hex')
     : '';
+  const adminExportSecret = (process.env.ADMIN_EXPORT_SECRET || '').trim();
 
-  const keyBuf = Buffer.from(providedKey, 'utf8');
-  const expBuf = Buffer.from(expectedKey, 'utf8');
-  const isAuthorized = expectedKey.length > 0 && keyBuf.length === expBuf.length && crypto.timingSafeEqual(keyBuf, expBuf);
+  const matchesSecret = (candidate, expected) => {
+    if (!candidate || !expected) return false;
+    const candBuf = Buffer.from(candidate, 'utf8');
+    const expBuf = Buffer.from(expected, 'utf8');
+    return candBuf.length === expBuf.length && crypto.timingSafeEqual(candBuf, expBuf);
+  };
 
-  if (!isAuthorized && providedKey !== 'tripverse_admin_secret') {
+  const isAuthorized = matchesSecret(providedKey, expectedKey) || matchesSecret(providedKey, adminExportSecret);
+
+  if (!isAuthorized) {
     return res.status(401).json({
       success: false,
       error: 'UNAUTHORIZED',
@@ -134,9 +140,14 @@ export default async function handler(req, res) {
     if (SUPABASE_SERVICE_ROLE_KEY) {
       try {
         const adminSb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const { data: adminUsers } = await adminSb.auth.admin.listUsers();
-        if (adminUsers && Array.isArray(adminUsers.users)) {
-          for (const u of adminUsers.users) {
+        let page = 1;
+        const perPage = 1000;
+        while (page <= 20) {
+          const { data: adminUsers } = await adminSb.auth.admin.listUsers({ page, perPage });
+          const usersBatch = adminUsers?.users || [];
+          if (!Array.isArray(usersBatch) || usersBatch.length === 0) break;
+
+          for (const u of usersBatch) {
             const email = (u.email || '').toLowerCase().trim();
             if (email && !isTestEmail(email)) {
               const meta = u.user_metadata || {};
@@ -153,6 +164,9 @@ export default async function handler(req, res) {
               });
             }
           }
+
+          if (usersBatch.length < perPage) break;
+          page += 1;
         }
       } catch (err) {
         console.warn('[Export Users Admin Notice]', err);

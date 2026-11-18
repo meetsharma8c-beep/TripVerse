@@ -45,12 +45,17 @@ import {
   getActiveLanguage,
   setActiveLanguage,
   t,
-  STORAGE_KEY_LANGUAGE
+  STORAGE_KEY_LANGUAGE,
+  preloadAllLocales
 } from '../src/services/languageService';
 import { buildPrompt } from '../src/services/aiTripPlanner';
 import { Trip } from '../types/trip';
 
 describe('Global Language & Localization (i18n) Engine', () => {
+  beforeAll(async () => {
+    await preloadAllLocales();
+  });
+
   beforeEach(() => {
     (global as any).localStorage.clear();
     setActiveLanguage('en');

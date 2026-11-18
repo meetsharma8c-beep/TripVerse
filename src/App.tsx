@@ -35,16 +35,15 @@ import { triggerHaptic, syncAppBadge } from './services/deviceService';
 import { formatCurrency } from './services/currencyService';
 import { useLanguage } from './services/languageService';
 
-// Common Components
+import { resolveEmergencyCountryCode } from './services/emergencySosService';
 import { Navbar } from './components/common/Navbar';
 import { BottomNav } from './components/common/BottomNav';
 import { Logo } from './components/common/Logo';
 import { ModalSkeleton } from './components/common/SkeletonLoader';
 import { OfflineStatusBar } from './components/common/OfflineStatusBar';
-import { LegalTrustModal, LegalTab } from './components/common/LegalTrustModal';
+import type { LegalTab } from './components/common/LegalTrustModal';
 import { PwaInstallPrompt } from './components/common/PwaInstallPrompt';
 import { AppSplashScreen } from './components/common/AppSplashScreen';
-import { GlobalSearchModal } from './components/common/GlobalSearchModal';
 import { PullToRefresh } from './components/common/PullToRefresh';
 import { ArgonFloatingWidget } from './components/argon/ArgonFloatingWidget';
 
@@ -87,7 +86,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 const PackingWeatherView = lazyWithRetry(() => import('./components/itinerary/PackingWeatherView').then(m => ({ default: m.PackingWeatherView })));
 const TripSplitExpenses = lazyWithRetry(() => import('./components/itinerary/TripSplitExpenses').then(m => ({ default: m.TripSplitExpenses })));
 const LocalGemsView = lazyWithRetry(() => import('./components/itinerary/LocalGemsView').then(m => ({ default: m.LocalGemsView })));
-import { ActivityModal } from './components/itinerary/ActivityModal';
+const ActivityModal = lazyWithRetry(() => import('./components/itinerary/ActivityModal').then(m => ({ default: m.ActivityModal })));
 
 // Transport Deals & Views
 const TransportDealsView = lazyWithRetry(() => import('./components/deals/TransportDealsView').then(m => ({ default: m.TransportDealsView })));
@@ -95,12 +94,12 @@ const TransportDealsView = lazyWithRetry(() => import('./components/deals/Transp
 // Trips & Explore Views (Lazy-loaded for faster initial paint)
 const MyTripsView = lazyWithRetry(() => import('./components/trips/MyTripsView').then(m => ({ default: m.MyTripsView })));
 const ExploreView = lazyWithRetry(() => import('./components/explore/ExploreView').then(m => ({ default: m.ExploreView })));
-import { DestinationDetailModal } from './components/explore/DestinationDetailModal';
+const DestinationDetailModal = lazyWithRetry(() => import('./components/explore/DestinationDetailModal').then(m => ({ default: m.DestinationDetailModal })));
 const SavedItemsView = lazyWithRetry(() => import('./components/saved/SavedItemsView').then(m => ({ default: m.SavedItemsView })));
 const ProfileView = lazyWithRetry(() => import('./components/profile/ProfileView').then(m => ({ default: m.ProfileView })));
-import { AuthModal } from './components/profile/AuthModal';
-import { ResetPasswordModal } from './components/profile/ResetPasswordModal';
-import { GuestPlannerRestrictedModal } from './components/planner/GuestPlannerRestrictedModal';
+const AuthModal = lazyWithRetry(() => import('./components/profile/AuthModal').then(m => ({ default: m.AuthModal })));
+const ResetPasswordModal = lazyWithRetry(() => import('./components/profile/ResetPasswordModal').then(m => ({ default: m.ResetPasswordModal })));
+const GuestPlannerRestrictedModal = lazyWithRetry(() => import('./components/planner/GuestPlannerRestrictedModal').then(m => ({ default: m.GuestPlannerRestrictedModal })));
 import { 
   getCurrentUser, 
   isGuestUser,
@@ -113,11 +112,13 @@ import {
   signOut as authSignOut,
   checkAndProcessFirebaseRedirectResult
 } from './services/authService';
-import { TripVerseProModal } from './components/subscription/TripVerseProModal';
-import { FounderDashboardModal } from './components/modals/FounderDashboardModal';
-import { DigitalPassportModal } from './components/passport/DigitalPassportModal';
-import { EmergencySosModal } from './components/safety/EmergencySosModal';
-import { TripWrappedModal } from './components/wrapped/TripWrappedModal';
+const TripVerseProModal = lazyWithRetry(() => import('./components/subscription/TripVerseProModal').then(m => ({ default: m.TripVerseProModal })));
+const FounderDashboardModal = lazyWithRetry(() => import('./components/modals/FounderDashboardModal').then(m => ({ default: m.FounderDashboardModal })));
+const DigitalPassportModal = lazyWithRetry(() => import('./components/passport/DigitalPassportModal').then(m => ({ default: m.DigitalPassportModal })));
+const EmergencySosModal = lazyWithRetry(() => import('./components/safety/EmergencySosModal').then(m => ({ default: m.EmergencySosModal })));
+const TripWrappedModal = lazyWithRetry(() => import('./components/wrapped/TripWrappedModal').then(m => ({ default: m.TripWrappedModal })));
+const GlobalSearchModal = lazyWithRetry(() => import('./components/common/GlobalSearchModal').then(m => ({ default: m.GlobalSearchModal })));
+const LegalTrustModal = lazyWithRetry(() => import('./components/common/LegalTrustModal').then(m => ({ default: m.LegalTrustModal })));
 import { AuthUser } from './types/auth';
 import {
   loadUserTripsFromSupabase,
@@ -2376,11 +2377,61 @@ export function App() {
                 ];
 
                 const currentGroup = TRIP_GROUPS.find(g => g.subTabs.some(s => s.id === tripSubTab)) || TRIP_GROUPS[0];
+                const allActivities = activeTrip.itinerary.flatMap(d => d.activities || []);
+                const completedActivities = allActivities.filter(a => a.completed).length;
 
                 return (
-                  <div ref={tripSubSectionRef} id="trip-detail-output" className="space-y-3 scroll-mt-20 sm:scroll-mt-24">
-                    {/* Screen 2: Mobile Sub-Navigation Bar with Route Map & Scam Radar */}
-                    <div className="lg:hidden flex items-center gap-1 p-1 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] shadow-2xs overflow-x-auto scrollbar-none">
+                  <div ref={tripSubSectionRef} id="trip-detail-output" className="space-y-4 scroll-mt-20 sm:scroll-mt-24">
+                    {/* Live Trip Island — Floating Journey Status & Quick Actions Pill */}
+                    <div className="liquid-glass-surface rounded-2xl sm:rounded-full px-3.5 py-2 sm:px-5 sm:py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                        <div className="flex items-center gap-2 flex-wrap text-xs">
+                          <span className="font-bold text-[#152A1C] dark:text-slate-100 truncate">
+                            {activeTrip.origin} → {activeTrip.destination}
+                          </span>
+                          {allActivities.length > 0 && (
+                            <span className="px-2 py-0.5 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 font-bold text-[11px] border border-[#DCE7DB] dark:border-emerald-800/60">
+                              {completedActivities}/{allActivities.length} {t('stops done')}
+                            </span>
+                          )}
+                          {activeTrip.routeDetails?.distanceKm && (
+                            <span className="hidden sm:inline font-medium text-[#57685D] dark:text-slate-300">
+                              • {Math.round(activeTrip.routeDetails.distanceKm)} km
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            triggerHaptic('light');
+                            setIsLiveNavOpen(true);
+                          }}
+                          className="min-h-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#2D5A3D] hover:bg-[#244931] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-[11px] font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+                        >
+                          <Compass className="w-3.5 h-3.5" />
+                          <span>{t('Live Nav')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            triggerHaptic('light');
+                            setReplanningInitialScreen(2);
+                            setIsReplanningOpen(true);
+                          }}
+                          className="min-h-0 liquid-glass-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#152A1C] dark:text-slate-200 cursor-pointer active:scale-95"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400" />
+                          <span>{t('itinerary.smartReplan')}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Screen 2: Mobile Liquid Capsule Sub-Navigation Bar */}
+                    <div className="lg:hidden liquid-glass-pill flex items-center gap-1 p-1 rounded-full overflow-x-auto scrollbar-none">
                       {[
                         { id: 'itinerary', label: 'Itinerary' },
                         { id: 'route', label: 'Route' },
@@ -2398,9 +2449,9 @@ export function App() {
                               triggerHaptic('light');
                               handleSelectTripSubTab(tab.id as any);
                             }}
-                            className={`flex-shrink-0 py-2 px-3 rounded-full text-[11px] sm:text-xs font-bold transition-all text-center cursor-pointer whitespace-nowrap ${
+                            className={`flex-shrink-0 py-2 px-3 rounded-full text-[11px] sm:text-xs font-bold transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] text-center cursor-pointer whitespace-nowrap active:scale-95 ${
                               isActive
-                                ? 'bg-[#2D5A3D] text-white shadow-xs'
+                                ? 'bg-[#2D5A3D] text-white shadow-sm'
                                 : 'text-[#57685D] hover:text-[#152A1C]'
                             }`}
                           >
@@ -2410,9 +2461,9 @@ export function App() {
                       })}
                     </div>
 
-                    {/* Desktop Sub-Navigation: 4 Curated Category Groups */}
-                    <div className="hidden lg:block space-y-3">
-                      <div className="flex items-center gap-2 border-b border-[#E2EBE1] pb-3 overflow-x-auto scrollbar-none">
+                    {/* Desktop Liquid Capsule Sub-Navigation */}
+                    <div className="hidden lg:block space-y-2.5">
+                      <div className="inline-flex items-center gap-1.5 p-1.5 rounded-full bg-[#EAF0E9]/80 dark:bg-slate-900/70 border border-[#DCE7DB] dark:border-white/10 backdrop-blur-md overflow-x-auto scrollbar-none shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                         {TRIP_GROUPS.map(group => {
                           const isGroupActive = currentGroup.id === group.id;
                           const GroupIcon = group.icon;
@@ -2424,9 +2475,9 @@ export function App() {
                                 triggerHaptic('light');
                                 handleSelectTripSubTab(group.subTabs[0].id as any);
                               }}
-                              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${isGroupActive
-                                  ? 'bg-[#2D5A3D] text-white shadow-xs scale-[1.02]'
-                                  : 'bg-white text-[#5A7362] border border-[#E2EBE1] hover:border-[#8EA78D] hover:bg-[#F8FAF7]'
+                              className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer active:scale-95 ${isGroupActive
+                                  ? 'bg-[#2D5A3D] dark:bg-emerald-600 text-white shadow-sm scale-[1.01]'
+                                  : 'text-[#5A7362] dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white hover:bg-white/70 dark:hover:bg-slate-800/70'
                                 }`}
                             >
                               <GroupIcon className={`w-4 h-4 ${isGroupActive ? 'text-white' : 'text-[#8EA78D]'}`} />
@@ -2450,9 +2501,9 @@ export function App() {
                                   triggerHaptic('light');
                                   handleSelectTripSubTab(sub.id as any);
                                 }}
-                                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSubActive
-                                    ? 'bg-[#2D5A3D] text-white shadow-xs'
-                                    : 'bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D]'
+                                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 ${isSubActive
+                                    ? 'bg-[#1E3E2B] dark:bg-emerald-500/25 text-white dark:text-emerald-300 border border-transparent dark:border-emerald-400/40 shadow-xs'
+                                    : 'liquid-glass-pill text-[#2D5A3D] dark:text-slate-300'
                                   }`}
                               >
                                 <SubIcon className="w-3.5 h-3.5" />
@@ -2467,28 +2518,63 @@ export function App() {
                 );
               })()}
 
-              {/* Sub-Tab 1: Day-Wise Itinerary Timeline with Custom Actions */}
+              {/* Sub-Tab 1: Spatial Split-View on Desktop (Day Timeline + Sticky Live Map) */}
               {tripSubTab === 'itinerary' && (
-                <DayTimeline
-                  itinerary={activeTrip.itinerary}
-                  destination={activeTrip.destination}
-                  bestDeal={activeTrip.bestTransportDeal}
-                  onOpenDeals={() => setIsBestDealModalOpen(true)}
-                  onAddActivity={(dayNumber) => {
-                    setActivityModalState({ isOpen: true, dayNumber, activity: null });
-                  }}
-                  onEditActivity={(dayNumber, activity) => {
-                    setActivityModalState({ isOpen: true, dayNumber, activity });
-                  }}
-                  onDeleteActivity={handleDeleteActivity}
-                  onMoveActivity={handleMoveActivity}
-                  onToggleComplete={handleToggleActivityComplete}
-                  onOptimizeWithAI={() => handleSelectTripSubTab('hub', { forceScroll: true })}
-                  onClearDay={handleClearDay}
-                  onAddDay={handleAddDay}
-                  onDeleteDay={handleDeleteDay}
-                  onQuickAddSight={handleQuickAddSight}
-                />
+                <div className="xl:grid xl:grid-cols-12 xl:gap-6 xl:items-start">
+                  <div className="xl:col-span-7 min-w-0">
+                    <DayTimeline
+                      itinerary={activeTrip.itinerary}
+                      destination={activeTrip.destination}
+                      bestDeal={activeTrip.bestTransportDeal}
+                      onOpenDeals={() => setIsBestDealModalOpen(true)}
+                      onAddActivity={(dayNumber) => {
+                        setActivityModalState({ isOpen: true, dayNumber, activity: null });
+                      }}
+                      onEditActivity={(dayNumber, activity) => {
+                        setActivityModalState({ isOpen: true, dayNumber, activity });
+                      }}
+                      onDeleteActivity={handleDeleteActivity}
+                      onMoveActivity={handleMoveActivity}
+                      onToggleComplete={handleToggleActivityComplete}
+                      onOptimizeWithAI={() => handleSelectTripSubTab('hub', { forceScroll: true })}
+                      onClearDay={handleClearDay}
+                      onAddDay={handleAddDay}
+                      onDeleteDay={handleDeleteDay}
+                      onQuickAddSight={handleQuickAddSight}
+                    />
+                  </div>
+
+                  {/* Sticky Live Route Map Sidecar (Desktop xl+) */}
+                  <aside className="hidden xl:block xl:col-span-5 xl:sticky xl:top-24 space-y-3">
+                    <div className="liquid-glass-surface rounded-[28px] p-3.5 space-y-3">
+                      <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="text-xs font-extrabold uppercase tracking-wider text-[#2D5A3D] dark:text-emerald-300">
+                            {t('Live Route Telemetry')}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectTripSubTab('route', { forceScroll: true })}
+                          className="min-h-0 text-[11px] font-bold text-[#2D5A3D] dark:text-emerald-400 hover:underline cursor-pointer"
+                        >
+                          {t('Expand Map')} →
+                        </button>
+                      </div>
+                      <Suspense fallback={
+                        <div className="h-80 rounded-2xl bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center animate-pulse">
+                          <MapPin className="w-6 h-6 text-[#2D5A3D] animate-bounce" />
+                        </div>
+                      }>
+                        <SmartRouteMap
+                          trip={activeTrip}
+                          onOpenLiveNav={() => setIsLiveNavOpen(true)}
+                        />
+                      </Suspense>
+                    </div>
+                  </aside>
+                </div>
               )}
 
               {/* Sub-Tab: Digital Passes & Hub (Reference Screen 3) */}
@@ -3058,89 +3144,171 @@ export function App() {
             }}
           />
         )}
+
+        {isAuthModalOpen && (
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            initialMethod={authModalInitialMethod}
+            initialSubMode={authModalInitialSubMode}
+            onClose={() => setIsAuthModalOpen(false)}
+            onSuccess={(updated) => {
+              const activeUser = getCurrentUser();
+              setCurrentUser(activeUser);
+              setUserProfile(updated);
+              saveUserProfile(updated, activeUser?.uid);
+            }}
+          />
+        )}
+
+        {isResetPasswordModalOpen && (
+          <ResetPasswordModal
+            isOpen={isResetPasswordModalOpen}
+            onClose={() => setIsResetPasswordModalOpen(false)}
+            onSuccess={() => {
+              const activeUser = getCurrentUser();
+              setCurrentUser(activeUser);
+              if (activeUser) {
+                setUserProfile(toUserProfile(activeUser));
+              }
+              setIsResetPasswordModalOpen(false);
+            }}
+          />
+        )}
+
+        {/* Add/Edit Activity Modal */}
+        {activeTrip && activityModalState.isOpen && (
+          <ActivityModal
+            isOpen={activityModalState.isOpen}
+            onClose={() => setActivityModalState(prev => ({ ...prev, isOpen: false, activity: null }))}
+            dayNumber={activityModalState.dayNumber}
+            existingActivity={activityModalState.activity}
+            destination={activeTrip.destination}
+            onSave={(dayNumber, act) => {
+              handleAddOrUpdateActivity(dayNumber, act);
+            }}
+          />
+        )}
+
+        {/* Destination Detail Modal (Home & Saved Views) */}
+        {selectedDestinationForDetails && (
+          <DestinationDetailModal
+            destination={selectedDestinationForDetails}
+            isOpen={!!selectedDestinationForDetails}
+            onClose={() => setSelectedDestinationForDetails(null)}
+            onPlanTrip={(destName) => {
+              setSelectedDestinationForDetails(null);
+              handleOpenPlannerWithPrefill({ destination: destName });
+            }}
+            isSaved={savedItemIds.includes(selectedDestinationForDetails.id)}
+            onToggleSaved={handleToggleSaved}
+          />
+        )}
+
+        {/* Global Spotlight Search Modal (⌘K / Ctrl+K) */}
+        {isGlobalSearchOpen && (
+          <GlobalSearchModal
+            isOpen={isGlobalSearchOpen}
+            onClose={() => setIsGlobalSearchOpen(false)}
+            trips={trips}
+            onSelectTrip={(tripId) => {
+              setActiveTripId(tripId);
+              setActiveTripIdState(tripId);
+              setCurrentTab('trip-detail');
+            }}
+            onSelectDestination={(dest) => {
+              setSelectedDestinationForDetails(dest);
+            }}
+            onOpenPlanner={(prefill) => {
+              handleOpenPlannerWithPrefill(prefill);
+            }}
+            onOpenLiveNav={() => {
+              setIsLiveNavOpen(true);
+            }}
+            onOpenChat={() => {
+              handleOpenAIChat();
+            }}
+            onNavigateTab={handleNavigateTab}
+          />
+        )}
+
+        {/* Trust, Legal & Traveler Feedback Modal */}
+        {legalModalState.isOpen && (
+          <LegalTrustModal
+            isOpen={legalModalState.isOpen}
+            initialTab={legalModalState.tab}
+            onClose={() => setLegalModalState(prev => ({ ...prev, isOpen: false }))}
+            userEmail={currentUser?.email || ''}
+          />
+        )}
+
+        {/* TripVerse Pro & Quota Modal */}
+        {isProModalOpen && (() => {
+          const isFreeQuotaExhausted = Boolean(
+            currentUser && !isGuestUser(currentUser) && !getUserSubscriptionQuota(currentUser).canCreateTrip
+          );
+          return (
+            <TripVerseProModal
+              isOpen={isProModalOpen}
+              currentUser={currentUser}
+              title={
+                isFreeQuotaExhausted
+                  ? "You've Completed Your 3 Free Trip Plans"
+                  : 'Travel Without Limits with'
+              }
+              subtitle={
+                isFreeQuotaExhausted
+                  ? 'Upgrade to TripVerse Pro for unlimited AI-powered trip planning, offline itineraries, and priority travel intelligence.'
+                  : 'Unlock unlimited AI itineraries, real-time monsoon detours, and a dedicated 30h/week AI travel co-pilot.'
+              }
+              onClose={() => setIsProModalOpen(false)}
+              onSubscribed={() => {
+                const updated = getCurrentUser();
+                setCurrentUser(updated);
+                if (updated) {
+                  setUserProfile(toUserProfile(updated));
+                }
+              }}
+            />
+          );
+        })()}
+
+        {/* VIP Founder Command Center Modal */}
+        {isFounderDashboardOpen && (
+          <FounderDashboardModal
+            isOpen={isFounderDashboardOpen}
+            onClose={() => setIsFounderDashboardOpen(false)}
+          />
+        )}
+
+        {/* Digital Travel Passport Modal */}
+        {isPassportModalOpen && (
+          <DigitalPassportModal
+            isOpen={isPassportModalOpen}
+            onClose={() => setIsPassportModalOpen(false)}
+            userEmail={currentUser?.email}
+            userName={currentUser?.displayName || userProfile?.name}
+          />
+        )}
+
+        {/* Global Emergency SOS Modal */}
+        {isEmergencySosOpen && (
+          <EmergencySosModal
+            isOpen={isEmergencySosOpen}
+            onClose={() => setIsEmergencySosOpen(false)}
+            destinationCountry={resolveEmergencyCountryCode(activeTrip?.destination)}
+          />
+        )}
+
+        {/* 2026 Travel Wrapped Modal */}
+        {isWrappedModalOpen && (
+          <TripWrappedModal
+            isOpen={isWrappedModalOpen}
+            onClose={() => setIsWrappedModalOpen(false)}
+            trips={trips}
+            userEmail={currentUser?.email}
+          />
+        )}
       </Suspense>
-
-      {isAuthModalOpen && (
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          initialMethod={authModalInitialMethod}
-          initialSubMode={authModalInitialSubMode}
-          onClose={() => setIsAuthModalOpen(false)}
-          onSuccess={(updated) => {
-            const activeUser = getCurrentUser();
-            setCurrentUser(activeUser);
-            setUserProfile(updated);
-            saveUserProfile(updated, activeUser?.uid);
-          }}
-        />
-      )}
-
-      {isResetPasswordModalOpen && (
-        <ResetPasswordModal
-          isOpen={isResetPasswordModalOpen}
-          onClose={() => setIsResetPasswordModalOpen(false)}
-          onSuccess={() => {
-            const activeUser = getCurrentUser();
-            setCurrentUser(activeUser);
-            if (activeUser) {
-              setUserProfile(toUserProfile(activeUser));
-            }
-            setIsResetPasswordModalOpen(false);
-          }}
-        />
-      )}
-
-      {/* Add/Edit Activity Modal */}
-      {activeTrip && (
-        <ActivityModal
-          isOpen={activityModalState.isOpen}
-          onClose={() => setActivityModalState(prev => ({ ...prev, isOpen: false, activity: null }))}
-          dayNumber={activityModalState.dayNumber}
-          existingActivity={activityModalState.activity}
-          destination={activeTrip.destination}
-          onSave={(dayNumber, act) => {
-            handleAddOrUpdateActivity(dayNumber, act);
-          }}
-        />
-      )}
-
-      {/* Destination Detail Modal (Home & Saved Views) */}
-      <DestinationDetailModal
-        destination={selectedDestinationForDetails}
-        isOpen={!!selectedDestinationForDetails}
-        onClose={() => setSelectedDestinationForDetails(null)}
-        onPlanTrip={(destName) => {
-          setSelectedDestinationForDetails(null);
-          handleOpenPlannerWithPrefill({ destination: destName });
-        }}
-        isSaved={selectedDestinationForDetails ? savedItemIds.includes(selectedDestinationForDetails.id) : false}
-        onToggleSaved={handleToggleSaved}
-      />
-
-      {/* Global Spotlight Search Modal (⌘K / Ctrl+K) */}
-      <GlobalSearchModal
-        isOpen={isGlobalSearchOpen}
-        onClose={() => setIsGlobalSearchOpen(false)}
-        trips={trips}
-        onSelectTrip={(tripId) => {
-          setActiveTripId(tripId);
-          setActiveTripIdState(tripId);
-          setCurrentTab('trip-detail');
-        }}
-        onSelectDestination={(dest) => {
-          setSelectedDestinationForDetails(dest);
-        }}
-        onOpenPlanner={(prefill) => {
-          handleOpenPlannerWithPrefill(prefill);
-        }}
-        onOpenLiveNav={() => {
-          setIsLiveNavOpen(true);
-        }}
-        onOpenChat={() => {
-          handleOpenAIChat();
-        }}
-        onNavigateTab={handleNavigateTab}
-      />
 
       {/* Autonomous AI Co-Pilot Floating Mascot Widget (ConCode AI) */}
       <ArgonFloatingWidget
@@ -3152,75 +3320,6 @@ export function App() {
 
       {/* PWA Free Install Banner & iOS Guide */}
       <PwaInstallPrompt />
-
-      {/* Trust, Legal & Traveler Feedback Modal */}
-      <LegalTrustModal
-        isOpen={legalModalState.isOpen}
-        initialTab={legalModalState.tab}
-        onClose={() => setLegalModalState(prev => ({ ...prev, isOpen: false }))}
-        userEmail={currentUser?.email || ''}
-      />
-
-      {/* TripVerse Pro & Quota Modal */}
-      <TripVerseProModal
-        isOpen={isProModalOpen}
-        currentUser={currentUser}
-        title={
-          currentUser && !isGuestUser(currentUser) && !getUserSubscriptionQuota(currentUser).canCreateTrip
-            ? "You've Completed Your 3 Free Trip Plans"
-            : 'Travel Without Limits with'
-        }
-        subtitle={
-          currentUser && !isGuestUser(currentUser) && !getUserSubscriptionQuota(currentUser).canCreateTrip
-            ? 'Upgrade to TripVerse Pro for unlimited AI-powered trip planning, offline itineraries, and priority travel intelligence.'
-            : 'Unlock unlimited AI itineraries, real-time monsoon detours, and a dedicated 30h/week AI travel co-pilot.'
-        }
-        onClose={() => setIsProModalOpen(false)}
-        onSubscribed={() => {
-          const updated = getCurrentUser();
-          setCurrentUser(updated);
-          if (updated) {
-            setUserProfile(toUserProfile(updated));
-          }
-        }}
-      />
-
-      {/* VIP Founder Command Center Modal */}
-      {isFounderDashboardOpen && (
-        <FounderDashboardModal
-          isOpen={isFounderDashboardOpen}
-          onClose={() => setIsFounderDashboardOpen(false)}
-        />
-      )}
-
-      {/* Digital Travel Passport Modal */}
-      {isPassportModalOpen && (
-        <DigitalPassportModal
-          isOpen={isPassportModalOpen}
-          onClose={() => setIsPassportModalOpen(false)}
-          userEmail={currentUser?.email}
-          userName={currentUser?.displayName || userProfile?.name}
-        />
-      )}
-
-      {/* Global Emergency SOS Modal */}
-      {isEmergencySosOpen && (
-        <EmergencySosModal
-          isOpen={isEmergencySosOpen}
-          onClose={() => setIsEmergencySosOpen(false)}
-          destinationCountry={activeTrip?.destination?.includes('France') || activeTrip?.destination?.includes('Paris') ? 'FR' : activeTrip?.destination?.includes('Dubai') ? 'AE' : activeTrip?.destination?.includes('Kyoto') || activeTrip?.destination?.includes('Japan') ? 'JP' : activeTrip?.destination?.includes('USA') ? 'US' : 'IN'}
-        />
-      )}
-
-      {/* 2026 Travel Wrapped Modal */}
-      {isWrappedModalOpen && (
-        <TripWrappedModal
-          isOpen={isWrappedModalOpen}
-          onClose={() => setIsWrappedModalOpen(false)}
-          trips={trips}
-          userEmail={currentUser?.email}
-        />
-      )}
 
     </div>
   );

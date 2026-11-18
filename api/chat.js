@@ -31,7 +31,7 @@ function setToLlmCache(key, data) {
 }
 
 function configuredConcodeUrl() {
-  const value = (process.env.CONCODE_API_URL || process.env.VITE_CONCODE_API_URL || 'https://blanching-primate-unearned.ngrok-free.dev').trim().replace(/\/$/, '');
+  const value = (process.env.CONCODE_API_URL || process.env.VITE_CONCODE_API_URL || '').trim().replace(/\/$/, '');
   if (!value) return null;
   try {
     const url = new URL(value);

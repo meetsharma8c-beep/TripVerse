@@ -319,7 +319,7 @@ export const DigitalPassport: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-6">
+    <div className="bg-white rounded-[28px] p-5 sm:p-7 border border-[#DCE7DB] shadow-sm passport-foil-card liquid-bento-card space-y-6">
       
       {/* Passport Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">

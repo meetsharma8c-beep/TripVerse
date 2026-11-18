@@ -133,8 +133,8 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90dvh] animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90dvh] animate-in zoom-in-95 duration-150">
         {/* Modal Header */}
         <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -157,16 +157,16 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
         {/* Modal Body */}
         <div className="p-4 space-y-4 overflow-y-auto text-sm">
           {/* Architecture Badge */}
-          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5">
-            <Zap className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-            <div className="text-xs text-emerald-950 leading-relaxed">
-              <span className="font-bold text-emerald-800">{t('Genuine End-to-End AI:')}</span> {t('Connects TripVerse directly to your ConCode reasoning model hosted on Kaggle GPU.')}
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-start gap-2.5">
+            <Zap className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+            <div className="text-xs text-emerald-950 dark:text-emerald-100 leading-relaxed">
+              <span className="font-bold text-emerald-800 dark:text-emerald-300">{t('Genuine End-to-End AI:')}</span> {t('Connects TripVerse directly to your ConCode reasoning model hosted on Kaggle GPU.')}
             </div>
           </div>
 
           {/* Endpoint URL Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
               <span>{t('Kaggle API URL (Tunnel Endpoint)')}</span>
               <span className="text-[10px] text-slate-400 font-normal">Cloudflare / ngrok / localtunnel</span>
             </label>
@@ -176,18 +176,18 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://xxxx.trycloudflare.com or https://xxxx.ngrok-free.app"
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
               />
               <Server className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             </div>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
               {t('Paste the public HTTPS URL printed by your Kaggle notebook tunnel.')}
             </p>
           </div>
 
           {/* API Key (Optional) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
               <span>{t('API Key / Secret Token (Optional)')}</span>
               <span className="text-[10px] text-slate-400 font-normal">{t('Optional')}</span>
             </label>
@@ -196,7 +196,7 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="e.g. your-kaggle-secret-token"
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
             />
           </div>
 
@@ -205,19 +205,19 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
             <div 
               className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 transition-all ${
                 testResult.success 
-                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
-                  : 'bg-red-50 border-red-300 text-red-900'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200' 
+                  : 'bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800 text-red-900 dark:text-red-200'
               }`}
             >
               {testResult.success ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
               )}
               <div className="space-y-1">
                 <p className="font-semibold">{testResult.message}</p>
                 {testResult.latency !== undefined && (
-                  <p className="text-[11px] text-slate-600 font-mono">
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 font-mono">
                     Roundtrip Latency: {testResult.latency}ms
                     {testResult.gpu ? ` • Hardware: ${testResult.gpu}` : ''}
                   </p>
@@ -227,14 +227,14 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
           )}
 
           {/* Quick Setup Instructions Box */}
-          <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-1.5 text-xs text-slate-600">
-            <div className="flex items-center gap-1.5 font-bold text-slate-700">
-              <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
+          <div className="bg-slate-50 dark:bg-slate-800/70 rounded-xl p-3 border border-slate-200 dark:border-slate-700 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+            <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200">
+              <HelpCircle className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>{t('How to deploy on Kaggle GPU')}</span>
             </div>
-            <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-600">
+            <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
               <li>Open your Kaggle notebook with <strong>GPU T4 x 2</strong> or <strong>P100</strong> enabled.</li>
-              <li>Run the ConCode FastAPI server script (located in <code className="bg-slate-200 px-1 rounded text-slate-800">scripts/kaggle_concode_brain.py</code>).</li>
+              <li>Run the ConCode FastAPI server script (located in <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded text-slate-800 dark:text-slate-100">scripts/kaggle_concode_brain.py</code>).</li>
               <li>Copy the public Cloudflare or ngrok tunnel URL output.</li>
               <li>Paste it into the box above and click <strong>{t('Test Connection')}</strong>.</li>
             </ol>
@@ -242,11 +242,11 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
         </div>
 
         {/* Modal Actions */}
-        <div className="p-3 sm:p-4 bg-slate-100 border-t border-slate-200 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
+        <div className="p-3 sm:p-4 bg-slate-100 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
           <button
             type="button"
             onClick={handleClear}
-            className="w-full sm:w-auto px-3 py-2 text-xs text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer font-medium border border-transparent hover:border-red-200"
+            className="w-full sm:w-auto px-3 py-2 text-xs text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer font-medium border border-transparent hover:border-red-200 dark:hover:border-red-900"
             title="Reset to default local proxy"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -258,7 +258,7 @@ export const ConcodeBrainConfigModal: React.FC<ConcodeBrainConfigModalProps> = (
               type="button"
               onClick={handleTest}
               disabled={isTesting || !url.trim()}
-              className="flex-1 sm:flex-none px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              className="flex-1 sm:flex-none px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin text-emerald-600' : ''}`} />
               <span>{isTesting ? t('Testing...') : t('Test Connection')}</span>

@@ -185,7 +185,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
             }}
             width={1280}
             height={720}
-            className={`w-full h-full object-cover pointer-events-none select-none transition-opacity duration-700 tv-splash-kenburns ${
+            className={`tv-ambient-video w-full h-full object-cover pointer-events-none select-none transition-opacity duration-700 tv-splash-kenburns ${
               videoLoaded ? 'opacity-85' : 'opacity-0'
             }`}
           />

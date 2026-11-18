@@ -81,12 +81,34 @@ export const GenerationLoader: React.FC<GenerationLoaderProps> = ({
   const progressPct = Math.round(((currentStepIndex + 1) / steps.length) * 100);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md px-4">
-      <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center relative overflow-hidden animate-in fade-in zoom-in duration-300">
-        
-        {/* Top brand icon with pulsing effect */}
-        <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-trip-gradient text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 animate-bounce">
-          <Sparkles className="w-8 h-8" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-md px-4">
+      <div className="liquid-glass-surface rounded-[30px] p-6 sm:p-8 max-w-md w-full shadow-2xl text-center relative overflow-hidden animate-in fade-in zoom-in duration-300">
+        {/* Animated Kinetic Route Arc */}
+        <div className="relative mx-auto mb-5 w-48 h-16 flex items-center justify-center">
+          <svg viewBox="0 0 200 64" className="w-full h-full overflow-visible" aria-hidden="true">
+            <path
+              d="M 16 48 Q 100 4 184 48"
+              fill="none"
+              stroke="rgba(45, 90, 61, 0.22)"
+              strokeWidth="3"
+              strokeDasharray="5 5"
+            />
+            <path
+              d="M 16 48 Q 100 4 184 48"
+              fill="none"
+              stroke="#2D5A3D"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeDasharray="220"
+              strokeDashoffset={Math.max(0, 220 - Math.round((progressPct / 100) * 220))}
+              className="transition-all duration-300 ease-out"
+            />
+            <circle cx="16" cy="48" r="5" fill="#2D5A3D" />
+            <circle cx="184" cy="48" r="6" fill="#10B981" />
+          </svg>
+          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-10 h-10 rounded-2xl bg-trip-gradient text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 animate-tv-float">
+            <Sparkles className="w-5 h-5" />
+          </div>
         </div>
 
         <h3 className="text-xl sm:text-2xl font-display font-black text-[#0B2545] tracking-tight">

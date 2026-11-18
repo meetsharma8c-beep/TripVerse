@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, Suspense, lazy } from 'react';
+import { createPortal } from 'react-dom';
 import { Trip, ChatMessage } from '../../types/trip';
 import { processTravelCoPilotQuery, AIAppAction } from '../../services/aiAssistant';
 import { 
@@ -46,6 +47,11 @@ function getChatStorageKey(): string {
   return user?.uid ? `tripverse_chat_u_${user.uid}` : 'tripverse_chat_guest';
 }
 
+function isSafeMarkdownHref(rawHref: string): boolean {
+  const trimmed = rawHref.trim();
+  return /^https?:\/\//i.test(trimmed) || (trimmed.startsWith('/') && !trimmed.startsWith('//'));
+}
+
 function parseInlineTokens(content: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
   const regex = /(\*\*.*?\*\*|`.*?`|\*.*?\*|\[.*?\]\(.*?\))/g;
@@ -59,36 +65,44 @@ function parseInlineTokens(content: string): React.ReactNode[] {
     const token = match[0];
     if (token.startsWith('**') && token.endsWith('**')) {
       parts.push(
-        <strong key={`${match.index}-b`} className="font-bold text-slate-900">
+        <strong key={`${match.index}-b`} className="font-bold text-slate-900 dark:text-white">
           {token.slice(2, -2)}
         </strong>
       );
     } else if (token.startsWith('`') && token.endsWith('`')) {
       parts.push(
-        <code key={`${match.index}-c`} className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 font-mono text-[10px] text-emerald-800 font-semibold">
+        <code key={`${match.index}-c`} className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 font-mono text-[10px] text-emerald-800 dark:text-emerald-300 font-semibold">
           {token.slice(1, -1)}
         </code>
       );
     } else if (token.startsWith('*') && token.endsWith('*')) {
       parts.push(
-        <em key={`${match.index}-i`} className="italic text-slate-800">
+        <em key={`${match.index}-i`} className="italic text-slate-800 dark:text-slate-200">
           {token.slice(1, -1)}
         </em>
       );
     } else if (token.startsWith('[') && token.includes('](') && token.endsWith(')')) {
       const linkText = token.slice(1, token.indexOf(']('));
       const linkHref = token.slice(token.indexOf('](') + 2, -1);
-      parts.push(
-        <a
-          key={`${match.index}-a`}
-          href={linkHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-emerald-600 underline font-semibold hover:text-emerald-700"
-        >
-          {linkText}
-        </a>
-      );
+      if (isSafeMarkdownHref(linkHref)) {
+        parts.push(
+          <a
+            key={`${match.index}-a`}
+            href={linkHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-emerald-600 dark:text-emerald-400 underline font-semibold hover:text-emerald-700 dark:hover:text-emerald-300"
+          >
+            {linkText}
+          </a>
+        );
+      } else {
+        parts.push(
+          <span key={`${match.index}-a`} className="font-semibold text-emerald-700 dark:text-emerald-300">
+            {linkText}
+          </span>
+        );
+      }
     }
     lastIndex = match.index + token.length;
   }
@@ -113,22 +127,22 @@ const FormattedAIMessage: React.FC<{ text: string }> = ({ text }) => {
   const flushTable = (key: string) => {
     if (tableHeaderCells.length > 0) {
       elements.push(
-        <div key={key} className="my-2.5 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
+        <div key={key} className="my-2.5 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 shadow-2xs">
           <table className="w-full text-left text-[11px] border-collapse min-w-[280px]">
             <thead>
-              <tr className="bg-slate-100/80 border-b border-slate-200">
+              <tr className="bg-slate-100/80 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700">
                 {tableHeaderCells.map((th, thIdx) => (
-                  <th key={thIdx} className="px-3 py-1.5 font-bold text-slate-800">
+                  <th key={thIdx} className="px-3 py-1.5 font-bold text-slate-800 dark:text-slate-100">
                     {parseInlineTokens(th.trim())}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {tableRows.map((row, rIdx) => (
-                <tr key={rIdx} className="hover:bg-slate-50/60">
+                <tr key={rIdx} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50">
                   {row.map((cell, cIdx) => (
-                    <td key={cIdx} className="px-3 py-1.5 text-slate-700">
+                    <td key={cIdx} className="px-3 py-1.5 text-slate-700 dark:text-slate-300">
                       {parseInlineTokens(cell.trim())}
                     </td>
                   ))}
@@ -209,7 +223,7 @@ const FormattedAIMessage: React.FC<{ text: string }> = ({ text }) => {
     // Heading checks
     if (trimmed.startsWith('### ')) {
       elements.push(
-        <h4 key={`h3-${i}`} className="font-bold text-slate-900 text-xs sm:text-sm mt-2 mb-0.5 flex items-center gap-1.5">
+        <h4 key={`h3-${i}`} className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm mt-2 mb-0.5 flex items-center gap-1.5">
           {parseInlineTokens(trimmed.slice(4))}
         </h4>
       );
@@ -217,7 +231,7 @@ const FormattedAIMessage: React.FC<{ text: string }> = ({ text }) => {
     }
     if (trimmed.startsWith('## ')) {
       elements.push(
-        <h3 key={`h2-${i}`} className="font-black text-slate-900 text-sm mt-2 mb-0.5">
+        <h3 key={`h2-${i}`} className="font-black text-slate-900 dark:text-white text-sm mt-2 mb-0.5">
           {parseInlineTokens(trimmed.slice(3))}
         </h3>
       );
@@ -225,7 +239,7 @@ const FormattedAIMessage: React.FC<{ text: string }> = ({ text }) => {
     }
     if (trimmed.startsWith('# ')) {
       elements.push(
-        <h2 key={`h1-${i}`} className="font-black text-slate-900 text-base mt-2.5 mb-1">
+        <h2 key={`h1-${i}`} className="font-black text-slate-900 dark:text-white text-base mt-2.5 mb-1">
           {parseInlineTokens(trimmed.slice(2))}
         </h2>
       );
@@ -236,7 +250,7 @@ const FormattedAIMessage: React.FC<{ text: string }> = ({ text }) => {
     if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
       const content = trimmed.replace(/^[*\-•]\s+/, '');
       elements.push(
-        <div key={`bullet-${i}`} className="flex items-start gap-1.5 text-slate-700 py-0.5">
+        <div key={`bullet-${i}`} className="flex items-start gap-1.5 text-slate-700 dark:text-slate-200 py-0.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
           <span className="flex-1 min-w-0 break-words">{parseInlineTokens(content)}</span>
         </div>
@@ -248,8 +262,8 @@ const FormattedAIMessage: React.FC<{ text: string }> = ({ text }) => {
     const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
     if (numMatch) {
       elements.push(
-        <div key={`num-${i}`} className="flex items-start gap-1.5 text-slate-700 py-0.5">
-          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 mt-0.5 shrink-0">
+        <div key={`num-${i}`} className="flex items-start gap-1.5 text-slate-700 dark:text-slate-200 py-0.5">
+          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 mt-0.5 shrink-0">
             {numMatch[1]}
           </span>
           <span className="flex-1 min-w-0 break-words">{parseInlineTokens(numMatch[2])}</span>
@@ -260,7 +274,7 @@ const FormattedAIMessage: React.FC<{ text: string }> = ({ text }) => {
 
     // Standard paragraph
     elements.push(
-      <p key={`p-${i}`} className="text-slate-700 leading-relaxed break-words">
+      <p key={`p-${i}`} className="text-slate-700 dark:text-slate-200 leading-relaxed break-words">
         {parseInlineTokens(rawLine)}
       </p>
     );
@@ -370,7 +384,12 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         guild: 'fullstack',
         confidence: 0.99,
         actionButtons: [
-          { label: hasDestination ? `Plan a 5-day trip to ${destName}` : 'Plan a 5-day trip to Dubai', action: 'PLAN_DUBAI', primary: true },
+          {
+            label: hasDestination ? `Plan a 5-day trip to ${destName}` : 'Plan a 5-day trip to Dubai',
+            action: hasDestination ? 'PLAN_ACTIVE_DEST' : 'PLAN_DUBAI',
+            payload: hasDestination ? { destination: destName } : undefined,
+            primary: true
+          },
           { label: 'What will this trip approximately cost?', action: 'CHECK_BUDGET' },
           { label: 'Make Day 3 cheaper', action: 'MAKE_CHEAPER' },
           { label: 'Rainy-day alternative', action: 'RAINY_DAY_ALT' },
@@ -387,7 +406,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [quota, setQuota] = useState(() => getUserSubscriptionQuota());
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
+  const supportsVoice = typeof window !== 'undefined' && Boolean((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
   useModalBehavior(isOpen, onClose);
 
@@ -523,10 +544,20 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   }, [isOpen, initialQuery, refreshBrainHealth]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (isOpen && scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: messages.length <= 2 ? 'auto' : 'smooth',
+      });
     }
-  }, [messages, isProcessing]);
+  }, [isOpen, messages, isProcessing]);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 112)}px`;
+  }, [inputQuery]);
 
   const handleClearChat = () => {
     resetBrainSession();
@@ -675,7 +706,10 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       onClose();
     };
 
-    if (action === 'PLAN_DUBAI') {
+    if (action === 'PLAN_ACTIVE_DEST') {
+      const targetDest = payload?.destination || cleanTripDest || 'Dubai';
+      handleSendMessage(`Plan a 5-day trip to ${targetDest}`);
+    } else if (action === 'PLAN_DUBAI') {
       handleSendMessage('Plan a 5-day trip to Dubai');
     } else if (action === 'BUDGET_1LAKH') {
       handleSendMessage(`I have a budget of ${formatCurrency(100000)}`);
@@ -805,28 +839,32 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  const drawerMarkup = (
     <div 
       role="dialog"
       aria-modal="true"
       aria-label="AI Travel Assistant"
-      className="fixed inset-0 z-50 overflow-hidden bg-slate-900/60 backdrop-blur-xs flex justify-end items-end sm:items-stretch"
+      onClick={onClose}
+      className="fixed inset-0 z-[95] overflow-hidden bg-slate-900/60 backdrop-blur-xs flex justify-end items-end sm:items-stretch"
     >
       
-      <div className="w-full sm:max-w-md md:max-w-lg bg-white dark:bg-slate-900 h-[92dvh] sm:h-full max-h-[100dvh] rounded-t-3xl sm:rounded-none sm:rounded-l-3xl shadow-[0_-10px_40px_rgba(16,185,129,0.12)] sm:shadow-[-12px_0_40px_rgba(16,185,129,0.16)] flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden border-t sm:border-t-0 sm:border-l border-emerald-500/20 dark:border-emerald-500/25">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full sm:max-w-md md:max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl h-[92dvh] sm:h-[calc(100dvh-1.5rem)] sm:my-3 sm:mr-3 max-h-[100dvh] rounded-t-3xl sm:rounded-[28px] shadow-[0_-10px_40px_rgba(16,185,129,0.12)] sm:shadow-[0_24px_60px_-12px_rgba(7,23,44,0.38)] flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden border-t sm:border border-emerald-500/20 dark:border-white/15"
+      >
         
         {/* Mobile Pull Handle */}
         <div className="w-12 h-1.5 bg-slate-300/80 dark:bg-slate-700 rounded-full mx-auto my-2 sm:hidden shrink-0" />
 
         {/* Unified Luxury ConCode AI Header */}
-        <div className="relative px-4 sm:px-5 py-3.5 bg-gradient-to-r from-[#0C2415] via-[#163D25] to-[#0E2818] text-white flex items-center justify-between border-b border-emerald-500/20 shadow-[0_4px_24px_rgba(16,185,129,0.18)] shrink-0 overflow-hidden">
+        <div className="relative px-4 sm:px-5 py-3.5 bg-gradient-to-r from-[#0C2415] via-[#163D25] to-[#0E2818] text-white flex items-center justify-between gap-2 border-b border-emerald-500/20 shadow-[0_4px_24px_rgba(16,185,129,0.18)] shrink-0 overflow-hidden">
           {/* Subtle Ambient Radial Glow Behind Avatar */}
           <div 
             className="pointer-events-none absolute -left-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 transition-all duration-700"
             style={{ backgroundColor: ARGON_STATE_THEME[argonHeaderState].ledHex }}
           />
 
-          <div className="relative z-10 flex items-center gap-3">
+          <div className="relative z-10 flex items-center gap-3 min-w-0 flex-1">
             {/* Living 3D Avatar (100% Unboxed & Borderless) */}
             <div className="relative flex items-center justify-center shrink-0">
               <ConCode3DAvatar
@@ -844,7 +882,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               />
             </div>
 
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <h3 className="font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center gap-1.5">
                   <span>ConCode AI</span>
@@ -857,7 +895,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   <button
                     type="button"
                     onClick={onOpenProModal}
-                    className="text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400/30 to-yellow-400/30 hover:from-amber-400/40 hover:to-yellow-400/40 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-300/40 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                    className="min-h-0 text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400/30 to-yellow-400/30 hover:from-amber-400/40 hover:to-yellow-400/40 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-300/40 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                     title={t('TripVerse VIP Founder Active • Lifetime Unlimited Trips & Full ConCode Brain')}
                   >
                     <Crown className="w-2.5 h-2.5 fill-amber-300" />
@@ -867,7 +905,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   <button
                     type="button"
                     onClick={onOpenProModal}
-                    className="text-[9px] font-black uppercase tracking-wider bg-amber-400/25 hover:bg-amber-400/35 text-amber-300 px-2 py-0.5 rounded-full border border-amber-300/30 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                    className="min-h-0 text-[9px] font-black uppercase tracking-wider bg-amber-400/25 hover:bg-amber-400/35 text-amber-300 px-2 py-0.5 rounded-full border border-amber-300/30 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                     title={t('TripVerse Pro Active (30 Hours/Week Full ConCode Facility)')}
                   >
                     <Crown className="w-2.5 h-2.5 fill-amber-300" />
@@ -877,7 +915,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   <button
                     type="button"
                     onClick={onOpenProModal}
-                    className="text-[9px] font-bold uppercase tracking-wider bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/30 cursor-pointer transition-colors flex items-center gap-1"
+                    className="min-h-0 text-[9px] font-bold uppercase tracking-wider bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/30 cursor-pointer transition-colors flex items-center gap-1"
                     title={t('Free Explorer Tier • Upgrade to Pro for 30h/week Facility')}
                   >
                     <Sparkles className="w-2.5 h-2.5 text-amber-300" />
@@ -885,17 +923,17 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-emerald-100/80 font-medium flex items-center gap-1.5 mt-0.5">
+              <p className="text-[11px] text-emerald-100/80 font-medium flex items-center gap-1.5 mt-0.5 truncate">
                 <span>{ARGON_STATE_THEME[argonHeaderState].badgeLabel}</span>
                 <span className="opacity-40">•</span>
-                <span className="text-emerald-300 font-semibold">
+                <span className="text-emerald-300 font-semibold truncate">
                   {brainStatus.latencyMs ? `${brainStatus.latencyMs}ms live` : 'Real-time Intelligence'}
                 </span>
               </p>
             </div>
           </div>
 
-          <div className="relative z-10 flex items-center gap-1">
+          <div className="relative z-10 flex items-center gap-1 shrink-0">
             <button
               onClick={handleClearChat}
               className="p-2 rounded-xl text-emerald-100/70 hover:text-red-300 hover:bg-white/10 transition-colors cursor-pointer"
@@ -975,7 +1013,13 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         )}
 
         {/* Quick Scenario Chips Carousel */}
-        <div className="px-3.5 py-2.5 bg-gradient-to-r from-[#F4F7F3] via-white to-[#F4F7F3] dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 border-b border-emerald-950/5 dark:border-slate-800 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0 shadow-2xs">
+        <div
+          className="px-3.5 py-2.5 bg-gradient-to-r from-[#F4F7F3] via-white to-[#F4F7F3] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border-b border-emerald-950/5 dark:border-slate-800 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0 shadow-2xs pr-8"
+          style={{
+            maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 100%)',
+            WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 100%)',
+          }}
+        >
           {scenarioChips.map(chip => (
             <button
               key={chip.label}
@@ -1020,7 +1064,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   )}
                 </div>
 
-                <div className="max-w-[92%] sm:max-w-[85%] min-w-0 flex-1 space-y-2">
+                <div className={isAi ? 'max-w-[92%] sm:max-w-[85%] min-w-0 flex-1 space-y-2' : 'max-w-[85%] sm:max-w-[78%] min-w-0 flex flex-col items-end space-y-1.5'}>
                   {/* AI Metadata Pill */}
                   {isAi && (
                     <div className="flex items-center justify-between gap-1.5 text-[11px] px-1">
@@ -1064,10 +1108,10 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   )}
 
                   {/* Message Bubble */}
-                  <div className={`p-4 sm:p-4.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed overflow-hidden break-words ${
+                  <div className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-[13px] leading-relaxed overflow-hidden break-words ${
                     isAi
-                      ? 'bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-slate-800 dark:text-slate-100 rounded-tl-xs border border-emerald-500/15 dark:border-emerald-500/20 shadow-[0_6px_28px_rgba(16,185,129,0.08)]'
-                      : 'bg-gradient-to-br from-[#1E4D34] via-[#245D3F] to-[#2D6E4B] text-white font-medium rounded-tr-xs shadow-md shadow-emerald-950/20'
+                      ? 'w-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-slate-800 dark:text-slate-100 rounded-tl-xs border border-emerald-500/15 dark:border-emerald-500/20 shadow-[0_6px_28px_rgba(16,185,129,0.08)]'
+                      : 'w-fit ml-auto bg-gradient-to-br from-[#1E4D34] via-[#245D3F] to-[#2D6E4B] text-white font-medium rounded-tr-xs shadow-md shadow-emerald-950/20'
                   }`}>
                     {isAi ? (
                       <FormattedAIMessage text={parsed.cleanText} />
@@ -1078,15 +1122,15 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
                   {/* Interactive Structured Itinerary Card */}
                   {msg.structuredItinerary && (
-                    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-md p-3.5 space-y-3 overflow-hidden">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 gap-2">
-                        <div className="flex items-center gap-1.5 font-bold text-xs text-[#0B2545] min-w-0">
+                    <div className="bg-white dark:bg-slate-800/95 rounded-2xl border border-slate-200/90 dark:border-slate-700 shadow-md p-3.5 space-y-3 overflow-hidden">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/80 pb-2.5 gap-2">
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-[#0B2545] dark:text-slate-100 min-w-0">
                           <Calendar className="w-4 h-4 text-emerald-500 shrink-0" />
                           <span className="truncate">
                             {msg.structuredItinerary.destination || trip.destination || 'Destination'} — {msg.structuredItinerary.durationDays || msg.structuredItinerary.days?.length || trip.durationDays} Days
                           </span>
                         </div>
-                        <span className="text-[11px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 shrink-0">
+                        <span className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800 shrink-0">
                           {formatCurrency(Number(String(msg.structuredItinerary.totalCost ?? (msg.structuredItinerary as any).total_cost ?? 0).replace(/[^0-9.-]+/g, '') || 0))} Budget
                         </span>
                       </div>
@@ -1100,10 +1144,10 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                               key={dNum}
                               type="button"
                               onClick={() => setActiveItineraryDay(prev => ({ ...prev, [msg.id]: dNum }))}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
+                              className={`min-h-0 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
                                 currentSelectedDay === dNum
-                                  ? 'bg-[#2D5A3D] text-white shadow-xs'
-                                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                  ? 'bg-[#2D5A3D] dark:bg-emerald-600 text-white shadow-xs'
+                                  : 'bg-slate-100 dark:bg-slate-700/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                               }`}
                             >
                               Day {dNum}
@@ -1126,27 +1170,27 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                         const diningText = selectedDay.food || (selectedDay as any).dining || (selectedDay as any).meals || 'Authentic dining';
 
                         return (
-                          <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/60 space-y-2 text-[11px]">
-                            <div className="flex items-center justify-between font-bold text-slate-800 gap-2">
+                          <div className="bg-slate-50 dark:bg-slate-900/75 rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/70 space-y-2 text-[11px]">
+                            <div className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-100 gap-2">
                               <span className="truncate">{selectedDay.title || `Day ${currentSelectedDay} Experience`}</span>
-                              <span className="text-emerald-700 font-extrabold shrink-0">₹{dayCost.toLocaleString('en-IN')}</span>
+                              <span className="text-emerald-700 dark:text-emerald-300 font-extrabold shrink-0">{formatCurrency(dayCost)}</span>
                             </div>
 
-                            <div className="space-y-1.5 text-slate-600">
+                            <div className="space-y-1.5 text-slate-600 dark:text-slate-300">
                               <div className="flex items-start gap-1.5">
                                 <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                                <div className="break-words min-w-0"><strong className="text-slate-700">Morning:</strong> {morningText}</div>
+                                <div className="break-words min-w-0"><strong className="text-slate-700 dark:text-slate-100">Morning:</strong> {morningText}</div>
                               </div>
                               <div className="flex items-start gap-1.5">
                                 <Clock className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
-                                <div className="break-words min-w-0"><strong className="text-slate-700">Afternoon:</strong> {afternoonText}</div>
+                                <div className="break-words min-w-0"><strong className="text-slate-700 dark:text-slate-100">Afternoon:</strong> {afternoonText}</div>
                               </div>
                               <div className="flex items-start gap-1.5">
                                 <Sunset className="w-3.5 h-3.5 text-purple-500 shrink-0 mt-0.5" />
-                                <div className="break-words min-w-0"><strong className="text-slate-700">Evening:</strong> {eveningText}</div>
+                                <div className="break-words min-w-0"><strong className="text-slate-700 dark:text-slate-100">Evening:</strong> {eveningText}</div>
                               </div>
-                              <div className="flex items-start gap-1.5 pt-1 border-t border-slate-200/60 text-emerald-800">
-                                <Utensils className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                              <div className="flex items-start gap-1.5 pt-1 border-t border-slate-200/60 dark:border-slate-700/70 text-emerald-800 dark:text-emerald-300">
+                                <Utensils className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                                 <div className="break-words min-w-0"><strong>Dining:</strong> {diningText}</div>
                               </div>
                             </div>
@@ -1166,19 +1210,19 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                     const buffer = Number(String(msg.budgetBreakdown.buffer || 0).replace(/[^0-9.-]+/g, '')) || 0;
 
                     return (
-                      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-md p-3.5 space-y-3 overflow-hidden">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                          <span className="text-xs font-bold text-[#0B2545] flex items-center gap-1.5">
+                      <div className="bg-white dark:bg-slate-800/95 rounded-2xl border border-slate-200/90 dark:border-slate-700 shadow-md p-3.5 space-y-3 overflow-hidden">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/80 pb-2">
+                          <span className="text-xs font-bold text-[#0B2545] dark:text-slate-100 flex items-center gap-1.5">
                             <Coins className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                             <span>Budget Allocation</span>
                           </span>
-                          <span className="text-xs font-black text-emerald-700">
-                            ₹{total.toLocaleString('en-IN')}
+                          <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">
+                            {formatCurrency(total)}
                           </span>
                         </div>
 
                         {/* Stacked Progress Bar */}
-                        <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                        <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex shadow-inner">
                           <div style={{ width: `${Math.min(100, (transport / total) * 100)}%` }} className="bg-sky-500" title="Flights & Transit" />
                           <div style={{ width: `${Math.min(100, (stays / total) * 100)}%` }} className="bg-indigo-500" title="Hotels & Stays" />
                           <div style={{ width: `${Math.min(100, (food / total) * 100)}%` }} className="bg-emerald-500" title="Food & Dining" />
@@ -1187,25 +1231,25 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 text-[11px]">
-                          <div className="p-2 rounded-lg bg-sky-50 text-sky-900 border border-sky-100 min-w-0">
-                            <span className="block text-[10px] text-sky-600 font-semibold truncate">Transit</span>
-                            <span className="font-bold truncate block">₹{transport.toLocaleString('en-IN')}</span>
+                          <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 border border-sky-100 dark:border-sky-800/50 min-w-0">
+                            <span className="block text-[10px] text-sky-600 dark:text-sky-300 font-semibold truncate">Transit</span>
+                            <span className="font-bold truncate block">{formatCurrency(transport)}</span>
                           </div>
-                          <div className="p-2 rounded-lg bg-indigo-50 text-indigo-900 border border-indigo-100 min-w-0">
-                            <span className="block text-[10px] text-indigo-600 font-semibold truncate">Stays</span>
-                            <span className="font-bold truncate block">₹{stays.toLocaleString('en-IN')}</span>
+                          <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 border border-indigo-100 dark:border-indigo-800/50 min-w-0">
+                            <span className="block text-[10px] text-indigo-600 dark:text-indigo-300 font-semibold truncate">Stays</span>
+                            <span className="font-bold truncate block">{formatCurrency(stays)}</span>
                           </div>
-                          <div className="p-2 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-100 min-w-0">
-                            <span className="block text-[10px] text-emerald-600 font-semibold truncate">Dining</span>
-                            <span className="font-bold truncate block">₹{food.toLocaleString('en-IN')}</span>
+                          <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 border border-emerald-100 dark:border-emerald-800/50 min-w-0">
+                            <span className="block text-[10px] text-emerald-600 dark:text-emerald-300 font-semibold truncate">Dining</span>
+                            <span className="font-bold truncate block">{formatCurrency(food)}</span>
                           </div>
-                          <div className="p-2 rounded-lg bg-amber-50 text-amber-900 border border-amber-100 min-w-0">
-                            <span className="block text-[10px] text-amber-600 font-semibold truncate">Tickets</span>
-                            <span className="font-bold truncate block">₹{activities.toLocaleString('en-IN')}</span>
+                          <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-100 dark:border-amber-800/50 min-w-0">
+                            <span className="block text-[10px] text-amber-600 dark:text-amber-300 font-semibold truncate">Tickets</span>
+                            <span className="font-bold truncate block">{formatCurrency(activities)}</span>
                           </div>
                         </div>
 
-                        <div className="text-[10px] text-slate-400 italic">
+                        <div className="text-[10px] text-slate-400 dark:text-slate-400 italic">
                           * Realistic estimates based on seasonal averages. Excludes personal shopping.
                         </div>
                       </div>
@@ -1268,7 +1312,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                 <Sparkles className="w-4 h-4 text-emerald-300 animate-spin" />
                 <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900 animate-ping" />
               </div>
-              <div className="px-4 py-3 bg-white/95 dark:bg-slate-850/95 border border-slate-200/80 rounded-2xl rounded-tl-xs text-xs text-slate-700 dark:text-slate-200 font-semibold shadow-[0_4px_20px_rgba(20,50,30,0.06)] flex items-center gap-2.5">
+              <div className="px-4 py-3 bg-white/95 dark:bg-slate-800/95 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl rounded-tl-xs text-xs text-slate-700 dark:text-slate-200 font-semibold shadow-[0_4px_20px_rgba(20,50,30,0.06)] flex items-center gap-2.5">
                 <Activity className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse shrink-0" />
                 <span>ConCode AI reasoning travel schedule & budget...</span>
                 <span className="flex gap-1 ml-1">
@@ -1318,10 +1362,12 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               </button>
             </div>
           )}
-          <div className="flex items-center gap-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/25 dark:border-emerald-500/30 shadow-[0_4px_20px_rgba(16,185,129,0.12)] focus-within:border-emerald-500/60 focus-within:shadow-[0_0_25px_rgba(16,185,129,0.25)] rounded-2xl px-3 py-1.5 transition-all">
-            <Compass className="w-4 h-4 text-emerald-600/70 dark:text-emerald-400/70 shrink-0 hidden sm:block" />
-            <input
-              type="text"
+          <div className="flex items-end gap-1.5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/25 dark:border-emerald-500/30 shadow-[0_4px_20px_rgba(16,185,129,0.12)] focus-within:border-emerald-500/60 focus-within:shadow-[0_0_25px_rgba(16,185,129,0.25)] rounded-2xl px-3 py-1.5 transition-all">
+            <Compass className="w-4 h-4 text-emerald-600/70 dark:text-emerald-400/70 shrink-0 hidden sm:block mb-2.5" />
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              aria-label={t('Ask ConCode AI')}
               placeholder={isListening ? t('Listening to your voice...') : t('Ask anything (e.g. Plan a 5-day trip to Dubai)...')}
               value={inputQuery}
               onChange={(e) => setInputQuery(e.target.value)}
@@ -1331,7 +1377,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   handleSendMessage();
                 }
               }}
-              className="flex-1 py-1.5 bg-transparent border-0 text-base sm:text-sm focus:outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400 font-medium"
+              className="flex-1 py-2 bg-transparent border-0 text-base sm:text-sm focus:outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400 font-medium resize-none max-h-28 overflow-y-auto leading-snug"
             />
             {/* Hidden File Input for Camera/Photo Upload */}
             <input
@@ -1345,7 +1391,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+              className={`min-h-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                 uploadedImage
                   ? 'bg-emerald-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40'
@@ -1359,7 +1405,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             <button
               type="button"
               onClick={toggleListening}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+              className={`min-h-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                 isListening
                   ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/30 ring-2 ring-rose-400'
                   : 'text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40'
@@ -1372,17 +1418,17 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             <button
               onClick={() => handleSendMessage()}
               disabled={(!inputQuery.trim() && !uploadedImage) || isProcessing}
-              className="w-9 h-9 rounded-xl bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] hover:from-[#1E5237] hover:to-[#225C3C] text-white flex items-center justify-center shadow-sm shadow-emerald-950/20 transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shrink-0"
+              className="min-h-0 w-10 h-10 rounded-xl bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] hover:from-[#1E5237] hover:to-[#225C3C] text-white flex items-center justify-center shadow-sm shadow-emerald-950/20 transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shrink-0"
               aria-label={t('Send Message')}
             >
               <Send className="w-4 h-4" />
             </button>
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 px-1 pt-1.5 select-none font-medium">
-            <span>Press Enter ↵ to send • Voice enabled</span>
+            <span>Enter ↵ to send • {supportsVoice ? 'Voice ready' : 'Text & Photo AI'}</span>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 inline-block" />
-              ConCode 2.0 Live
+              ConCode AI
             </span>
           </div>
         </div>
@@ -1402,4 +1448,6 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(drawerMarkup, document.body) : drawerMarkup;
 };

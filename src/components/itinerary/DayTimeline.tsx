@@ -5,7 +5,7 @@ import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError, DEFAULT_TRAVEL_FALLBACK_IMAGE } from '../../utils/destinationImages';
 import { fetchOriginalPhoto, getInstantPhoto } from '../../services/originalPhotoService';
 import { getDestinationHighlights, calculateTransitBetween, resolveLandmarkCoordinates } from '../../services/landmarkAtlasService';
-import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, Info, ShieldCheck, Zap, Activity, Building2, Moon, RotateCcw, CalendarPlus } from 'lucide-react';
+import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, ShieldCheck, Zap, Activity, Building2, Moon, RotateCcw, CalendarPlus } from 'lucide-react';
 import { triggerHaptic } from '../../services/deviceService';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
 import { toggleDayWeatherMode } from '../../services/smartTravelEngine';
@@ -54,7 +54,7 @@ const DayThumbnailImage: React.FC<{
       });
     }
     return () => { isMounted = false; };
-  }, [day, primaryActivity, destination]);
+  }, [day, primaryActivity, destination, imgSrc]);
 
   return (
     <div className="w-20 h-18 sm:w-24 sm:h-20 rounded-2xl overflow-hidden shadow-xs border border-[#E2EBE1] bg-[#E8EFE7]">
@@ -512,19 +512,37 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                       )}
 
                       {activeDay.activities.map((act, idx) => {
-                        const Icon = getActivityIcon(act.type);
                         const actCoords: Coordinates = act.coordinates || resolveLandmarkCoordinates(act.location || act.title, { lat: 25.5, lng: 91.5 });
                         const liveTransit = userCoords && actCoords ? calculateTransitBetween(userCoords, actCoords) : null;
+                        const isLast = idx === activeDay.activities.length - 1;
 
                         return (
-                          <div
-                            key={act.id}
-                            className={`rounded-2xl p-3.5 sm:p-4 border transition-all ${
-                              act.completed
-                                ? 'bg-[#E8EFE7]/40 border-[#8EA78D]/30 opacity-75'
-                                : 'bg-white border-[#E2EBE1] shadow-2xs hover:border-[#8EA78D]'
-                            }`}
-                          >
+                          <div key={act.id} className="relative pl-6 sm:pl-7">
+                            {/* Living Highway Route Thread & Stop Node */}
+                            {!isLast && (
+                              <span
+                                aria-hidden="true"
+                                className="absolute left-[9px] top-6 -bottom-3 w-0.5 bg-gradient-to-b from-[#2D5A3D]/60 via-[#8EA78D]/45 to-[#8EA78D]/20 dark:from-emerald-500/60 dark:via-emerald-500/25"
+                              />
+                            )}
+                            <span
+                              aria-hidden="true"
+                              className={`absolute left-0 top-4 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border-2 transition-colors ${
+                                act.completed
+                                  ? 'bg-[#2D5A3D] border-[#2D5A3D] text-white'
+                                  : 'bg-white dark:bg-slate-900 border-[#2D5A3D] dark:border-emerald-400 text-[#2D5A3D] dark:text-emerald-300 shadow-xs'
+                              }`}
+                            >
+                              {idx + 1}
+                            </span>
+
+                            <div
+                              className={`rounded-2xl p-3.5 sm:p-4 border transition-all ${
+                                act.completed
+                                  ? 'bg-[#E8EFE7]/45 border-[#8EA78D]/35 opacity-80'
+                                  : 'bg-white border-[#E2EBE1] liquid-bento-card hover:border-[#8EA78D]'
+                              }`}
+                            >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                               
                               <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
@@ -816,6 +834,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                               </span>
                             </div>
 
+                            </div>
                           </div>
                         );
                       })}

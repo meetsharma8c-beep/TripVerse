@@ -211,7 +211,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label="Search destinations and trips"
-      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-start justify-center pt-16 sm:pt-24 px-4 overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-[130] bg-slate-900/60 backdrop-blur-sm flex items-start justify-center pt-16 sm:pt-24 px-4 overflow-y-auto animate-fade-in"
       onClick={onClose}
     >
       <div 

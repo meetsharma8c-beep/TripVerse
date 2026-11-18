@@ -44,9 +44,6 @@ import {
   buildUpiPaymentUri, 
   getUpiQrCodeUrl, 
   evaluateCoupon, 
-  detectCardBrand, 
-  formatCardNumber, 
-  formatCardExpiry,
   generateTicketReceiptText,
   createRazorpayOrder,
   verifyRazorpayPayment,
@@ -101,13 +98,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   const [selectedUpiApp, setSelectedUpiApp] = useState<string | null>(null);
   const [copiedUpi, setCopiedUpi] = useState<boolean>(false);
 
-  // Card Form States
-  const [cardNumber, setCardNumber] = useState<string>('');
+  // Card Checkout Prefill State (raw PAN/Expiry/CVV collected exclusively inside Razorpay PCI-DSS Hosted Checkout)
   const [cardHolder, setCardHolder] = useState<string>('');
-  const [cardExpiry, setCardExpiry] = useState<string>('');
-  const [cardCvv, setCardCvv] = useState<string>('');
-  const [saveCard, setSaveCard] = useState<boolean>(true);
-  const [cardValidationError, setCardValidationError] = useState<string | null>(null);
 
   // Netbanking Form States
   const [selectedBank, setSelectedBank] = useState<string>('hdfc');
@@ -247,7 +239,6 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   const handleTabSwitch = (newTab: PaymentMethodType) => {
     triggerHaptic('light');
     setActiveTab(newTab);
-    setCardValidationError(null);
     const duration = getSessionDuration(newTab);
     targetExpiryRef.current = Date.now() + duration * 1000;
     setSecondsRemaining(duration);
@@ -268,7 +259,6 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         prevCurrencyRef.current = currency;
         const defaultTab = currency === 'INR' ? 'upi_qr' : 'card';
         setActiveTab(defaultTab);
-        setCardValidationError(null);
         const duration = getSessionDuration(defaultTab);
         targetExpiryRef.current = Date.now() + duration * 1000;
         setSecondsRemaining(duration);
@@ -397,24 +387,6 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
     methodName: string, 
     extraOptions?: { wallet?: string; bank?: string; vpa?: string }
   ) => {
-    // Validate card details if initiating from the Card tab with partial input
-    if (activeTab === 'card') {
-      const digits = cardNumber.replace(/\D/g, '');
-      if (digits.length > 0 && digits.length < 15) {
-        setCardValidationError('Please enter a valid 15 or 16-digit card number.');
-        return;
-      }
-      if (cardExpiry.trim().length > 0 && !/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardExpiry.trim())) {
-        setCardValidationError('Please enter card expiry in MM/YY format (e.g. 12/28).');
-        return;
-      }
-      if (cardCvv.trim().length > 0 && cardCvv.trim().length < 3) {
-        setCardValidationError('Please enter a valid 3 or 4-digit CVV/CVC code.');
-        return;
-      }
-      setCardValidationError(null);
-    }
-
     triggerHaptic('medium');
     setGatewayStage('authorizing');
     setGatewayErrorMessage('');
@@ -1041,32 +1013,23 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                 </div>
               )}
 
-              {/* TAB CONTENT 2: CREDIT / DEBIT CARDS */}
+              {/* TAB CONTENT 2: CREDIT / DEBIT CARDS (PCI-DSS HOSTED CHECKOUT) */}
               {activeTab === 'card' && (
                 <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-3.5 sm:p-4 space-y-3 shadow-xs">
-                  {/* Virtual Card Preview Header */}
-                  <div className="rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-3 text-white shadow-md relative overflow-hidden border border-slate-700/50">
-                    <div className="flex justify-between items-center mb-2.5">
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400">
-                        TripVerse Secure Card Pay
+                  {/* Encrypted Hosted Card Checkout Banner */}
+                  <div className="rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 p-3.5 text-white shadow-md relative overflow-hidden border border-slate-700/50 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400 flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        TripVerse PCI-DSS Hosted Card Pay
                       </span>
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                        {detectCardBrand(cardNumber).toUpperCase()}
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        3D Secure 2.0
                       </span>
                     </div>
-                    <div className="text-sm sm:text-base font-mono tracking-widest mb-2.5">
-                      {cardNumber || '•••• •••• •••• ••••'}
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] uppercase tracking-wider text-slate-300">
-                      <div>
-                        <span className="block text-[8px] text-slate-400">Cardholder</span>
-                        <span>{cardHolder || 'TRAVELER NAME'}</span>
-                      </div>
-                      <div>
-                        <span className="block text-[8px] text-slate-400">Expires</span>
-                        <span>{cardExpiry || 'MM/YY'}</span>
-                      </div>
-                    </div>
+                    <p className="text-xs text-slate-200 leading-relaxed">
+                      Card numbers, expiry dates, and CVV codes are entered directly inside Razorpay&apos;s PCI-DSS Level 1 encrypted checkout window—never stored or processed in your browser DOM.
+                    </p>
                   </div>
 
                   {/* Accepted Worldwide Cards Row */}
@@ -1101,22 +1064,12 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                     </div>
                   )}
 
-                  {/* Card Form */}
+                  {/* Optional Billing Name Prefill + Hosted Checkout CTA */}
                   <div className="space-y-2.5">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-1">Card Number</label>
-                      <input
-                        type="text"
-                        value={cardNumber}
-                        onChange={e => setCardNumber(formatCardNumber(e.target.value))}
-                        placeholder="4532 8920 1823 4821"
-                        maxLength={19}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-1">Name on Card</label>
+                      <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-1">
+                        Name on Card (Optional Prefill)
+                      </label>
                       <input
                         type="text"
                         value={cardHolder}
@@ -1126,62 +1079,22 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-1">Expiry Date</label>
-                        <input
-                          type="text"
-                          value={cardExpiry}
-                          onChange={e => setCardExpiry(formatCardExpiry(e.target.value))}
-                          placeholder="MM/YY"
-                          maxLength={5}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 flex items-center justify-between mb-1">
-                          <span>CVV / CVC</span>
-                          <span className="text-[9px] text-slate-400 dark:text-slate-500 font-normal">3-4 digits</span>
-                        </label>
-                        <input
-                          type="password"
-                          value={cardCvv}
-                          onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                          placeholder="•••"
-                          maxLength={4}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500 text-xs font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                        />
-                      </div>
-                    </div>
-
-                    <label className="flex items-center gap-2 pt-0.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={saveCard}
-                        onChange={e => setSaveCard(e.target.checked)}
-                        className="rounded border-slate-300 dark:border-slate-700 text-emerald-700 focus:ring-emerald-600 dark:bg-slate-900"
-                      />
-                      <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                      <Lock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>
                         {isINR
-                          ? 'Securely save card as per RBI Tokenization guidelines'
-                          : 'Save card securely with PCI-DSS Level 1 & 256-bit AES Tokenization'}
+                          ? 'RBI Card-on-File Tokenization & 256-bit TLS verified via Razorpay Hosted Checkout.'
+                          : 'PCI-DSS Level 1 & 256-bit AES Tokenization verified via Razorpay Hosted Checkout.'}
                       </span>
-                    </label>
-
-                    {cardValidationError && (
-                      <div className="p-2.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
-                        <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
-                        <span>{cardValidationError}</span>
-                      </div>
-                    )}
+                    </div>
 
                     <button
                       type="button"
-                      onClick={() => initiatePayment(`Card (•••• ${cardNumber.slice(-4) || '4242'})`)}
+                      onClick={() => initiatePayment('Credit / Debit Card (Encrypted Checkout)')}
                       className="w-full mt-1 py-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Lock className="w-3.5 h-3.5" />
-                      <span>Pay {formatCurrency(finalPayableINR, currency)}</span>
+                      <span>Continue to Card Checkout • {formatCurrency(finalPayableINR, currency)}</span>
                     </button>
                   </div>
                 </div>

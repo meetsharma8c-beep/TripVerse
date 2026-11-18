@@ -21,6 +21,32 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
   const [argonState, setArgonState] = useState<ArgonState>('idle');
   const [hintIndex, setHintIndex] = useState(0);
   const [showHintBubble, setShowHintBubble] = useState(true);
+  const [isPwaBannerVisible, setIsPwaBannerVisible] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(() =>
+    typeof document !== 'undefined' && document.documentElement.dataset.scrollLocked === 'true'
+  );
+
+  // Coordinate visibility with open modals & PWA install banner so corner widgets never collide
+  useEffect(() => {
+    const onPwaVisibility = (e: Event) => {
+      const detail = (e as CustomEvent<{ visible?: boolean }>).detail;
+      setIsPwaBannerVisible(Boolean(detail?.visible));
+    };
+    window.addEventListener('tripverse-pwa-banner-visibility', onPwaVisibility);
+
+    let observer: MutationObserver | null = null;
+    if (typeof document !== 'undefined' && typeof MutationObserver !== 'undefined') {
+      observer = new MutationObserver(() => {
+        setIsModalOpen(document.documentElement.dataset.scrollLocked === 'true');
+      });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-scroll-locked'] });
+    }
+
+    return () => {
+      window.removeEventListener('tripverse-pwa-banner-visibility', onPwaVisibility);
+      observer?.disconnect();
+    };
+  }, []);
 
   const dynamicHints: ProactiveHint[] = [
     {
@@ -86,8 +112,8 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
     return () => clearInterval(timer);
   }, [isChatOpen, dynamicHints.length]);
 
-  // When chat opens, hide corner launcher to avoid overlap with chat drawer
-  if (isChatOpen) return null;
+  // When chat or a blocking modal opens, or PWA banner occupies the bottom-right slot, hide launcher to prevent overlap
+  if (isChatOpen || isModalOpen || isPwaBannerVisible) return null;
 
   const handleHintClick = (hint: ProactiveHint) => {
     if (onOpenChatWithQuery) {
@@ -99,7 +125,7 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
 
   return (
     <div
-      className={`fixed z-40 flex flex-col items-end gap-2.5 select-none ${className}`}
+      className={`fixed z-[41] flex flex-col items-end gap-2.5 select-none ${className}`}
       style={{
         bottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))',
         right: 'calc(1rem + env(safe-area-inset-right, 0px))',

@@ -3,16 +3,34 @@ import crypto from 'crypto';
 import { applyCorsHeaders, checkRateLimit, escapeHtml, getClientIp } from './rateLimiter.js';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const HMAC_SECRET = process.env.AUTH_SECRET || 'REDACTED_DEV_HMAC_SALT';
+const EPHEMERAL_DEV_SECRET = crypto.randomBytes(32).toString('hex');
 
-// Per-email dispatch cooldown map (prevents burning Resend API quota on rapid re-requests)
+function getHmacSecret() {
+  const configured = (
+    process.env.AUTH_SECRET ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.RESEND_API_KEY ||
+    ''
+  ).trim();
+  if (configured) return configured;
+  if (process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production') {
+    return '';
+  }
+  return EPHEMERAL_DEV_SECRET;
+}
+
+// Per-email dispatch cooldown & attempt tracking maps
 const emailDispatchCooldowns = new Map();
 const activeEmailOtpTokens = new Map();
+const verifyAttemptCounts = new Map();
 const EMAIL_COOLDOWN_MS = 60 * 1000; // 60 seconds minimum cooldown per email
+const MAX_VERIFY_ATTEMPTS = 5;
 
 function signOtp(email, code, expiresAt) {
+  const secret = getHmacSecret();
+  if (!secret) throw new Error('AUTH_SECRET_NOT_CONFIGURED');
   const normalized = String(email).trim().toLowerCase();
-  return crypto.createHmac('sha256', HMAC_SECRET)
+  return crypto.createHmac('sha256', secret)
     .update(`${normalized}:${code}:${expiresAt}`)
     .digest('hex');
 }
@@ -77,7 +95,14 @@ export default async function handler(req, res) {
       });
     }
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    if (!getHmacSecret()) {
+      return res.status(503).json({
+        success: false,
+        message: 'Email verification service is temporarily unconfigured.'
+      });
+    }
+
+    const otpCode = crypto.randomInt(100000, 1000000).toString();
     const expiresAt = now + 10 * 60 * 1000; // 10 minutes
     const signature = signOtp(emailNorm, otpCode, expiresAt);
     const verificationToken = `${expiresAt}.${signature}`;
@@ -188,19 +213,26 @@ export default async function handler(req, res) {
 
       if (!resendRes.ok) {
         console.error('[Resend Error]', resendData);
-        // If Resend test domain restricts to owner (meet.sharma8c@gmail.com):
+        // If Resend test domain restricts to owner email:
         if (typeof resendData.message === 'string' && resendData.message.includes('You can only send testing emails to your own email address')) {
-          console.warn(`[Resend Notice] Resend sandbox owner restriction for ${emailNorm}. Storing token securely.`);
+          const isProduction = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+          console.warn(`[Resend Notice] Resend sandbox owner restriction for ${emailNorm}.`);
+          if (isProduction) {
+            return res.status(503).json({
+              success: false,
+              message: 'Outbound email verification is temporarily restricted to verified domain recipients. Please try Google Sign-In or contact support.'
+            });
+          }
+
           emailDispatchCooldowns.set(emailNorm, now);
           activeEmailOtpTokens.set(emailNorm, { token: verificationToken, expiresAt });
-
           res.setHeader('Set-Cookie', `tripverse_email_otp=${encodeURIComponent(verificationToken)}; Path=/; Max-Age=600; SameSite=Lax; Secure; HttpOnly`);
           return res.status(200).json({
             success: true,
             isSandboxNotice: true,
             devCode: otpCode,
-            sandboxNotice: `Resend Sandbox Notice: Live delivery is restricted to owner (meet.sharma8c@gmail.com) until trip-verse.com DNS is added. For testing, your security code is: ${otpCode}`,
-            message: `Free-tier sandbox mode: verification code registered for ${emailNorm}. Code: ${otpCode}`,
+            sandboxNotice: `Resend Sandbox Notice (non-production): verification code is ${otpCode}`,
+            message: `Sandbox mode: verification code generated for ${emailNorm}.`,
             email: emailNorm,
             token: verificationToken,
             expiresAt
@@ -246,10 +278,23 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Invalid or missing verification session. Please request a new code.' });
     }
 
+    if (!getHmacSecret()) {
+      return res.status(503).json({ success: false, message: 'Email verification service is unconfigured.' });
+    }
+
+    const attemptsKey = `${emailNorm}:${activeToken.slice(-16)}`;
+    const priorAttempts = verifyAttemptCounts.get(attemptsKey) || 0;
+    if (priorAttempts >= MAX_VERIFY_ATTEMPTS) {
+      return res.status(429).json({
+        success: false,
+        message: 'Too many failed verification attempts for this code. Please request a new code.'
+      });
+    }
+
     const [expiresAtStr, signature] = activeToken.split('.');
     const expiresAt = parseInt(expiresAtStr, 10);
 
-    if (Date.now() > expiresAt) {
+    if (!Number.isFinite(expiresAt) || Date.now() > expiresAt) {
       return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new code.' });
     }
 
@@ -258,8 +303,11 @@ export default async function handler(req, res) {
     const expBuf = Buffer.from(expectedSig);
 
     if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+      verifyAttemptCounts.set(attemptsKey, priorAttempts + 1);
       return res.status(400).json({ success: false, message: 'Incorrect verification code. Please check your inbox and try again.' });
     }
+
+    verifyAttemptCounts.delete(attemptsKey);
 
     return res.status(200).json({
       success: true,

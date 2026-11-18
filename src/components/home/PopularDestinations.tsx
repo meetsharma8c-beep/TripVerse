@@ -179,7 +179,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
             >
               <article
                 onClick={() => onSelectDestination(dest)}
-                className="group h-full flex flex-col bg-white dark:bg-[#0E1726] rounded-2xl sm:rounded-3xl overflow-hidden border border-[#E2EBE1] dark:border-white/10 shadow-2xs hover:shadow-xl hover:border-[#2D5A3D]/60 dark:hover:border-emerald-500/40 card-elevate cursor-pointer"
+                className="group h-full flex flex-col bg-white/95 dark:bg-[#0E1726]/95 rounded-[26px] sm:rounded-[28px] overflow-hidden border border-[#DCE7DB] dark:border-white/10 hover:border-[#2D5A3D]/60 dark:hover:border-emerald-500/45 liquid-bento-card cursor-pointer"
               >
                 {/* Top Photo Area (~55-60% card weight) */}
                 <div className="relative h-52 sm:h-auto sm:aspect-[4/3] w-full overflow-hidden bg-slate-200 dark:bg-slate-800 shrink-0">
@@ -190,11 +190,19 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                     loading="lazy"
                     onError={handleImageError}
                   />
-                  {/* Subtle top vignette for badge legibility over bright skies */}
+                  {/* Subtle vignette for badge legibility */}
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10"
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/35"
                   />
+
+                  {/* Bottom-left frosted editorial vibe tag */}
+                  <div className="absolute bottom-2.5 left-3 pointer-events-none">
+                    <span className="inline-flex items-center gap-1.5 bg-black/45 dark:bg-slate-950/65 backdrop-blur-md text-white/95 text-[10px] font-medium px-2.5 py-1 rounded-full border border-white/20 shadow-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span className="font-serif italic tracking-wide capitalize">{dest.category}</span>
+                    </span>
+                  </div>
 
                   {/* Top-left Frosted Rating & 3D Pills */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5">

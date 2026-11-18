@@ -370,7 +370,7 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
   const displayCoordinates = encyclopediaData?.coordinates;
 
   const viewerContent = (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[110] overflow-hidden bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200">
       <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col relative text-slate-100 max-h-[94vh]">
         
         {/* Top Header with Dual View Mode Selector */}

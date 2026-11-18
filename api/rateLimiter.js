@@ -93,6 +93,7 @@ export function applyCorsHeaders(req, res, allowedMethods = 'GET, POST, OPTIONS'
   const origin = req.headers?.origin || '';
   const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
 
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Origin', corsOrigin);
   res.setHeader('Access-Control-Allow-Methods', allowedMethods);
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, X-Admin-Key');

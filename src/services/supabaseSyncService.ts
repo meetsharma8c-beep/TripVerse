@@ -65,10 +65,8 @@ export async function saveTripToSupabase(userId: string, trip: Trip): Promise<bo
       return false;
     }
 
-    // Save Itinerary Days & Items if present, cleaning up removed days/items first
-    await supabase.from('itinerary_items').delete().eq('trip_id', trip.id);
-    await supabase.from('itinerary_days').delete().eq('trip_id', trip.id);
-
+    // Non-destructive sync: upsert new/updated itinerary days & items FIRST,
+    // then prune stale removed items/days only after the upsert succeeds.
     if (trip.itinerary && trip.itinerary.length > 0) {
       const daysPayload = trip.itinerary.map(d => ({
         id: `day-${trip.id}-${d.dayNumber}`,
@@ -79,7 +77,11 @@ export async function saveTripToSupabase(userId: string, trip: Trip): Promise<bo
         day_estimated_cost: d.dayEstimatedCost || 0
       }));
 
-      await supabase.from('itinerary_days').upsert(daysPayload);
+      const { error: daysErr } = await supabase.from('itinerary_days').upsert(daysPayload);
+      if (daysErr) {
+        console.warn('[Supabase] Failed to upsert itinerary_days:', daysErr);
+        return false;
+      }
 
       const itemsPayload: any[] = [];
       trip.itinerary.forEach(d => {
@@ -103,8 +105,33 @@ export async function saveTripToSupabase(userId: string, trip: Trip): Promise<bo
       });
 
       if (itemsPayload.length > 0) {
-        await supabase.from('itinerary_items').upsert(itemsPayload);
+        const { error: itemsErr } = await supabase.from('itinerary_items').upsert(itemsPayload);
+        if (itemsErr) {
+          console.warn('[Supabase] Failed to upsert itinerary_items:', itemsErr);
+          return false;
+        }
       }
+
+      // Safely prune only orphaned items/days no longer in the current trip state
+      const currentItemIds = new Set(itemsPayload.map(i => i.id));
+      const currentDayIds = new Set(daysPayload.map(d => d.id));
+      const [{ data: existingItems }, { data: existingDays }] = await Promise.all([
+        supabase.from('itinerary_items').select('id').eq('trip_id', trip.id),
+        supabase.from('itinerary_days').select('id').eq('trip_id', trip.id)
+      ]);
+
+      const staleItemIds = (existingItems || []).map(r => r.id).filter(id => !currentItemIds.has(id));
+      const staleDayIds = (existingDays || []).map(r => r.id).filter(id => !currentDayIds.has(id));
+
+      if (staleItemIds.length > 0) {
+        await supabase.from('itinerary_items').delete().in('id', staleItemIds);
+      }
+      if (staleDayIds.length > 0) {
+        await supabase.from('itinerary_days').delete().in('id', staleDayIds);
+      }
+    } else {
+      await supabase.from('itinerary_items').delete().eq('trip_id', trip.id);
+      await supabase.from('itinerary_days').delete().eq('trip_id', trip.id);
     }
 
     return true;
@@ -568,7 +595,18 @@ export async function saveUserSavedItemsToSupabase(userId: string, itemIds: stri
     }));
 
     const { error } = await supabase.from('saved_places').upsert(payload);
-    return !error;
+    if (error) return false;
+
+    const currentIds = new Set(payload.map(p => p.id));
+    const { data: existingRows } = await supabase
+      .from('saved_places')
+      .select('id')
+      .eq('user_id', cleanUserId);
+    const staleIds = (existingRows || []).map(r => r.id).filter(id => !currentIds.has(id));
+    if (staleIds.length > 0) {
+      await supabase.from('saved_places').delete().in('id', staleIds);
+    }
+    return true;
   } catch (err) {
     console.warn('[Supabase] Saved items batch error:', err);
     return false;

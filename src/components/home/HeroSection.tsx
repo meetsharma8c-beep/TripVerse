@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
 import {
   MapPin,
@@ -25,8 +25,11 @@ import { useLanguage } from '../../services/languageService';
 import { searchLocations, PreciseLocation } from '../../services/locationService';
 import { Trip, Destination } from '../../types/trip';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
-import { InteractivePhoneDevice } from './InteractivePhoneDevice';
 import { ScrollReveal } from '../common/ScrollReveal';
+
+const InteractivePhoneDevice = lazy(() =>
+  import('./InteractivePhoneDevice').then((m) => ({ default: m.InteractivePhoneDevice }))
+);
 
 interface HeroSectionProps {
   activeTrip?: Trip | null;
@@ -402,8 +405,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
         {/* PRIMARY HERO HEADER (Matching Reference Image Screen 1) */}
         <div className="max-w-4xl mx-auto mb-8 sm:mb-10 text-center sm:text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E8EFE7] border border-[#DCE7DB] text-[#2D5A3D] text-xs font-bold shadow-2xs mb-4 tv-stagger-1">
-            <Sparkles className="w-4 h-4 text-[#2D5A3D] shrink-0 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/60 border border-[#DCE7DB] dark:border-emerald-800/60 text-[#2D5A3D] dark:text-emerald-300 text-xs font-bold shadow-2xs mb-4 tv-stagger-1">
+            <Sparkles className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400 shrink-0 animate-pulse" />
             <span>AI-Powered Travel Planning Made Effortless</span>
           </div>
 
@@ -412,12 +415,41 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <span className="font-serif italic font-normal text-[#2D5A3D] dark:text-[#34D399]">Intelligently </span>Planned.
           </h1>
 
-          <p className="text-base sm:text-lg text-[#57685D] max-w-2xl font-normal leading-relaxed text-pretty mb-6 tv-stagger-2">
+          <p className="text-base sm:text-lg text-[#57685D] dark:text-slate-300 max-w-2xl font-normal leading-relaxed text-pretty mb-6 tv-stagger-2">
             AI-powered travel planning made effortless. Plan custom day-by-day itineraries, highway pit stops, and budget-optimized routes.
           </p>
 
           {/* Serene Dynamic Landscape Visual */}
-          <div className="relative rounded-[32px] overflow-hidden border border-[#E2EBE1] dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(45,90,61,0.14)] bg-[#EAF0E9] dark:bg-slate-900 group tv-stagger-2 h-60 sm:h-72 md:h-84 lg:h-96">
+          <div className="relative rounded-[32px] overflow-hidden border border-white/70 dark:border-white/10 shadow-[0_24px_60px_-14px_rgba(45,90,61,0.2)] dark:shadow-[0_24px_60px_-14px_rgba(0,0,0,0.65)] bg-[#EAF0E9] dark:bg-slate-900 group tv-stagger-2 h-60 sm:h-72 md:h-84 lg:h-96">
+            {/* Ambient Live Telemetry Floating Pill (Solar Window & Route Readiness) */}
+            <div className="absolute top-3.5 left-3.5 right-3.5 z-20 flex items-center justify-between gap-2 pointer-events-none">
+              <div className="liquid-glass-pill pointer-events-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#152A1C] dark:text-slate-100">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span>
+                  {(() => {
+                    const hr = new Date().getHours();
+                    if (hr >= 5 && hr < 10) return 'Morning Mist Window';
+                    if (hr >= 10 && hr < 16) return 'Peak Daylight Routes';
+                    if (hr >= 16 && hr < 19) return 'Golden Hour Window';
+                    return 'Night Travel & Safe Stays';
+                  })()}
+                </span>
+                {activeTrip?.destination && (
+                  <span className="hidden sm:inline font-serif italic font-normal text-[#2D5A3D] dark:text-emerald-300 border-l border-slate-300/60 dark:border-white/15 pl-2">
+                    Active: {activeTrip.destination.split(',')[0]}
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={onExplore}
+                className="min-h-0 pointer-events-auto liquid-glass-pill hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#2D5A3D] dark:text-emerald-300 hover:scale-[1.03] cursor-pointer"
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>{t('hero.exploreDestinations')}</span>
+              </button>
+            </div>
             {/* Continuous automated Ken Burns scenic animation (also guarantees zero play icon if OS battery saver blocks video) */}
             <img
               src="/videos/app-opening-poster.jpg"
@@ -440,7 +472,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 webkit-playsinline="true"
                 x5-playsinline="true"
                 x5-video-player-type="h5"
-                preload="auto"
+                preload="metadata"
                 disablePictureInPicture
                 disableRemotePlayback
                 onPlaying={() => setHeroVideoPlaying(true)}
@@ -465,7 +497,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 }}
                 width={1280}
                 height={720}
-                className={`relative z-10 w-full h-full object-cover object-center pointer-events-none select-none transition-opacity duration-500 ${
+                className={`tv-ambient-video relative z-10 w-full h-full object-cover object-center pointer-events-none select-none transition-opacity duration-500 ${
                   heroVideoPlaying ? 'opacity-100' : 'opacity-0'
                 }`}
               />
@@ -1312,7 +1344,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
           {/* Right Column: Real figure, shape and functionality of a real smartphone */}
           <div className="lg:col-span-5 flex justify-center">
-            <InteractivePhoneDevice currency={currency} activeTrip={activeTrip} onQuickPlan={onOpenPlanner || onQuickPlan || (() => {})} />
+            <Suspense fallback={<div className="w-[300px] sm:w-[320px] h-[610px] rounded-[46px] bg-[#E8EFE7]/60 dark:bg-slate-800/60 animate-pulse border border-[#DCE7DB] dark:border-slate-700" />}>
+              <InteractivePhoneDevice currency={currency} activeTrip={activeTrip} onQuickPlan={onOpenPlanner || onQuickPlan || (() => {})} />
+            </Suspense>
           </div>
 
         </ScrollReveal>

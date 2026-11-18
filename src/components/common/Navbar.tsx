@@ -298,8 +298,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               />
             </div>
 
-            {/* Desktop Navigation Links */}
-            <nav className="flex items-center space-x-0 xl:space-x-1 shrink-0" aria-label="Main Navigation">
+            {/* Desktop Navigation Links (Liquid Capsule Pills) */}
+            <nav className="flex items-center gap-0.5 xl:gap-1 p-1 rounded-full bg-[#EAF0E9]/65 dark:bg-slate-900/60 border border-[#DCE7DB]/80 dark:border-white/10 backdrop-blur-md shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]" aria-label="Main Navigation">
               {desktopNavLinks.map((link) => {
                 const isActive = currentTab === link.id;
 
@@ -307,10 +307,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     key={link.id}
                     onClick={() => handleLinkClick(link.id)}
-                    className={`relative flex items-center gap-1 px-1.5 xl:px-3 py-1.5 xl:py-2 rounded-xl text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                    className={`relative flex items-center gap-1.5 px-2.5 xl:px-3.5 py-1.5 rounded-full text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer active:scale-95 ${
                       isActive 
-                        ? 'text-[#2D5A3D] dark:text-emerald-400 bg-[#E8EFE7] dark:bg-emerald-950/40 shadow-xs' 
-                        : 'text-slate-600 dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800/60'
+                        ? 'text-[#1E3E2B] dark:text-emerald-300 bg-white/95 dark:bg-emerald-950/75 border border-[#C8DAC6] dark:border-emerald-500/35 shadow-[0_6px_16px_-4px_rgba(45,90,61,0.18),inset_0_1px_0_rgba(255,255,255,0.95)] dark:shadow-[0_6px_16px_-4px_rgba(16,185,129,0.25),inset_0_1px_0_rgba(255,255,255,0.12)]' 
+                        : 'text-slate-600 dark:text-slate-300 border border-transparent hover:text-[#152A1C] dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
                     }`}
                   >
                     <span>{link.label}</span>
@@ -318,9 +318,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <span className="text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-gradient-to-r from-[#386B49] to-[#2D5A3D] text-white shadow-xs">
                         {link.badge}
                       </span>
-                    )}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#2D5A3D] dark:bg-emerald-400 rounded-full" />
                     )}
                   </button>
                 );
