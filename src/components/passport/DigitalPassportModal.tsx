@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  X, 
-  MapPin, 
-  Check, 
-  Share2, 
+import {
+  X,
+  Check,
+  Share2,
   ShieldCheck,
   Calendar,
   FileCheck2,
-  Award,
   Fingerprint,
   Printer,
-  ChevronRight,
-  ExternalLink
+  Copy,
+  Sparkles,
+  Globe,
+  Compass
 } from 'lucide-react';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import { triggerHaptic } from '../../services/deviceService';
-import { 
-  getPassportProfile, 
-  getPassportStamps, 
-  unlockPassportStamp, 
-  PassportStamp, 
-  DigitalPassportProfile 
+import {
+  getPassportProfile,
+  getPassportStamps,
+  unlockPassportStamp,
+  PassportStamp,
+  DigitalPassportProfile
 } from '../../services/passportService';
 import { useLanguage } from '../../services/languageService';
 
@@ -44,6 +44,7 @@ export const DigitalPassportModal: React.FC<DigitalPassportModalProps> = ({
   const [stamps, setStamps] = useState<PassportStamp[]>(() => getPassportStamps(userEmail));
   const [selectedStamp, setSelectedStamp] = useState<PassportStamp | null>(null);
   const [copiedShare, setCopiedShare] = useState<boolean>(false);
+  const [copiedDocNo, setCopiedDocNo] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -63,25 +64,31 @@ export const DigitalPassportModal: React.FC<DigitalPassportModalProps> = ({
     setSelectedStamp({ ...stamp, unlockedAt: new Date().toISOString() });
   };
 
+  const handleCopyDocNo = () => {
+    triggerHaptic('light');
+    navigator.clipboard?.writeText(profile.passportNumber);
+    setCopiedDocNo(true);
+    setTimeout(() => setCopiedDocNo(false), 2000);
+  };
+
   const handleSharePassport = () => {
     triggerHaptic('light');
-    const text = 
-      `TRIPVERSE DIPLOMATIC PASSPORT & TRAVEL DOSSIER\n` +
+    const text =
+      `TRIPVERSE DIGITAL TRAVEL PASSPORT\n` +
       `==================================================\n` +
       `Document Number : ${profile.passportNumber}\n` +
       `Bearer          : ${profile.holderName.toUpperCase()}\n` +
       `Nationality     : ${profile.nationalityCode} (${profile.homeCountry.toUpperCase()})\n` +
-      `Diplomatic Tier : ${profile.travelTier.toUpperCase()}\n` +
+      `Travel Tier     : ${profile.travelTier.toUpperCase()}\n` +
       `Status          : ${profile.isFounder ? 'VIP FOUNDING ARCHITECT' : 'OFFICIAL TRAVELER'}\n` +
-      `Clearances      : ${profile.countriesVisited} Sovereign Territories\n` +
-      `Verified Seals  : ${profile.stampsCount} Immigration Port Clearances\n` +
-      `Aerial/Ground   : ${profile.totalKmTraveled.toLocaleString()} km Traversed\n` +
+      `Territories     : ${profile.countriesVisited} Verified\n` +
+      `Entry Seals     : ${profile.stampsCount} Port Clearances\n` +
+      `Distance Logged : ${profile.totalKmTraveled.toLocaleString()} km\n` +
       `Validity        : ${profile.expiryDate}\n` +
-      `Issuing Body    : TripVerse Border & Travel Authority\n` +
-      `Verification    : https://trip-verse.com\n` +
+      `Issued By       : TripVerse Travel Registry (https://trip-verse.com)\n` +
       `==================================================`;
 
-    navigator.clipboard.writeText(text);
+    navigator.clipboard?.writeText(text);
     setCopiedShare(true);
     setTimeout(() => setCopiedShare(false), 2500);
   };
@@ -97,226 +104,257 @@ export const DigitalPassportModal: React.FC<DigitalPassportModalProps> = ({
   const givenNames = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ').toUpperCase() : nameParts[0].toUpperCase();
 
   const modalMarkup = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div 
-        className="relative w-full max-w-3xl bg-[#0D1117] border border-[#2A3441] rounded-2xl shadow-2xl overflow-hidden text-slate-100 flex flex-col max-h-[92vh]"
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Digital Travel Passport"
+      onClick={onClose}
+      className="fixed inset-0 z-[130] flex items-center justify-center p-2.5 sm:p-5 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-3xl bg-white/95 dark:bg-[#0D1522]/95 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] sm:rounded-[32px] shadow-[0_28px_70px_-14px_rgba(15,23,42,0.45)] overflow-hidden text-slate-900 dark:text-slate-100 flex flex-col max-h-[92dvh]"
       >
-        {/* Top Diplomatic Header Bar */}
-        <div className="px-5 py-3.5 border-b border-[#212B36] bg-[#161C24] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#212B36] border border-[#344252] flex items-center justify-center text-[#C8AA6E]">
-              <ShieldCheck className="w-4 h-4 text-[#C8AA6E]" />
+        {/* Luxury Emerald & Brushed Gold Booklet Header */}
+        <div className="relative px-4 sm:px-6 py-4 bg-gradient-to-r from-[#132E20] via-[#214C34] to-[#2B3D2C] text-white flex items-center justify-between gap-3 border-b border-amber-300/20 shrink-0 overflow-hidden">
+          <div className="pointer-events-none absolute -right-10 -top-10 w-44 h-44 rounded-full bg-amber-400/15 blur-2xl" />
+          <div className="relative z-10 flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-2xl bg-amber-400/15 border border-amber-300/35 flex items-center justify-center text-amber-300 shadow-inner shrink-0">
+              <ShieldCheck className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold tracking-wider text-[#C8AA6E] uppercase">
-                  ICAO DOC 9303 COMPLIANT
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-amber-300 uppercase">
+                  ICAO DOC 9303 • DIGITAL FOLIO
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">
-                  • PASSPORT / PASSEPORT
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-emerald-200 border border-white/15 font-semibold">
+                  {unlockedCount}/{stamps.length} Seals
                 </span>
               </div>
-              <h2 className="text-sm font-semibold tracking-wide text-slate-100 uppercase">
-                TripVerse Diplomatic Travel Record
+              <h2 className="text-sm sm:text-base font-display font-bold tracking-tight text-white truncate mt-0.5">
+                {t('Digital Travel Passport')}
               </h2>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="relative z-10 flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={handlePrint}
-              className="p-1.5 px-2.5 rounded-lg bg-[#212B36] hover:bg-[#2C3847] text-slate-300 text-xs font-mono font-medium flex items-center gap-1.5 border border-[#344252] transition-colors cursor-pointer"
+              className="min-h-0 px-2.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 text-xs font-semibold flex items-center gap-1.5 border border-white/15 transition-all cursor-pointer active:scale-95"
               title="Print Document"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-400" />
+              <Printer className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Print</span>
             </button>
             <button
               type="button"
               onClick={handleSharePassport}
-              className="p-1.5 px-2.5 rounded-lg bg-[#212B36] hover:bg-[#2C3847] text-slate-200 text-xs font-mono font-medium flex items-center gap-1.5 border border-[#344252] transition-colors cursor-pointer"
+              className="min-h-0 px-2.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1.5 border border-white/15 transition-all cursor-pointer active:scale-95"
               title="Copy Diplomatic Record"
             >
-              {copiedShare ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-slate-400" />}
+              {copiedShare ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Share2 className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">{copiedShare ? 'Copied' : 'Share'}</span>
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg bg-[#212B36] hover:bg-[#2C3847] text-slate-400 hover:text-white transition-colors cursor-pointer"
-              title="Close"
+              className="min-h-0 w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              aria-label="Close passport"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Tab Sub-Navigation */}
-        <div className="flex border-b border-[#212B36] bg-[#0E131A] px-5 pt-2 gap-4 text-xs font-mono">
-          <button
-            type="button"
-            onClick={() => setActiveTab('biodata')}
-            className={`pb-2.5 px-2 border-b-2 transition-colors cursor-pointer flex items-center gap-2 uppercase font-medium ${
-              activeTab === 'biodata'
-                ? 'border-[#C8AA6E] text-[#C8AA6E]'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Fingerprint className="w-3.5 h-3.5" />
-            <span>Identity Bio-Data Page</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('visa-pages')}
-            className={`pb-2.5 px-2 border-b-2 transition-colors cursor-pointer flex items-center gap-2 uppercase font-medium ${
-              activeTab === 'visa-pages'
-                ? 'border-[#C8AA6E] text-[#C8AA6E]'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <FileCheck2 className="w-3.5 h-3.5" />
-            <span>Visa Folio & Entry Seals ({unlockedCount}/{stamps.length})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('ledger')}
-            className={`pb-2.5 px-2 border-b-2 transition-colors cursor-pointer flex items-center gap-2 uppercase font-medium ${
-              activeTab === 'ledger'
-                ? 'border-[#C8AA6E] text-[#C8AA6E]'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Border Clearance Ledger</span>
-          </button>
+        {/* Liquid Capsule Tab Bar */}
+        <div className="px-4 sm:px-6 py-2.5 bg-[#F4F6F2]/90 dark:bg-[#090F1A]/90 border-b border-[#E2EBE1] dark:border-white/10 shrink-0">
+          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/80 dark:bg-slate-900/80 border border-[#DCE7DB] dark:border-white/10 overflow-x-auto scrollbar-none max-w-full shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-none">
+            <button
+              type="button"
+              onClick={() => setActiveTab('biodata')}
+              className={`min-h-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                activeTab === 'biodata'
+                  ? 'bg-[#2D5A3D] dark:bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Fingerprint className="w-3.5 h-3.5" />
+              <span>Identity Bio-Data</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('visa-pages')}
+              className={`min-h-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                activeTab === 'visa-pages'
+                  ? 'bg-[#2D5A3D] dark:bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <FileCheck2 className="w-3.5 h-3.5" />
+              <span>Visa Stamps ({unlockedCount}/{stamps.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('ledger')}
+              className={`min-h-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                activeTab === 'ledger'
+                  ? 'bg-[#2D5A3D] dark:bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Clearance Ledger</span>
+            </button>
+          </div>
         </div>
 
         {/* Main Document Body */}
-        <div className="p-5 overflow-y-auto space-y-4 flex-1 custom-scrollbar bg-[#0B0F14]">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1 bg-gradient-to-b from-[#F8FAF7] via-[#F4F6F2] to-[#EAF0E9] dark:from-[#0B121E] dark:via-[#0D1522] dark:to-[#090E18]">
           {/* TAB 1: BIOMETRIC IDENTITY PAGE */}
           {activeTab === 'biodata' && (
             <div className="space-y-4">
-              {/* Authentic Passport Laminate Card */}
-              <div className="rounded-xl border border-[#2D3748] bg-[#141A23] p-6 shadow-xl relative overflow-hidden">
-                {/* Guilloché Subtle Background Security Watermark */}
-                <div 
-                  className="absolute inset-0 opacity-[0.03] pointer-events-none"
+              {/* Frosted Tactile Passport Bio Card */}
+              <div className="rounded-[24px] border border-[#D4E2D2] dark:border-amber-300/20 bg-white/95 dark:bg-[#121B2B]/95 p-5 sm:p-6 shadow-lg passport-foil-card relative overflow-hidden">
+                <div
+                  className="absolute inset-0 opacity-[0.045] dark:opacity-[0.04] pointer-events-none"
                   style={{
-                    backgroundImage: 'radial-gradient(#C8AA6E 1px, transparent 1px)',
+                    backgroundImage: 'radial-gradient(#2D5A3D 1px, transparent 1px)',
                     backgroundSize: '16px 16px'
                   }}
                 />
 
-                {/* Passport Issuing State Header */}
-                <div className="border-b border-[#2A3441] pb-3 mb-5 flex items-center justify-between">
+                {/* Passport Issuing Header */}
+                <div className="relative border-b border-[#E2EBE1] dark:border-white/10 pb-3.5 mb-5 flex items-center justify-between gap-3">
                   <div>
-                    <span className="text-[10px] font-mono tracking-widest text-[#C8AA6E] uppercase block">
-                      TRIPVERSE BORDER & IMMIGRATION AUTHORITY
+                    <span className="text-[10px] font-mono font-bold tracking-widest text-[#2D5A3D] dark:text-amber-300 uppercase block">
+                      TRIPVERSE TRAVEL AUTHORITY
                     </span>
-                    <h3 className="text-base font-semibold text-slate-100 tracking-wider uppercase font-sans">
-                      PASSPORT • PASSEPORT
+                    <h3 className="text-base sm:text-lg font-display font-extrabold text-[#152A1C] dark:text-white tracking-wide uppercase">
+                      PASSPORT • <span className="font-serif italic font-normal text-[#2D5A3D] dark:text-emerald-300">Passeport</span>
                     </h3>
                   </div>
-                  <div className="text-right font-mono">
-                    <span className="text-[10px] text-slate-400 block uppercase">Document Series</span>
-                    <span className="text-xs font-bold text-slate-200">TVR-2026-BIO</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyDocNo}
+                    className="min-h-0 px-2.5 py-1.5 rounded-xl bg-[#F4F6F2] dark:bg-slate-800/80 border border-[#DCE7DB] dark:border-white/10 text-right font-mono hover:border-[#2D5A3D] transition-colors cursor-pointer"
+                    title="Copy Passport Number"
+                  >
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase">Doc Series • Tap Copy</span>
+                    <span className="text-xs font-bold text-[#2D5A3D] dark:text-amber-300 inline-flex items-center gap-1">
+                      {profile.passportNumber}
+                      {copiedDocNo ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 opacity-60" />}
+                    </span>
+                  </button>
                 </div>
 
-                {/* Passport Grid: Portrait + Official Bio Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-                  {/* Portrait Box */}
+                {/* Portrait + Bio Fields */}
+                <div className="relative grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+                  {/* Biometric Photo Plate */}
                   <div className="flex flex-col items-center">
-                    <div className="w-32 h-40 rounded border border-[#3A4756] bg-[#0E131A] p-1.5 flex flex-col justify-between shadow-inner relative">
-                      <div className="w-full h-full rounded bg-[#17202C] flex flex-col items-center justify-center text-slate-400 relative overflow-hidden">
-                        <Fingerprint className="w-16 h-16 text-slate-600/40" />
-                        <span className="text-[9px] font-mono text-slate-400 absolute bottom-2 tracking-wider">
-                          BIOMETRIC
+                    <div className="w-32 h-40 rounded-2xl border border-[#DCE7DB] dark:border-white/15 bg-[#EAF0E9] dark:bg-[#0B121D] p-1.5 flex flex-col justify-between shadow-inner relative">
+                      <div className="w-full h-full rounded-xl bg-gradient-to-b from-white/80 to-[#DCE7DB]/60 dark:from-slate-800/80 dark:to-slate-900 flex flex-col items-center justify-center text-[#2D5A3D] dark:text-emerald-300 relative overflow-hidden">
+                        <Fingerprint className="w-16 h-16 opacity-35" />
+                        <span className="text-[9px] font-mono font-bold tracking-widest absolute bottom-2.5 opacity-80">
+                          BIOMETRIC ID
                         </span>
                       </div>
-                      {/* Security Stamp Overlay across Corner of Photo */}
-                      <div className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded border border-[#C8AA6E]/60 bg-[#161C24]/90 text-[8px] font-mono text-[#C8AA6E] uppercase tracking-widest rotate-[-6deg]">
-                        OFFICIAL SEAL
+                      <div className="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-full border border-amber-500/60 bg-amber-50/95 dark:bg-amber-950/90 text-[8px] font-mono font-bold text-amber-800 dark:text-amber-300 uppercase tracking-widest rotate-[-6deg] shadow-xs">
+                        VERIFIED SEAL
                       </div>
                     </div>
-                    <span className="text-[9px] font-mono text-slate-400 mt-3 text-center uppercase tracking-wider block">
-                      Holder Signature / Signature
+                    <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 mt-3 text-center uppercase tracking-wider block">
+                      Holder Signature
                     </span>
-                    <span className="text-xs font-serif italic text-slate-300 mt-0.5">
+                    <span className="text-sm font-serif italic text-[#152A1C] dark:text-slate-200 mt-0.5">
                       {profile.holderName}
                     </span>
                   </div>
 
-                  {/* Bio Metadata Fields in standard ICAO passport layout */}
-                  <div className="md:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-y-3.5 gap-x-4 text-xs font-mono">
+                  {/* Standard ICAO Metadata Grid */}
+                  <div className="md:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-4 text-xs font-mono">
                     <div>
-                      <span className="text-[9px] text-slate-400 block uppercase">Type / Type</span>
-                      <span className="font-bold text-slate-100">P</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase">Type</span>
+                      <span className="font-bold text-slate-900 dark:text-white">P (Explorer)</span>
                     </div>
                     <div>
-                      <span className="text-[9px] text-slate-400 block uppercase">Country Code / Code</span>
-                      <span className="font-bold text-slate-100">{profile.nationalityCode}</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase">Country Code</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{profile.nationalityCode}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] text-slate-400 block uppercase">Passport No. / No Passeport</span>
-                      <span className="font-bold text-[#C8AA6E]">{profile.passportNumber}</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase">Passport No.</span>
+                      <span className="font-bold text-[#2D5A3D] dark:text-amber-300">{profile.passportNumber}</span>
                     </div>
 
                     <div className="col-span-2">
-                      <span className="text-[9px] text-slate-400 block uppercase">Surname / Nom</span>
-                      <span className="font-bold text-slate-100 tracking-wide">{surname}</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase">Surname / Nom</span>
+                      <span className="font-bold text-slate-900 dark:text-white tracking-wide">{surname}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] text-slate-400 block uppercase">Sex / Sexe</span>
-                      <span className="font-bold text-slate-100">M / F</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase">Registry</span>
+                      <span className="font-bold text-emerald-700 dark:text-emerald-300">ACTIVE</span>
                     </div>
 
                     <div className="col-span-2">
-                      <span className="text-[9px] text-slate-400 block uppercase">Given Names / Prénoms</span>
-                      <span className="font-bold text-slate-100 tracking-wide">{givenNames}</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase">Given Names / Prénoms</span>
+                      <span className="font-bold text-slate-900 dark:text-white tracking-wide">{givenNames}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] text-slate-400 block uppercase">Nationality / Nationalité</span>
-                      <span className="font-bold text-slate-100">{profile.homeCountry.toUpperCase()}</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase">Nationality</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{profile.homeCountry.toUpperCase()}</span>
                     </div>
 
                     <div>
-                      <span className="text-[9px] text-slate-400 block uppercase">Date of Issue / Délivrance</span>
-                      <span className="font-semibold text-slate-300">{profile.issueDate}</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase">Date of Issue</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">{profile.issueDate}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] text-slate-400 block uppercase">Date of Expiry / Expiration</span>
-                      <span className="font-semibold text-[#C8AA6E]">{profile.expiryDate}</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase">Date of Expiry</span>
+                      <span className="font-semibold text-amber-700 dark:text-amber-300">{profile.expiryDate}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] text-slate-400 block uppercase">Authority / Autorité</span>
-                      <span className="font-semibold text-slate-300">TVR / BORDERS</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 block uppercase">Authority</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">TVR / GLOBAL</span>
                     </div>
                   </div>
                 </div>
 
                 {/* ICAO Doc 9303 Machine Readable Zone (MRZ) */}
-                <div className="mt-6 pt-4 border-t border-[#2A3441]">
-                  <div className="bg-[#090D12] p-3 rounded border border-[#1E2631] font-mono text-[9px] sm:text-[10.5px] text-[#A0AEC0] tracking-[0.22em] leading-loose select-all overflow-x-auto whitespace-pre">
-{`P<TVR<${surname}<<${givenNames.replace(/\s+/g, '<')}<<<<<<<<<<<<<<<<<<<<<<<\n${profile.passportNumber.padEnd(9, '<')}4${profile.nationalityCode}9811144M2611018<<<<<<<<<<<<<<<06`}
+                <div className="mt-6 pt-4 border-t border-[#E2EBE1] dark:border-white/10">
+                  <div className="bg-[#152A1C] dark:bg-[#070B12] p-3.5 rounded-2xl border border-[#2D5A3D]/40 dark:border-white/10 font-mono text-[9px] sm:text-[10.5px] text-emerald-200/90 tracking-[0.2em] leading-loose select-all overflow-x-auto whitespace-pre shadow-inner">
+{`P<TVR<${surname}<<${givenNames.replace(/\s+/g, '<')}<<<<<<<<<<<<<<<<<<<<<<<\n${profile.passportNumber.padEnd(9, '<')}4${profile.nationalityCode}9811144U2611018<<<<<<<<<<<<<<<06`}
                   </div>
                 </div>
               </div>
 
-              {/* Status & Sovereign Clearance Summary Bar */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
-                <div className="p-3 rounded-lg border border-[#212B36] bg-[#141A23]">
-                  <span className="text-[9px] text-slate-400 block uppercase">Classification</span>
-                  <span className="font-bold text-slate-100 block mt-0.5">{profile.travelTier}</span>
+              {/* Liquid Bento Summary KPIs */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="liquid-glass-surface rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block">Explorer Rank</span>
+                    <span className="font-display font-bold text-slate-900 dark:text-white truncate block">{profile.travelTier}</span>
+                  </div>
                 </div>
-                <div className="p-3 rounded-lg border border-[#212B36] bg-[#141A23]">
-                  <span className="text-[9px] text-slate-400 block uppercase">Sovereign Clearances</span>
-                  <span className="font-bold text-[#C8AA6E] block mt-0.5">{profile.countriesVisited} Territories</span>
+                <div className="liquid-glass-surface rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block">Territories Cleared</span>
+                    <span className="font-display font-bold text-[#2D5A3D] dark:text-emerald-300 truncate block">{profile.countriesVisited} Regions</span>
+                  </div>
                 </div>
-                <div className="p-3 rounded-lg border border-[#212B36] bg-[#141A23]">
-                  <span className="text-[9px] text-slate-400 block uppercase">Aerial / Terrestrial Distance</span>
-                  <span className="font-bold text-slate-200 block mt-0.5">~{profile.totalKmTraveled.toLocaleString()} km</span>
+                <div className="liquid-glass-surface rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-300 flex items-center justify-center shrink-0">
+                    <Compass className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block">Distance Logged</span>
+                    <span className="font-display font-bold text-slate-900 dark:text-white truncate block">~{profile.totalKmTraveled.toLocaleString()} km</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -325,61 +363,60 @@ export const DigitalPassportModal: React.FC<DigitalPassportModalProps> = ({
           {/* TAB 2: AUTHENTIC VISA PAGES & ENTRY SEALS */}
           {activeTab === 'visa-pages' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-[#212B36] pb-2">
-                <span>OFFICIAL VISAS & ENTRY ENDORSEMENTS / VISAS ET CACHETS</span>
-                <span>PAGE 04 / 32</span>
+              <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 border-b border-[#DCE7DB] dark:border-white/10 pb-2">
+                <span className="font-bold uppercase tracking-wider text-[11px]">Official Entry Stamps & Visa Cachets</span>
+                <span className="font-mono text-[11px]">PAGE 04 / 32</span>
               </div>
 
-              {/* Real Immigration Inked Stamps Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
                 {stamps.map((stamp) => {
                   const isUnlocked = !!stamp.unlockedAt;
 
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={stamp.id}
                       onClick={() => setSelectedStamp(stamp)}
-                      className={`relative p-4 rounded-lg border transition-all cursor-pointer select-none min-h-[145px] flex flex-col justify-between ${
+                      className={`text-left relative p-4 rounded-2xl border transition-all cursor-pointer select-none min-h-[148px] flex flex-col justify-between ${
                         isUnlocked
-                          ? 'border-[#3E4C5E] bg-[#111720] hover:bg-[#151D28] shadow-md'
-                          : 'border-[#1E2631] bg-[#0B0F14] opacity-50 hover:opacity-75'
+                          ? 'bg-white dark:bg-[#141E2E] border-[#B6CCB4] dark:border-amber-400/35 liquid-bento-card'
+                          : 'bg-white/55 dark:bg-slate-900/45 border-dashed border-slate-300 dark:border-slate-700 opacity-70 hover:opacity-100 hover:border-[#8EA78D]'
                       }`}
                     >
-                      {/* Top Header of Stamp */}
-                      <div className="flex items-center justify-between border-b border-[#242F3D] pb-1.5 text-xs font-mono">
-                        <span className="font-bold text-slate-200 tracking-wider">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-2 text-xs font-mono">
+                        <span className="font-extrabold text-[#2D5A3D] dark:text-emerald-300 tracking-wider">
                           {stamp.portCode}
                         </span>
-                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
-                          isUnlocked ? 'text-[#C8AA6E] border border-[#C8AA6E]/40' : 'text-slate-500 border border-slate-700'
+                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                          isUnlocked
+                            ? 'bg-emerald-50 dark:bg-emerald-950/70 text-[#2D5A3D] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                         }`}>
-                          {isUnlocked ? 'ADMITTED' : 'REQUIRED'}
+                          {isUnlocked ? 'STAMPED' : 'TAP TO STAMP'}
                         </span>
                       </div>
 
-                      {/* Middle Seal Body */}
                       <div className="my-2.5">
-                        <h4 className="text-xs font-semibold text-slate-100 line-clamp-1 font-sans">
+                        <h4 className="text-sm font-display font-bold text-slate-900 dark:text-white line-clamp-1">
                           {stamp.name}
                         </h4>
-                        <p className="text-[11px] text-slate-400 font-mono mt-0.5 truncate">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                           {stamp.location}
                         </p>
-                        <div className="text-[9px] font-mono text-slate-500 mt-1 uppercase">
+                        <div className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-1 uppercase">
                           Ref: {stamp.vintageNumber}
                         </div>
                       </div>
 
-                      {/* Official Immigration Inked Footprint */}
-                      <div className="pt-2 border-t border-dashed border-[#242F3D] flex items-center justify-between text-[10px] font-mono">
-                        <span className="text-slate-400">
-                          {isUnlocked && stamp.unlockedAt ? new Date(stamp.unlockedAt).toLocaleDateString('en-GB') : '---'}
+                      <div className="pt-2 border-t border-dashed border-slate-200 dark:border-white/10 flex items-center justify-between text-[10px] font-mono">
+                        <span className="text-slate-500 dark:text-slate-400">
+                          {isUnlocked && stamp.unlockedAt ? new Date(stamp.unlockedAt).toLocaleDateString('en-GB') : 'Unvisited'}
                         </span>
-                        <span className="text-[#C8AA6E] text-[9px] uppercase tracking-wider font-semibold">
+                        <span className={`text-[9px] uppercase tracking-wider font-bold ${isUnlocked ? 'text-amber-700 dark:text-amber-300' : 'text-slate-400'}`}>
                           {stamp.sealText}
                         </span>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -389,36 +426,36 @@ export const DigitalPassportModal: React.FC<DigitalPassportModalProps> = ({
           {/* TAB 3: BORDER CLEARANCE LEDGER */}
           {activeTab === 'ledger' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-[#212B36] pb-2">
-                <span>OFFICIAL RECORD OF BORDER CROSSINGS & AUTHORIZATIONS</span>
-                <span>ENTRY / EXIT REGISTRY</span>
+              <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 border-b border-[#DCE7DB] dark:border-white/10 pb-2">
+                <span className="font-bold uppercase tracking-wider text-[11px]">Entry & Exit Registry</span>
+                <span className="font-mono text-[11px]">{unlockedCount} CLEARED</span>
               </div>
 
-              <div className="rounded-xl border border-[#212B36] bg-[#111720] overflow-hidden">
-                <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-[#161C24] text-slate-400 border-b border-[#212B36] text-[10px] uppercase">
+              <div className="rounded-2xl border border-[#DCE7DB] dark:border-white/10 bg-white/95 dark:bg-[#121B2B] overflow-x-auto shadow-sm">
+                <table className="w-full text-left text-xs min-w-[540px]">
+                  <thead className="bg-[#EAF0E9]/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 border-b border-[#DCE7DB] dark:border-white/10 text-[10px] uppercase font-mono">
                     <tr>
-                      <th className="py-2.5 px-3">Port Code</th>
-                      <th className="py-2.5 px-3">Jurisdiction</th>
-                      <th className="py-2.5 px-3">Clearance Classification</th>
-                      <th className="py-2.5 px-3">Date</th>
-                      <th className="py-2.5 px-3 text-right">Status</th>
+                      <th className="py-3 px-3.5">Port Code</th>
+                      <th className="py-3 px-3.5">Jurisdiction</th>
+                      <th className="py-3 px-3.5">Clearance</th>
+                      <th className="py-3 px-3.5">Date</th>
+                      <th className="py-3 px-3.5 text-right">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#1D2632] text-slate-300">
+                  <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-slate-700 dark:text-slate-300">
                     {stamps.map((stamp) => (
-                      <tr key={stamp.id} className="hover:bg-[#161F2A] transition-colors">
-                        <td className="py-2.5 px-3 font-bold text-slate-200">{stamp.portCode}</td>
-                        <td className="py-2.5 px-3">{stamp.country}</td>
-                        <td className="py-2.5 px-3 text-slate-400">{stamp.name}</td>
-                        <td className="py-2.5 px-3 text-slate-400">
-                          {stamp.unlockedAt ? new Date(stamp.unlockedAt).toLocaleDateString('en-GB') : 'Pending Inspection'}
+                      <tr key={stamp.id} className="hover:bg-[#F8FAF7] dark:hover:bg-white/5 transition-colors">
+                        <td className="py-2.5 px-3.5 font-mono font-bold text-[#2D5A3D] dark:text-emerald-300">{stamp.portCode}</td>
+                        <td className="py-2.5 px-3.5 font-semibold text-slate-900 dark:text-white">{stamp.country}</td>
+                        <td className="py-2.5 px-3.5 text-slate-500 dark:text-slate-400">{stamp.name}</td>
+                        <td className="py-2.5 px-3.5 font-mono text-slate-500 dark:text-slate-400">
+                          {stamp.unlockedAt ? new Date(stamp.unlockedAt).toLocaleDateString('en-GB') : 'Pending'}
                         </td>
-                        <td className="py-2.5 px-3 text-right">
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                            stamp.unlockedAt 
-                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' 
-                              : 'bg-slate-800 text-slate-400 border border-slate-700'
+                        <td className="py-2.5 px-3.5 text-right">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                            stamp.unlockedAt
+                              ? 'bg-emerald-50 dark:bg-emerald-950/70 text-[#2D5A3D] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                           }`}>
                             {stamp.unlockedAt ? 'Cleared' : 'Pending'}
                           </span>
@@ -431,53 +468,53 @@ export const DigitalPassportModal: React.FC<DigitalPassportModalProps> = ({
             </div>
           )}
 
-          {/* Stamp Detail Inspection Dialog */}
+          {/* Stamp Detail Inspection Panel */}
           {selectedStamp && (
-            <div className="p-4 rounded-xl bg-[#141B24] border border-[#2F3D4E] space-y-3">
-              <div className="flex items-center justify-between border-b border-[#242F3D] pb-2">
+            <div className="liquid-glass-surface rounded-2xl p-4 sm:p-5 space-y-3 border border-[#C6D8C5] dark:border-amber-400/30 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between border-b border-[#E2EBE1] dark:border-white/10 pb-2.5">
                 <div>
-                  <span className="text-[9px] font-mono text-[#C8AA6E] uppercase block">
-                    PORT CLEARANCE INSPECTION • {selectedStamp.portCode}
+                  <span className="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300 uppercase block">
+                    PORT CLEARANCE • {selectedStamp.portCode}
                   </span>
-                  <h4 className="text-sm font-semibold text-slate-100">{selectedStamp.name}</h4>
+                  <h4 className="text-sm sm:text-base font-display font-bold text-slate-900 dark:text-white">{selectedStamp.name}</h4>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSelectedStamp(null)}
-                  className="text-xs font-mono text-slate-400 hover:text-white px-2 py-1 rounded bg-[#212B36]"
+                  className="min-h-0 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 cursor-pointer"
                 >
                   Close
                 </button>
               </div>
 
-              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                 {selectedStamp.description}
               </p>
 
-              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1 text-slate-400">
-                <div>
-                  <span className="block text-[9px] uppercase text-slate-500">Jurisdiction</span>
-                  <span className="text-slate-200">{selectedStamp.location}, {selectedStamp.country}</span>
+              <div className="grid grid-cols-2 gap-3 text-xs pt-1">
+                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-[#E2EBE1] dark:border-white/10">
+                  <span className="block text-[10px] font-mono uppercase text-slate-500 dark:text-slate-400">Location</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">{selectedStamp.location}, {selectedStamp.country}</span>
                 </div>
-                <div>
-                  <span className="block text-[9px] uppercase text-slate-500">Authorization Reference</span>
-                  <span className="text-slate-200">{selectedStamp.vintageNumber}</span>
+                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-[#E2EBE1] dark:border-white/10">
+                  <span className="block text-[10px] font-mono uppercase text-slate-500 dark:text-slate-400">Seal Reference</span>
+                  <span className="font-mono font-semibold text-slate-900 dark:text-white">{selectedStamp.vintageNumber}</span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-[#242F3D]">
-                <span className="text-xs font-mono text-slate-400">
-                  {selectedStamp.unlockedAt 
-                    ? `Admission clearance recorded on ${new Date(selectedStamp.unlockedAt).toLocaleDateString('en-GB')}` 
-                    : 'Clearance verification pending entry confirmation'}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#E2EBE1] dark:border-white/10">
+                <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                  {selectedStamp.unlockedAt
+                    ? `Stamped on ${new Date(selectedStamp.unlockedAt).toLocaleDateString('en-GB')}`
+                    : 'Tap below to stamp this destination in your passport'}
                 </span>
                 {!selectedStamp.unlockedAt && (
                   <button
                     type="button"
                     onClick={() => handleStampAction(selectedStamp)}
-                    className="px-3 py-1.5 rounded-lg bg-[#C8AA6E] hover:bg-[#B39255] text-slate-950 font-bold text-xs font-mono transition-colors cursor-pointer"
+                    className="btn-liquid-primary min-h-0 px-4 py-2 text-xs"
                   >
-                    Authenticate Entry Clearance
+                    Stamp Destination Seal
                   </button>
                 )}
               </div>

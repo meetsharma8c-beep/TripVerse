@@ -1,30 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  X, 
-  Phone, 
-  ShieldAlert, 
-  HeartPulse, 
-  Flame, 
-  MapPin, 
-  Copy, 
-  Check, 
-  Volume2, 
-  Globe, 
-  Info, 
+import {
+  X,
+  ShieldAlert,
+  HeartPulse,
+  Flame,
+  MapPin,
+  Copy,
+  Check,
+  Volume2,
+  Globe,
+  Info,
   PhoneCall,
-  Radio,
   Share2,
-  AlertTriangle
+  ExternalLink
 } from 'lucide-react';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import { triggerHaptic } from '../../services/deviceService';
-import { 
-  getEmergencyNumbersForCountry, 
-  EMERGENCY_PHRASES, 
+import {
+  getEmergencyNumbersForCountry,
+  EMERGENCY_PHRASES,
   COUNTRY_EMERGENCY_REGISTRY,
-  CountryEmergencyNumbers, 
-  EmergencyPhrase 
+  CountryEmergencyNumbers,
+  EmergencyPhrase
 } from '../../services/emergencySosService';
 import { useLanguage } from '../../services/languageService';
 
@@ -42,6 +40,7 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
   const { t } = useLanguage();
   const [selectedCountry, setSelectedCountry] = useState<string>(destinationCountry.toUpperCase());
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsStatus, setGpsStatus] = useState<'acquiring' | 'locked' | 'unavailable'>('acquiring');
   const [copiedCoords, setCopiedCoords] = useState<boolean>(false);
   const [copiedSosMessage, setCopiedSosMessage] = useState<boolean>(false);
 
@@ -52,6 +51,7 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setSelectedCountry(destinationCountry.toUpperCase());
+      setGpsStatus('acquiring');
       if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -59,12 +59,16 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
               lat: Number(pos.coords.latitude.toFixed(5)),
               lng: Number(pos.coords.longitude.toFixed(5))
             });
+            setGpsStatus('locked');
           },
           () => {
-            setCoords({ lat: 28.6139, lng: 77.2090 });
+            setCoords(null);
+            setGpsStatus('unavailable');
           },
           { timeout: 5000, enableHighAccuracy: false }
         );
+      } else {
+        setGpsStatus('unavailable');
       }
     }
   }, [isOpen, destinationCountry]);
@@ -75,7 +79,7 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
   const handleCopyCoords = () => {
     triggerHaptic('light');
     if (coords) {
-      navigator.clipboard.writeText(`${coords.lat}, ${coords.lng}`);
+      navigator.clipboard?.writeText(`${coords.lat}, ${coords.lng}`);
       setCopiedCoords(true);
       setTimeout(() => setCopiedCoords(false), 2000);
     }
@@ -83,19 +87,18 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
 
   const handleCopySosBroadcast = () => {
     triggerHaptic('medium');
-    const msg = 
+    const msg =
       `EMERGENCY DISTRESS BEACON\n` +
       `----------------------------------------\n` +
-      `Incident Jurisdiction: ${emergencyData.countryName.toUpperCase()} (${emergencyData.countryCode})\n` +
-      `Primary Dispatch Line: ${emergencyData.universalOrPolice}\n` +
-      `Medical Dispatch     : ${emergencyData.ambulance}\n` +
-      (coords ? `Coordinates (WGS84)  : ${coords.lat} N, ${coords.lng} E\n` : '') +
-      `Timestamp (UTC)      : ${new Date().toISOString()}\n` +
-      `Incident Protocol    : Immediate responder dispatch requested.\n` +
-      `TripVerse Verification: https://trip-verse.com\n` +
+      `Jurisdiction : ${emergencyData.countryName.toUpperCase()} (${emergencyData.countryCode})\n` +
+      `Police Line  : ${emergencyData.universalOrPolice}\n` +
+      `Medical Line : ${emergencyData.ambulance}\n` +
+      (coords ? `WGS-84 GPS   : ${coords.lat}, ${coords.lng}\nGoogle Maps  : https://maps.google.com/?q=${coords.lat},${coords.lng}\n` : '') +
+      `Timestamp    : ${new Date().toISOString()}\n` +
+      `Protocol     : Immediate responder assistance requested.\n` +
       `----------------------------------------`;
 
-    navigator.clipboard.writeText(msg);
+    navigator.clipboard?.writeText(msg);
     setCopiedSosMessage(true);
     setTimeout(() => setCopiedSosMessage(false), 2500);
   };
@@ -107,7 +110,7 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
 
   const handleSpeakPhrase = (text: string) => {
     triggerHaptic('light');
-    if ('speechSynthesis' in window) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.9;
@@ -116,240 +119,275 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
   };
 
   const modalMarkup = (
-    <div className="fixed inset-0 z-[130] flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-[#0D1017] border border-[#263140] rounded-2xl shadow-2xl overflow-hidden text-slate-100 flex flex-col max-h-[92vh]">
-        {/* Authoritative Consular Header Bar */}
-        <div className="px-5 py-3.5 border-b border-[#212B36] bg-[#141A23] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#2A1519] border border-[#521E24] flex items-center justify-center text-[#E05260]">
-              <ShieldAlert className="w-4 h-4 text-[#E05260]" />
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Global Emergency SOS"
+      onClick={onClose}
+      className="fixed inset-0 z-[130] flex items-center justify-center p-2.5 sm:p-5 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-2xl bg-white/95 dark:bg-[#0D131D]/95 backdrop-blur-2xl border border-white/80 dark:border-rose-500/20 rounded-[28px] sm:rounded-[32px] shadow-[0_28px_70px_-14px_rgba(127,29,29,0.38)] overflow-hidden text-slate-900 dark:text-slate-100 flex flex-col max-h-[92dvh]"
+      >
+        {/* High-Clarity Crimson Rescue Header */}
+        <div className="relative px-4 sm:px-6 py-4 bg-gradient-to-r from-[#58111D] via-[#881337] to-[#4C0D1A] text-white flex items-center justify-between gap-3 border-b border-rose-400/25 shrink-0 overflow-hidden">
+          <div className="pointer-events-none absolute -left-8 -top-8 w-36 h-36 rounded-full bg-rose-500/25 blur-2xl" />
+          <div className="relative z-10 flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-2xl bg-rose-500/25 border border-rose-300/40 flex items-center justify-center text-rose-100 shadow-inner shrink-0">
+              <ShieldAlert className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold tracking-wider text-[#E05260] uppercase">
-                  CONSULAR ASSISTANCE & RESCUE DESK
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-rose-200 uppercase">
+                  SOS RESCUE DISPATCH
                 </span>
-                <span className="text-[10px] text-emerald-400 font-mono font-semibold">
-                  • 24/7 ACTIVE
+                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  24/7 Active
                 </span>
               </div>
-              <h2 className="text-sm font-semibold tracking-wide text-slate-100 uppercase">
-                Global Emergency Dispatch Console
+              <h2 className="text-sm sm:text-base font-display font-bold tracking-tight text-white truncate mt-0.5">
+                {t('Global Emergency SOS')} • {emergencyData.countryName}
               </h2>
             </div>
           </div>
+
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-[#212B36] hover:bg-[#2C3847] text-slate-400 hover:text-white transition-colors cursor-pointer"
-            title="Close"
+            className="min-h-0 relative z-10 w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            aria-label="Close SOS console"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Global Sovereign Jurisdiction Selector Bar */}
-        <div className="px-5 py-2.5 bg-[#0F141C] border-b border-[#212B36] flex items-center justify-between gap-3 text-xs font-mono overflow-x-auto custom-scrollbar">
-          <span className="text-slate-400 text-[10px] uppercase tracking-wider shrink-0">
-            Selected Jurisdiction:
+        {/* Liquid Jurisdiction Selector Strip */}
+        <div
+          className="px-4 sm:px-6 py-2.5 bg-[#F8FAFC] dark:bg-[#090E17] border-b border-slate-200/80 dark:border-white/10 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0"
+          style={{
+            maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 92%, rgba(0,0,0,0) 100%)',
+            WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 92%, rgba(0,0,0,0) 100%)'
+          }}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 shrink-0">
+            Country:
           </span>
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            {availableCountryCodes.map((code) => {
-              const isSelected = selectedCountry === code;
-              const reg = COUNTRY_EMERGENCY_REGISTRY[code];
-              return (
-                <button
-                  key={code}
-                  type="button"
-                  onClick={() => setSelectedCountry(code)}
-                  className={`px-2 py-1 rounded text-xs font-mono font-medium transition-colors cursor-pointer shrink-0 border ${
-                    isSelected
-                      ? 'bg-[#1E293B] text-slate-100 border-[#475569] font-bold'
-                      : 'bg-[#131922] text-slate-400 border-[#1E2631] hover:bg-[#1A222D] hover:text-slate-300'
-                  }`}
-                >
-                  {code} • {reg.countryName}
-                </button>
-              );
-            })}
-          </div>
+          {availableCountryCodes.map((code) => {
+            const isSelected = selectedCountry === code;
+            const reg = COUNTRY_EMERGENCY_REGISTRY[code];
+            return (
+              <button
+                key={code}
+                type="button"
+                onClick={() => {
+                  triggerHaptic('light');
+                  setSelectedCountry(code);
+                }}
+                className={`min-h-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 border ${
+                  isSelected
+                    ? 'bg-rose-600 text-white border-rose-500 shadow-xs'
+                    : 'bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-rose-300 dark:hover:border-rose-500/40'
+                }`}
+              >
+                {code} • {reg.countryName}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Body Content */}
-        <div className="p-5 overflow-y-auto space-y-4 flex-1 custom-scrollbar bg-[#0B0F14]">
-          {/* Coordinates & Telemetry Dispatch Panel */}
-          <div className="p-3.5 rounded-xl border border-[#212B36] bg-[#121720] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
-            <div className="flex items-center gap-2.5">
-              <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
-              <div>
-                <span className="text-[9px] text-slate-400 block uppercase tracking-wider">
-                  Live Dispatch Geolocation (WGS-84 Datum)
+        {/* Console Body */}
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 bg-gradient-to-b from-[#FFF9FA] via-[#F8FAFC] to-[#F1F5F9] dark:from-[#0A0F18] dark:via-[#0D131D] dark:to-[#080C14]">
+          {/* Primary 1-Tap SOS Rapid Dial Action */}
+          <button
+            type="button"
+            onClick={() => handleCall(emergencyData.universalOrPolice)}
+            className="w-full p-4 rounded-2xl bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 hover:brightness-110 text-white shadow-[0_14px_30px_-8px_rgba(225,29,72,0.5)] border border-rose-300/40 flex items-center justify-between gap-3 transition-all active:scale-[0.98] cursor-pointer"
+          >
+            <div className="flex items-center gap-3 text-left min-w-0">
+              <div className="w-11 h-11 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+                <PhoneCall className="w-5 h-5 text-white animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-rose-100 block">
+                  1-Tap Emergency Dispatch • {emergencyData.countryName}
                 </span>
-                <span className="font-bold text-slate-200 text-xs sm:text-sm">
-                  {coords ? `${coords.lat}° N, ${coords.lng}° E` : 'Acquiring satellite coordinate fix...'}
+                <span className="text-base sm:text-lg font-display font-black tracking-tight truncate block">
+                  Call Universal / Police Now
+                </span>
+              </div>
+            </div>
+            <span className="px-3.5 py-1.5 rounded-full bg-white text-rose-700 font-mono font-black text-base shadow-sm shrink-0">
+              {emergencyData.universalOrPolice}
+            </span>
+          </button>
+
+          {/* Live GPS Telemetry & Distress Beacon Card */}
+          <div className="liquid-glass-surface rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <MapPin className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                  Live WGS-84 Location
+                </span>
+                <span className="font-mono font-bold text-slate-900 dark:text-white text-xs sm:text-sm truncate block">
+                  {gpsStatus === 'locked' && coords
+                    ? `${coords.lat}° N, ${coords.lng}° E`
+                    : gpsStatus === 'acquiring'
+                      ? 'Acquiring GPS satellite lock...'
+                      : 'Location permission denied — use local street landmark'}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={handleCopyCoords}
-                className="px-2.5 py-1 rounded-lg bg-[#1B232E] hover:bg-[#25303E] border border-[#2F3C4E] text-slate-200 text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                {copiedCoords ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
-                <span>{copiedCoords ? 'Copied' : 'Copy GPS'}</span>
-              </button>
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              {coords && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleCopyCoords}
+                    className="min-h-0 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 hover:border-slate-300 transition-colors cursor-pointer"
+                  >
+                    {copiedCoords ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedCoords ? 'Copied' : 'Copy GPS'}</span>
+                  </button>
+                  <a
+                    href={`https://maps.google.com/?q=${coords.lat},${coords.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="min-h-0 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 text-xs font-bold inline-flex items-center gap-1 hover:border-slate-300 transition-colors"
+                  >
+                    <span>Map</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </>
+              )}
               <button
                 type="button"
                 onClick={handleCopySosBroadcast}
-                className="px-2.5 py-1 rounded-lg bg-[#1B232E] hover:bg-[#25303E] border border-[#2F3C4E] text-slate-200 text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="min-h-0 px-3 py-1.5 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-1.5 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors cursor-pointer"
               >
-                {copiedSosMessage ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-slate-400" />}
-                <span>{copiedSosMessage ? 'Beacon Copied' : 'Generate Distress SMS'}</span>
+                {copiedSosMessage ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+                <span>{copiedSosMessage ? 'Beacon Copied' : 'Copy Distress SMS'}</span>
               </button>
             </div>
           </div>
 
-          {/* Direct Emergency Telephone Directory */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-[#212B36] pb-1.5">
-              <span className="uppercase text-[10px] tracking-wider">Direct Dispatch Lines • {emergencyData.countryName.toUpperCase()}</span>
-              <span className="text-[10px]">Instant 1-Tap Voice Dial</span>
+          {/* Color-Coded Emergency Service Directory */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Medical Ambulance */}
+            <div className="rounded-2xl p-4 bg-white dark:bg-[#131C2B] border border-rose-200/80 dark:border-rose-500/20 liquid-bento-card flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <HeartPulse className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span className="text-xs font-display font-bold text-slate-900 dark:text-white truncate">
+                    Medical & Ambulance
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                  Paramedic & Trauma Response
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCall(emergencyData.ambulance)}
+                className="min-h-0 px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-600 text-rose-700 dark:text-rose-200 hover:text-white border border-rose-200 dark:border-rose-700 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              >
+                <PhoneCall className="w-3.5 h-3.5" />
+                <span>{emergencyData.ambulance}</span>
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Universal / Police Emergency */}
-              <div className="p-3.5 rounded-xl border border-[#263140] bg-[#121720] flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <ShieldAlert className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                    <span className="text-xs font-bold text-slate-200 uppercase font-sans">
-                      Police / Universal Emergency
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
-                    National Emergency Dispatch Network
+            {/* Fire & Civil Rescue */}
+            <div className="rounded-2xl p-4 bg-white dark:bg-[#131C2B] border border-amber-200/80 dark:border-amber-500/20 liquid-bento-card flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Flame className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="text-xs font-display font-bold text-slate-900 dark:text-white truncate">
+                    Fire & Rescue
                   </span>
                 </div>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                  Hazard & Civil Evacuation
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCall(emergencyData.fire)}
+                className="min-h-0 px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-600 text-amber-800 dark:text-amber-200 hover:text-white border border-amber-200 dark:border-amber-700 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              >
+                <PhoneCall className="w-3.5 h-3.5" />
+                <span>{emergencyData.fire}</span>
+              </button>
+            </div>
+
+            {/* Tourist Police & Consular */}
+            <div className="sm:col-span-2 rounded-2xl p-4 bg-white dark:bg-[#131C2B] border border-emerald-200/80 dark:border-emerald-500/20 liquid-bento-card flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
+                  <span className="text-xs font-display font-bold text-slate-900 dark:text-white truncate">
+                    Tourist Police & Multilingual Helpdesk
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                  Traveler assistance, lost passports & safe escort
+                </span>
+              </div>
+              {emergencyData.touristPoliceOrHelp ? (
                 <button
                   type="button"
-                  onClick={() => handleCall(emergencyData.universalOrPolice)}
-                  className="px-3 py-1.5 rounded-lg bg-[#1F2937] hover:bg-[#374151] border border-[#4B5563] text-slate-100 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  onClick={() => handleCall(emergencyData.touristPoliceOrHelp!)}
+                  className="min-h-0 px-3.5 py-2 rounded-xl bg-[#EAF0E9] dark:bg-emerald-950/60 hover:bg-[#2D5A3D] text-[#2D5A3D] dark:text-emerald-200 hover:text-white border border-[#C6D8C5] dark:border-emerald-700 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                 >
-                  <PhoneCall className="w-3 h-3 text-rose-400" />
-                  <span>{emergencyData.universalOrPolice}</span>
+                  <PhoneCall className="w-3.5 h-3.5" />
+                  <span className="truncate max-w-[140px]">{emergencyData.touristPoliceOrHelp}</span>
                 </button>
-              </div>
-
-              {/* Medical Ambulance */}
-              <div className="p-3.5 rounded-xl border border-[#263140] bg-[#121720] flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <HeartPulse className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                    <span className="text-xs font-bold text-slate-200 uppercase font-sans">
-                      Medical Ambulance & Trauma
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
-                    Central Paramedic Response
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleCall(emergencyData.ambulance)}
-                  className="px-3 py-1.5 rounded-lg bg-[#1F2937] hover:bg-[#374151] border border-[#4B5563] text-slate-100 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-                >
-                  <PhoneCall className="w-3 h-3 text-red-400" />
-                  <span>{emergencyData.ambulance}</span>
-                </button>
-              </div>
-
-              {/* Fire & Rescue */}
-              <div className="p-3.5 rounded-xl border border-[#263140] bg-[#121720] flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <Flame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span className="text-xs font-bold text-slate-200 uppercase font-sans">
-                      Fire & Civil Rescue
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
-                    Hazard Mitigation & Evacuation
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleCall(emergencyData.fire)}
-                  className="px-3 py-1.5 rounded-lg bg-[#1F2937] hover:bg-[#374151] border border-[#4B5563] text-slate-100 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-                >
-                  <PhoneCall className="w-3 h-3 text-amber-400" />
-                  <span>{emergencyData.fire}</span>
-                </button>
-              </div>
-
-              {/* Tourist & Diplomatic Police */}
-              <div className="p-3.5 rounded-xl border border-[#263140] bg-[#121720] flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span className="text-xs font-bold text-slate-200 uppercase font-sans">
-                      Tourist Police & Consular
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
-                    Multilingual Tourist Assistance
-                  </span>
-                </div>
-                {emergencyData.touristPoliceOrHelp ? (
-                  <button
-                    type="button"
-                    onClick={() => handleCall(emergencyData.touristPoliceOrHelp!)}
-                    className="px-3 py-1.5 rounded-lg bg-[#1F2937] hover:bg-[#374151] border border-[#4B5563] text-slate-100 font-mono font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-                  >
-                    <PhoneCall className="w-3 h-3 text-emerald-400" />
-                    <span className="truncate max-w-[100px]">{emergencyData.touristPoliceOrHelp}</span>
-                  </button>
-                ) : (
-                  <span className="text-[10px] text-slate-500 font-mono">Use 112 Universal</span>
-                )}
-              </div>
+              ) : (
+                <span className="text-xs text-slate-500 font-mono">Dial {emergencyData.universalOrPolice}</span>
+              )}
             </div>
           </div>
 
-          {/* Official Phonetic Phrasebook for Emergency Situations */}
+          {/* Spoken Emergency Phrasebook */}
           {phrases.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-[#212B36] pb-1.5">
-                <span className="uppercase text-[10px] tracking-wider">Phonetic Emergency Phrasebook ({phrases[0]?.targetLanguage})</span>
-                <span className="text-[10px]">Speech Synthesis Supported</span>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between text-xs border-b border-slate-200/80 dark:border-white/10 pb-1.5">
+                <span className="font-bold uppercase tracking-wider text-[11px] text-slate-600 dark:text-slate-300">
+                  Spoken Emergency Cards ({phrases[0]?.targetLanguage})
+                </span>
+                <span className="text-[10px] text-slate-400">Tap speaker to play aloud</span>
               </div>
 
               <div className="space-y-2">
                 {phrases.map((phrase, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-xl border border-[#212B36] bg-[#121720] flex items-center justify-between gap-4"
+                    className="rounded-2xl p-3.5 bg-white dark:bg-[#131C2B] border border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-3 shadow-2xs"
                   >
                     <div className="min-w-0">
-                      <span className="text-[9px] font-mono uppercase text-slate-400 block">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block">
                         {phrase.situation}
                       </span>
-                      <p className="text-xs sm:text-sm font-medium text-slate-100 mt-0.5">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
                         {phrase.translatedText}
                       </p>
-                      <p className="text-[11px] font-mono text-slate-400 mt-0.5">
-                        Phonetic: &quot;{phrase.phoneticPronunciation}&quot;
+                      <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                        &ldquo;{phrase.phoneticPronunciation}&rdquo;
                       </p>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleSpeakPhrase(phrase.translatedText)}
-                      className="p-2 rounded-lg bg-[#1B232E] hover:bg-[#25303E] text-slate-300 hover:text-white border border-[#2F3C4E] transition-colors cursor-pointer shrink-0"
-                      title="Speak phrase"
+                      className="min-h-0 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-[#2D5A3D] text-slate-700 dark:text-slate-200 hover:text-white border border-slate-200 dark:border-white/10 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                      title="Play aloud"
                     >
                       <Volume2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Speak</span>
                     </button>
                   </div>
                 ))}
@@ -357,16 +395,14 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
             </div>
           )}
 
-          {/* Consular Operational Advisory */}
-          <div className="p-3.5 rounded-xl border border-[#212B36] bg-[#10141C] text-xs font-sans text-slate-300 flex items-start gap-3">
-            <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block font-semibold">
-                Consular Guidance & Jurisdiction Protocol
+          {/* Consular Advisory */}
+          <div className="rounded-2xl p-3.5 bg-slate-100/80 dark:bg-slate-900/70 border border-slate-200/80 dark:border-white/10 text-xs text-slate-600 dark:text-slate-300 flex items-start gap-3">
+            <Info className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 block mb-0.5">
+                Local Jurisdiction Guidance
               </span>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {emergencyData.embassyNotes}
-              </p>
+              <p className="leading-relaxed">{emergencyData.embassyNotes}</p>
             </div>
           </div>
         </div>
