@@ -41,13 +41,16 @@ html.dark .liquid-canvas-mesh {
 /* ==========================================================================
    SHARED OPTICAL SPECULAR BASE & POINTER TRACKING SHEEN
    ========================================================================== */
+:where(.liquid-glass, .glass-clear, .glass-clear-dark, .glass-frosted, .glass-elevated, .glass-accent):not(.absolute):not(.fixed):not(.sticky) {
+  position: relative;
+}
+
 .liquid-glass,
 .glass-clear,
 .glass-clear-dark,
 .glass-frosted,
 .glass-elevated,
 .glass-accent {
-  position: relative;
   isolation: isolate;
   transition:
     transform 0.35s var(--lg-spring),
