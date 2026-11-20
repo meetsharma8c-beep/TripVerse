@@ -252,6 +252,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   // Step 4: Budget
   const [budgetMode, setBudgetMode] = useState<'per_person' | 'total'>(initialBudgetMode);
   const [budgetAmount, setBudgetAmount] = useState<number>(initialBudget);
+  const hasManualBudgetRef = React.useRef<boolean>(initialBudget !== 8000);
 
   // Synchronize dynamic prefilled parameters from search bar or explore modals
   useEffect(() => {
@@ -340,6 +341,28 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
       destCoords: selectedPreciseSpot?.coordinates
     });
   }, [origin, destination, duration, travelersCount, startDate, accommodationType, transportMode, originCoords, selectedPreciseSpot]);
+
+  // Auto-sync budget to realistic live market rates whenever destination/duration/travelers change,
+  // until the user explicitly customizes the budget slider.
+  const sliderMax = React.useMemo(() => {
+    const recTotal = liveMarketReport?.recommendedGroundBudgetINR || 25000;
+    if (budgetMode === 'total') {
+      return Math.max(200000, Math.ceil((recTotal * 1.8) / 10000) * 10000);
+    }
+    const recPerPerson = Math.round(recTotal / Math.max(1, travelersCount));
+    return Math.max(75000, Math.ceil((recPerPerson * 1.8) / 5000) * 5000);
+  }, [liveMarketReport, budgetMode, travelersCount]);
+
+  useEffect(() => {
+    if (hasManualBudgetRef.current) return;
+    if (!destination.trim() || !liveMarketReport?.recommendedGroundBudgetINR) return;
+    const rawTarget =
+      budgetMode === 'total'
+        ? liveMarketReport.recommendedGroundBudgetINR
+        : Math.round(liveMarketReport.recommendedGroundBudgetINR / Math.max(1, travelersCount));
+    const rounded = Math.max(budgetMode === 'total' ? 3000 : 1500, Math.round(rawTarget / 500) * 500);
+    setBudgetAmount(rounded);
+  }, [destination, duration, travelersCount, budgetMode, liveMarketReport?.recommendedGroundBudgetINR]);
 
   const togglePreference = (pref: TravelPreference) => {
     if (preferences.includes(pref)) {
@@ -1274,17 +1297,20 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                 <input
                   type="range"
                   min={budgetMode === 'total' ? 3000 : 1500}
-                  max={budgetMode === 'total' ? 200000 : 75000}
+                  max={sliderMax}
                   step={500}
-                  value={budgetAmount}
-                  onChange={(e) => setBudgetAmount(Number(e.target.value))}
+                  value={Math.min(sliderMax, budgetAmount)}
+                  onChange={(e) => {
+                    hasManualBudgetRef.current = true;
+                    setBudgetAmount(Number(e.target.value));
+                  }}
                   className="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#2D5A3D]"
                 />
                 <div className="flex justify-between text-[10px] sm:text-xs font-semibold text-slate-400 gap-1 flex-wrap sm:flex-nowrap">
                   <span className="truncate">{formatCurrency(budgetMode === 'total' ? 3000 : 1500, currency)} (Budget)</span>
                   <span className="hidden xs:inline">{formatCurrency(budgetMode === 'total' ? 25000 : 10000, currency)}</span>
                   <span className="hidden sm:inline">{formatCurrency(budgetMode === 'total' ? 75000 : 30000, currency)}</span>
-                  <span className="truncate">{formatCurrency(budgetMode === 'total' ? 200000 : 75000, currency)}+ (Luxury)</span>
+                  <span className="truncate">{formatCurrency(sliderMax, currency)}+ (Luxury)</span>
                 </div>
               </div>
 
@@ -1304,11 +1330,12 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                     <button
                       type="button"
                       onClick={() => {
+                        hasManualBudgetRef.current = false;
                         const recTotal = liveMarketReport.recommendedGroundBudgetINR;
                         setBudgetAmount(
                           budgetMode === 'total'
-                            ? Math.min(200000, recTotal)
-                            : Math.min(75000, Math.round(recTotal / Math.max(1, travelersCount)))
+                            ? Math.min(sliderMax, Math.round(recTotal / 500) * 500)
+                            : Math.min(sliderMax, Math.round(recTotal / Math.max(1, travelersCount) / 500) * 500)
                         );
                       }}
                       className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-colors cursor-pointer"
@@ -1911,19 +1938,22 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         </div>
 
         {/* Live Journey Receipt Preview Strip */}
-        <div className="liquid-scroll-mask px-4 sm:px-6 py-2 border-t border-slate-100/90 dark:border-slate-800/80 bg-gradient-to-r from-[#F4F6F2] via-[#EAF0E9]/70 to-[#F4F6F2] dark:from-slate-900 dark:via-emerald-950/30 dark:to-slate-900 flex items-center justify-between gap-3 text-[11px] text-[#2D5A3D] dark:text-emerald-300 font-semibold overflow-x-auto scrollbar-none shrink-0">
-          <div className="flex items-center gap-1.5 whitespace-nowrap">
+        <div className="px-4 sm:px-6 py-2 border-t border-slate-100/90 dark:border-slate-800/80 bg-gradient-to-r from-[#F4F6F2] via-[#EAF0E9]/70 to-[#F4F6F2] dark:from-slate-900 dark:via-emerald-950/30 dark:to-slate-900 flex items-center justify-between gap-3 text-[11px] text-[#2D5A3D] dark:text-emerald-300 font-semibold overflow-x-auto scrollbar-none shrink-0">
+          <div className="flex items-center gap-1.5 whitespace-nowrap min-w-0">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="font-bold text-[#152A1C] dark:text-slate-100 truncate max-w-[140px] sm:max-w-[200px]">
+            <span className="font-bold text-[#152A1C] dark:text-slate-100 truncate max-w-[140px] sm:max-w-[220px]">
               {origin.split(',')[0] || 'Origin'} → {destination.split(',')[0] || 'Any Spot'}
             </span>
           </div>
-          <div className="flex items-center gap-2 whitespace-nowrap text-slate-600 dark:text-slate-300">
+          <div className="flex items-center gap-2 whitespace-nowrap text-slate-600 dark:text-slate-300 shrink-0">
             <span>{duration}d</span>
             <span>•</span>
-            <span>{travelersCount} {travelersCount === 1 ? 'traveler' : 'travelers'}</span>
+            <span>{travelersCount} {travelersCount === 1 ? 'Traveler' : 'Travelers'}</span>
             <span>•</span>
-            <span className="font-bold text-[#2D5A3D] dark:text-emerald-400">{formatCurrency(budgetAmount, currency)}</span>
+            <span className="font-bold text-[#2D5A3D] dark:text-emerald-400">
+              {formatCurrency(budgetAmount, currency)}
+              {budgetMode === 'per_person' ? '/person' : ' ground'}
+            </span>
           </div>
         </div>
 
