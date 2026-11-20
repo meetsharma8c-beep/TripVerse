@@ -201,7 +201,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
               <h3 className="text-sm font-extrabold uppercase tracking-wider text-emerald-400">
-                Live Market Price Intelligence (6-Vertical Real-Time Index)
+                Estimated Cost Breakdown (6-Vertical Seasonal Model)
               </h3>
             </div>
             <p className="text-xs text-slate-400">

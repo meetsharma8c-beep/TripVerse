@@ -1753,9 +1753,17 @@ export async function verifyEmailOtp(email: string, token: string): Promise<Auth
 
 /**
  * Checks whether an email belongs to an automated test / synthetic domain.
- * Bypassing outbound SMTP prevents wasting Resend token quotas and delivery failure bounces.
+ * Strictly disabled in production builds (only active under Vitest or local Vite dev server)
+ * so production users can never bypass email verification with a test code.
  */
 export function isSimulatedTestEmail(email: string): boolean {
+  const procEnv = (globalThis as any).process?.env;
+  const isVitestOrNodeTest = Boolean(procEnv && (procEnv.VITEST || procEnv.NODE_ENV === 'test'));
+  const isViteDev = Boolean((import.meta as any).env?.DEV);
+  if (!isVitestOrNodeTest && !isViteDev) {
+    return false;
+  }
+
   const norm = (email || '').trim().toLowerCase();
   return (
     norm.startsWith('ci_') ||

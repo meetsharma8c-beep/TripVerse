@@ -353,15 +353,15 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-black text-amber-200">
-                  Creator Playbooks & Verified Itineraries
+                  Curated Route Playbooks & Starter Templates
                 </h3>
                 <p className="text-xs text-emerald-200/80">
-                  Pre-crafted journeys by local explorers and the Founder. 1-click clone to your trips.
+                  Ready-made multi-day route blueprints curated by TripVerse. 1-click clone & customize to your budget.
                 </p>
               </div>
             </div>
             <span className="text-[11px] font-mono font-bold text-amber-300 bg-amber-400/20 border border-amber-300/40 px-3 py-1 rounded-full self-start sm:self-auto">
-              Ready to Clone
+              Starter Templates
             </span>
           </div>
 
@@ -377,13 +377,14 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                     alt={itinerary.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"
+                    decoding="async"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                   <div className="absolute top-2 left-2 flex items-center gap-1.5">
                     {itinerary.isFounder && (
                       <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-400 text-slate-950 flex items-center gap-0.5 shadow-xs">
                         <Crown className="w-3 h-3 fill-slate-950" />
-                        VIP FOUNDER
+                        FOUNDER PICK
                       </span>
                     )}
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-black/75 text-emerald-300">
@@ -398,12 +399,12 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
                 <div className="p-3 space-y-2.5 flex-1 flex flex-col justify-between text-left">
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-300 font-mono">
-                      <span className="flex items-center gap-1">
+                    <div className="flex items-center justify-between text-[11px] text-slate-300 font-mono gap-1">
+                      <span className="flex items-center gap-1 truncate">
                         <span>{itinerary.avatar}</span>
-                        <strong className="text-white">{itinerary.author}</strong>
+                        <strong className="text-white truncate">{itinerary.author}</strong>
                       </span>
-                      <span className="text-amber-300 font-bold">★ {itinerary.rating}</span>
+                      <span className="text-[10px] text-emerald-300/90 shrink-0">{itinerary.destination.split(',')[0]}</span>
                     </div>
                     <p className="text-[10px] text-slate-400 line-clamp-1">
                       {itinerary.highlights.join(' • ')}

@@ -1,6 +1,7 @@
 /**
- * Community Creator Itineraries Service (communityItinerariesService.ts)
- * Curated, verified creator travel playbooks ready to clone in 1-click.
+ * Curated Route Playbooks Service (communityItinerariesService.ts)
+ * Official TripVerse editorial route templates ready to clone in 1-click.
+ * Zero synthetic likes, zero fabricated creator personas, zero fake ratings.
  */
 
 export interface CreatorItinerary {
@@ -13,8 +14,6 @@ export interface CreatorItinerary {
   avatar: string;
   durationDays: number;
   estimatedCost: string;
-  likes: number;
-  rating: number;
   coverImage: string;
   highlights: string[];
   vibe: string;
@@ -25,62 +24,54 @@ export const COMMUNITY_ITINERARIES: CreatorItinerary[] = [
     id: 'creator_himachal_alpine',
     title: 'Himalayan Ridge & Kasol Alpine Circuit',
     destination: 'Manali, Himachal Pradesh',
-    author: 'Aarav Mehta',
-    authorRole: 'High-Altitude Trekker',
+    author: 'TripVerse Curated',
+    authorRole: 'Mountain Route Template',
     avatar: '🏔️',
     durationDays: 6,
-    estimatedCost: '₹18,500',
-    likes: 1420,
-    rating: 4.95,
+    estimatedCost: '₹18,500 est.',
     coverImage: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80',
-    highlights: ['Solang Valley Gliders', 'Hadimba Cedar Shrine', 'Old Manali Riverfront Cafes', 'Rohtang Snow Line'],
+    highlights: ['Solang Valley', 'Hadimba Devi Temple', 'Old Manali Cafes', 'Atal Tunnel & Sissu'],
     vibe: 'Alpine Adventure & Serenity'
   },
   {
     id: 'creator_paris_culture',
-    title: 'Secret Cafes & Classical Grandeur of Paris',
+    title: 'Cafes & Classical Landmarks of Paris',
     destination: 'Paris, France',
-    author: 'Camille Laurent',
-    authorRole: 'Parisian Architectural Historian',
+    author: 'TripVerse Curated',
+    authorRole: 'City Architecture Template',
     avatar: '🥐',
     durationDays: 5,
-    estimatedCost: '€1,200',
-    likes: 2180,
-    rating: 4.98,
+    estimatedCost: '€1,200 est.',
     coverImage: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80',
-    highlights: ['Montmartre Sunset Easels', 'Private Louvre Twilight Pass', 'Latin Quarter Bookstalls', 'Eiffel Midnight Sparkles'],
-    vibe: 'Art, Romance & Fine Patisserie'
+    highlights: ['Montmartre & Sacré-Cœur', 'Louvre Museum', 'Latin Quarter', 'Eiffel Tower & Seine'],
+    vibe: 'Art, Romance & Patisserie'
   },
   {
     id: 'creator_tokyo_kyoto',
-    title: 'Neon Skylines & Sacred Bamboo Groves',
+    title: 'Tokyo Skylines & Kyoto Bamboo Groves',
     destination: 'Tokyo & Kyoto, Japan',
-    author: 'Kenji & Mei',
-    authorRole: 'Japan Rail Curators',
+    author: 'TripVerse Curated',
+    authorRole: 'Japan Rail Template',
     avatar: '⛩️',
     durationDays: 8,
-    estimatedCost: '¥195,000',
-    likes: 3410,
-    rating: 4.99,
+    estimatedCost: '¥195,000 est.',
     coverImage: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80',
-    highlights: ['Shibuya Sky Observation', 'Fushimi Inari Torii Dawn', 'Gion Geisha Alleys', 'Akihabara Tech Arcades'],
-    vibe: 'Futuristic High-Speed & Ancient Zen'
+    highlights: ['Shibuya Sky', 'Fushimi Inari Taisha', 'Gion Historic District', 'Senso-ji Asakusa'],
+    vibe: 'Modern Metropolis & Ancient Zen'
   },
   {
     id: 'creator_dubai_luxury',
-    title: 'Golden Dunes, Sky High Luxury & Marina Glow',
+    title: 'Golden Dunes, Skyline & Dubai Marina',
     destination: 'Dubai, UAE',
     author: 'Meet Sharma',
-    authorRole: 'VIP Founder & Architect',
+    authorRole: 'Founder Route Template',
     isFounder: true,
     avatar: '👑',
     durationDays: 4,
-    estimatedCost: 'AED 3,800',
-    likes: 4950,
-    rating: 5.0,
+    estimatedCost: 'AED 3,800 est.',
     coverImage: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80',
-    highlights: ['Burj Khalifa Level 148', 'Red Dune 4x4 Sunset Safari', 'Marina Private Yacht Cruise', 'Old Creek Abra Ride'],
-    vibe: 'Luxury Opulence & Desert Thrills'
+    highlights: ['Burj Khalifa At The Top', 'Red Dune Desert Safari', 'Dubai Marina Cruise', 'Old Dubai Creek Abra'],
+    vibe: 'Skyline & Desert Escapes'
   }
 ];
 

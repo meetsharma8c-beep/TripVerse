@@ -1320,7 +1320,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400">
-                      Live Market Price Index ({liveMarketReport.originCity} → {liveMarketReport.destinationCity})
+                      Estimated Cost Index ({liveMarketReport.originCity} → {liveMarketReport.destinationCity})
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -1340,7 +1340,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                       }}
                       className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-colors cursor-pointer"
                     >
-                      Sync Slider to Live Ground Rate ({formatCurrency(
+                      Sync Slider to Est. Ground Rate ({formatCurrency(
                         budgetMode === 'total'
                           ? liveMarketReport.recommendedGroundBudgetINR
                           : Math.round(liveMarketReport.recommendedGroundBudgetINR / Math.max(1, travelersCount)),

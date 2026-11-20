@@ -320,7 +320,7 @@ export function generateTransportDeals(params: DealQueryParams): {
         ? `1-Stop Connecting Route • Round-trip market rate ~₹${liveMarket.flightRoundTripPerPersonINR.toLocaleString('en-IN')}/person (${liveMarket.seasonBadge})`
         : isMultiModalAir
           ? `Lands at ${airportName} • ~${transit.primaryAirport?.distanceKm || 50} km onwards road transfer to ${cleanDest}`
-          : `Live Market Index: ~₹${liveMarket.flightRoundTripPerPersonINR.toLocaleString('en-IN')} round-trip • Cabin + 15kg Check-in`,
+          : `Estimated Fare: ~₹${liveMarket.flightRoundTripPerPersonINR.toLocaleString('en-IN')} round-trip • Cabin + 15kg Check-in`,
       badge: isConnectingRoute ? '1-Stop Connecting' : isMultiModalAir ? 'Fly + Road Transfer' : 'Direct Route',
       isBestDeal: mode === 'flight' && !liveMarket.smartHubArbitrage,
       route: {
@@ -339,7 +339,7 @@ export function generateTransportDeals(params: DealQueryParams): {
       rating: 4.6,
       reviewCount: 12400,
       features: [
-        `Round-Trip Live Market Est: ~₹${liveMarket.flightRoundTripPerPersonINR.toLocaleString('en-IN')}/pax`,
+        `Est. Round-Trip Fare: ~₹${liveMarket.flightRoundTripPerPersonINR.toLocaleString('en-IN')}/pax`,
         '15 kg Check-in Included', 
         isMultiModalAir ? `Onwards transfer to ${cleanDest}: ~${transit.primaryAirport?.distanceKm} km` : 'Gateway Airport Arrival',
         'Live Google Flights Search Link'

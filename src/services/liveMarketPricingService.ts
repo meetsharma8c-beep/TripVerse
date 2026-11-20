@@ -817,7 +817,7 @@ export function evaluateLiveMarketPrices(params: {
     totalWithOriginFlightsINR,
     totalWithSmartHubFlightsINR,
     lineItems,
-    lastSyncedLabel: `Live Market Synced • 1 USD = ₹${inrPerUsd}`
+    lastSyncedLabel: `Estimated Market Rates (Check Live Provider) • 1 USD = ₹${inrPerUsd}`
   };
 }
 
