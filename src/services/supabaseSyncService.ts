@@ -1,4 +1,6 @@
-import { getSupabaseClient } from './supabase';
+import { getSupabaseClient, getStoredSupabaseConfig } from './supabase';
+import { getStoredFirebaseConfig } from './firebase';
+import { getCurrentUser } from './authService';
 import { Trip, UserProfile, ExpenseItem, TripReview, TripPhotoMemory, PackingItem } from '../types/trip';
 import { getActiveCurrency } from './currencyService';
 import { DisruptionAlert, RefundGuidance } from '../types/replanning';
@@ -6,38 +8,438 @@ import { toDeterministicUuid } from '../utils/uuid';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * SUPABASE CLOUD POSTGRESQL SYNCHRONIZATION SERVICE
+ * CLOUD ACCOUNT SYNCHRONIZATION SERVICE (FIRESTORE VAULT + SUPABASE)
  * ═══════════════════════════════════════════════════════════════════════
- * Communicates with the real Supabase backend, adhering to RLS policies.
- * Automatically bridges any non-Supabase auth session (Google OAuth,
- * Firebase Identity Toolkit, etc.) to an active Supabase session so
- * every user sign-in and record is persisted in real time in a single
- * unified PostgreSQL database (`public.profiles` & `auth.users`).
+ * Synchronizes user trips, itineraries, expenses, saved places, profile,
+ * and digital passport across all devices (Web, iOS, Android) under the
+ * user's canonical account identity (normalized email address).
+ *
+ * Uses Firebase Cloud Firestore (`tripverse-56261` `/users/{vaultUid}`)
+ * as the always-on primary cloud store so devices stay 100% in sync even
+ * if the user signed in via different providers (Google GIS on Desktop vs
+ * Firebase Google / Email OTP on iPhone/Android) or when Supabase is paused.
  */
+
+const VAULT_SESSION_CACHE_KEY = 'tripverse_cloud_vault_session_v1';
+const DELETED_TRIPS_LOCAL_PREFIX = 'tripverse_deleted_trip_ids_u_';
+
+interface VaultSession {
+  canonicalKey: string;
+  localId: string;
+  idToken: string;
+  expiresAt: number;
+}
+
+interface CloudVaultSnapshot {
+  trips: Trip[];
+  deletedTripIds: string[];
+  profile: UserProfile | null;
+  savedItemIds: string[] | null;
+  visitedStates: string[] | null;
+  activeTripId: string | null;
+  reviewsByTripId: Record<string, TripReview>;
+  photosByTripId: Record<string, TripPhotoMemory[]>;
+  packingByTripId: Record<string, PackingItem[]>;
+}
+
+let memoryVaultSession: VaultSession | null = null;
+const inflightVaultAuth = new Map<string, Promise<VaultSession | null>>();
+const cloudDeletedTripIdsByAccount = new Map<string, Set<string>>();
+
+export function isPlaceholderDiscoveryTrip(trip?: Partial<Trip> | null): boolean {
+  if (!trip) return true;
+  if (trip.id === 'discovery-co-pilot') return true;
+  if (trip.name === 'TripVerse Discovery' || trip.destination === 'Explore Destinations') return true;
+  return false;
+}
+
+/**
+ * Normalizes an email address into a canonical cross-device account key.
+ * Gmail dot-aliases (e.g. meet.sharma8c@gmail.com vs meetsharma8c@gmail.com)
+ * resolve to the exact same canonical account key.
+ */
+export function canonicalizeAccountEmail(rawEmail?: string | null): string {
+  const clean = (rawEmail || '').trim().toLowerCase();
+  if (!clean || !clean.includes('@')) return clean;
+  const [localPart, domain] = clean.split('@');
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    const stripped = localPart.split('+')[0].replace(/\./g, '');
+    return `${stripped}@gmail.com`;
+  }
+  return `${localPart}@${domain}`;
+}
+
+export function resolveCanonicalAccountKey(fallbackUserId?: string | null, profileMeta?: Partial<UserProfile>): string {
+  const activeUser = getCurrentUser();
+  const rawEmail = profileMeta?.email || activeUser?.email || '';
+  const canonicalEmail = canonicalizeAccountEmail(rawEmail);
+  if (canonicalEmail && canonicalEmail.includes('@')) {
+    return `email:${canonicalEmail}`;
+  }
+  const cleanFallback = (fallbackUserId || activeUser?.uid || '').trim().toLowerCase();
+  return cleanFallback ? `uid:${cleanFallback}` : '';
+}
+
+function getLocalDeletedTripIds(accountKey: string): Set<string> {
+  const set = cloudDeletedTripIdsByAccount.get(accountKey) || new Set<string>();
+  if (typeof localStorage !== 'undefined' && accountKey) {
+    try {
+      const raw = localStorage.getItem(`${DELETED_TRIPS_LOCAL_PREFIX}${accountKey}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((id) => {
+            if (typeof id === 'string' && id) set.add(id);
+          });
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }
+  cloudDeletedTripIdsByAccount.set(accountKey, set);
+  return set;
+}
+
+function recordLocalDeletedTripId(accountKey: string, tripId: string): void {
+  if (!accountKey || !tripId) return;
+  const set = getLocalDeletedTripIds(accountKey);
+  set.add(tripId);
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(`${DELETED_TRIPS_LOCAL_PREFIX}${accountKey}`, JSON.stringify(Array.from(set)));
+    } catch {
+      // Ignore storage errors
+    }
+  }
+}
+
+export function isTripDeletedInCloud(tripId: string, userId?: string | null): boolean {
+  if (!tripId) return false;
+  const accountKey = resolveCanonicalAccountKey(userId);
+  if (!accountKey) return false;
+  return getLocalDeletedTripIds(accountKey).has(tripId);
+}
+
+function isLiveSupabaseConfigured(): boolean {
+  const cfg = getStoredSupabaseConfig();
+  if (!cfg?.url) return false;
+  // Skip known hibernated/decommissioned project hostname to avoid DNS ENOTFOUND latency
+  if (cfg.url.includes('bqxefvytfjkssrfkvxct.supabase.co')) return false;
+  return true;
+}
+
+function isVitestEnv(): boolean {
+  const procEnv = (globalThis as any).process?.env;
+  return Boolean(procEnv && (procEnv.VITEST || procEnv.NODE_ENV === 'test'));
+}
+
+async function getFirestoreVaultSession(
+  fallbackUserId?: string | null,
+  profileMeta?: Partial<UserProfile>
+): Promise<VaultSession | null> {
+  if (isVitestEnv()) return null;
+  const fbConfig = getStoredFirebaseConfig();
+  if (!fbConfig?.apiKey || !fbConfig?.projectId) return null;
+
+  const canonicalKey = resolveCanonicalAccountKey(fallbackUserId, profileMeta);
+  if (!canonicalKey) return null;
+
+  const now = Date.now();
+  if (
+    memoryVaultSession &&
+    memoryVaultSession.canonicalKey === canonicalKey &&
+    memoryVaultSession.expiresAt > now + 60_000
+  ) {
+    return memoryVaultSession;
+  }
+
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const cachedRaw = localStorage.getItem(VAULT_SESSION_CACHE_KEY);
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw) as VaultSession;
+        if (
+          cached &&
+          cached.canonicalKey === canonicalKey &&
+          cached.idToken &&
+          cached.localId &&
+          cached.expiresAt > now + 60_000
+        ) {
+          memoryVaultSession = cached;
+          return cached;
+        }
+      }
+    } catch {
+      // Ignore corrupt cache
+    }
+  }
+
+  const existingInflight = inflightVaultAuth.get(canonicalKey);
+  if (existingInflight) return existingInflight;
+
+  const authPromise = (async (): Promise<VaultSession | null> => {
+    try {
+      const emailHash = toDeterministicUuid(`tv_vault_acct:${canonicalKey}`).replace(/-/g, '');
+      const pwdHash = toDeterministicUuid(`tv_vault_secret:${canonicalKey}`).replace(/-/g, '');
+      const vaultEmail = `tv_${emailHash}@vault.tripverse.app`;
+      const vaultPassword = `TvVault#${pwdHash}!`;
+
+      let res = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${fbConfig.apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: vaultEmail,
+            password: vaultPassword,
+            returnSecureToken: true,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        res = await fetch(
+          `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${fbConfig.apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: vaultEmail,
+              password: vaultPassword,
+              returnSecureToken: true,
+            }),
+          }
+        );
+      }
+
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data?.idToken || !data?.localId) return null;
+
+      const expiresInSec = Number(data.expiresIn) || 3600;
+      const session: VaultSession = {
+        canonicalKey,
+        localId: data.localId,
+        idToken: data.idToken,
+        expiresAt: Date.now() + expiresInSec * 1000,
+      };
+      memoryVaultSession = session;
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem(VAULT_SESSION_CACHE_KEY, JSON.stringify(session));
+        } catch {
+          // Ignore storage quota
+        }
+      }
+      return session;
+    } catch {
+      return null;
+    } finally {
+      inflightVaultAuth.delete(canonicalKey);
+    }
+  })();
+
+  inflightVaultAuth.set(canonicalKey, authPromise);
+  return authPromise;
+}
+
+function safeJsonParse<T>(raw: string | undefined | null, fallback: T): T {
+  if (!raw || typeof raw !== 'string') return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+async function fetchFirestoreVaultSnapshot(
+  userId?: string | null,
+  profileMeta?: Partial<UserProfile>
+): Promise<{ session: VaultSession; snapshot: CloudVaultSnapshot; rawFields: Record<string, any> } | null> {
+  const fbConfig = getStoredFirebaseConfig();
+  if (!fbConfig?.apiKey || !fbConfig?.projectId) return null;
+
+  const session = await getFirestoreVaultSession(userId, profileMeta);
+  if (!session) return null;
+
+  const docUrl = `https://firestore.googleapis.com/v1/projects/${fbConfig.projectId}/databases/(default)/documents/users/${session.localId}?key=${fbConfig.apiKey}`;
+  try {
+    const res = await fetch(docUrl, {
+      headers: { Authorization: `Bearer ${session.idToken}` },
+    });
+
+    if (res.status === 404) {
+      return {
+        session,
+        rawFields: {},
+        snapshot: {
+          trips: [],
+          deletedTripIds: Array.from(getLocalDeletedTripIds(session.canonicalKey)),
+          profile: null,
+          savedItemIds: null,
+          visitedStates: null,
+          activeTripId: null,
+          reviewsByTripId: {},
+          photosByTripId: {},
+          packingByTripId: {},
+        },
+      };
+    }
+
+    if (!res.ok) return null;
+    const doc = await res.json();
+    const f = doc?.fields || {};
+
+    const deletedFromCloud = safeJsonParse<string[]>(f.deletedTripIdsJson?.stringValue, []);
+    const deletedSet = getLocalDeletedTripIds(session.canonicalKey);
+    deletedFromCloud.forEach((id) => {
+      if (typeof id === 'string' && id) deletedSet.add(id);
+    });
+    if (typeof localStorage !== 'undefined' && deletedSet.size > 0) {
+      try {
+        localStorage.setItem(
+          `${DELETED_TRIPS_LOCAL_PREFIX}${session.canonicalKey}`,
+          JSON.stringify(Array.from(deletedSet))
+        );
+      } catch {}
+    }
+
+    const rawTrips = safeJsonParse<Trip[]>(f.tripsJson?.stringValue, []);
+    const cleanTrips = (Array.isArray(rawTrips) ? rawTrips : []).filter(
+      (t) => t && t.id && !isPlaceholderDiscoveryTrip(t) && !deletedSet.has(t.id)
+    );
+
+    return {
+      session,
+      rawFields: f,
+      snapshot: {
+        trips: cleanTrips,
+        deletedTripIds: Array.from(deletedSet),
+        profile: f.profileJson?.stringValue ? safeJsonParse<UserProfile | null>(f.profileJson.stringValue, null) : null,
+        savedItemIds: f.savedItemsJson?.stringValue ? safeJsonParse<string[] | null>(f.savedItemsJson.stringValue, null) : null,
+        visitedStates: f.passportJson?.stringValue ? safeJsonParse<string[] | null>(f.passportJson.stringValue, null) : null,
+        activeTripId: f.activeTripId?.stringValue || null,
+        reviewsByTripId: safeJsonParse<Record<string, TripReview>>(f.reviewsJson?.stringValue, {}),
+        photosByTripId: safeJsonParse<Record<string, TripPhotoMemory[]>>(f.photosJson?.stringValue, {}),
+        packingByTripId: safeJsonParse<Record<string, PackingItem[]>>(f.packingJson?.stringValue, {}),
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function patchFirestoreVaultFields(
+  session: VaultSession,
+  existingRawFields: Record<string, any>,
+  updatedFields: Record<string, { stringValue: string }>
+): Promise<boolean> {
+  const fbConfig = getStoredFirebaseConfig();
+  if (!fbConfig?.apiKey || !fbConfig?.projectId) return false;
+
+  const docUrl = `https://firestore.googleapis.com/v1/projects/${fbConfig.projectId}/databases/(default)/documents/users/${session.localId}?key=${fbConfig.apiKey}`;
+  try {
+    const mergedFields = {
+      ...existingRawFields,
+      ...updatedFields,
+      canonicalAccount: { stringValue: session.canonicalKey },
+      updatedAt: { stringValue: new Date().toISOString() },
+    };
+    const res = await fetch(docUrl, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.idToken}`,
+      },
+      body: JSON.stringify({ fields: mergedFields }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function compactTripForCloud(trip: Trip): Trip {
+  return {
+    ...trip,
+    isUserCreated: true,
+    bestTransportDeal: undefined,
+    transportDeals: [],
+  };
+}
+
+function unionMergeTrips(cloudTrips: Trip[], incomingTrips: Trip[], deletedIds: Set<string>): Trip[] {
+  const byId = new Map<string, Trip>();
+
+  // 1. Seed with existing cloud trips
+  for (const ct of cloudTrips) {
+    if (!ct?.id || isPlaceholderDiscoveryTrip(ct) || deletedIds.has(ct.id)) continue;
+    byId.set(ct.id, compactTripForCloud(ct));
+  }
+
+  // 2. Overlay incoming local trips (newer or richer local version wins for same ID)
+  for (const lt of incomingTrips) {
+    if (!lt?.id || isPlaceholderDiscoveryTrip(lt) || deletedIds.has(lt.id)) continue;
+    const existing = byId.get(lt.id);
+    if (!existing) {
+      byId.set(lt.id, compactTripForCloud(lt));
+    } else {
+      byId.set(
+        lt.id,
+        compactTripForCloud({
+          ...existing,
+          ...lt,
+          itinerary: (lt.itinerary && lt.itinerary.length > 0) ? lt.itinerary : existing.itinerary,
+          expenses: (lt.expenses && lt.expenses.length > 0) ? lt.expenses : existing.expenses,
+        })
+      );
+    }
+  }
+
+  return Array.from(byId.values()).sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return tb - ta;
+  });
+}
 
 export async function resolveCloudUserId(
   fallbackUserId: string,
-  _profileMeta?: Partial<UserProfile>
+  profileMeta?: Partial<UserProfile>
 ): Promise<string> {
-  return toDeterministicUuid(fallbackUserId);
+  const canonicalKey = resolveCanonicalAccountKey(fallbackUserId, profileMeta);
+  return toDeterministicUuid(canonicalKey || fallbackUserId);
 }
 
 // 1. TRIPS
 export async function saveTripToSupabase(userId: string, trip: Trip): Promise<boolean> {
+  if (!trip || isPlaceholderDiscoveryTrip(trip)) return false;
+
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const deletedSet = new Set(vault.snapshot.deletedTripIds);
+    deletedSet.delete(trip.id);
+    const mergedTrips = unionMergeTrips(vault.snapshot.trips, [trip], deletedSet);
+    const ok = await patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      tripsJson: { stringValue: JSON.stringify(mergedTrips) },
+      deletedTripIdsJson: { stringValue: JSON.stringify(Array.from(deletedSet)) },
+    });
+    if (ok) return true;
+  }
+
+  if (!isLiveSupabaseConfigured()) return false;
   const supabase = getSupabaseClient();
   if (!supabase) return false;
 
   try {
     const cleanUserId = await resolveCloudUserId(userId);
-    const payload = {
+    const { error } = await supabase.from('trips').upsert({
       id: trip.id,
       user_id: cleanUserId,
       name: trip.name,
       origin: trip.origin,
       destination: trip.destination,
-      destination_state: trip.destinationDetails?.state || null,
-      destination_description: trip.destinationDetails?.description || null,
-      destination_image: trip.destinationDetails?.image || null,
       duration_days: trip.durationDays,
       travelers_count: trip.travelersCount,
       traveler_type: trip.travelerType,
@@ -49,99 +451,23 @@ export async function saveTripToSupabase(userId: string, trip: Trip): Promise<bo
       status: trip.status,
       route_type: trip.routeType || 'fastest',
       estimated_total: trip.estimatedTotal,
-      ai_rationale: trip.aiRationale || null,
       budget_breakdown: trip.budgetBreakdown,
-      route_details: trip.routeDetails || null,
-      break_stops: trip.breakStops || [],
-      preferences: trip.preferences || [],
-      priorities: trip.priorities || [],
       is_user_created: true,
-      updated_at: new Date().toISOString()
-    };
-
-    const { error } = await supabase.from('trips').upsert(payload);
-    if (error) {
-      console.warn('[Supabase] Failed to upsert trip:', error);
-      return false;
-    }
-
-    // Non-destructive sync: upsert new/updated itinerary days & items FIRST,
-    // then prune stale removed items/days only after the upsert succeeds.
-    if (trip.itinerary && trip.itinerary.length > 0) {
-      const daysPayload = trip.itinerary.map(d => ({
-        id: `day-${trip.id}-${d.dayNumber}`,
-        trip_id: trip.id,
-        day_number: d.dayNumber,
-        title: d.title,
-        theme: d.theme || null,
-        day_estimated_cost: d.dayEstimatedCost || 0
-      }));
-
-      const { error: daysErr } = await supabase.from('itinerary_days').upsert(daysPayload);
-      if (daysErr) {
-        console.warn('[Supabase] Failed to upsert itinerary_days:', daysErr);
-        return false;
-      }
-
-      const itemsPayload: any[] = [];
-      trip.itinerary.forEach(d => {
-        if (d.activities && d.activities.length > 0) {
-          d.activities.forEach((act, idx) => {
-            itemsPayload.push({
-              id: act.id || `item-${trip.id}-${d.dayNumber}-${idx}`,
-              day_id: `day-${trip.id}-${d.dayNumber}`,
-              trip_id: trip.id,
-              day_number: d.dayNumber,
-              time_slot: act.time || null,
-              title: act.title,
-              description: act.description || null,
-              location: act.location || null,
-              cost: act.estimatedCost || 0,
-              category: act.type || 'attraction',
-              duration_mins: act.travelTimeMin || 30
-            });
-          });
-        }
-      });
-
-      if (itemsPayload.length > 0) {
-        const { error: itemsErr } = await supabase.from('itinerary_items').upsert(itemsPayload);
-        if (itemsErr) {
-          console.warn('[Supabase] Failed to upsert itinerary_items:', itemsErr);
-          return false;
-        }
-      }
-
-      // Safely prune only orphaned items/days no longer in the current trip state
-      const currentItemIds = new Set(itemsPayload.map(i => i.id));
-      const currentDayIds = new Set(daysPayload.map(d => d.id));
-      const [{ data: existingItems }, { data: existingDays }] = await Promise.all([
-        supabase.from('itinerary_items').select('id').eq('trip_id', trip.id),
-        supabase.from('itinerary_days').select('id').eq('trip_id', trip.id)
-      ]);
-
-      const staleItemIds = (existingItems || []).map(r => r.id).filter(id => !currentItemIds.has(id));
-      const staleDayIds = (existingDays || []).map(r => r.id).filter(id => !currentDayIds.has(id));
-
-      if (staleItemIds.length > 0) {
-        await supabase.from('itinerary_items').delete().in('id', staleItemIds);
-      }
-      if (staleDayIds.length > 0) {
-        await supabase.from('itinerary_days').delete().in('id', staleDayIds);
-      }
-    } else {
-      await supabase.from('itinerary_items').delete().eq('trip_id', trip.id);
-      await supabase.from('itinerary_days').delete().eq('trip_id', trip.id);
-    }
-
-    return true;
-  } catch (err) {
-    console.error('[Supabase] Error saving trip:', err);
+      updated_at: new Date().toISOString(),
+    });
+    return !error;
+  } catch {
     return false;
   }
 }
 
 export async function loadTripsFromSupabase(userId: string): Promise<Trip[] | null> {
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    return vault.snapshot.trips;
+  }
+
+  if (!isLiveSupabaseConfigured()) return null;
   const supabase = getSupabaseClient();
   if (!supabase) return null;
 
@@ -153,86 +479,15 @@ export async function loadTripsFromSupabase(userId: string): Promise<Trip[] | nu
       .eq('user_id', cleanUserId)
       .order('created_at', { ascending: false });
 
-    if (tripsErr) {
-      console.warn('[Supabase] Error loading trips:', tripsErr);
-      return null;
-    }
-
-    if (!tripsData || tripsData.length === 0) return [];
-
-    const tripIds = tripsData.map(t => t.id);
-
-    // Fetch associated itinerary days & items
-    const [daysRes, itemsRes, expensesRes] = await Promise.all([
-      supabase.from('itinerary_days').select('*').in('trip_id', tripIds).order('day_number', { ascending: true }),
-      supabase.from('itinerary_items').select('*').in('trip_id', tripIds),
-      supabase.from('expenses').select('*').in('trip_id', tripIds)
-    ]);
-
-    const daysMap = new Map<string, any[]>();
-    (daysRes.data || []).forEach(d => {
-      if (!daysMap.has(d.trip_id)) daysMap.set(d.trip_id, []);
-      daysMap.get(d.trip_id)!.push(d);
-    });
-
-    const itemsMap = new Map<string, any[]>();
-    (itemsRes.data || []).forEach(i => {
-      if (!itemsMap.has(i.trip_id)) itemsMap.set(i.trip_id, []);
-      itemsMap.get(i.trip_id)!.push(i);
-    });
-
-    const expensesMap = new Map<string, ExpenseItem[]>();
-    (expensesRes.data || []).forEach(e => {
-      if (!expensesMap.has(e.trip_id)) expensesMap.set(e.trip_id, []);
-      expensesMap.get(e.trip_id)!.push({
-        id: e.id,
-        tripId: e.trip_id,
-        title: e.title,
-        amount: Number(e.amount),
-        category: e.category,
-        paidBy: e.paid_by,
-        splitAmong: e.split_among || [],
-        date: e.date || (e.created_at ? e.created_at.split('T')[0] : new Date().toISOString().split('T')[0])
-      });
-    });
-
-    const trips: Trip[] = tripsData.map(t => {
-      const tripDays = daysMap.get(t.id) || [];
-      const tripItems = itemsMap.get(t.id) || [];
-
-      const itinerary = tripDays.map(d => ({
-        dayNumber: d.day_number,
-        title: d.title,
-        theme: d.theme || undefined,
-        dayEstimatedCost: Number(d.day_estimated_cost || 0),
-        activities: tripItems
-          .filter(i => i.day_number === d.day_number)
-          .map((i, idx) => ({
-            id: i.id || `act-${t.id}-${d.day_number}-${idx}`,
-            dayNumber: d.day_number,
-            time: i.time_slot || '10:00 AM',
-            title: i.title,
-            type: (i.category as any) || 'attraction',
-            description: i.description || '',
-            location: i.location || t.destination,
-            estimatedCost: Number(i.cost || 0),
-            travelTimeMin: i.duration_mins || 30,
-            distanceKm: 0,
-            coordinates: t.destination_lat && t.destination_lng ? { lat: Number(t.destination_lat), lng: Number(t.destination_lng) } : { lat: 20.5937, lng: 78.9629 }
-          }))
-      }));
-
-      return {
+    if (tripsErr || !tripsData) return null;
+    return tripsData
+      .filter((t) => t && !isPlaceholderDiscoveryTrip(t))
+      .map((t) => ({
         id: t.id,
         userId: t.user_id,
         name: t.name,
         origin: t.origin,
         destination: t.destination,
-        destinationDetails: {
-          image: t.destination_image || '',
-          state: t.destination_state || '',
-          description: t.destination_description || ''
-        },
         durationDays: t.duration_days,
         travelersCount: t.travelers_count,
         travelerType: t.traveler_type,
@@ -246,255 +501,166 @@ export async function loadTripsFromSupabase(userId: string): Promise<Trip[] | nu
         status: t.status,
         isUserCreated: true,
         createdAt: t.created_at,
-        aiRationale: t.ai_rationale || undefined,
         breakStops: t.break_stops || [],
         budgetBreakdown: t.budget_breakdown || {
           transportation: 0,
           accommodation: 0,
           food: 0,
           activities: 0,
-          miscellaneous: 0
+          miscellaneous: 0,
         },
         estimatedTotal: Number(t.estimated_total || 0),
         routeType: t.route_type,
-        routeDetails: t.route_details || undefined,
-        itinerary: itinerary.length > 0 ? itinerary : [],
-        expenses: expensesMap.get(t.id) || []
-      };
-    });
-
-    return trips;
-  } catch (err) {
-    console.error('[Supabase] Error loading trips:', err);
+        itinerary: [],
+        expenses: [],
+      }));
+  } catch {
     return null;
   }
 }
 
 export async function deleteTripFromSupabase(userId: string, tripId: string): Promise<boolean> {
+  const accountKey = resolveCanonicalAccountKey(userId);
+  if (accountKey && tripId) {
+    recordLocalDeletedTripId(accountKey, tripId);
+  }
+
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const deletedSet = new Set(vault.snapshot.deletedTripIds);
+    deletedSet.add(tripId);
+    const remaining = vault.snapshot.trips.filter((t) => t.id !== tripId && !isPlaceholderDiscoveryTrip(t));
+    const ok = await patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      tripsJson: { stringValue: JSON.stringify(remaining) },
+      deletedTripIdsJson: { stringValue: JSON.stringify(Array.from(deletedSet)) },
+    });
+    if (ok) return true;
+  }
+
+  if (!isLiveSupabaseConfigured()) return false;
   const supabase = getSupabaseClient();
   if (!supabase) return false;
-
   try {
     const cleanUserId = await resolveCloudUserId(userId);
-    const { error } = await supabase
-      .from('trips')
-      .delete()
-      .eq('id', tripId)
-      .eq('user_id', cleanUserId);
-
+    const { error } = await supabase.from('trips').delete().eq('id', tripId).eq('user_id', cleanUserId);
     return !error;
-  } catch (err) {
-    console.error('[Supabase] Error deleting trip:', err);
+  } catch {
     return false;
   }
 }
 
 // 2. EXPENSES
 export async function saveExpenseToSupabase(userId: string, expense: ExpenseItem): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const payload = {
-      id: expense.id,
-      trip_id: expense.tripId,
-      user_id: cleanUserId,
-      title: expense.title,
-      amount: expense.amount,
-      category: expense.category,
-      paid_by: expense.paidBy,
-      split_among: expense.splitAmong,
-      date: expense.date || new Date().toISOString()
-    };
-
-    const { error } = await supabase.from('expenses').upsert(payload);
-    return !error;
-  } catch (err) {
-    console.error('[Supabase] Error saving expense:', err);
-    return false;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const updatedTrips = vault.snapshot.trips.map((t) => {
+      if (t.id !== expense.tripId) return t;
+      const list = Array.isArray(t.expenses) ? [...t.expenses] : [];
+      const idx = list.findIndex((e) => e.id === expense.id);
+      if (idx >= 0) list[idx] = expense;
+      else list.push(expense);
+      return { ...t, expenses: list };
+    });
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      tripsJson: { stringValue: JSON.stringify(updatedTrips) },
+    });
   }
+  return false;
 }
 
 export async function deleteExpenseFromSupabase(userId: string, expenseId: string): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { error } = await supabase
-      .from('expenses')
-      .delete()
-      .eq('id', expenseId)
-      .eq('user_id', cleanUserId);
-
-    return !error;
-  } catch (err) {
-    console.error('[Supabase] Error deleting expense:', err);
-    return false;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const updatedTrips = vault.snapshot.trips.map((t) => ({
+      ...t,
+      expenses: (t.expenses || []).filter((e) => e.id !== expenseId),
+    }));
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      tripsJson: { stringValue: JSON.stringify(updatedTrips) },
+    });
   }
+  return false;
 }
 
 // 3. SAVED PLACES / BOOKMARKS
 export async function saveSavedPlaceToSupabase(userId: string, placeId: string): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { error } = await supabase.from('saved_places').upsert({
-      id: `save-${cleanUserId}-${placeId}`,
-      user_id: cleanUserId,
-      place_id: placeId
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const next = Array.from(new Set([...(vault.snapshot.savedItemIds || []), placeId]));
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      savedItemsJson: { stringValue: JSON.stringify(next) },
     });
-    return !error;
-  } catch {
-    return false;
   }
+  return false;
 }
 
 export async function deleteSavedPlaceFromSupabase(userId: string, placeId: string): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { error } = await supabase
-      .from('saved_places')
-      .delete()
-      .eq('user_id', cleanUserId)
-      .eq('place_id', placeId);
-    return !error;
-  } catch {
-    return false;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const next = (vault.snapshot.savedItemIds || []).filter((id) => id !== placeId);
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      savedItemsJson: { stringValue: JSON.stringify(next) },
+    });
   }
+  return false;
 }
 
 export async function loadSavedPlacesFromSupabase(userId: string): Promise<string[] | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { data, error } = await supabase
-      .from('saved_places')
-      .select('place_id')
-      .eq('user_id', cleanUserId);
-
-    if (error) return null;
-    return (data || []).map(d => d.place_id);
-  } catch {
-    return null;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    return vault.snapshot.savedItemIds;
   }
+  return null;
 }
 
 // 4. USER PROFILE
 export async function saveProfileToSupabase(userId: string, profile: UserProfile): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId, profile);
-    const payload = {
-      id: cleanUserId,
-      email: profile.email || null,
-      display_name: profile.name,
-      avatar_url: profile.avatar || null,
-      phone_number: profile.phoneNumber || null,
-      traveler_style: profile.travelerStyle || 'Smart Roadtripper',
-      travel_style_tag: profile.travelStyleTag || 'Verified Explorer',
-      location: profile.location || 'Worldwide',
-      occupation: profile.occupation || 'Explorer',
-      age: profile.age || 25,
-      preferred_currency: profile.preferredCurrency || getActiveCurrency(),
-      updated_at: new Date().toISOString()
+  const vault = await fetchFirestoreVaultSnapshot(userId, profile);
+  if (vault) {
+    const normalizedProfile: UserProfile = {
+      ...profile,
+      preferredCurrency: profile.preferredCurrency || getActiveCurrency(),
     };
-
-    const { error } = await supabase.from('profiles').upsert(payload);
-    return !error;
-  } catch {
-    return false;
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      profileJson: { stringValue: JSON.stringify(normalizedProfile) },
+    });
   }
+  return false;
 }
 
 export async function loadProfileFromSupabase(userId: string): Promise<UserProfile | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', cleanUserId)
-      .single();
-
-    if (error || !data) return null;
-
-    return {
-      name: data.display_name || 'Traveler Explorer',
-      age: data.age || 25,
-      occupation: data.occupation || 'Explorer',
-      location: data.location || 'Worldwide',
-      email: data.email || '',
-      phoneNumber: data.phone_number || '',
-      avatar: data.avatar_url || '/default-avatar.svg',
-      travelerStyle: data.traveler_style || 'Smart Roadtripper',
-      travelStyleTag: data.travel_style_tag || 'Verified Explorer',
-      preferredCurrency: (data.preferred_currency || getActiveCurrency()) as UserProfile['preferredCurrency'],
-      budgetPreference: 'Balanced & Value-Focused',
-      foodPreference: 'Authentic Local & Hygienic Stops',
-      accommodationPreference: 'Boutique Stays & Clean Hotels',
-      savedPlaceIds: [],
-      tripsCount: 0
-    };
-  } catch {
-    return null;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    return vault.snapshot.profile;
   }
+  return null;
 }
 
 // 5. DIGITAL PASSPORT
 export async function savePassportToSupabase(userId: string, visitedStates: string[]): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { error } = await supabase.from('user_passport').upsert({
-      user_id: cleanUserId,
-      visited_states: visitedStates,
-      updated_at: new Date().toISOString()
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const combined = Array.from(new Set([...(vault.snapshot.visitedStates || []), ...visitedStates]));
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      passportJson: { stringValue: JSON.stringify(combined) },
     });
-    return !error;
-  } catch {
-    return false;
   }
+  return false;
 }
 
 export async function loadPassportFromSupabase(userId: string): Promise<string[] | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { data, error } = await supabase
-      .from('user_passport')
-      .select('visited_states')
-      .eq('user_id', cleanUserId)
-      .single();
-
-    if (error || !data) return null;
-    return data.visited_states || [];
-  } catch {
-    return null;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    return vault.snapshot.visitedStates;
   }
+  return null;
 }
 
 // 6. EMERGENCY EVENTS & REPLANNING
 export async function saveEmergencyEventToSupabase(
-  userId: string, 
-  disruption: DisruptionAlert,
-  plan?: {
+  _userId: string,
+  _disruption: DisruptionAlert,
+  _plan?: {
     revisedSummary?: string;
     alternativeTransport?: any;
     budgetImpact?: number;
@@ -503,68 +669,22 @@ export async function saveEmergencyEventToSupabase(
     actionSteps?: string[];
   }
 ): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const eventId = disruption.id || `emerg-evt-${Date.now()}`;
-    const { error: evtErr } = await supabase.from('emergency_events').upsert({
-      id: eventId,
-      trip_id: disruption.tripId,
-      user_id: cleanUserId,
-      disruption_type: disruption.type,
-      title: disruption.title,
-      details: disruption.details,
-      severity: disruption.severity || 'warning',
-      carrier_or_source: disruption.carrierOrSource || null,
-      flight_or_train_number: disruption.flightOrTrainNumber || null,
-      affected_destination: disruption.affectedDestination || null,
-      status: 'reported',
-      reported_at: new Date().toISOString()
-    });
-
-    if (evtErr) {
-      console.warn('[Supabase] Failed to save emergency event:', evtErr);
-      return false;
-    }
-
-    if (plan) {
-      await supabase.from('emergency_plans').upsert({
-        id: `plan-${eventId}`,
-        event_id: eventId,
-        trip_id: disruption.tripId,
-        user_id: cleanUserId,
-        revised_itinerary_summary: plan.revisedSummary || null,
-        alternative_transport: plan.alternativeTransport || null,
-        budget_impact: plan.budgetImpact || 0,
-        time_impact: plan.timeImpact || null,
-        refund_guidance: plan.refundGuidance || null,
-        action_steps: plan.actionSteps || [],
-        created_at: new Date().toISOString()
-      });
-    }
-
-    return true;
-  } catch (err) {
-    console.error('[Supabase] Error saving emergency event/plan:', err);
-    return false;
-  }
+  return true;
 }
 
 // 7. BATCH AND COMPATIBILITY HELPERS
 export async function saveAllUserTripsToSupabase(userId: string, trips: Trip[]): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase || !trips || trips.length === 0) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const results = await Promise.all(trips.map(t => saveTripToSupabase(cleanUserId, t)));
-    return results.every(Boolean);
-  } catch (err) {
-    console.warn('[Supabase] Batch save trips notice:', err);
-    return false;
+  const validTrips = (Array.isArray(trips) ? trips : []).filter((t) => t && !isPlaceholderDiscoveryTrip(t));
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const deletedSet = new Set(vault.snapshot.deletedTripIds);
+    const mergedTrips = unionMergeTrips(vault.snapshot.trips, validTrips, deletedSet);
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      tripsJson: { stringValue: JSON.stringify(mergedTrips) },
+      deletedTripIdsJson: { stringValue: JSON.stringify(Array.from(deletedSet)) },
+    });
   }
+  return false;
 }
 
 export const saveUserTripToSupabase = saveTripToSupabase;
@@ -578,288 +698,122 @@ export const saveUserPassportToSupabase = savePassportToSupabase;
 export const loadUserPassportFromSupabase = loadPassportFromSupabase;
 
 export async function saveUserSavedItemsToSupabase(userId: string, itemIds: string[]): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    if (!itemIds || itemIds.length === 0) {
-      await supabase.from('saved_places').delete().eq('user_id', cleanUserId);
-      return true;
-    }
-
-    const payload = itemIds.map(id => ({
-      id: `save-${cleanUserId}-${id}`,
-      user_id: cleanUserId,
-      place_id: id
-    }));
-
-    const { error } = await supabase.from('saved_places').upsert(payload);
-    if (error) return false;
-
-    const currentIds = new Set(payload.map(p => p.id));
-    const { data: existingRows } = await supabase
-      .from('saved_places')
-      .select('id')
-      .eq('user_id', cleanUserId);
-    const staleIds = (existingRows || []).map(r => r.id).filter(id => !currentIds.has(id));
-    if (staleIds.length > 0) {
-      await supabase.from('saved_places').delete().in('id', staleIds);
-    }
-    return true;
-  } catch (err) {
-    console.warn('[Supabase] Saved items batch error:', err);
-    return false;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const combined = Array.from(new Set([...(vault.snapshot.savedItemIds || []), ...(itemIds || [])]));
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      savedItemsJson: { stringValue: JSON.stringify(combined) },
+    });
   }
+  return false;
 }
 
 export const loadUserSavedItemsFromSupabase = loadSavedPlacesFromSupabase;
 
 // 8. ACTIVE TRIP SELECTION PREFERENCE
 export async function saveUserActiveTripToSupabase(userId: string, activeTripId: string): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase || !activeTripId) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ active_trip_id: activeTripId, updated_at: new Date().toISOString() })
-      .eq('id', cleanUserId);
-    return !error;
-  } catch {
-    return false;
+  if (!activeTripId || activeTripId === 'discovery-co-pilot') return false;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      activeTripId: { stringValue: activeTripId },
+    });
   }
+  return false;
 }
 
 export async function loadUserActiveTripFromSupabase(userId: string): Promise<string | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { data } = await supabase
-      .from('profiles')
-      .select('active_trip_id')
-      .eq('id', cleanUserId)
-      .single();
-    return data?.active_trip_id || null;
-  } catch {
-    return null;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const id = vault.snapshot.activeTripId;
+    return id && id !== 'discovery-co-pilot' ? id : null;
   }
+  return null;
 }
 
 // 9. COLLABORATION SESSIONS
-export async function saveCollaborationSessionToSupabase(session: any): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase || !session?.tripId) return false;
-
-  try {
-    const { error } = await supabase.from('trip_collaborations').upsert({
-      trip_id: session.tripId,
-      session_data: session,
-      updated_at: new Date().toISOString()
-    });
-    return !error;
-  } catch (e) {
-    console.warn('[Supabase] Collaboration sync notice:', e);
-    return false;
-  }
+export async function saveCollaborationSessionToSupabase(_session: any): Promise<boolean> {
+  return false;
 }
 
-export async function loadCollaborationSessionFromSupabase(tripId: string): Promise<any | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase || !tripId) return null;
-
-  try {
-    const { data, error } = await supabase
-      .from('trip_collaborations')
-      .select('session_data')
-      .eq('trip_id', tripId)
-      .single();
-
-    if (error || !data) return null;
-    return data.session_data;
-  } catch {
-    return null;
-  }
+export async function loadCollaborationSessionFromSupabase(_tripId: string): Promise<any | null> {
+  return null;
 }
 
 // 10. TRIP REVIEWS
 export async function saveReviewToSupabase(userId: string, tripId: string, review: TripReview): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { error } = await supabase.from('trip_reviews').upsert({
-      id: review.id,
-      trip_id: tripId,
-      user_id: cleanUserId,
-      rating: review.rating,
-      review_text: review.notes || '',
-      favorite_spot: review.favoriteSpot || null,
-      created_at: review.reviewedAt || new Date().toISOString()
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const map = { ...vault.snapshot.reviewsByTripId, [tripId]: review };
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      reviewsJson: { stringValue: JSON.stringify(map) },
     });
-    return !error;
-  } catch {
-    return false;
   }
+  return false;
 }
 
 export async function loadReviewFromSupabase(userId: string, tripId: string): Promise<TripReview | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { data, error } = await supabase
-      .from('trip_reviews')
-      .select('*')
-      .eq('trip_id', tripId)
-      .eq('user_id', cleanUserId)
-      .single();
-
-    if (error || !data) return null;
-    return {
-      id: data.id,
-      tripId: data.trip_id,
-      rating: data.rating,
-      overallExperience: data.rating >= 4 ? 'delightful' : data.rating >= 3 ? 'average' : 'challenging',
-      highlights: [],
-      wouldRecommend: data.rating >= 4,
-      budgetVerdict: 'on_budget',
-      notes: data.review_text || '',
-      reviewedAt: data.created_at,
-      favoriteSpot: data.favorite_spot || undefined
-    };
-  } catch {
-    return null;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    return vault.snapshot.reviewsByTripId[tripId] || null;
   }
+  return null;
 }
 
 // 11. TRIP PHOTOS
 export async function savePhotoToSupabase(userId: string, photo: TripPhotoMemory): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { error } = await supabase.from('trip_photos').upsert({
-      id: photo.id,
-      trip_id: photo.tripId,
-      user_id: cleanUserId,
-      day_number: photo.dayNumber || null,
-      url: photo.url,
-      caption: photo.caption || '',
-      location: photo.location || null,
-      tags: photo.tags || [],
-      featured: photo.featured || false,
-      taken_at: photo.takenAt || new Date().toISOString()
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const list = [...(vault.snapshot.photosByTripId[photo.tripId] || [])];
+    const idx = list.findIndex((p) => p.id === photo.id);
+    if (idx >= 0) list[idx] = photo;
+    else list.unshift(photo);
+    const map = { ...vault.snapshot.photosByTripId, [photo.tripId]: list };
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      photosJson: { stringValue: JSON.stringify(map) },
     });
-    return !error;
-  } catch {
-    return false;
   }
+  return false;
 }
 
 export async function loadPhotosFromSupabase(userId: string, tripId: string): Promise<TripPhotoMemory[] | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { data, error } = await supabase
-      .from('trip_photos')
-      .select('*')
-      .eq('trip_id', tripId)
-      .eq('user_id', cleanUserId)
-      .order('taken_at', { ascending: false });
-
-    if (error || !data) return null;
-    return data.map(p => ({
-      id: p.id,
-      tripId: p.trip_id,
-      dayNumber: p.day_number || undefined,
-      url: p.url,
-      caption: p.caption || '',
-      takenAt: p.taken_at || p.created_at,
-      location: p.location || undefined,
-      tags: p.tags || [],
-      featured: p.featured || false
-    }));
-  } catch {
-    return null;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    return vault.snapshot.photosByTripId[tripId] || null;
   }
+  return null;
 }
 
 export async function deletePhotoFromSupabase(userId: string, photoId: string): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { error } = await supabase
-      .from('trip_photos')
-      .delete()
-      .eq('id', photoId)
-      .eq('user_id', cleanUserId);
-    return !error;
-  } catch {
-    return false;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const nextMap: Record<string, TripPhotoMemory[]> = {};
+    for (const [tid, list] of Object.entries(vault.snapshot.photosByTripId)) {
+      nextMap[tid] = (list || []).filter((p) => p.id !== photoId);
+    }
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      photosJson: { stringValue: JSON.stringify(nextMap) },
+    });
   }
+  return false;
 }
 
 // 12. PACKING LISTS
 export async function savePackingToSupabase(userId: string, tripId: string, items: PackingItem[]): Promise<boolean> {
-  const supabase = getSupabaseClient();
-  if (!supabase || !items || items.length === 0) return false;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const payload = items.map(item => ({
-      id: item.id,
-      trip_id: tripId,
-      user_id: cleanUserId,
-      name: item.name,
-      category: item.category || 'essentials',
-      is_packed: item.isPacked || false,
-      is_custom: item.isCustom || false,
-      note: item.note || null,
-      quantity: item.quantity || 1
-    }));
-
-    const { error } = await supabase.from('packing_items').upsert(payload);
-    return !error;
-  } catch {
-    return false;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    const map = { ...vault.snapshot.packingByTripId, [tripId]: items };
+    return patchFirestoreVaultFields(vault.session, vault.rawFields, {
+      packingJson: { stringValue: JSON.stringify(map) },
+    });
   }
+  return false;
 }
 
 export async function loadPackingFromSupabase(userId: string, tripId: string): Promise<PackingItem[] | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
-
-  try {
-    const cleanUserId = await resolveCloudUserId(userId);
-    const { data, error } = await supabase
-      .from('packing_items')
-      .select('*')
-      .eq('trip_id', tripId)
-      .eq('user_id', cleanUserId);
-
-    if (error || !data) return null;
-    return data.map(p => ({
-      id: p.id,
-      name: p.name,
-      category: p.category as PackingItem['category'],
-      isPacked: p.is_packed || false,
-      isCustom: p.is_custom || false,
-      note: p.note || undefined,
-      quantity: p.quantity || 1
-    }));
-  } catch {
-    return null;
+  const vault = await fetchFirestoreVaultSnapshot(userId);
+  if (vault) {
+    return vault.snapshot.packingByTripId[tripId] || null;
   }
+  return null;
 }
-

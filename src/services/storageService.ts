@@ -1,9 +1,32 @@
 import { Trip, UserProfile, TripPhotoMemory, TripReview, ExpenseItem, PackingItem } from '../types/trip';
 import { DEFAULT_USER_PROFILE } from '../data/initialTrips';
-import { getCurrentUser, toUserProfile } from './authService';
+import { getCurrentUser, getSavedAccounts, toUserProfile } from './authService';
 import { calibrateTripWithLiveMarket } from './liveMarketPricingService';
 import { saveTripsToOfflineDb } from './offlineDbService';
-import { saveTripToSupabase, loadTripsFromSupabase, deleteTripFromSupabase, saveAllUserTripsToSupabase, saveProfileToSupabase, loadProfileFromSupabase, savePassportToSupabase, loadPassportFromSupabase, saveSavedPlaceToSupabase, deleteSavedPlaceFromSupabase, loadSavedPlacesFromSupabase, saveUserSavedItemsToSupabase, saveUserActiveTripToSupabase, loadUserActiveTripFromSupabase, saveExpenseToSupabase, saveReviewToSupabase, savePhotoToSupabase, deletePhotoFromSupabase, savePackingToSupabase } from './supabaseSyncService';
+import {
+  saveTripToSupabase,
+  loadTripsFromSupabase,
+  deleteTripFromSupabase,
+  saveAllUserTripsToSupabase,
+  saveProfileToSupabase,
+  loadProfileFromSupabase,
+  savePassportToSupabase,
+  loadPassportFromSupabase,
+  saveSavedPlaceToSupabase,
+  deleteSavedPlaceFromSupabase,
+  loadSavedPlacesFromSupabase,
+  saveUserSavedItemsToSupabase,
+  saveUserActiveTripToSupabase,
+  loadUserActiveTripFromSupabase,
+  saveExpenseToSupabase,
+  saveReviewToSupabase,
+  savePhotoToSupabase,
+  deletePhotoFromSupabase,
+  savePackingToSupabase,
+  isPlaceholderDiscoveryTrip,
+  isTripDeletedInCloud,
+  canonicalizeAccountEmail,
+} from './supabaseSyncService';
 
 /**
  * Detect if current context is an unauthenticated guest session
@@ -116,15 +139,65 @@ export function safeLocalStorageSet(key: string, value: string): boolean {
  */
 export function loadTrips(userId?: string | null): Trip[] {
   try {
-    const uid = userId !== undefined ? userId : getCurrentUser()?.uid;
+    const activeUser = getCurrentUser();
+    const uid = userId !== undefined ? userId : activeUser?.uid;
     const key = getUserStorageKey('tripverse_trips', uid);
     const raw = getStorageItem(key, uid);
 
-    let trips: Trip[];
-    if (!raw) {
-      trips = [];
-    } else {
-      trips = JSON.parse(raw);
+    let trips: Trip[] = raw ? JSON.parse(raw) : [];
+    const originalCount = Array.isArray(trips) ? trips.length : 0;
+
+    // 1. Purge any accidental DISCOVERY_FALLBACK_TRIP ('discovery-co-pilot') or cloud-deleted tombstones
+    trips = (Array.isArray(trips) ? trips : []).filter(
+      (t) => t && t.id && !isPlaceholderDiscoveryTrip(t) && !isTripDeletedInCloud(t.id, uid)
+    );
+    let wasModified = trips.length !== originalCount;
+
+    // 2. Consolidate any trips stored under alternate UIDs for the same email account on this device
+    // (e.g. if the user previously signed in via Google GIS vs Firebase Google vs Email OTP)
+    if (uid && typeof window !== 'undefined' && window.localStorage) {
+      const targetEmail = canonicalizeAccountEmail(
+        activeUser?.uid === uid
+          ? activeUser?.email
+          : getSavedAccounts().find((u) => u.uid === uid)?.email
+      );
+      if (targetEmail) {
+        const matchingUids = new Set<string>([
+          uid,
+          ...getSavedAccounts()
+            .filter((u) => canonicalizeAccountEmail(u.email) === targetEmail)
+            .map((u) => u.uid),
+        ]);
+        const existingIds = new Set(trips.map((t) => t.id));
+        for (const altUid of matchingUids) {
+          if (!altUid || altUid === uid) continue;
+          const altKey = getUserStorageKey('tripverse_trips', altUid);
+          const altRaw = getStorageItem(altKey, altUid);
+          if (!altRaw) continue;
+          try {
+            const altList: Trip[] = JSON.parse(altRaw);
+            for (const altTrip of Array.isArray(altList) ? altList : []) {
+              if (
+                altTrip &&
+                altTrip.id &&
+                !existingIds.has(altTrip.id) &&
+                !isPlaceholderDiscoveryTrip(altTrip) &&
+                !isTripDeletedInCloud(altTrip.id, uid)
+              ) {
+                trips.push({ ...altTrip, userId: uid, isUserCreated: true });
+                existingIds.add(altTrip.id);
+                wasModified = true;
+              }
+            }
+          } catch {
+            // Ignore malformed alternate key
+          }
+        }
+      }
+    }
+
+    if (wasModified) {
+      safeStorageSet(key, JSON.stringify(trips), uid);
     }
 
     return trips.map(trip => {
@@ -146,18 +219,21 @@ export function loadTrips(userId?: string | null): Trip[] {
 }
 
 /**
- * Save all trips for the specified user account (sessionStorage for guest, localStorage + Supabase for user)
+ * Save all trips for the specified user account (sessionStorage for guest, localStorage + Cloud Vault for user)
  */
 export function saveTrips(trips: Trip[], userId?: string | null, options?: { skipCloudSync?: boolean }): void {
   try {
     const uid = userId !== undefined ? userId : getCurrentUser()?.uid;
+    const cleanTrips = (Array.isArray(trips) ? trips : []).filter(
+      (t) => t && t.id && !isPlaceholderDiscoveryTrip(t) && !isTripDeletedInCloud(t.id, uid)
+    );
     const key = getUserStorageKey('tripverse_trips', uid);
-    safeStorageSet(key, JSON.stringify(trips), uid);
+    safeStorageSet(key, JSON.stringify(cleanTrips), uid);
     // Mirror to IndexedDB asynchronously for large offline itineraries beyond the 5MB localStorage limit
-    saveTripsToOfflineDb(uid, trips).catch(() => {});
+    saveTripsToOfflineDb(uid, cleanTrips).catch(() => {});
     if (uid && !options?.skipCloudSync) {
-      // Sync to Supabase PostgreSQL cloud database
-      saveAllUserTripsToSupabase(uid, trips).catch(() => {});
+      // Sync to Cloud Vault (Firestore + Supabase)
+      saveAllUserTripsToSupabase(uid, cleanTrips).catch(() => {});
     }
   } catch (e) {
     console.error('Error saving trips to storage', e);
@@ -174,9 +250,10 @@ export function getTripById(id: string, userId?: string | null): Trip | undefine
 }
 
 /**
- * Save or update a single trip under the specified user account (Supabase + cache)
+ * Save or update a single trip under the specified user account (Cloud Vault + cache)
  */
 export function saveOrUpdateTrip(trip: Trip, userId?: string | null): void {
+  if (!trip || isPlaceholderDiscoveryTrip(trip)) return;
   const uid = userId !== undefined ? userId : getCurrentUser()?.uid;
   if (uid && !trip.userId) {
     trip.userId = uid;

@@ -133,7 +133,9 @@ import {
   saveAllUserTripsToSupabase,
   saveUserProfileToSupabase,
   saveUserPassportToSupabase,
-  saveUserSavedItemsToSupabase
+  saveUserSavedItemsToSupabase,
+  isPlaceholderDiscoveryTrip,
+  isTripDeletedInCloud,
 } from './services/supabaseSyncService';
 
 // Disruption Banner
@@ -374,16 +376,27 @@ export function App() {
     setShowSplash(false);
   }, []);
 
-  // Merge cloud trips with local rich metadata (coordinates, completion state, routeDetails) so cloud sync never strips local precision
-  const mergeCloudTripsWithLocal = (cloudList: Trip[], localList: Trip[]): Trip[] => {
-    const localMap = new Map(localList.map(t => [t.id, t]));
-    return cloudList.map(cloudTrip => {
+  // Bidirectional union merge of cloud trips + local device trips so signing in on multiple devices
+  // (e.g. Mac + iPhone + Android) combines all trips created under the same account.
+  const mergeCloudTripsWithLocal = (cloudList: Trip[], localList: Trip[], uid?: string | null): Trip[] => {
+    const cleanCloud = (Array.isArray(cloudList) ? cloudList : []).filter(
+      (t) => t && t.id && !isPlaceholderDiscoveryTrip(t) && !isTripDeletedInCloud(t.id, uid)
+    );
+    const cleanLocal = (Array.isArray(localList) ? localList : []).filter(
+      (t) => t && t.id && !isPlaceholderDiscoveryTrip(t) && !isTripDeletedInCloud(t.id, uid)
+    );
+
+    const localMap = new Map(cleanLocal.map((t) => [t.id, t]));
+    const seenIds = new Set<string>();
+
+    const mergedFromCloud = cleanCloud.map((cloudTrip) => {
+      seenIds.add(cloudTrip.id);
       const localTrip = localMap.get(cloudTrip.id);
       if (!localTrip) {
         return {
           ...cloudTrip,
           bestTransportDeal: undefined,
-          transportDeals: []
+          transportDeals: [],
         };
       }
       const localActsById = new Map<string, ItineraryActivity>();
@@ -392,9 +405,13 @@ export function App() {
           if (a.id) localActsById.set(a.id, a);
         }
       }
-      const mergedItinerary = (cloudTrip.itinerary || []).map(day => ({
+      const sourceItinerary =
+        cloudTrip.itinerary && cloudTrip.itinerary.length > 0
+          ? cloudTrip.itinerary
+          : localTrip.itinerary || [];
+      const mergedItinerary = sourceItinerary.map((day) => ({
         ...day,
-        activities: (day.activities || []).map(act => {
+        activities: (day.activities || []).map((act) => {
           const localAct = act.id ? localActsById.get(act.id) : undefined;
           return localAct
             ? {
@@ -402,10 +419,10 @@ export function App() {
                 coordinates: localAct.coordinates || act.coordinates,
                 completed: localAct.completed ?? act.completed,
                 tag: localAct.tag || act.tag,
-                isCustom: localAct.isCustom ?? act.isCustom
+                isCustom: localAct.isCustom ?? act.isCustom,
               }
             : act;
-        })
+        }),
       }));
       const mergedDestDetails = cloudTrip.destinationDetails || localTrip.destinationDetails;
       return {
@@ -415,16 +432,32 @@ export function App() {
         destinationDetails: mergedDestDetails
           ? {
               ...mergedDestDetails,
-              coordinates: cloudTrip.destinationDetails?.coordinates || localTrip.destinationDetails?.coordinates || mergedDestDetails.coordinates
+              coordinates:
+                cloudTrip.destinationDetails?.coordinates ||
+                localTrip.destinationDetails?.coordinates ||
+                mergedDestDetails.coordinates,
             }
           : undefined,
         routeDetails: cloudTrip.routeDetails || localTrip.routeDetails,
         travelDataStatus: localTrip.travelDataStatus || cloudTrip.travelDataStatus,
         currency: cloudTrip.currency || localTrip.currency,
         itinerary: mergedItinerary,
+        expenses:
+          localTrip.expenses && localTrip.expenses.length > (cloudTrip.expenses?.length || 0)
+            ? localTrip.expenses
+            : cloudTrip.expenses || localTrip.expenses || [],
         bestTransportDeal: undefined,
-        transportDeals: []
+        transportDeals: [],
       };
+    });
+
+    // Include any local trips created on this device that are not yet in cloudList
+    const localOnlyTrips = cleanLocal.filter((lt) => !seenIds.has(lt.id));
+
+    return [...mergedFromCloud, ...localOnlyTrips].sort((a, b) => {
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tb - ta;
     });
   };
 
@@ -479,29 +512,19 @@ export function App() {
             loadUserActiveTripFromSupabase(user.uid)
           ]);
 
-          if (cloudTrips && cloudTrips.length > 0) {
-            // User has cloud trips for their account: merge with local + any newly migrated guest draft trips
-            const refreshedLocal = loadTrips(user.uid);
-            const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips, refreshedLocal);
-            setTrips(mergedCloudTrips);
-            saveTrips(mergedCloudTrips, user.uid, { skipCloudSync: migratedGuestTrips.length === 0 });
-            if (!mergedCloudTrips.some(t => t.id === userActiveId)) {
-              setActiveTripIdState(mergedCloudTrips[0].id);
-              setActiveTripId(mergedCloudTrips[0].id, user.uid);
-            }
-          } else {
-            // User has no cloud trips yet.
-            if (migratedGuestTrips.length > 0) {
-              const updatedTrips = loadTrips(user.uid);
-              setTrips(updatedTrips);
-              saveAllUserTripsToSupabase(user.uid, migratedGuestTrips).catch(() => { });
-            } else {
-              // Only sync existing local user-created trips (NEVER unowned samples or other users' data)
-              const userCreated = localUserTrips.filter(t => t.isUserCreated && t.userId === user.uid);
-              if (userCreated.length > 0) {
-                saveAllUserTripsToSupabase(user.uid, userCreated).catch(() => { });
-              }
-            }
+          const refreshedLocal = loadTrips(user.uid);
+          const cloudIds = new Set((cloudTrips || []).map((t) => t.id));
+          const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips || [], refreshedLocal, user.uid);
+          const hasLocalUnpushed = mergedCloudTrips.some((t) => !cloudIds.has(t.id));
+
+          setTrips(mergedCloudTrips);
+          saveTrips(mergedCloudTrips, user.uid, { skipCloudSync: true });
+          if (mergedCloudTrips.length > 0 && !mergedCloudTrips.some((t) => t.id === userActiveId)) {
+            setActiveTripIdState(mergedCloudTrips[0].id);
+            setActiveTripId(mergedCloudTrips[0].id, user.uid);
+          }
+          if (hasLocalUnpushed || migratedGuestTrips.length > 0) {
+            saveAllUserTripsToSupabase(user.uid, mergedCloudTrips).catch(() => {});
           }
 
           if (cloudProfile) {
@@ -668,14 +691,19 @@ export function App() {
                 loadUserPassportFromSupabase(activeUser.uid).catch(() => null),
                 loadUserSavedItemsFromSupabase(activeUser.uid).catch(() => null)
               ]),
-              new Promise<any[]>((r) => setTimeout(() => r([null, null, null, null]), 1500))
+              new Promise<any[]>((r) => setTimeout(() => r([null, null, null, null]), 4500))
             ]);
 
-            if (cloudTrips && cloudTrips.length > 0 && isMounted) {
+            if (isMounted) {
               const localCurrent = loadTrips(activeUser.uid);
-              const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips, localCurrent);
+              const cloudIds = new Set((cloudTrips || []).map((t: Trip) => t.id));
+              const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips || [], localCurrent, activeUser.uid);
+              const hasLocalUnpushed = cloudTrips !== null && mergedCloudTrips.some((t) => !cloudIds.has(t.id));
               setTrips(mergedCloudTrips);
               saveTrips(mergedCloudTrips, activeUser.uid, { skipCloudSync: true });
+              if (hasLocalUnpushed && mergedCloudTrips.length > 0) {
+                saveAllUserTripsToSupabase(activeUser.uid, mergedCloudTrips).catch(() => {});
+              }
             }
             if (cloudProfile && isMounted) {
               const merged = { ...toUserProfile(activeUser), ...cloudProfile };
@@ -1656,6 +1684,7 @@ export function App() {
   };
 
   const handleUpdateTrip = (updated: Trip) => {
+    if (!updated || isPlaceholderDiscoveryTrip(updated)) return;
     if (currentUser?.uid && !updated.userId) {
       updated.userId = currentUser.uid;
     }
@@ -2128,11 +2157,52 @@ export function App() {
     showSplash
   );
 
+  const syncAccountTripsLive = useCallback(async () => {
+    const activeUser = getCurrentUser();
+    if (!activeUser?.uid || isGuestUser(activeUser)) return;
+    try {
+      const cloudTrips = await loadUserTripsFromSupabase(activeUser.uid);
+      if (cloudTrips === null) return;
+      const localCurrent = loadTrips(activeUser.uid);
+      const cloudIds = new Set(cloudTrips.map((t) => t.id));
+      const merged = mergeCloudTripsWithLocal(cloudTrips, localCurrent, activeUser.uid);
+      const hasLocalUnpushed = merged.some((t) => !cloudIds.has(t.id));
+      setTrips(merged);
+      saveTrips(merged, activeUser.uid, { skipCloudSync: true });
+      if (hasLocalUnpushed && merged.length > 0) {
+        saveAllUserTripsToSupabase(activeUser.uid, merged).catch(() => {});
+      }
+    } catch {
+      // Ignore transient network hiccups
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentTab === 'trips' || currentTab === 'trip-detail') {
+      void syncAccountTripsLive();
+    }
+  }, [currentTab, currentUser?.uid, syncAccountTripsLive]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onFocusOrVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void syncAccountTripsLive();
+      }
+    };
+    window.addEventListener('focus', onFocusOrVisible);
+    document.addEventListener('visibilitychange', onFocusOrVisible);
+    return () => {
+      window.removeEventListener('focus', onFocusOrVisible);
+      document.removeEventListener('visibilitychange', onFocusOrVisible);
+    };
+  }, [syncAccountTripsLive]);
+
   const handlePullRefresh = async () => {
     try {
       const activeUser = getCurrentUser();
       if (activeUser) {
-        // Sync latest cloud data from Supabase for authenticated user
+        // Sync latest cloud data from Cloud Vault for authenticated user
         const [cloudTrips, cloudProfile, cloudStates, cloudSavedItems, cloudActiveTrip] = await Promise.all([
           loadUserTripsFromSupabase(activeUser.uid).catch(() => null),
           loadUserProfileFromSupabase(activeUser.uid).catch(() => null),
@@ -2141,13 +2211,14 @@ export function App() {
           loadUserActiveTripFromSupabase(activeUser.uid).catch(() => null)
         ]);
 
-        if (cloudTrips && cloudTrips.length > 0) {
-          const localCurrent = loadTrips(activeUser.uid);
-          const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips, localCurrent);
-          setTrips(mergedCloudTrips);
-          saveTrips(mergedCloudTrips, activeUser.uid, { skipCloudSync: true });
-        } else {
-          setTrips(loadTrips(activeUser.uid));
+        const localCurrent = loadTrips(activeUser.uid);
+        const cloudIds = new Set((cloudTrips || []).map((t) => t.id));
+        const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips || [], localCurrent, activeUser.uid);
+        const hasLocalUnpushed = cloudTrips !== null && mergedCloudTrips.some((t) => !cloudIds.has(t.id));
+        setTrips(mergedCloudTrips);
+        saveTrips(mergedCloudTrips, activeUser.uid, { skipCloudSync: true });
+        if (hasLocalUnpushed && mergedCloudTrips.length > 0) {
+          saveAllUserTripsToSupabase(activeUser.uid, mergedCloudTrips).catch(() => {});
         }
 
         if (cloudProfile) {
