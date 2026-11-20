@@ -254,7 +254,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
         </div>
 
         {/* Search Results Container */}
-        <div className="max-h-[60vh] overflow-y-auto p-4 space-y-5 scrollbar-thin">
+        <div className="max-h-[60dvh] overflow-y-auto p-4 space-y-5 scrollbar-thin">
           
           {/* Quick Actions */}
           {quickActions.length > 0 && (

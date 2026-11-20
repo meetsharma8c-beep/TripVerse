@@ -166,6 +166,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
           <video
             ref={videoRef}
             src="/videos/app-opening.mp4"
+            poster="/videos/app-opening-poster.jpg"
             autoPlay
             loop
             muted

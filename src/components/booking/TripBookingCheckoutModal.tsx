@@ -178,7 +178,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
           role="dialog"
           aria-modal="true"
           aria-labelledby="booking-options-title"
-          className="my-auto flex max-h-[92vh] sm:max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0C1523] shadow-2xl transition-all"
+          className="my-auto flex max-h-[92dvh] sm:max-h-[88dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0C1523] shadow-2xl transition-all"
           onClick={event => event.stopPropagation()}
         >
           {/* Smart Space-Efficient Header: Zero Clipping, High Contrast */}

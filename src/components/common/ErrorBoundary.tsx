@@ -55,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-4">
+        <div className="min-h-[100dvh] bg-slate-900 text-slate-100 flex items-center justify-center p-4">
           <div className="max-w-lg w-full bg-slate-800/90 backdrop-blur-md rounded-3xl border border-slate-700 p-8 shadow-2xl space-y-6 text-center">
             
             {/* Shield Icon Badge */}

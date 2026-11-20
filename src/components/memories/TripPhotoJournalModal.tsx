@@ -223,7 +223,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200/90 overflow-hidden">
+      <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[92dvh] flex flex-col shadow-2xl border border-slate-200/90 overflow-hidden">
         
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between gap-4 bg-gradient-to-r from-emerald-50/50 via-teal-50/20 to-white">
@@ -535,11 +535,11 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
           className="fixed inset-0 z-60 bg-black/95 flex flex-col items-center justify-center p-4 animate-in fade-in duration-150"
           onClick={() => setLightboxPhoto(null)}
         >
-          <div className="relative max-w-4xl max-h-[85vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+          <div className="relative max-w-4xl max-h-[85dvh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
             <img
               src={lightboxPhoto.url}
               alt={lightboxPhoto.caption}
-              className="max-h-[75vh] w-auto max-w-full rounded-2xl shadow-2xl object-contain"
+              className="max-h-[75dvh] w-auto max-w-full rounded-2xl shadow-2xl object-contain"
             />
             <div className="w-full bg-slate-900/90 text-white p-4 rounded-2xl mt-3 flex items-center justify-between gap-4 border border-slate-800">
               <div className="min-w-0">

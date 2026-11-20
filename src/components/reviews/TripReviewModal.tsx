@@ -112,7 +112,7 @@ export const TripReviewModal: React.FC<TripReviewModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl w-full max-w-xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200/90 overflow-hidden">
+      <div className="bg-white rounded-3xl w-full max-w-xl max-h-[92dvh] flex flex-col shadow-2xl border border-slate-200/90 overflow-hidden">
         
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between gap-4 bg-gradient-to-r from-amber-50/60 via-emerald-50/30 to-white">

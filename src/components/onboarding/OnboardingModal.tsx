@@ -132,14 +132,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-3 sm:px-6 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center px-3 sm:px-6 bg-slate-950/70 overscroll-contain animate-in fade-in duration-200"
       style={{
         paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))',
         paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))'
       }}
     >
       <div
-        className="glass-elevated liquid-rim rounded-[32px] w-full max-w-xl max-h-full overflow-hidden flex flex-col"
+        className="glass-modal liquid-rim rounded-[28px] sm:rounded-[32px] w-full max-w-xl max-h-full overflow-hidden flex flex-col"
         style={{ maxHeight: 'calc(100dvh - max(1.5rem, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)))' }}
       >
         
@@ -187,14 +187,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
         </div>
 
         {/* Global Language & Currency Opening Switcher Bar */}
-        <div className="shrink-0 px-4 sm:px-6 py-2 bg-[#F4F8F3] border-y border-[#E2EBE1] flex items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-1.5 text-slate-700 font-semibold truncate">
-            <Languages className="w-3.5 h-3.5 text-[#2D5A3D] shrink-0" />
-            <span className="hidden sm:inline">{t('common.language', selectedLang)}:</span>
+        <div className="shrink-0 px-3.5 sm:px-6 py-2 bg-[#F4F8F3] dark:bg-slate-900/80 border-y border-[#E2EBE1] dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-semibold min-w-0 flex-1">
+            <Languages className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
+            <span className="hidden sm:inline shrink-0">{t('common.language', selectedLang)}:</span>
             <select
               value={selectedLang}
               onChange={(e) => handleSelectLanguage(e.target.value as LanguageCode)}
-              className="bg-white border border-[#DCE7DB] rounded-lg px-2 py-0.5 font-bold text-slate-800 cursor-pointer focus:outline-none"
+              className="w-full max-w-[190px] sm:w-auto sm:max-w-none min-w-0 bg-white dark:bg-slate-800 border border-[#DCE7DB] dark:border-slate-700 rounded-lg px-2 py-1 font-bold text-slate-800 dark:text-slate-100 cursor-pointer focus:outline-none truncate"
               aria-label="Select Opening Language"
             >
               {Object.values(LANGUAGES).map((l) => (
@@ -205,12 +205,12 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             </select>
           </div>
 
-          <div className="flex items-center gap-1.5 text-slate-700 font-semibold shrink-0">
+          <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-semibold shrink-0">
             <span className="hidden sm:inline text-slate-500">{t('common.currency', selectedLang)}:</span>
             <select
               value={selectedCurrency}
               onChange={(e) => handleSelectCurrency(e.target.value as CurrencyCode)}
-              className="bg-white border border-[#DCE7DB] rounded-lg px-2 py-0.5 font-bold text-slate-800 cursor-pointer focus:outline-none"
+              className="bg-white dark:bg-slate-800 border border-[#DCE7DB] dark:border-slate-700 rounded-lg px-2 py-1 font-bold text-slate-800 dark:text-slate-100 cursor-pointer focus:outline-none"
               aria-label="Select Opening Currency"
             >
               {Object.keys(CURRENCIES).map((c) => (
@@ -226,13 +226,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
         <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none overscroll-contain p-4 sm:p-8 space-y-4 sm:space-y-6">
           {/* First Step Quick Language Selection Grid */}
           {currentStepIndex === 0 && (
-            <div className="p-3.5 rounded-2xl bg-[#EAF0E9] border border-[#C4D9C3] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#152A1C] flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-[#2D5A3D]" />
-                  {t('welcome.chooseLanguage', selectedLang)}
+            <div className="p-3.5 rounded-2xl bg-[#EAF0E9] dark:bg-emerald-950/35 border border-[#C4D9C3] dark:border-emerald-800/50 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-[#152A1C] dark:text-white flex items-center gap-1.5 min-w-0">
+                  <Globe className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
+                  <span className="truncate">{t('welcome.chooseLanguage', selectedLang)}</span>
                 </span>
-                <span className="text-[10px] font-bold text-[#2D5A3D] bg-white px-2 py-0.5 rounded-full border border-[#C4D9C3]">
+                <span className="shrink-0 whitespace-nowrap text-[10px] font-bold text-[#2D5A3D] dark:text-emerald-300 bg-white dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-[#C4D9C3] dark:border-emerald-700/60">
                   {LANGUAGES[selectedLang]?.nativeName} ({LANGUAGES[selectedLang]?.flag})
                 </span>
               </div>

@@ -845,12 +845,12 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       aria-modal="true"
       aria-label="AI Travel Assistant"
       onClick={onClose}
-      className="fixed inset-0 z-[95] overflow-hidden bg-slate-900/60 backdrop-blur-xs flex justify-end items-end sm:items-stretch"
+      className="fixed inset-0 z-[95] overflow-hidden overscroll-contain bg-slate-900/65 flex justify-end items-end sm:items-stretch"
     >
       
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-md md:max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl h-[92dvh] sm:h-[calc(100dvh-1.5rem)] sm:my-3 sm:mr-3 max-h-[100dvh] rounded-t-3xl sm:rounded-[28px] shadow-[0_-10px_40px_rgba(16,185,129,0.12)] sm:shadow-[0_24px_60px_-12px_rgba(7,23,44,0.38)] flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden border-t sm:border border-emerald-500/20 dark:border-white/15"
+        className="w-full sm:max-w-md md:max-w-lg bg-white/97 dark:bg-slate-900/97 h-[92dvh] sm:h-[calc(100dvh-1.5rem)] sm:my-3 sm:mr-3 max-h-[100dvh] rounded-t-3xl sm:rounded-[28px] shadow-[0_-10px_40px_rgba(16,185,129,0.12)] sm:shadow-[0_24px_60px_-12px_rgba(7,23,44,0.38)] flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden border-t sm:border border-emerald-500/20 dark:border-white/15"
       >
         
         {/* Mobile Pull Handle */}

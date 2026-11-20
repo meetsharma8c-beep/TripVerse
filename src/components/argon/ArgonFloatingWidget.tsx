@@ -125,18 +125,18 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
 
   return (
     <div
-      className={`fixed z-[41] flex flex-col items-end gap-2 select-none ${className}`}
+      className={`fixed z-[41] tv-hide-short-landscape flex flex-col items-end gap-2 select-none ${className}`}
       style={{
         bottom: 'calc(4.65rem + env(safe-area-inset-bottom, 0px))',
-        right: 'calc(0.75rem + env(safe-area-inset-right, 0px))',
+        right: 'calc(0.5rem + env(safe-area-inset-right, 0px))',
         WebkitTouchCallout: 'none',
         WebkitTapHighlightColor: 'transparent',
       }}
       aria-label="ConCode AI Co-Pilot"
     >
-      {/* Proactive Speech Bubble - Shown on tablet/desktop to avoid covering mobile search CTA */}
+      {/* Proactive Speech Bubble - Shown on desktop (lg+) to avoid covering mobile & landscape hero controls */}
       {showHintBubble && (
-        <div className="hidden sm:flex group relative items-center gap-2 rounded-2xl border border-emerald-900/10 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-3.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-100 shadow-[0_8px_24px_rgba(30,58,47,0.14)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 max-w-[340px] whitespace-nowrap">
+        <div className="hidden lg:flex group relative items-center gap-2 rounded-2xl border border-emerald-900/10 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-3.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-100 shadow-[0_8px_24px_rgba(30,58,47,0.14)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 max-w-[340px] whitespace-nowrap">
           <span
             className="h-2 w-2 shrink-0 rounded-full animate-pulse"
             style={{ backgroundColor: ARGON_STATE_THEME[currentHint.emotion].ledHex }}
@@ -178,7 +178,7 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
           <ConCode3DAvatar
             emotion={argonState}
             size="lg"
-            className="w-14 h-14 sm:w-22 sm:h-22 md:w-26 md:h-26 drop-shadow-[0_10px_18px_rgba(15,23,42,0.28)] dark:drop-shadow-[0_12px_22px_rgba(0,0,0,0.7)]"
+            className="w-12 h-12 sm:w-18 sm:h-18 lg:w-26 lg:h-26 drop-shadow-[0_10px_18px_rgba(15,23,42,0.28)] dark:drop-shadow-[0_12px_22px_rgba(0,0,0,0.7)]"
           />
 
           {/* Micro Status Beacon Orbiting ConCode */}

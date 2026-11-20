@@ -214,7 +214,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
   return (
     <div className="fixed inset-0 z-[70] overflow-y-auto bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
       
-      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90dvh]">
         
         {/* Top Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">

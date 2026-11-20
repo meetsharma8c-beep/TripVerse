@@ -124,11 +124,11 @@ export const EmergencySosModal: React.FC<EmergencySosModalProps> = ({
       aria-modal="true"
       aria-label="Global Emergency SOS"
       onClick={onClose}
-      className="fixed inset-0 z-[130] flex items-center justify-center p-2.5 sm:p-5 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[130] overscroll-contain flex items-center justify-center p-2.5 sm:p-5 bg-slate-950/75 animate-in fade-in duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-2xl bg-white/95 dark:bg-[#0D131D]/95 backdrop-blur-2xl border border-white/80 dark:border-rose-500/20 rounded-[28px] sm:rounded-[32px] shadow-[0_28px_70px_-14px_rgba(127,29,29,0.38)] overflow-hidden text-slate-900 dark:text-slate-100 flex flex-col max-h-[92dvh]"
+        className="relative w-full max-w-2xl glass-modal liquid-rim border-rose-500/20 rounded-[28px] sm:rounded-[32px] overflow-hidden text-slate-900 dark:text-slate-100 flex flex-col max-h-[92dvh]"
       >
         {/* High-Clarity Crimson Rescue Header */}
         <div className="relative px-4 sm:px-6 py-4 bg-gradient-to-r from-[#58111D] via-[#881337] to-[#4C0D1A] text-white flex items-center justify-between gap-3 border-b border-rose-400/25 shrink-0 overflow-hidden">

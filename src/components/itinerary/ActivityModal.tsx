@@ -114,7 +114,7 @@ export function ActivityModal({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl border border-[#E2EBE1] flex flex-col max-h-[92vh]">
+      <div className="bg-white rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl border border-[#E2EBE1] flex flex-col max-h-[92dvh]">
         
         {/* Header */}
         <div className="p-5 sm:p-6 bg-gradient-to-r from-[#152A1C] to-[#1E3E2B] text-white flex items-center justify-between shrink-0">

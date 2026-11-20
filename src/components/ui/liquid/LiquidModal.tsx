@@ -26,7 +26,7 @@ export const LiquidModal: React.FC<LiquidModalProps> = ({
       aria-modal="true"
       aria-label={ariaLabel}
       onClick={onClose}
-      className={`fixed inset-0 ${zIndexClass} overflow-y-auto bg-[#0D1A12]/55 dark:bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200`}
+      className={`fixed inset-0 ${zIndexClass} overflow-y-auto overscroll-contain bg-[#0D1A12]/62 dark:bg-black/78 flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200`}
       style={{
         paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))',
         paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))',
@@ -34,7 +34,7 @@ export const LiquidModal: React.FC<LiquidModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`glass-elevated liquid-rim rounded-[32px] ${maxWidthClass} w-full overflow-hidden my-auto max-h-[92dvh] flex flex-col animate-in zoom-in-95 duration-200`}
+        className={`glass-modal liquid-rim rounded-[28px] sm:rounded-[32px] ${maxWidthClass} w-full overflow-hidden my-auto max-h-[92dvh] flex flex-col animate-in zoom-in-95 duration-200`}
       >
         {children}
       </div>
@@ -65,8 +65,8 @@ export const LiquidDrawer: React.FC<LiquidDrawerProps> = ({
 
   const panelPos =
     side === 'bottom'
-      ? 'inset-x-2 bottom-2 max-h-[88dvh] rounded-[30px] animate-in slide-in-from-bottom duration-250'
-      : 'top-2 bottom-2 right-2 w-[calc(100%-1rem)] sm:w-[440px] rounded-[28px] animate-in slide-in-from-right duration-250';
+      ? 'inset-x-2 bottom-[max(0.5rem,env(safe-area-inset-bottom,0px))] max-h-[88dvh] rounded-[30px] animate-in slide-in-from-bottom duration-250'
+      : 'top-[max(0.5rem,env(safe-area-inset-top,0px))] bottom-[max(0.5rem,env(safe-area-inset-bottom,0px))] right-[max(0.5rem,env(safe-area-inset-right,0px))] w-[calc(100%-1rem)] sm:w-[440px] rounded-[28px] animate-in slide-in-from-right duration-250';
 
   const content = (
     <div
@@ -74,11 +74,11 @@ export const LiquidDrawer: React.FC<LiquidDrawerProps> = ({
       aria-modal="true"
       aria-label={ariaLabel}
       onClick={onClose}
-      className={`fixed inset-0 ${zIndexClass} bg-[#0D1A12]/50 dark:bg-black/70 backdrop-blur-sm animate-in fade-in duration-200`}
+      className={`fixed inset-0 ${zIndexClass} bg-[#0D1A12]/58 dark:bg-black/75 overscroll-contain animate-in fade-in duration-200`}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`fixed ${panelPos} glass-elevated liquid-rim overflow-hidden flex flex-col`}
+        className={`fixed ${panelPos} glass-modal liquid-rim overflow-hidden flex flex-col`}
       >
         {children}
       </div>

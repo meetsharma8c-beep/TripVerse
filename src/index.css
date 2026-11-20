@@ -196,9 +196,13 @@ html.dark {
 html.dark,
 html.dark body,
 html.dark #root,
-html.dark #root > div {
+html.dark #root > div:not(.liquid-canvas-mesh) {
   background-color: #070C16 !important;
   background-image: none !important;
+  color: #E2E8F0 !important;
+}
+
+html.dark #root > div.liquid-canvas-mesh {
   color: #E2E8F0 !important;
 }
 
@@ -1567,10 +1571,17 @@ div[style*="z-index: 2000000000"] {
   animation: tvRadarPing 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-/* Horizontal scroll alpha edge-fade mask for fluid pill & chip strips */
+/* Horizontal scroll alpha edge-fade mask for fluid pill & chip strips (right-edge only so first pill never clips) */
 .liquid-scroll-mask {
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 20px), transparent 100%);
+}
+
+/* Auto-hide secondary floating chrome on short landscape split-screen viewports (e.g. 800x360) */
+@media (max-height: 440px) and (orientation: landscape) {
+  .tv-hide-short-landscape {
+    display: none !important;
+  }
 }
 
 /* Smooth elastic disclosure panel & progress shimmer */

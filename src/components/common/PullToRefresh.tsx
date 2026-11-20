@@ -193,7 +193,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   const dropOffset = Math.min(68, pullDistance * 0.72);
 
   return (
-    <div ref={containerRef} className="relative w-full min-h-screen">
+    <div ref={containerRef} className="relative w-full min-h-[100dvh]">
       {/* Floating Apple/Android Liquid Pull-to-Refresh Indicator */}
       <div
         className="fixed top-[74px] left-0 right-0 z-50 flex justify-center pointer-events-none transition-transform"

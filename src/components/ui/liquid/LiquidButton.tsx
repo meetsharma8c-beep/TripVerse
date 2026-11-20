@@ -21,10 +21,10 @@ const VARIANT_STYLES: Record<LiquidButtonVariant, string> = {
 };
 
 const SIZE_STYLES: Record<LiquidButtonSize, string> = {
-  sm: 'min-h-0 h-8 px-3 text-xs gap-1.5 rounded-full',
-  md: 'h-10 px-4 text-xs sm:text-sm gap-2 rounded-full',
+  sm: 'min-h-0 h-9 sm:h-8 px-3 text-xs gap-1.5 rounded-full',
+  md: 'min-h-[44px] sm:min-h-0 h-11 sm:h-10 px-4 text-xs sm:text-sm gap-2 rounded-full',
   lg: 'h-12 px-6 text-sm gap-2 rounded-full',
-  icon: 'min-h-0 w-9 h-9 p-0 rounded-full',
+  icon: 'min-h-0 w-11 h-11 sm:w-9 sm:h-9 p-0 rounded-full',
 };
 
 export const LiquidButton: React.FC<LiquidButtonProps> = ({
@@ -41,7 +41,7 @@ export const LiquidButton: React.FC<LiquidButtonProps> = ({
 }) => {
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLButtonElement>) => {
-      if (interactiveSheen && !disabled) {
+      if (interactiveSheen && !disabled && e.pointerType === 'mouse') {
         const rect = e.currentTarget.getBoundingClientRect();
         e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
         e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);

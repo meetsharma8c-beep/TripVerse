@@ -37,7 +37,7 @@ export const LiquidCard: React.FC<LiquidCardProps> = ({
 }) => {
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
-      if (interactiveSheen) {
+      if (interactiveSheen && e.pointerType === 'mouse') {
         const rect = e.currentTarget.getBoundingClientRect();
         e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
         e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);

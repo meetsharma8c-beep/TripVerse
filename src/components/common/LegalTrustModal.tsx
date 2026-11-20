@@ -74,7 +74,7 @@ export const LegalTrustModal: React.FC<LegalTrustModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[130] overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-[32px] max-w-2xl w-full shadow-2xl border border-[#E2EBE1] overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-[32px] max-w-2xl w-full shadow-2xl border border-[#E2EBE1] overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90dvh]">
         
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#E2EBE1] flex items-center justify-between bg-[#F4F6F2] shrink-0">

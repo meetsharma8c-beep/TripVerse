@@ -618,7 +618,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
       onClick={onClose}
     >
       <div 
-        className="my-auto flex w-full max-w-4xl max-h-[96vh] sm:max-h-[92vh] flex-col overflow-hidden rounded-[24px] sm:rounded-[32px] border border-emerald-900/40 dark:border-slate-800 bg-white dark:bg-[#0C1523] shadow-2xl transition-all"
+        className="my-auto flex w-full max-w-4xl max-h-[96dvh] sm:max-h-[92dvh] flex-col overflow-hidden rounded-[24px] sm:rounded-[32px] border border-emerald-900/40 dark:border-slate-800 bg-white dark:bg-[#0C1523] shadow-2xl transition-all"
         onClick={e => e.stopPropagation()}
       >
         {/* ================================================================ */}

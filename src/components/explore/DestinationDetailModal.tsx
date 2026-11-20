@@ -150,11 +150,15 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
 
   const modalContent = (
     <div 
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/72 flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200"
+      style={{
+        paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))',
+        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))',
+      }}
       onClick={onClose}
     >
       <div 
-        className="glass-elevated liquid-rim rounded-[32px] max-w-2xl w-full overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200"
+        className="glass-modal liquid-rim rounded-[28px] sm:rounded-[32px] max-w-2xl w-full overflow-hidden my-auto max-h-[92dvh] flex flex-col animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         

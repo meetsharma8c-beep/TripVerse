@@ -100,7 +100,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="w-full max-w-5xl max-h-[92vh] flex flex-col bg-slate-900 border border-amber-500/30 rounded-3xl shadow-[0_25px_70px_rgba(245,158,11,0.15)] overflow-hidden text-slate-100"
+        className="w-full max-w-5xl max-h-[92dvh] flex flex-col bg-slate-900 border border-amber-500/30 rounded-3xl shadow-[0_25px_70px_rgba(245,158,11,0.15)] overflow-hidden text-slate-100"
         role="dialog"
         aria-modal="true"
         aria-labelledby="founder-dashboard-title"

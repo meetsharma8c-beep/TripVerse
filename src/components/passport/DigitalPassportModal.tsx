@@ -109,11 +109,11 @@ export const DigitalPassportModal: React.FC<DigitalPassportModalProps> = ({
       aria-modal="true"
       aria-label="Digital Travel Passport"
       onClick={onClose}
-      className="fixed inset-0 z-[130] flex items-center justify-center p-2.5 sm:p-5 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[130] overscroll-contain flex items-center justify-center p-2.5 sm:p-5 bg-slate-950/75 animate-in fade-in duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-3xl bg-white/95 dark:bg-[#0D1522]/95 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] sm:rounded-[32px] shadow-[0_28px_70px_-14px_rgba(15,23,42,0.45)] overflow-hidden text-slate-900 dark:text-slate-100 flex flex-col max-h-[92dvh]"
+        className="relative w-full max-w-3xl glass-modal liquid-rim rounded-[28px] sm:rounded-[32px] overflow-hidden text-slate-900 dark:text-slate-100 flex flex-col max-h-[92dvh]"
       >
         {/* Luxury Emerald & Brushed Gold Booklet Header */}
         <div className="relative px-4 sm:px-6 py-4 bg-gradient-to-r from-[#132E20] via-[#214C34] to-[#2B3D2C] text-white flex items-center justify-between gap-3 border-b border-amber-300/20 shrink-0 overflow-hidden">

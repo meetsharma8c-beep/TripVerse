@@ -2046,7 +2046,7 @@ export function App() {
   return (
     <div
       key={language}
-      className={`min-h-screen w-full overflow-x-clip flex flex-col liquid-canvas-mesh text-slate-900 dark:text-slate-100 selection:bg-[#2D5A3D] selection:text-white antialiased transition-opacity duration-300 ${
+      className={`min-h-[100dvh] w-full overflow-x-clip flex flex-col liquid-canvas-mesh text-slate-900 dark:text-slate-100 selection:bg-[#2D5A3D] selection:text-white antialiased transition-opacity duration-300 ${
         !isAppReady && showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >

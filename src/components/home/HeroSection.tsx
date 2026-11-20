@@ -486,6 +486,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <video
                 ref={heroVideoRef}
                 src="/videos/app-opening.mp4"
+                poster="/videos/app-opening-poster.jpg"
                 autoPlay
                 loop
                 muted
@@ -779,14 +780,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
 
             {/* Pagination Dots (Guaranteed Crisp & Horizontal across all Mobile / Touch OS) */}
-            <div className="flex items-center justify-center gap-1 mt-2.5">
+            <div className="flex items-center justify-center gap-0.5 mt-1">
               {featuredDestinations.map((_, idx) => (
                 <button
                   key={idx}
                   type="button"
                   data-indicator="true"
                   onClick={() => scrollCarouselToIndex(idx)}
-                  className="p-2 min-h-0 min-w-0 border-0 bg-transparent flex items-center justify-center cursor-pointer focus:outline-none"
+                  className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 sm:p-2 border-0 bg-transparent flex items-center justify-center cursor-pointer focus:outline-none"
                   aria-label={`Go to slide ${idx + 1}`}
                   aria-current={carouselActiveIndex === idx ? 'true' : 'false'}
                 >
@@ -802,26 +803,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
           </div>
 
-          {/* Quick Actions Grid (Matching Reference Image Screen 1) */}
-          <div className="mt-8 sm:mt-12 tv-stagger-4">
+          {/* Quick Actions Grid (2x2 on compact phones so zero labels truncate, 4-col on sm+) */}
+          <div className="mt-6 sm:mt-12 tv-stagger-4">
             <div className="flex items-center justify-between mb-3 px-1">
               <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#57685D]">
                 {t('hero.quickActions')}
               </h3>
             </div>
-            <div className="grid grid-cols-4 gap-2 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
               {/* 1. AI Itinerary */}
               <button
                 type="button"
                 onClick={() => {
                   if (onOpenPlanner) onOpenPlanner();
                 }}
-                className="card-elevate flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-center"
+                className="glass-frosted liquid-rim liquid-sheen liquid-press flex sm:flex-col items-center sm:justify-center gap-2.5 sm:gap-0 p-3 sm:p-5 rounded-2xl border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-left sm:text-center min-h-[56px]"
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
-                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">{t('hero.aiItinerary')}</span>
+                <span className="text-xs sm:text-sm font-bold text-[#152A1C] dark:text-slate-100 leading-tight">{t('hero.aiItinerary')}</span>
               </button>
 
               {/* 2. Smart Route */}
@@ -841,36 +842,36 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     onQuickPlan(planParams);
                   }
                 }}
-                className="card-elevate flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-center"
+                className="glass-frosted liquid-rim liquid-sheen liquid-press flex sm:flex-col items-center sm:justify-center gap-2.5 sm:gap-0 p-3 sm:p-5 rounded-2xl border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-left sm:text-center min-h-[56px]"
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <Compass className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
-                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">{t('hero.smartRoute')}</span>
+                <span className="text-xs sm:text-sm font-bold text-[#152A1C] dark:text-slate-100 leading-tight">{t('hero.smartRoute')}</span>
               </button>
 
               {/* 3. Budget Plan */}
               <button
                 type="button"
                 onClick={() => setShowGuaranteeModal(true)}
-                className="card-elevate flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-center"
+                className="glass-frosted liquid-rim liquid-sheen liquid-press flex sm:flex-col items-center sm:justify-center gap-2.5 sm:gap-0 p-3 sm:p-5 rounded-2xl border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-left sm:text-center min-h-[56px]"
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <Wallet className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
-                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">{t('hero.budgetPlan')}</span>
+                <span className="text-xs sm:text-sm font-bold text-[#152A1C] dark:text-slate-100 leading-tight">{t('hero.budgetPlan')}</span>
               </button>
 
               {/* 4. Travel Guide */}
               <button
                 type="button"
                 onClick={onExplore}
-                className="card-elevate flex flex-col items-center justify-center p-2.5 sm:p-5 rounded-2xl bg-white border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-center"
+                className="glass-frosted liquid-rim liquid-sheen liquid-press flex sm:flex-col items-center sm:justify-center gap-2.5 sm:gap-0 p-3 sm:p-5 rounded-2xl border border-[#E2EBE1] hover:border-[#2D5A3D] shadow-xs group cursor-pointer text-left sm:text-center min-h-[56px]"
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center mb-1.5 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#EAF0E9] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0 sm:mb-2.5 group-hover:scale-110 group-hover:bg-[#2D5A3D] group-hover:text-white transition-all duration-300 shadow-2xs">
                   <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
                 </div>
-                <span className="text-[10px] sm:text-sm font-bold text-[#152A1C] truncate w-full">{t('hero.travelGuide')}</span>
+                <span className="text-xs sm:text-sm font-bold text-[#152A1C] dark:text-slate-100 leading-tight">{t('hero.travelGuide')}</span>
               </button>
             </div>
           </div>

@@ -39,22 +39,16 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   return (
     <nav
       aria-label="Mobile Bottom Navigation"
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none select-none px-1 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]"
+      className="lg:hidden tv-hide-short-landscape fixed bottom-0 left-0 right-0 z-40 pointer-events-none select-none px-1 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]"
     >
-      {/* Smooth bottom-to-top frosted gradient fade: borderless and shadowless */}
+      {/* Smooth bottom-to-top gradient fade without nested backdrop-filter (prevents Android Chrome compositor blur bugs) */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 -top-5 bg-gradient-to-t from-[#F8FAFC]/95 via-[#F8FAFC]/80 via-55% to-transparent dark:from-[#070C16]/95 dark:via-[#070C16]/80 dark:to-transparent backdrop-blur-md"
-        style={{
-          maskImage:
-            'linear-gradient(to top, rgba(0, 0, 0, 1) 48%, rgba(0, 0, 0, 0.68) 76%, rgba(0, 0, 0, 0) 100%)',
-          WebkitMaskImage:
-            'linear-gradient(to top, rgba(0, 0, 0, 1) 48%, rgba(0, 0, 0, 0.68) 76%, rgba(0, 0, 0, 0) 100%)',
-        }}
+        className="pointer-events-none absolute inset-x-0 bottom-0 -top-5 bg-gradient-to-t from-[#F4F6F2]/92 via-[#F4F6F2]/65 via-55% to-transparent dark:from-[#070C16]/92 dark:via-[#070C16]/65 dark:to-transparent"
       />
 
       <div className="relative z-10 max-w-md mx-auto px-2 pb-1.5">
-        <div className="glass-elevated liquid-rim glass-refractive rounded-[28px] px-1.5 py-1 grid grid-cols-5 items-end">
+        <div className="glass-elevated liquid-rim rounded-[28px] px-1.5 py-1 grid grid-cols-5 items-end">
         {navSlots.map((tab) => {
           if (!tab) {
             return (
@@ -65,8 +59,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 aria-label={t('hero.aiItinerary')}
                 className="pointer-events-auto relative flex flex-col items-center justify-end pt-1 pb-2 cursor-pointer group liquid-press focus:outline-none focus-visible:ring-2 focus-visible:ring-[#244931]/40 rounded-2xl"
               >
-                {/* Floating Liquid Glass Emerald Orb with specular catchlight */}
-                <div className="-mt-5 w-11 h-11 rounded-full glass-accent liquid-rim flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                {/* Floating Emerald Orb with specular catchlight (no nested backdrop-filter inside glass-elevated) */}
+                <div className="-mt-5 w-11 h-11 rounded-full bg-gradient-to-br from-[#386B49] via-[#2D5A3D] to-[#1E3E2B] border border-white/40 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.52),0_10px_22px_-5px_rgba(45,90,61,0.52)] flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
                   <Sparkles
                     className="w-[18px] h-[18px] text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.88)]"
                     strokeWidth={2}

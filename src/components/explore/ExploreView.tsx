@@ -244,7 +244,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
       {/* Filter Tabs with Clear Scroll Affordance */}
       <div ref={filterSectionRef} className="relative scroll-mt-20 sm:scroll-mt-24">
-        <div className="liquid-scroll-mask flex items-center gap-2 overflow-x-auto pb-3 scrollbar-none">
+        <div className="liquid-scroll-mask flex items-center gap-2 overflow-x-auto px-1 py-1.5 pb-3 scrollbar-none">
           {filterTabs.map(tab => (
             <LiquidChip
               key={tab.id}
@@ -383,7 +383,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                         VIP FOUNDER
                       </span>
                     )}
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-black/60 backdrop-blur-md text-emerald-300">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-black/75 text-emerald-300">
                       {itinerary.durationDays} Days
                     </span>
                   </div>
@@ -463,21 +463,23 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
 
                   <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                    <span className="flex items-center gap-1 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-extrabold text-[#152A1C] dark:text-white shadow-xs">
+                    <span className="flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 px-2.5 py-1 rounded-full text-xs font-extrabold text-[#152A1C] dark:text-white shadow-xs">
                       <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                       <span>{dest.rating}</span>
                     </span>
 
                     <button
+                      type="button"
+                      aria-label={isSaved ? `Remove ${dest.name} from saved` : `Save ${dest.name}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         onToggleSaved(dest.id);
                       }}
-                      className={`p-2 rounded-full backdrop-blur-md transition-all shadow-xs ${
-                        isSaved ? 'bg-[#2D5A3D] text-white' : 'bg-white/90 text-slate-700 hover:bg-white'
+                      className={`w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all shadow-xs liquid-press cursor-pointer ${
+                        isSaved ? 'bg-[#2D5A3D] text-white' : 'bg-white/95 text-slate-700 hover:bg-white'
                       }`}
                     >
-                      <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-white' : ''}`} />
+                      <Bookmark className={`w-4 h-4 sm:w-3.5 sm:h-3.5 ${isSaved ? 'fill-white' : ''}`} />
                     </button>
                   </div>
 

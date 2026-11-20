@@ -96,7 +96,7 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
     <div className="printable-target-root fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 print:p-0 print:bg-white print:static print:inset-auto">
       
       {/* Container */}
-      <div className="printable-target-container bg-white rounded-[32px] w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl border border-[#E2EBE1] print:shadow-none print:border-none print:max-h-none print:w-full print:rounded-none">
+      <div className="printable-target-container bg-white rounded-[32px] w-full max-w-4xl max-h-[92dvh] overflow-y-auto shadow-2xl border border-[#E2EBE1] print:shadow-none print:border-none print:max-h-none print:w-full print:rounded-none">
         
         {/* Modal Action Bar (Hidden in Print) */}
         <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-[#E2EBE1] flex items-center justify-between print:hidden no-print">
