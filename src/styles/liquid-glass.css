@@ -1,0 +1,388 @@
+/* ==========================================================================
+   TRIPVERSE LIQUID GLASS DESIGN SYSTEM (v1.0)
+   Optical translucency, multi-layer specular rims, concentric geometry,
+   interactive pointer sheen, and progressive SVG lens refraction.
+   ========================================================================== */
+
+:root {
+  --tv-forest: #2D5A3D;
+  --tv-forest-deep: #244931;
+  --tv-forest-night: #152A1C;
+  --tv-sage: #EAF0E9;
+  --tv-ivory: #F4F6F2;
+  --tv-specular: rgba(255, 255, 255, 0.72);
+  --tv-specular-rim: rgba(255, 255, 255, 0.22);
+  --lg-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --lg-spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ==========================================================================
+   AMBIENT ORGANIC MESH CANVAS (Gives glass layers real depth to refract)
+   ========================================================================== */
+.liquid-canvas-mesh {
+  background-color: var(--tv-ivory);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 12% 4%, rgba(168, 199, 165, 0.32), transparent 58%),
+    radial-gradient(ellipse 70% 45% at 88% 12%, rgba(45, 90, 61, 0.11), transparent 55%),
+    radial-gradient(ellipse 65% 55% at 50% 62%, rgba(234, 240, 233, 0.72), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 82% 90%, rgba(142, 167, 141, 0.18), transparent 60%);
+  background-attachment: fixed;
+}
+
+html.dark .liquid-canvas-mesh {
+  background-color: #070C16;
+  background-image:
+    radial-gradient(ellipse 75% 50% at 15% 6%, rgba(45, 90, 61, 0.28), transparent 58%),
+    radial-gradient(ellipse 65% 45% at 86% 18%, rgba(16, 185, 129, 0.12), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 45% 75%, rgba(21, 42, 28, 0.34), transparent 68%);
+  background-attachment: fixed;
+}
+
+/* ==========================================================================
+   SHARED OPTICAL SPECULAR BASE & POINTER TRACKING SHEEN
+   ========================================================================== */
+.liquid-glass,
+.glass-clear,
+.glass-clear-dark,
+.glass-frosted,
+.glass-elevated,
+.glass-accent {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform 0.35s var(--lg-spring),
+    box-shadow 0.35s var(--lg-spring),
+    background 0.3s ease,
+    border-color 0.28s ease;
+}
+
+/* 1px Optical Gradient Specular Rim (catches light along top-left curved edges) */
+.liquid-rim::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.22) 38%,
+    rgba(45, 90, 61, 0.08) 72%,
+    rgba(255, 255, 255, 0.34) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  z-index: 2;
+}
+
+html.dark .liquid-rim::after {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.32) 0%,
+    rgba(255, 255, 255, 0.10) 40%,
+    rgba(52, 211, 153, 0.08) 75%,
+    rgba(255, 255, 255, 0.16) 100%
+  );
+}
+
+/* Interactive Pointer Specular Glint (--mouse-x, --mouse-y) */
+.liquid-sheen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    260px circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
+    rgba(255, 255, 255, 0.34),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+html.dark .liquid-sheen::before {
+  background: radial-gradient(
+    260px circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
+    rgba(167, 243, 208, 0.16),
+    transparent 65%
+  );
+}
+
+.liquid-sheen:hover::before {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   TIER 1: glass-clear (Hero Overlays, Video Controls, Media Badges)
+   ========================================================================== */
+.glass-clear {
+  background: linear-gradient(
+    135deg,
+    rgba(244, 246, 242, 0.72) 0%,
+    rgba(234, 240, 233, 0.42) 100%
+  );
+  backdrop-filter: blur(18px) saturate(180%) brightness(1.05);
+  -webkit-backdrop-filter: blur(18px) saturate(180%) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.85),
+    inset 0 -1px 2px rgba(21, 42, 28, 0.08),
+    0 8px 24px -6px rgba(21, 42, 28, 0.16);
+}
+
+html.dark .glass-clear {
+  background: linear-gradient(
+    135deg,
+    rgba(21, 42, 28, 0.62) 0%,
+    rgba(12, 23, 36, 0.48) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.20);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.28),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.35),
+    0 10px 26px -6px rgba(0, 0, 0, 0.52);
+}
+
+.glass-clear-dark {
+  background: linear-gradient(
+    135deg,
+    rgba(21, 42, 28, 0.52) 0%,
+    rgba(21, 42, 28, 0.34) 100%
+  );
+  backdrop-filter: blur(18px) saturate(175%);
+  -webkit-backdrop-filter: blur(18px) saturate(175%);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.42),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.28),
+    0 10px 26px -8px rgba(10, 22, 14, 0.42);
+}
+
+/* ==========================================================================
+   TIER 2: glass-frosted (Primary Cards, Itinerary Panels, Route Listings)
+   ========================================================================== */
+.glass-frosted,
+.liquid-glass {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(244, 246, 242, 0.60) 58%,
+    rgba(234, 240, 233, 0.52) 100%
+  );
+  backdrop-filter: blur(26px) saturate(165%);
+  -webkit-backdrop-filter: blur(26px) saturate(165%);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.86),
+    inset 0 -1px 2px rgba(21, 42, 28, 0.06),
+    inset 0 0 18px rgba(255, 255, 255, 0.16),
+    0 12px 32px -10px rgba(21, 42, 28, 0.12),
+    0 2px 6px rgba(21, 42, 28, 0.04);
+}
+
+html.dark .glass-frosted,
+html.dark .liquid-glass,
+.liquid-glass-dark {
+  background: linear-gradient(
+    145deg,
+    rgba(16, 28, 44, 0.78) 0%,
+    rgba(13, 25, 34, 0.68) 60%,
+    rgba(21, 42, 28, 0.54) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.20),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.34),
+    0 16px 38px -12px rgba(0, 0, 0, 0.56);
+}
+
+/* ==========================================================================
+   TIER 3: glass-elevated (Floating Navbar, Search Dock, Modals, Popovers)
+   ========================================================================== */
+.glass-elevated {
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.88) 0%,
+    rgba(244, 246, 242, 0.74) 55%,
+    rgba(234, 240, 233, 0.66) 100%
+  );
+  backdrop-filter: blur(34px) saturate(190%) brightness(1.03);
+  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.03);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow:
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.96),
+    inset 0 -1px 2px rgba(21, 42, 28, 0.08),
+    0 22px 52px -12px rgba(21, 42, 28, 0.20),
+    0 6px 18px -4px rgba(45, 90, 61, 0.10),
+    0 0 0 1px rgba(45, 90, 61, 0.05);
+}
+
+html.dark .glass-elevated {
+  background: linear-gradient(
+    150deg,
+    rgba(16, 28, 46, 0.88) 0%,
+    rgba(11, 20, 34, 0.82) 60%,
+    rgba(18, 36, 28, 0.76) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.24),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.45),
+    0 26px 60px -14px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(52, 211, 153, 0.10);
+}
+
+/* ==========================================================================
+   TIER 4: glass-accent (Forest-Green CTA Buttons & Active Route Badges)
+   ========================================================================== */
+.glass-accent {
+  background: linear-gradient(
+    145deg,
+    rgba(56, 107, 73, 0.92) 0%,
+    rgba(45, 90, 61, 0.86) 55%,
+    rgba(36, 73, 49, 0.92) 100%
+  );
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  color: #FFFFFF;
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.48),
+    inset 0 -1.5px 2px rgba(10, 26, 16, 0.35),
+    0 12px 26px -6px rgba(45, 90, 61, 0.42),
+    0 2px 6px rgba(21, 42, 28, 0.18);
+}
+
+.glass-accent:hover {
+  background: linear-gradient(
+    145deg,
+    rgba(64, 120, 82, 0.96) 0%,
+    rgba(45, 90, 61, 0.92) 55%,
+    rgba(36, 73, 49, 0.96) 100%
+  );
+  box-shadow:
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.58),
+    inset 0 -1.5px 2px rgba(10, 26, 16, 0.38),
+    0 16px 34px -6px rgba(45, 90, 61, 0.52),
+    0 0 22px -4px rgba(52, 211, 153, 0.28);
+}
+
+html.dark .glass-accent {
+  background: linear-gradient(
+    145deg,
+    rgba(16, 185, 129, 0.82) 0%,
+    rgba(42, 96, 64, 0.90) 60%,
+    rgba(26, 68, 44, 0.94) 100%
+  );
+  border-color: rgba(167, 243, 208, 0.34);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.36),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.45),
+    0 14px 30px -6px rgba(16, 185, 129, 0.36);
+}
+
+/* ==========================================================================
+   CONCENTRIC CARD & INTERACTIVE PHYSICS
+   ========================================================================== */
+.liquid-card-hover {
+  will-change: transform;
+}
+
+.liquid-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.94),
+    inset 0 -1px 2px rgba(21, 42, 28, 0.08),
+    0 22px 46px -12px rgba(45, 90, 61, 0.20),
+    0 6px 16px -4px rgba(21, 42, 28, 0.08);
+}
+
+html.dark .liquid-card-hover:hover {
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.24),
+    0 24px 52px -12px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(52, 211, 153, 0.26);
+}
+
+.liquid-press {
+  transition: transform 0.22s var(--lg-spring-bounce), box-shadow 0.22s ease, background 0.22s ease;
+}
+
+.liquid-press:active {
+  transform: scale(0.97);
+  transition-duration: 75ms;
+}
+
+/* Concentric inner radius helper: child uses calc(var(--lg-outer-r) - var(--lg-pad)) */
+.liquid-concentric {
+  --lg-outer-r: 28px;
+  --lg-pad: 8px;
+  border-radius: var(--lg-outer-r);
+}
+
+.liquid-concentric-inner {
+  border-radius: max(8px, calc(var(--lg-outer-r, 28px) - var(--lg-pad, 8px)));
+}
+
+/* Progressive SVG Lens Refraction Layer (safe feature-gated enhancement) */
+@supports (backdrop-filter: url(#tv-liquid-lens)) {
+  .glass-refractive {
+    backdrop-filter: blur(26px) saturate(185%) url(#tv-liquid-lens);
+    -webkit-backdrop-filter: blur(26px) saturate(185%);
+  }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY: REDUCED TRANSPARENCY & REDUCED MOTION
+   ========================================================================== */
+@media (prefers-reduced-transparency: reduce) {
+  .liquid-glass,
+  .liquid-glass-dark,
+  .glass-clear,
+  .glass-clear-dark,
+  .glass-frosted,
+  .glass-elevated {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--tv-ivory) !important;
+  }
+
+  html.dark .liquid-glass,
+  html.dark .glass-clear,
+  html.dark .glass-frosted,
+  html.dark .glass-elevated,
+  .glass-clear-dark,
+  .liquid-glass-dark {
+    background: #0E1726 !important;
+  }
+
+  .glass-accent {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--tv-forest) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass,
+  .glass-clear,
+  .glass-clear-dark,
+  .glass-frosted,
+  .glass-elevated,
+  .glass-accent,
+  .liquid-card-hover,
+  .liquid-press {
+    transition-duration: 0.01ms !important;
+  }
+
+  .liquid-card-hover:hover,
+  .liquid-press:active {
+    transform: none !important;
+  }
+}

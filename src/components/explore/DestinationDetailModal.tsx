@@ -154,7 +154,7 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="liquid-glass-surface rounded-[32px] max-w-2xl w-full shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200"
+        className="glass-elevated liquid-rim rounded-[32px] max-w-2xl w-full overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         

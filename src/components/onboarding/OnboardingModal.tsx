@@ -139,7 +139,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
       }}
     >
       <div
-        className="bg-white rounded-[32px] w-full max-w-xl max-h-full shadow-2xl border border-[#E2EBE1] overflow-hidden flex flex-col"
+        className="glass-elevated liquid-rim rounded-[32px] w-full max-w-xl max-h-full overflow-hidden flex flex-col"
         style={{ maxHeight: 'calc(100dvh - max(1.5rem, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)))' }}
       >
         

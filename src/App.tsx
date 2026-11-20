@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
+import { LiquidGlassFilters } from './components/ui/liquid';
 import { Trip, Destination, BreakStop, BudgetBreakdown, UserProfile, ItineraryActivity, DayPlan } from './types/trip';
 import {
   loadTrips,
@@ -2045,10 +2046,12 @@ export function App() {
   return (
     <div
       key={language}
-      className={`min-h-screen w-full overflow-x-clip flex flex-col bg-[#F8FAFC] dark:bg-[#070C16] text-slate-900 dark:text-slate-100 selection:bg-[#2D5A3D] selection:text-white antialiased transition-opacity duration-300 ${
+      className={`min-h-screen w-full overflow-x-clip flex flex-col liquid-canvas-mesh text-slate-900 dark:text-slate-100 selection:bg-[#2D5A3D] selection:text-white antialiased transition-opacity duration-300 ${
         !isAppReady && showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
+      {/* Global SVG Optical Lens Refraction Filters */}
+      <LiquidGlassFilters />
 
       {/* 0. Native iOS & Android App Opening Animation Splash Screen */}
       {showSplash && (
@@ -2145,7 +2148,7 @@ export function App() {
                 aria-labelledby="seo-trip-guide-heading"
                 className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4"
               >
-                <div className="rounded-3xl bg-white/85 dark:bg-slate-900/75 border border-[#E2EBE1] dark:border-slate-800/80 p-6 sm:p-8 shadow-2xs">
+                <div className="rounded-3xl glass-frosted liquid-rim p-6 sm:p-8">
                   <div className="max-w-3xl">
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#15803D] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-200/70 dark:border-emerald-800/40 mb-3">
                       <Sparkles className="w-3.5 h-3.5" />
@@ -2387,7 +2390,7 @@ export function App() {
                 return (
                   <div ref={tripSubSectionRef} id="trip-detail-output" className="space-y-4 scroll-mt-20 sm:scroll-mt-24">
                     {/* Expandable Live Trip Island — Floating Journey Telemetry & Quick Actions */}
-                    <div className="liquid-glass-surface rounded-[26px] px-3.5 py-2.5 sm:px-5 sm:py-3 transition-all duration-300">
+                    <div className="glass-elevated liquid-rim glass-refractive rounded-[28px] px-3.5 py-2.5 sm:px-5 sm:py-3 transition-all duration-300">
                       <div className="flex flex-wrap items-center justify-between gap-2.5">
                         <button
                           type="button"

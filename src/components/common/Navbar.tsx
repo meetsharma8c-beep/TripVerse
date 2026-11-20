@@ -7,6 +7,7 @@ import { getActiveLanguage, setActiveLanguage, LANGUAGES, useLanguage } from '..
 import { isStandalone } from '../../services/deviceService';
 import { getUserSubscriptionQuota } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
+import { LiquidNavbar, LiquidTabs } from '../ui/liquid';
 
 interface NavbarProps {
   currentTab: string;
@@ -282,9 +283,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           </>
         )}
 
-        <div className="relative z-10 max-w-[1536px] mx-auto px-3 sm:px-5 lg:px-3 xl:px-5 2xl:px-8">
-        {/* DESKTOP HEADER (Responsive across lg 1024px through 2xl 1536px+ without clipping) */}
-        <div className="hidden lg:flex items-center justify-between h-16 xl:h-18 gap-1.5 xl:gap-2">
+        <div className="relative z-10 max-w-[1536px] mx-auto px-3 sm:px-5 lg:px-3 xl:px-5 2xl:px-8 lg:pt-2.5">
+        {/* DESKTOP HEADER (Floating Detached Auto-Condensing Liquid Glass Pill Bar) */}
+        <LiquidNavbar className="hidden lg:flex items-center justify-between gap-1.5 xl:gap-2">
           
           {/* Left: Brand Logo & Navigation Links */}
           <div className="flex items-center gap-1.5 xl:gap-3 2xl:gap-4 min-w-0 shrink-0">
@@ -298,31 +299,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               />
             </div>
 
-            {/* Desktop Navigation Links (Liquid Capsule Pills) */}
-            <nav className="flex items-center gap-0.5 xl:gap-1 p-1 rounded-full bg-[#EAF0E9]/65 dark:bg-slate-900/60 border border-[#DCE7DB]/80 dark:border-white/10 backdrop-blur-md shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]" aria-label="Main Navigation">
-              {desktopNavLinks.map((link) => {
-                const isActive = currentTab === link.id;
-
-                return (
-                  <button
-                    key={link.id}
-                    onClick={() => handleLinkClick(link.id)}
-                    className={`relative flex items-center gap-1.5 px-2.5 xl:px-3.5 py-1.5 rounded-full text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer active:scale-95 ${
-                      isActive 
-                        ? 'text-[#1E3E2B] dark:text-emerald-300 bg-white/95 dark:bg-emerald-950/75 border border-[#C8DAC6] dark:border-emerald-500/35 shadow-[0_6px_16px_-4px_rgba(45,90,61,0.18),inset_0_1px_0_rgba(255,255,255,0.95)] dark:shadow-[0_6px_16px_-4px_rgba(16,185,129,0.25),inset_0_1px_0_rgba(255,255,255,0.12)]' 
-                        : 'text-slate-600 dark:text-slate-300 border border-transparent hover:text-[#152A1C] dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span>{link.label}</span>
-                    {link.badge && (
-                      <span className="text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-gradient-to-r from-[#386B49] to-[#2D5A3D] text-white shadow-xs">
-                        {link.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
+            {/* Desktop Navigation Links (Morphing Sliding Liquid Glass Pill Indicator) */}
+            <LiquidTabs
+              items={desktopNavLinks.map((link) => ({
+                id: link.id,
+                label: link.label,
+                badge: link.badge || undefined,
+              }))}
+              activeId={currentTab}
+              onSelect={handleLinkClick}
+              ariaLabel="Main Navigation"
+              className="shrink-0"
+            />
           </div>
 
           {/* Right Action & Profile: Theme, Notifs, Search, Locale, CTA, User Menu */}
@@ -463,7 +451,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 {/* Dropdown Popover */}
                 {isProfileMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute right-0 mt-2 w-60 rounded-2xl glass-elevated liquid-rim p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                     {/* User Header */}
                     <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 mb-1">
                       <div className="flex items-center gap-2">
@@ -622,14 +610,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
-        </div>
+        </LiquidNavbar>
 
         {/* MOBILE APP HEADER (Screen 1: Left Menu Button, Center Logo, Right Profile Avatar) */}
         <div className="flex lg:hidden items-center justify-between h-14 sm:h-16">
           {/* Left: Mobile App Hamburger Menu Icon (44px min touch target for iOS & Android) */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white dark:bg-slate-800 shadow-xs border border-[#E2EBE1] dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-[#152A1C] dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 active:scale-95 transition-all focus:outline-none cursor-pointer"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full glass-clear liquid-rim liquid-press flex items-center justify-center text-slate-800 dark:text-slate-100 hover:text-[#152A1C] dark:hover:text-white focus:outline-none cursor-pointer"
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-navigation-drawer"

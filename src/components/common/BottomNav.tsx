@@ -53,7 +53,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         }}
       />
 
-      <div className="relative z-10 max-w-md mx-auto grid grid-cols-5 items-end">
+      <div className="relative z-10 max-w-md mx-auto px-2 pb-1.5">
+        <div className="glass-elevated liquid-rim glass-refractive rounded-[28px] px-1.5 py-1 grid grid-cols-5 items-end">
         {navSlots.map((tab) => {
           if (!tab) {
             return (
@@ -62,10 +63,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 type="button"
                 onClick={handlePlannerClick}
                 aria-label={t('hero.aiItinerary')}
-                className="pointer-events-auto relative flex flex-col items-center justify-end pt-1 pb-3 cursor-pointer group active:scale-95 transition-transform duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#244931]/40 rounded-xl"
+                className="pointer-events-auto relative flex flex-col items-center justify-end pt-1 pb-2 cursor-pointer group liquid-press focus:outline-none focus-visible:ring-2 focus-visible:ring-[#244931]/40 rounded-2xl"
               >
                 {/* Floating Liquid Glass Emerald Orb with specular catchlight */}
-                <div className="-mt-5 w-11 h-11 rounded-full bg-gradient-to-br from-[#386B49] via-[#244931] to-[#173321] dark:from-emerald-500 dark:via-[#2A6040] dark:to-[#183E28] border border-white/40 dark:border-emerald-300/30 flex items-center justify-center shadow-[0_10px_24px_-3px_rgba(36,73,49,0.5),inset_0_1.5px_1.5px_rgba(255,255,255,0.45)] dark:shadow-[0_10px_24px_-3px_rgba(16,185,129,0.42),inset_0_1px_1px_rgba(255,255,255,0.3)] transition-transform duration-200 group-hover:scale-105">
+                <div className="-mt-5 w-11 h-11 rounded-full glass-accent liquid-rim flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
                   <Sparkles
                     className="w-[18px] h-[18px] text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.88)]"
                     strokeWidth={2}
@@ -88,10 +89,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               onClick={() => handleTabClick(tab.id)}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
-              className={`pointer-events-auto relative flex flex-col items-center justify-end pt-1.5 pb-2.5 my-0.5 mx-0.5 cursor-pointer active:scale-95 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#244931]/40 rounded-2xl ${
+              className={`pointer-events-auto relative flex flex-col items-center justify-end pt-1.5 pb-2 my-0.5 mx-0.5 cursor-pointer liquid-press focus:outline-none focus-visible:ring-2 focus-visible:ring-[#244931]/40 rounded-2xl ${
                 isActive
-                  ? 'text-[#1E3E2B] dark:text-emerald-300 bg-[#E2EBE1]/75 dark:bg-emerald-950/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                  ? 'text-[#1E3E2B] dark:text-emerald-300 bg-white/80 dark:bg-emerald-950/65 border border-white/75 dark:border-emerald-400/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_12px_-3px_rgba(45,90,61,0.16)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-transparent'
               }`}
             >
               <div className="relative h-5 flex items-center justify-center">
@@ -125,6 +126,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             </button>
           );
         })}
+        </div>
       </div>
     </nav>
   );

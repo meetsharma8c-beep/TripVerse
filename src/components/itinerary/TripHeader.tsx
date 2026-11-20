@@ -142,7 +142,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
     <div className="space-y-4 font-sans">
       
       {/* Reference Screen 2: Top Destination & Travelers Header */}
-      <div className="liquid-glass-surface rounded-3xl p-5 sm:p-6">
+      <div className="glass-frosted liquid-rim rounded-3xl p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           
           {/* Destination Details */}
@@ -234,7 +234,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
       </div>
 
       {/* Reference Screen 2: Signature "AI Route Optimized" Card */}
-      <div className="liquid-glass-surface rounded-3xl p-5 space-y-4">
+      <div className="glass-frosted liquid-rim rounded-3xl p-5 space-y-4">
         
         {/* Top Header & Route Diagram */}
         <div className="flex items-center justify-between gap-4">

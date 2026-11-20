@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
+import { LiquidSearchDock } from '../ui/liquid';
 import {
   MapPin,
   Calendar,
@@ -453,7 +454,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           <div className="relative rounded-[32px] overflow-hidden border border-white/70 dark:border-white/10 shadow-[0_24px_60px_-14px_rgba(45,90,61,0.2)] dark:shadow-[0_24px_60px_-14px_rgba(0,0,0,0.65)] bg-[#EAF0E9] dark:bg-slate-900 group tv-stagger-2 h-60 sm:h-72 md:h-84 lg:h-96">
             {/* Ambient Live Telemetry Floating Pill (Solar Window & Route Readiness) */}
             <div className="absolute top-3.5 left-3.5 right-3.5 z-20 flex items-center justify-between gap-2 pointer-events-none">
-              <div className="liquid-glass-pill pointer-events-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#152A1C] dark:text-slate-100">
+              <div className="glass-clear liquid-rim pointer-events-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#152A1C] dark:text-slate-100">
                 <span className={`w-2 h-2 rounded-full ${solarContext.dot} animate-pulse shrink-0`} />
                 <span>{solarContext.label}</span>
                 {activeTrip?.destination && (
@@ -466,7 +467,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <button
                 type="button"
                 onClick={onExplore}
-                className="min-h-0 pointer-events-auto liquid-glass-pill spring-tap hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#2D5A3D] dark:text-emerald-300 hover:scale-[1.03] cursor-pointer"
+                className="min-h-0 pointer-events-auto glass-clear liquid-rim liquid-press hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#2D5A3D] dark:text-emerald-300 hover:scale-[1.03] cursor-pointer"
               >
                 <Compass className="w-3.5 h-3.5" />
                 <span>{t('hero.exploreDestinations')}</span>
@@ -527,12 +528,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none select-none" />
           </div>
 
-          {/* Floating Pill Search Bar (Matching Reference Image Screen 1) */}
+          {/* Floating Liquid Glass Capsule Search Dock */}
           <div ref={floatingSearchRef} className="relative max-w-2xl mx-auto -mt-7 sm:-mt-8 z-30 px-2 sm:px-4 tv-stagger-3">
             <form onSubmit={handleFloatingSubmit} className="relative">
-              <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-full p-2 pl-4 sm:pl-6 shadow-[0_16px_40px_-8px_rgba(45,90,61,0.22)] border border-[#DCE7DB] dark:border-slate-800 flex items-center justify-between gap-2.5 transition-all duration-300 focus-within:ring-4 focus-within:ring-[#2D5A3D]/15 dark:focus-within:ring-emerald-500/20 focus-within:border-[#2D5A3D] dark:focus-within:border-emerald-500 focus-within:shadow-[0_20px_48px_-8px_rgba(45,90,61,0.28)]">
+              <LiquidSearchDock>
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Search className="w-5 h-5 text-slate-400 dark:text-slate-400 shrink-0" />
+                  <Search className="w-5 h-5 text-[#57685D] dark:text-slate-400 shrink-0" />
                   <input
                     id="hero-floating-destination-input"
                     type="text"
@@ -561,7 +562,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         setSuggestions([]);
                         setShowFloatingDropdown(false);
                       }}
-                      className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                      className="min-h-0 p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                       aria-label={t('hero.clearSearch')}
                     >
                       <X className="w-4 h-4" />
@@ -571,20 +572,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
                 <button
                   type="submit"
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#2D5A3D] hover:bg-[#244931] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-[#2D5A3D]/30 active:scale-95 transition-all cursor-pointer"
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full glass-accent liquid-rim liquid-press text-white flex items-center justify-center shrink-0 cursor-pointer"
                   aria-label={t('hero.searchDestination')}
                   title={t('hero.searchDestination')}
                 >
                   <Search className="w-5 h-5" />
                 </button>
-              </div>
+              </LiquidSearchDock>
 
               {/* Autocomplete Dropdown */}
               {showFloatingDropdown && (suggestions.length > 0 || isSearching || destination.trim().length >= 2) && (
                 <div 
                   id="hero-floating-search-dropdown"
                   role="listbox"
-                  className="absolute left-2 right-2 sm:left-4 sm:right-4 top-full mt-2 bg-white dark:bg-slate-900 rounded-3xl border border-[#E2EBE1] dark:border-slate-800 shadow-2xl z-50 overflow-hidden divide-y divide-[#E2EBE1] dark:divide-slate-800 max-h-72 overflow-y-auto animate-in fade-in"
+                  className="absolute left-2 right-2 sm:left-4 sm:right-4 top-full mt-2 glass-elevated liquid-rim rounded-3xl z-50 overflow-hidden divide-y divide-[#E2EBE1]/70 dark:divide-slate-800/80 max-h-72 overflow-y-auto animate-in fade-in"
                 >
                   <div className="px-4 py-2 bg-[#F4F6F2] dark:bg-slate-800/80 text-[11px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 flex items-center justify-between">
                     <span>{t('hero.suggestedPlaces')}</span>

@@ -556,10 +556,10 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                             </span>
 
                             <div
-                              className={`rounded-2xl p-3.5 sm:p-4 border transition-all ${
+                              className={`rounded-2xl p-3.5 sm:p-4 transition-all ${
                                 act.completed
-                                  ? 'bg-[#E8EFE7]/45 border-[#8EA78D]/35 opacity-80'
-                                  : 'bg-white border-[#E2EBE1] liquid-bento-card hover:border-[#8EA78D]'
+                                  ? 'glass-clear opacity-80'
+                                  : 'glass-frosted liquid-rim liquid-card-hover'
                               }`}
                             >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">

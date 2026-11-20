@@ -6,6 +6,7 @@ import { handleImageError } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 import { ScrollReveal } from '../common/ScrollReveal';
+import { LiquidCard, LiquidChip } from '../ui/liquid';
 
 interface PopularDestinationsProps {
   onSelectDestination: (dest: Destination) => void;
@@ -144,19 +145,13 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
             const isSelected = activeCategory === cat.id;
 
             return (
-              <button
+              <LiquidChip
                 key={cat.id}
-                type="button"
-                aria-pressed={isSelected}
+                active={isSelected}
                 onClick={() => handleCategorySelect(cat.id)}
-                className={`min-h-[44px] py-2.5 px-4 rounded-full text-xs sm:text-sm whitespace-nowrap shrink-0 flex items-center justify-center transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4631]/40 dark:focus-visible:ring-emerald-400/50 active:scale-95 ${
-                  isSelected
-                    ? 'bg-[#1E4631] dark:bg-[#2A6040] text-white font-semibold shadow-xs'
-                    : 'bg-slate-100/95 hover:bg-slate-200/95 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 font-medium'
-                }`}
               >
                 {cat.label}
-              </button>
+              </LiquidChip>
             );
           })}
         </div>
@@ -177,12 +172,15 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
               delayMs={(idx % 4) * 55}
               className="h-full"
             >
-              <article
+              <LiquidCard
                 onClick={() => onSelectDestination(dest)}
-                className="group h-full flex flex-col bg-white/95 dark:bg-[#0E1726]/95 rounded-[26px] sm:rounded-[28px] overflow-hidden border border-[#DCE7DB] dark:border-white/10 hover:border-[#2D5A3D]/60 dark:hover:border-emerald-500/45 liquid-bento-card cursor-pointer"
+                outerRadius={28}
+                innerPadding={8}
+                className="group h-full flex flex-col cursor-pointer"
               >
-                {/* Top Photo Area (~55-60% card weight) */}
-                <div className="relative h-52 sm:h-auto sm:aspect-[4/3] w-full overflow-hidden bg-slate-200 dark:bg-slate-800 shrink-0">
+                {/* Top Photo Area (Concentric Inner Frame) */}
+                <div className="p-2 pb-0 shrink-0">
+                <div className="relative h-52 sm:h-auto sm:aspect-[4/3] w-full overflow-hidden liquid-concentric-inner bg-slate-200 dark:bg-slate-800">
                   <img
                     src={dest.image}
                     alt={dest.name}
@@ -198,7 +196,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
 
                   {/* Bottom-left frosted editorial vibe tag */}
                   <div className="absolute bottom-2.5 left-3 pointer-events-none">
-                    <span className="inline-flex items-center gap-1.5 bg-black/45 dark:bg-slate-950/65 backdrop-blur-md text-white/95 text-[10px] font-medium px-2.5 py-1 rounded-full border border-white/20 shadow-xs">
+                    <span className="glass-clear-dark inline-flex items-center gap-1.5 text-white/95 text-[10px] font-medium px-2.5 py-1 rounded-full">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                       <span className="font-serif italic tracking-wide capitalize">{dest.category}</span>
                     </span>
@@ -206,12 +204,12 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
 
                   {/* Top-left Frosted Rating & 3D Pills */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 bg-white/85 dark:bg-slate-900/75 backdrop-blur-md text-[#152A1C] dark:text-slate-100 text-xs font-semibold px-2.5 py-1 rounded-full shadow-xs border border-white/40 dark:border-white/10">
+                    <span className="glass-clear inline-flex items-center gap-1 text-[#152A1C] dark:text-slate-100 text-xs font-semibold px-2.5 py-1 rounded-full">
                       <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                       <span>{dest.rating}</span>
                     </span>
 
-                    <span className="inline-flex items-center gap-1 bg-black/45 backdrop-blur-md text-white text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider border border-white/15">
+                    <span className="glass-clear-dark inline-flex items-center gap-1 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
                       <Sparkles className="w-2.5 h-2.5 shrink-0" />
                       <span>3D</span>
                     </span>
@@ -226,14 +224,15 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                     }}
                     aria-label={t('dest.save')}
                     aria-pressed={isSaved}
-                    className={`min-h-0 absolute top-3 right-3 w-10 h-10 sm:w-[42px] sm:h-[42px] flex items-center justify-center rounded-full backdrop-blur-md transition-all active:scale-90 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
+                    className={`min-h-0 absolute top-3 right-3 w-10 h-10 sm:w-[42px] sm:h-[42px] flex items-center justify-center rounded-full liquid-press cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
                       isSaved
-                        ? 'bg-[#1E4631] dark:bg-[#2A6040] text-white shadow-md'
-                        : 'bg-white/85 dark:bg-slate-900/75 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-100 border border-white/40 dark:border-white/10 shadow-xs'
+                        ? 'glass-accent text-white'
+                        : 'glass-clear text-slate-700 dark:text-slate-100'
                     }`}
                   >
                     <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
                   </button>
+                </div>
                 </div>
 
                 {/* Bottom Card Content Area */}
@@ -303,7 +302,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                     </div>
                   </div>
                 </div>
-              </article>
+              </LiquidCard>
             </ScrollReveal>
           );
         })}

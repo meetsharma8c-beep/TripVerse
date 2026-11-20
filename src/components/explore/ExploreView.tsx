@@ -11,6 +11,7 @@ import { useLanguage } from '../../services/languageService';
 import { resolveGlobalDestination } from '../../services/globalLocationResolver';
 import { DestinationDetailModal } from './DestinationDetailModal';
 import { ScrollReveal } from '../common/ScrollReveal';
+import { LiquidChip } from '../ui/liquid';
 
 interface ExploreViewProps {
   onPlanTripForDestination: (destName: string) => void;
@@ -215,28 +216,22 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
       {/* Filter Tabs with Clear Scroll Affordance */}
       <div ref={filterSectionRef} className="relative scroll-mt-20 sm:scroll-mt-24">
-        <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-none">
+        <div className="liquid-scroll-mask flex items-center gap-2 overflow-x-auto pb-3 scrollbar-none">
           {filterTabs.map(tab => (
-            <button
+            <LiquidChip
               key={tab.id}
+              active={selectedTag === tab.id}
               onClick={() => handleSelectTag(tab.id)}
-              className={`min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center justify-center shrink-0 ${
-                selectedTag === tab.id
-                  ? 'bg-[#2D5A3D] text-white shadow-xs'
-                  : 'bg-white dark:bg-slate-900/80 text-[#5A7362] dark:text-slate-300 border border-[#E2EBE1] dark:border-slate-800 hover:border-[#8EA78D] hover:bg-[#F8FAF7] dark:hover:bg-slate-800'
-              }`}
             >
               {tab.label}
-            </button>
+            </LiquidChip>
           ))}
         </div>
-        {/* Right Fade & Scroll Hint */}
-        <div className="absolute right-0 top-0 bottom-3 w-10 bg-gradient-to-l from-[#F4F6F2] dark:from-[#0B1521] to-transparent pointer-events-none md:hidden" />
       </div>
 
       {/* Personalized Recommendations Section */}
       {selectedTag === 'all' && !searchQuery.trim() && recommendedDestinations.length > 0 && (
-        <div className="bg-white dark:bg-[#0C1523] rounded-3xl p-5 sm:p-6 border border-[#E2EBE1] dark:border-slate-800 shadow-xs space-y-4">
+        <div className="glass-frosted liquid-rim rounded-3xl p-5 sm:p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-[#2D5A3D] text-white flex items-center justify-center shadow-xs">
