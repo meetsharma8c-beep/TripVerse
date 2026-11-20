@@ -10,6 +10,7 @@ import {
 } from '../../services/authService';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { CurrencyCode } from '../../types/trip';
+import { Capacitor } from '@capacitor/core';
 import { triggerHaptic } from '../../services/deviceService';
 import confetti from 'canvas-confetti';
 import { TripPaymentGatewayModal } from '../payment/TripPaymentGatewayModal';
@@ -60,6 +61,10 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
 
   const quota: UserSubscriptionQuota = getUserSubscriptionQuota(currentUser);
   const isPro = quota.isPro;
+  // Apple App Store Guideline 3.1.1 & Google Play Billing Policy prohibit third-party checkouts
+  // (Razorpay/UPI/cards) for digital subscriptions inside native store binaries.
+  const isNativeStoreApp = Capacitor.isNativePlatform();
+  const nativePlatform = Capacitor.getPlatform();
 
   // Base pricing in INR, dynamically converted to user's currency
   const monthlyPriceINR = 149;
@@ -73,6 +78,7 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
   const formattedSavings = formatCurrency(annualSavingsINR, currency);
 
   const handleUpgrade = () => {
+    if (isNativeStoreApp) return;
     triggerHaptic('medium');
     setIsGatewayOpen(true);
   };
@@ -256,8 +262,8 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
             </span>
           </div>
 
-          {/* Side-by-Side Dual Plan Selection Cards (Annual vs Monthly) */}
-          {!isPro && (
+          {/* Side-by-Side Dual Plan Selection Cards (Web only — native store apps comply with Apple 3.1.1 / Play Billing) */}
+          {!isPro && !isNativeStoreApp && (
             <div className="grid grid-cols-2 gap-3">
               {/* Annual Plan Card */}
               <button
@@ -389,6 +395,29 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
                   {t('Switch to Free Tier / Manage Plan')}
                 </button>
               </div>
+            ) : isNativeStoreApp ? (
+              <div className="space-y-2.5">
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-[#E2EBE1] dark:border-slate-800 text-center space-y-1.5 shadow-2xs">
+                  <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#2D5A3D] dark:text-emerald-300">
+                    <ShieldCheck className="w-4 h-4 shrink-0" />
+                    <span>
+                      {nativePlatform === 'ios'
+                        ? t('App Store In-App Subscriptions Coming Soon')
+                        : t('Google Play Subscriptions Coming Soon')}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#5A7362] dark:text-slate-400 leading-relaxed">
+                    {t('Core AI itineraries, interactive route maps, live weather, packing lists, and offline travel guides are included. If you already have an active TripVerse Pro membership, sign in to sync your account automatically.')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-3 px-6 rounded-2xl bg-gradient-to-r from-[#1E3B27] via-[#2D5A3D] to-[#234730] text-white font-display font-bold text-sm shadow-[0_8px_24px_rgba(45,90,61,0.25)] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
+                >
+                  <span>{t('Continue Exploring TripVerse')}</span>
+                </button>
+              </div>
             ) : (
               <div className="space-y-1.5">
                 <button
@@ -410,10 +439,12 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
               </div>
             )}
 
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#5A7362] dark:text-slate-400 text-center">
-              <Lock className="w-3 h-3 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
-              <span>{t('100% Risk-Free • Instant Access • Cancel Anytime')}</span>
-            </div>
+            {!isNativeStoreApp && (
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#5A7362] dark:text-slate-400 text-center">
+                <Lock className="w-3 h-3 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
+                <span>{t('100% Risk-Free • Instant Access • Cancel Anytime')}</span>
+              </div>
+            )}
           </div>
 
         </div>
@@ -436,8 +467,8 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
       </div>
     </div>
 
-    {/* PRO PAYMENT GATEWAY MODAL */}
-    {isGatewayOpen && (
+    {/* PRO PAYMENT GATEWAY MODAL (Web checkout only — strictly disabled in native iOS/Android store builds) */}
+    {isGatewayOpen && !isNativeStoreApp && (
       <TripPaymentGatewayModal
         isOpen={isGatewayOpen}
         onClose={() => setIsGatewayOpen(false)}
