@@ -22,7 +22,8 @@ import {
   saveTripExpenses,
   loadTripPacking,
   saveTripPacking,
-  resetGuestStorage
+  resetGuestStorage,
+  sanitizeNonRoadTripPitstops
 } from './services/storageService';
 import type { PlannerInput } from './services/plannerEngine';
 import { getStoredCurrency, setActiveCurrency, Currency, syncLiveExchangeRates } from './services/currencyService';
@@ -387,12 +388,12 @@ export function App() {
   // Bidirectional union merge of cloud trips + local device trips so signing in on multiple devices
   // (e.g. Mac + iPhone + Android) combines all trips created under the same account.
   const mergeCloudTripsWithLocal = (cloudList: Trip[], localList: Trip[], uid?: string | null): Trip[] => {
-    const cleanCloud = (Array.isArray(cloudList) ? cloudList : []).filter(
-      (t) => t && t.id && !isPlaceholderDiscoveryTrip(t) && !isTripDeletedInCloud(t.id, uid)
-    );
-    const cleanLocal = (Array.isArray(localList) ? localList : []).filter(
-      (t) => t && t.id && !isPlaceholderDiscoveryTrip(t) && !isTripDeletedInCloud(t.id, uid)
-    );
+    const cleanCloud = (Array.isArray(cloudList) ? cloudList : [])
+      .filter((t) => t && t.id && !isPlaceholderDiscoveryTrip(t) && !isTripDeletedInCloud(t.id, uid))
+      .map((t) => sanitizeNonRoadTripPitstops(t).trip);
+    const cleanLocal = (Array.isArray(localList) ? localList : [])
+      .filter((t) => t && t.id && !isPlaceholderDiscoveryTrip(t) && !isTripDeletedInCloud(t.id, uid))
+      .map((t) => sanitizeNonRoadTripPitstops(t).trip);
 
     const localMap = new Map(cleanLocal.map((t) => [t.id, t]));
     const seenIds = new Set<string>();
@@ -1314,18 +1315,21 @@ export function App() {
       return;
     }
 
-    // Do not attempt road-driving route calculation across oceans / flight-only intercontinental routes
-    const isFlightOrOverseasRoute =
+    // Do not attempt highway road-driving route & pitstop calculation for train, flight, or overseas routes
+    const isNonRoadTransitRoute =
       trip.transportMode === 'flight' ||
+      trip.transportMode === 'train' ||
+      /\brail transit\b|\bflight transit\b/i.test(trip.aiRationale || '') ||
       (trip.routeDetails?.distanceKm && trip.routeDetails.distanceKm > 3500);
-    if (isFlightOrOverseasRoute) {
-      const flightTrip: Trip = {
-        ...trip,
+    if (isNonRoadTransitRoute) {
+      const sanitized = sanitizeNonRoadTripPitstops(trip).trip;
+      const nonRoadTrip: Trip = {
+        ...sanitized,
         travelDataStatus: 'live',
         travelDataError: undefined,
-        breakStops: trip.breakStops.filter(stop => stop.source === 'user')
+        breakStops: []
       };
-      updateTrip(flightTrip);
+      updateTrip(nonRoadTrip);
       inFlightRouteRequestKeyRef.current = null;
       return;
     }
@@ -2575,6 +2579,10 @@ export function App() {
 
               {/* Sub-Navigation: Screen 2 Mobile 4-Pill Bar vs Desktop Grouped Navigation */}
               {(() => {
+                const isNonRoadActiveTrip =
+                  activeTrip.transportMode === 'train' ||
+                  activeTrip.transportMode === 'flight' ||
+                  /\brail transit\b|\bflight transit\b/i.test(activeTrip.aiRationale || '');
                 const TRIP_GROUPS = [
                   {
                     id: 'journey',
@@ -2584,7 +2592,9 @@ export function App() {
                       { id: 'itinerary', label: 'Day Itinerary', icon: Calendar },
                       { id: 'hub', label: 'Passes & Hub', icon: QrCode },
                       { id: 'route', label: 'Route Map', icon: MapPin },
-                      { id: 'breakstops', label: `Pitstops (${activeTrip.breakStops.length})`, icon: Coffee }
+                      ...(!isNonRoadActiveTrip
+                        ? [{ id: 'breakstops', label: `Pitstops (${activeTrip.breakStops.length})`, icon: Coffee }]
+                        : [])
                     ]
                   },
                   {
@@ -2592,7 +2602,7 @@ export function App() {
                     label: 'Budget & Deals',
                     icon: Wallet,
                     subTabs: [
-                      { id: 'expenses', label: 'TripSplit & Fuel', icon: Receipt },
+                      { id: 'expenses', label: isNonRoadActiveTrip ? 'TripSplit & Expenses' : 'TripSplit & Fuel', icon: Receipt },
                       { id: 'deals', label: 'Transport Deals', icon: Tag },
                       { id: 'budget', label: 'Budget Optimizer', icon: Sparkles }
                     ]

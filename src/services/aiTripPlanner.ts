@@ -297,16 +297,21 @@ export function applyItinerary(days: any[], input: PlannerInput, trip: Trip): Tr
         }
 
         if (activities.length === 0) continue;
+        const isNonRoadMode = trip.transportMode === 'train' || trip.transportMode === 'flight';
+        const filteredAiActivities = isNonRoadMode
+            ? activities.filter(a => a.type !== 'breakstop')
+            : activities;
         const baselineActivities = trip.itinerary[index]?.activities || [];
         const logisticsBefore = baselineActivities.filter(activity => 
-            (activity.type === 'departure' && activity.tag !== 'Return') ||
-            (activity.type === 'breakstop' && index === 0) ||
+            (activity.type === 'departure' && activity.tag !== 'Return' && activity.tag !== 'Return Flight' && activity.tag !== 'Return Train') ||
+            (activity.type === 'arrival' && index === 0) ||
+            (!isNonRoadMode && activity.type === 'breakstop' && index === 0) ||
             (activity.type === 'hotel' && index === 0)
         );
         const logisticsAfter = baselineActivities.filter(activity =>
-            activity.type === 'arrival' ||
-            (activity.type === 'departure' && activity.tag === 'Return') ||
-            (activity.type === 'breakstop' && index === targetDaysCount - 1 && index > 0)
+            (activity.type === 'arrival' && index > 0) ||
+            (activity.type === 'departure' && (activity.tag === 'Return' || activity.tag === 'Return Flight' || activity.tag === 'Return Train')) ||
+            (!isNonRoadMode && activity.type === 'breakstop' && index === targetDaysCount - 1 && index > 0)
         );
         const title = typeof day?.title === 'string' && day.title.trim()
             ? day.title.trim().slice(0, 100)
@@ -314,7 +319,7 @@ export function applyItinerary(days: any[], input: PlannerInput, trip: Trip): Tr
         const theme = typeof day?.theme === 'string' && day.theme.trim()
             ? day.theme.trim().slice(0, 180)
             : 'Personalized day plan';
-        const mergedActivities = [...logisticsBefore, ...activities, ...logisticsAfter];
+        const mergedActivities = [...logisticsBefore, ...filteredAiActivities, ...logisticsAfter];
         plannedDays.push({
             dayNumber: index + 1,
             title: `Day ${index + 1} — ${title.replace(/^Day\s+\d+\s*[—:-]?\s*/i, '')}`,

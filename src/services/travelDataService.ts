@@ -108,7 +108,10 @@ export function applyGeoapifyTravelData(trip: Trip, data: GeoapifyTravelDataResp
   }
 
   const places = data.places || [];
-  const breakStops: BreakStop[] = places.map(place => ({
+  const isNonRoadMode = trip.transportMode === 'train' || trip.transportMode === 'flight';
+  const breakStops: BreakStop[] = isNonRoadMode
+    ? []
+    : places.map(place => ({
     id: `geoapify-${place.id}`,
     source: 'geoapify_places',
     mapUrl: place.mapUrl,
@@ -172,6 +175,41 @@ export function applyGeoapifyTravelData(trip: Trip, data: GeoapifyTravelDataResp
     activities: (day.activities || []).map(activity => {
       if (activity.isCustom || !activity.id.startsWith('act-')) return activity;
       if (activity.type === 'breakstop') {
+        if (isNonRoadMode) {
+          const isFirstDay = day.dayNumber === 1;
+          return {
+            ...activity,
+            type: 'arrival' as const,
+            title: isFirstDay
+              ? trip.transportMode === 'flight'
+                ? `Arrival at ${trip.destination} Airport & Hotel Transfer`
+                : `Arrival at ${trip.destination} Railway Junction & Hotel Transfer`
+              : trip.transportMode === 'flight'
+                ? `Return Flight Transit to ${trip.origin}`
+                : `Return Rail Journey to ${trip.origin}`,
+            location: isFirstDay
+              ? trip.transportMode === 'flight'
+                ? `${trip.destination} Airport Terminal`
+                : `${trip.destination} Railway Station`
+              : trip.transportMode === 'flight'
+                ? `${trip.origin} Airport Terminal`
+                : `${trip.origin} Railway Junction`,
+            description: isFirstDay
+              ? trip.transportMode === 'flight'
+                ? `Airport arrival and local transfer to your accommodation in ${trip.destination}.`
+                : `Train arrival at ${trip.destination} Railway Junction and local cab/auto transfer to your accommodation.`
+              : trip.transportMode === 'flight'
+                ? `Scheduled return flight transit back to ${trip.origin}.`
+                : `Direct return rail journey back to ${trip.origin}.`,
+            tag: isFirstDay
+              ? trip.transportMode === 'flight'
+                ? 'Airport Arrival'
+                : 'Station Arrival'
+              : trip.transportMode === 'flight'
+                ? 'Flight Transit'
+                : 'Rail Transit'
+          };
+        }
         if (activity.id !== 'act-1-bs' || !firstStop) {
           return {
             ...activity,

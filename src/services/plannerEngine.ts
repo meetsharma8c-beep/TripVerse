@@ -628,7 +628,7 @@ export function generateAITrip(input: PlannerInput): Trip {
     routeFeasibility.availableModes.includes('flight') &&
     straightLineDist >= 200 &&
     transitContext.primaryAirport !== null;
-  const isRail = effectiveTransportMode === 'train' && transitContext.primaryRailwayStation !== null;
+  const isRail = effectiveTransportMode === 'train';
   const outboundTransitTitle = isAir
     ? `Flight from ${input.origin || 'Origin'} to ${transitContext.primaryAirport?.name || spotName}`
     : isRail
@@ -679,7 +679,26 @@ export function generateAITrip(input: PlannerInput): Trip {
           coordinates: originCoords,
           tag: 'Start Point'
         },
-        {
+        isAir || isRail ? {
+          id: 'act-1-arr',
+          dayNumber: 1,
+          time: '8:30 AM',
+          title: isAir
+            ? `Arrival at ${transitContext.primaryAirport?.name || `${spotName} Gateway Airport`}`
+            : `Arrival at ${transitContext.primaryRailwayStation?.name || `${spotName} Railway Junction`}`,
+          type: 'arrival',
+          location: isAir
+            ? `${transitContext.primaryAirport?.name || spotName} Terminal`
+            : `${transitContext.primaryRailwayStation?.name || `${spotName} Railway Station`} Platform`,
+          estimatedCost: scaleExpense(150 * cityMultiplier * safeTravelers),
+          travelTimeMin: 25,
+          distanceKm: 10,
+          description: isAir
+            ? `Airport arrival and local transfer into ${spotName}.`
+            : `Train arrival at ${transitContext.primaryRailwayStation?.name || `${spotName} Railway Junction`} and local cab/auto transfer into ${spotName}.`,
+          coordinates: destCoords,
+          tag: isAir ? 'Airport Arrival' : 'Station Arrival'
+        } : {
           id: 'act-1-bs',
           dayNumber: 1,
           time: '8:30 AM',
@@ -807,15 +826,21 @@ export function generateAITrip(input: PlannerInput): Trip {
           time: depTime,
           title: outboundTransitTitle,
           type: 'departure',
-          location: isAir ? `${input.origin || 'Origin'} Airport / Terminal` : `${input.origin || 'City Center'} Transit Corridor`,
+          location: isAir
+            ? `${input.origin || 'Origin'} Airport / Terminal`
+            : isRail
+              ? `${input.origin || 'Origin'} Railway Junction`
+              : `${input.origin || 'City Center'} Transit Corridor`,
           estimatedCost: Math.round(transportCost * 0.5),
           travelTimeMin: 0,
           distanceKm: 0,
           description: isAir
             ? `Flight departure towards ${spotName}.${transitContext.multiModalGuidance ? ' ' + transitContext.multiModalGuidance : ''}`
-            : `Departure towards ${spotName}.${transitContext.multiModalGuidance ? ' ' + transitContext.multiModalGuidance : ''}`,
+            : isRail
+              ? `Rail departure from ${input.origin || 'Origin'} towards ${transitContext.primaryRailwayStation?.name || spotName}.${transitContext.multiModalGuidance ? ' ' + transitContext.multiModalGuidance : ''}`
+              : `Departure towards ${spotName}.${transitContext.multiModalGuidance ? ' ' + transitContext.multiModalGuidance : ''}`,
           coordinates: originCoords,
-          tag: isAir ? 'Flight Departure' : 'Start Point'
+          tag: isAir ? 'Flight Departure' : isRail ? 'Train Departure' : 'Start Point'
         },
         isAir ? {
           id: `act-1-bs`,
@@ -830,13 +855,26 @@ export function generateAITrip(input: PlannerInput): Trip {
           description: `Flight arrival, baggage collection, and express city transit/cab transfer to your accommodation in ${spotName}.`,
           coordinates: destCoords,
           tag: 'Airport Arrival'
+        } : isRail ? {
+          id: `act-1-rail-arr`,
+          dayNumber: 1,
+          time: bsTime,
+          title: `Arrival at ${transitContext.primaryRailwayStation?.name || `${spotName} Railway Junction`} & Hotel Transfer`,
+          type: 'arrival',
+          location: `${transitContext.primaryRailwayStation?.name || `${spotName} Railway Station`} Platform`,
+          estimatedCost: scaleExpense(180 * cityMultiplier * safeTravelers),
+          travelTimeMin: 25,
+          distanceKm: 8,
+          description: `Train arrival at ${transitContext.primaryRailwayStation?.name || `${spotName} Railway Station`} and local cab/auto transfer to your accommodation in ${spotName}.`,
+          coordinates: destCoords,
+          tag: 'Station Arrival'
         } : {
           id: `act-1-bs`,
           dayNumber: 1,
           time: bsTime,
           title: outboundHaltTitle,
           type: 'breakstop',
-          location: isRail ? (transitContext.primaryRailwayStation?.name || 'Rail Transfer Hub') : 'En-route Highway Food Plaza',
+          location: 'En-route Highway Food Plaza',
           estimatedCost: scaleExpense(140 * cityMultiplier * safeTravelers),
           travelTimeMin: Math.min(120, Math.round(routeHours * 20)),
           distanceKm: Math.round(routeDistKm * 0.5),
@@ -1014,20 +1052,26 @@ export function generateAITrip(input: PlannerInput): Trip {
           time: depTime,
           title: isAir
             ? `Flight Departure from ${transitContext.primaryAirport?.name || spotName}`
-            : `Commence Return Journey to ${input.origin || 'Origin'}`,
+            : isRail
+              ? `Train Departure from ${transitContext.primaryRailwayStation?.name || `${spotName} Railway Junction`}`
+              : `Commence Return Journey to ${input.origin || 'Origin'}`,
           type: 'departure',
-          location: isAir ? (transitContext.primaryAirport?.name || `${spotName} Gateway Airport`) : isRail ? (transitContext.primaryRailwayStation?.name || `${spotName} Station`) : `${spotName} Highway Gateway`,
+          location: isAir ? (transitContext.primaryAirport?.name || `${spotName} Gateway Airport`) : isRail ? (transitContext.primaryRailwayStation?.name || `${spotName} Railway Station`) : `${spotName} Highway Gateway`,
           estimatedCost: Math.round(transportCost * 0.5),
           travelTimeMin: 0,
           distanceKm: 0,
           description: isAir
             ? `Airport check-in and scheduled flight return towards ${input.origin || 'Origin'}.`
-            : `Return journey from ${spotName} towards ${input.origin || 'Origin'}.`,
-          coordinates: {
-            lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.75,
-            lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.75
-          },
-          tag: 'Return'
+            : isRail
+              ? `Board your scheduled return train from ${transitContext.primaryRailwayStation?.name || `${spotName} Railway Station`} towards ${input.origin || 'Origin'}.`
+              : `Return journey from ${spotName} towards ${input.origin || 'Origin'}.`,
+          coordinates: isAir || isRail
+            ? destCoords
+            : {
+                lat: originCoords.lat + (destCoords.lat - originCoords.lat) * 0.75,
+                lng: originCoords.lng + (destCoords.lng - originCoords.lng) * 0.75
+              },
+          tag: isAir ? 'Return Flight' : isRail ? 'Return Train' : 'Return'
         },
         isAir ? {
           id: `act-${d}-flight`,
@@ -1042,6 +1086,19 @@ export function generateAITrip(input: PlannerInput): Trip {
           description: `In-flight return corridor, landing at arrival terminal, baggage claim, and local transit home.`,
           coordinates: originCoords,
           tag: 'Flight Arrival'
+        } : isRail ? {
+          id: `act-${d}-rail`,
+          dayNumber: d,
+          time: bsTime,
+          title: `Return Rail Journey to ${input.origin || 'Home'}`,
+          type: 'arrival',
+          location: `${input.origin || 'Origin'} Railway Junction`,
+          estimatedCost: scaleExpense(140 * cityMultiplier * safeTravelers),
+          travelTimeMin: Math.min(720, Math.round(routeHours * 60)),
+          distanceKm: routeDistKm,
+          description: `Direct rail transit back to ${input.origin || 'Origin'} with onboard dining/refreshments.`,
+          coordinates: originCoords,
+          tag: 'Rail Transit'
         } : {
           id: `act-${d}-bs`,
           dayNumber: d,

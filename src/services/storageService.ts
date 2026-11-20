@@ -127,6 +127,94 @@ export function safeLocalStorageSet(key: string, value: string): boolean {
 }
 
 /**
+ * Strip highway pitstops (breakStops) and convert any highway rest-break activities
+ * on Train or Flight trips so rail/air travelers never see highway driving pitstops.
+ */
+export function sanitizeNonRoadTripPitstops(trip: Trip): { trip: Trip; modified: boolean } {
+  if (!trip) return { trip, modified: false };
+  const isTrain = trip.transportMode === 'train' || /\brail transit\b/i.test(trip.aiRationale || '');
+  const isFlight = trip.transportMode === 'flight' || /\bflight transit\b/i.test(trip.aiRationale || '');
+  if (!isTrain && !isFlight) {
+    return { trip, modified: false };
+  }
+
+  let modified = false;
+  const resolvedMode = isFlight ? 'flight' : 'train';
+  if (trip.transportMode !== resolvedMode) {
+    modified = true;
+  }
+  if (Array.isArray(trip.breakStops) && trip.breakStops.length > 0) {
+    modified = true;
+  }
+
+  const destCoords = trip.destinationDetails?.coordinates;
+  const originCoords = trip.originCoordinates;
+  const cleanedItinerary = (trip.itinerary || []).map((day, idx) => {
+    const isFirstDay = day.dayNumber === 1 || idx === 0;
+    const cleanedActivities = (day.activities || []).map((act) => {
+      if (act.type === 'breakstop' || act.id === 'act-1-bs' || act.id?.endsWith('-bs')) {
+        modified = true;
+        return {
+          ...act,
+          id: isFirstDay ? 'act-1-rail-arr' : `act-${day.dayNumber}-rail-ret`,
+          type: 'arrival' as const,
+          source: undefined,
+          mapUrl: undefined,
+          title: isFirstDay
+            ? isFlight
+              ? `Arrival at ${trip.destination} Airport & Hotel Transfer`
+              : `Arrival at ${trip.destination} Railway Junction & Hotel Transfer`
+            : isFlight
+              ? `Return Flight Transit to ${trip.origin}`
+              : `Return Rail Journey to ${trip.origin}`,
+          location: isFirstDay
+            ? isFlight
+              ? `${trip.destination} Airport Terminal`
+              : `${trip.destination} Railway Station`
+            : isFlight
+              ? `${trip.origin} Airport Terminal`
+              : `${trip.origin} Railway Junction`,
+          description: isFirstDay
+            ? isFlight
+              ? `Flight arrival at ${trip.destination} Airport and local transfer to your hotel.`
+              : `Train arrival at ${trip.destination} Railway Junction and local cab/auto transfer to your hotel.`
+            : isFlight
+              ? `Scheduled return flight transit back to ${trip.origin}.`
+              : `Direct return rail journey back to ${trip.origin}.`,
+          coordinates: (isFirstDay ? destCoords : originCoords) || act.coordinates,
+          tag: isFirstDay
+            ? isFlight
+              ? 'Airport Arrival'
+              : 'Station Arrival'
+            : isFlight
+              ? 'Flight Transit'
+              : 'Rail Transit'
+        };
+      }
+      return act;
+    });
+    return {
+      ...day,
+      activities: cleanedActivities
+    };
+  });
+
+  if (!modified) {
+    return { trip, modified: false };
+  }
+
+  return {
+    modified: true,
+    trip: {
+      ...trip,
+      transportMode: resolvedMode,
+      breakStops: [],
+      itinerary: cleanedItinerary
+    }
+  };
+}
+
+/**
  * Load trips strictly for the specified user account or guest session.
  * NO MOCK DATA: returns empty array [] if no trips exist.
  * - Guest trips are read from ephemeral sessionStorage
@@ -191,8 +279,21 @@ export function loadTrips(userId?: string | null): Trip[] {
       }
     }
 
+    let pitstopsSanitized = false;
+    trips = trips.map(t => {
+      const { trip: clean, modified } = sanitizeNonRoadTripPitstops(t);
+      if (modified) {
+        wasModified = true;
+        pitstopsSanitized = true;
+      }
+      return clean;
+    });
+
     if (wasModified) {
       safeStorageSet(key, JSON.stringify(trips), uid);
+      if (pitstopsSanitized && uid) {
+        saveAllUserTripsToSupabase(uid, trips).catch(() => {});
+      }
     }
 
     return trips.map(trip => {
@@ -219,9 +320,9 @@ export function loadTrips(userId?: string | null): Trip[] {
 export function saveTrips(trips: Trip[], userId?: string | null, options?: { skipCloudSync?: boolean }): void {
   try {
     const uid = userId !== undefined ? userId : getCurrentUser()?.uid;
-    const cleanTrips = (Array.isArray(trips) ? trips : []).filter(
-      (t) => t && t.id && !isPlaceholderDiscoveryTrip(t) && !isTripDeletedInCloud(t.id, uid)
-    );
+    const cleanTrips = (Array.isArray(trips) ? trips : [])
+      .filter((t) => t && t.id && !isPlaceholderDiscoveryTrip(t) && !isTripDeletedInCloud(t.id, uid))
+      .map((t) => sanitizeNonRoadTripPitstops(t).trip);
     const key = getUserStorageKey('tripverse_trips', uid);
     safeStorageSet(key, JSON.stringify(cleanTrips), uid);
     // Mirror to IndexedDB asynchronously for large offline itineraries beyond the 5MB localStorage limit

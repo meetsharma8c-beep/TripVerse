@@ -329,9 +329,15 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                         </span>
                       </div>
                       <div className="glass-clear liquid-rim rounded-2xl p-3 min-w-0">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 block">Pit Stops</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 block">
+                          {featuredTrip.transportMode === 'train' || featuredTrip.transportMode === 'flight' ? 'Transit Mode' : 'Pit Stops'}
+                        </span>
                         <span className="text-sm sm:text-base font-black font-display text-[#152A1C] dark:text-white tabular-nums truncate block">
-                          {featuredTrip.breakStops.length} Stops
+                          {featuredTrip.transportMode === 'train'
+                            ? 'Rail Transit'
+                            : featuredTrip.transportMode === 'flight'
+                              ? 'Air Transit'
+                              : `${featuredTrip.breakStops.length} Stops`}
                         </span>
                       </div>
                     </div>
@@ -514,7 +520,13 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                         <div className="flex items-center justify-between text-xs text-[#57685D] dark:text-slate-400">
                           <span className="inline-flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5" />
-                            <span>{trip.breakStops.length} Break Stops</span>
+                            <span>
+                              {trip.transportMode === 'train'
+                                ? 'Rail Transit'
+                                : trip.transportMode === 'flight'
+                                  ? 'Air Transit'
+                                  : `${trip.breakStops.length} Break Stops`}
+                            </span>
                           </span>
                           <span className="font-semibold text-[#2D5A3D] dark:text-emerald-400 tabular-nums">
                             {totalActivities} Stops

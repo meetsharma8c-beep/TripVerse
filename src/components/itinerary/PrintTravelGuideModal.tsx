@@ -211,9 +211,15 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
               </span>
             </div>
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-slate-500 text-[10px] block font-bold uppercase">Mapped Listings</span>
+              <span className="text-slate-500 text-[10px] block font-bold uppercase">
+                {trip.transportMode === 'train' || trip.transportMode === 'flight' ? 'Transit Mode' : 'Mapped Listings'}
+              </span>
               <span className="text-sm font-black text-[#2D5A3D]">
-                {trip.breakStops.length} Pitstops En-Route
+                {trip.transportMode === 'train'
+                  ? 'Rail Transit Corridor'
+                  : trip.transportMode === 'flight'
+                    ? 'Air Transit Corridor'
+                    : `${trip.breakStops.length} Pitstops En-Route`}
               </span>
             </div>
           </div>
