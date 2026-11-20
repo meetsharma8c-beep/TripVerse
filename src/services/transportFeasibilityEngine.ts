@@ -579,25 +579,25 @@ export function resolveTransitContext(rawDestination: string, destCoords?: Coord
     };
   }
 
-  // Check if international / overseas via location service + coordinates
+  // Check if international / overseas via location service + coordinates + keyword guard
   const loc = resolvePreciseLocationSync(rawDestination);
   const resolvedCoords = destCoords || loc.coordinates;
   const cleanName = loc.name || rawDestination.split(',')[0].trim() || 'Destination';
   const locCountryLower = (loc.country || '').toLowerCase();
+  const matchesIntlKeyword = INTERNATIONAL_DESTINATION_KEYWORDS.some(k => norm.includes(k));
   const isIntl = Boolean(
-    !isCoordsInsideIndia(resolvedCoords) &&
-    locCountryLower &&
-    locCountryLower !== 'india' &&
-    locCountryLower !== 'worldwide'
+    !isCoordsInsideIndia(resolvedCoords) ||
+    matchesIntlKeyword ||
+    (locCountryLower && locCountryLower !== 'india' && locCountryLower !== 'worldwide')
   );
 
   if (isIntl) {
     return {
-      destination: `${cleanName}, ${loc.country || 'International'}`,
-      hasDirectAirport: false,
+      destination: `${cleanName}${loc.country && loc.country !== 'Worldwide' ? `, ${loc.country}` : ''}`,
+      hasDirectAirport: true,
       primaryAirport: {
-        name: `${cleanName} Gateway / Regional Airport`,
-        transferNotes: 'Confirm the nearest commercial airport serving this international destination before booking.'
+        name: `${cleanName} International / Regional Airport`,
+        transferNotes: 'Confirm the nearest commercial international airport serving this destination before booking.'
       },
       hasDirectTrain: false,
       primaryRailwayStation: null,
@@ -844,11 +844,23 @@ const NO_DIRECT_AIRPORT_KEYWORDS = [
 
 const INTERNATIONAL_DESTINATION_KEYWORDS = [
   'tokyo', 'japan', 'kyoto', 'osaka', 'paris', 'france', 'london', 'uk', 'united kingdom',
-  'england', 'usa', 'united states', 'new york', 'dubai', 'uae', 'abu dhabi',
-  'singapore', 'thailand', 'bangkok', 'bali', 'indonesia', 'rome', 'italy',
-  'switzerland', 'zurich', 'interlaken', 'austria', 'vienna', 'spain', 'madrid',
-  'barcelona', 'amsterdam', 'netherlands', 'germany', 'berlin', 'australia',
-  'sydney', 'maldives', 'vietnam', 'hanoi', 'greece', 'athens', 'canada', 'toronto'
+  'england', 'scotland', 'edinburgh', 'ireland', 'dublin', 'usa', 'united states',
+  'new york', 'new jersey', 'newark', 'jersey city', 'california', 'los angeles',
+  'san francisco', 'chicago', 'texas', 'dallas', 'houston', 'florida', 'miami', 'orlando',
+  'seattle', 'boston', 'las vegas', 'washington', 'philadelphia', 'atlanta', 'hawaii',
+  'alaska', 'arizona', 'colorado', 'denver', 'virginia', 'massachusetts', 'illinois',
+  'dubai', 'uae', 'abu dhabi', 'qatar', 'doha', 'oman', 'muscat', 'saudi', 'riyadh',
+  'singapore', 'thailand', 'bangkok', 'phuket', 'bali', 'indonesia', 'malaysia', 'kuala lumpur',
+  'rome', 'italy', 'milan', 'venice', 'florence', 'switzerland', 'zurich', 'interlaken', 'geneva',
+  'austria', 'vienna', 'spain', 'madrid', 'barcelona', 'portugal', 'lisbon',
+  'amsterdam', 'netherlands', 'germany', 'berlin', 'munich', 'frankfurt',
+  'australia', 'sydney', 'melbourne', 'new zealand', 'auckland', 'queenstown',
+  'maldives', 'vietnam', 'hanoi', 'ho chi minh', 'greece', 'athens', 'santorini',
+  'canada', 'toronto', 'vancouver', 'montreal', 'korea', 'seoul', 'china', 'beijing',
+  'shanghai', 'hong kong', 'taiwan', 'taipei', 'turkey', 'istanbul', 'egypt', 'cairo',
+  'south africa', 'cape town', 'brazil', 'mexico', 'croatia', 'dubrovnik',
+  'iceland', 'norway', 'sweden', 'denmark', 'finland', 'prague', 'czech', 'budapest',
+  'morocco', 'kenya', 'mauritius', 'seychelles', 'sri lanka', 'colombo', 'philippines', 'manila'
 ];
 
 /**
@@ -892,11 +904,26 @@ export function getFeasibleTransportModes(
   const c1 = originCoords || originLoc?.coordinates || { lat: 23.0225, lng: 72.5714 };
   const c2 = destCoords || destLoc?.coordinates || { lat: 23.2599, lng: 77.4126 };
 
-  const originCountry = isCoordsInsideIndia(c1) ? 'india' : (originLoc?.country || 'India').trim().toLowerCase();
-  const destCountry = isCoordsInsideIndia(c2) ? 'india' : (destLoc?.country || 'India').trim().toLowerCase();
+  // Compute straight-line distance using the most accurate coordinates available
+  const distanceKm = computeHaversineDistanceKm(c1, c2);
+
+  const originInIndia = isCoordsInsideIndia(c1);
+  const destInIndia = isCoordsInsideIndia(c2);
+  const originCountry = originInIndia ? 'india' : (originLoc?.country || 'Worldwide').trim().toLowerCase();
+  const destCountry = destInIndia ? 'india' : (destLoc?.country || 'Worldwide').trim().toLowerCase();
+
+  const originMatchesIntl = INTERNATIONAL_DESTINATION_KEYWORDS.some(k => normOrigin.includes(k));
+  const destMatchesIntl = INTERNATIONAL_DESTINATION_KEYWORDS.some(k => normDest.includes(k));
+
+  // Physically impossible to drive/bus/train across oceans or intercontinental distances (>3,500 km)
+  const isCrossBorderIndia = originInIndia !== destInIndia;
+  const isIntercontinentalDistance = distanceKm > 3500;
 
   const isInternational =
-    INTERNATIONAL_DESTINATION_KEYWORDS.some(k => normDest.includes(k)) ||
+    isCrossBorderIndia ||
+    isIntercontinentalDistance ||
+    (destMatchesIntl && !originMatchesIntl) ||
+    (originMatchesIntl && !destMatchesIntl) ||
     (originCountry !== 'worldwide' && destCountry !== 'worldwide' && originCountry !== destCountry);
 
   const isIsland =
@@ -907,9 +934,6 @@ export function getFeasibleTransportModes(
 
   const isNoAirport =
     NO_DIRECT_AIRPORT_KEYWORDS.some(k => normDest.includes(k));
-
-  // Compute straight-line distance using the most accurate coordinates available
-  const distanceKm = computeHaversineDistanceKm(c1, c2);
 
   const isShortCommute = !isInternational && !isIsland && distanceKm < 200;
   const isUltraLongDistance = distanceKm > 1200;

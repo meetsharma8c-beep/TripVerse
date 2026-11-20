@@ -112,6 +112,24 @@ const DESTINATION_PROFILES: Record<string, DestinationWeatherProfile> = {
     },
     clothingTip: 'Kashmiri pashmina/shawl, light jacket, casual trainers, and umbrella.'
   },
+  global_generic: {
+    name: 'Destination',
+    baseTemp: 20,
+    tempRange: [14, 24],
+    condition: 'Partly Cloudy & Seasonal',
+    rainProb: 20,
+    humidity: 55,
+    wind: 14,
+    aqi: 45,
+    uvi: 5,
+    roadAdvisory: {
+      level: 'normal',
+      title: 'Standard Local Travel Conditions',
+      details: 'Verify local transit schedules, airport transfers, and regional weather alerts before departure.',
+      tips: ['Check live local forecast on the morning of each activity', 'Allow buffer time for local traffic or transit transfers']
+    },
+    clothingTip: 'Comfortable layered travel attire suited to local seasonal temperatures.'
+  },
   udaipur: {
     name: 'Udaipur',
     baseTemp: 31,
@@ -528,7 +546,7 @@ export function extractCityFromQuery(
     // If not in dictionary but valid custom destination name
     const cleanFallback = fallbackDestination!.split(',')[0].trim();
     if (cleanFallback && cleanFallback !== 'Custom Spot') {
-      return { profileKey: 'udaipur', displayName: cleanFallback };
+      return { profileKey: 'global_generic', displayName: cleanFallback };
     }
   }
 
@@ -538,12 +556,12 @@ export function extractCityFromQuery(
     const rawExtracted = match[1].replace(/['?.,]/g, '').trim();
     if (rawExtracted.length > 2 && rawExtracted !== 'this route' && rawExtracted !== 'my trip') {
       const cap = rawExtracted.charAt(0).toUpperCase() + rawExtracted.slice(1);
-      return { profileKey: 'udaipur', displayName: cap };
+      return { profileKey: 'global_generic', displayName: cap };
     }
   }
 
   // Default fallback
-  return { profileKey: 'udaipur', displayName: 'Udaipur' };
+  return { profileKey: 'global_generic', displayName: (fallbackDestination || 'Destination').split(',')[0].trim() || 'Destination' };
 }
 
 export function getDestinationWeather(
@@ -552,7 +570,7 @@ export function getDestinationWeather(
   fallbackDestination?: string
 ): WeatherForecast {
   const { profileKey, displayName } = extractCityFromQuery(queryOrCity, fallbackDestination);
-  const profile = DESTINATION_PROFILES[profileKey] || DESTINATION_PROFILES.udaipur;
+  const profile = DESTINATION_PROFILES[profileKey] || DESTINATION_PROFILES.global_generic;
 
   const today = new Date();
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -687,6 +705,17 @@ export async function fetchLiveDestinationWeather(
       const rainProb = Math.round(daily.precipitation_probability_max[i] || 0);
       const uvi = Math.round(daily.uv_index_max[i] || 6);
 
+      const dynamicClothingTip =
+        minTemp <= 4
+          ? 'Warm winter coat, thermal inner layers, gloves, and closed-toe walking shoes.'
+          : minTemp <= 13
+          ? 'Medium jacket or fleece over breathable layers for cool mornings and evenings.'
+          : maxTemp >= 30
+          ? 'Light breathable cotton/linen wear, sunglasses, sunscreen, and a refillable water bottle.'
+          : rainProb >= 50
+          ? 'Compact rain jacket or umbrella with water-resistant walking shoes.'
+          : 'Comfortable layered travel attire with walking shoes.';
+
       forecastDays.push({
         dayNumber: i + 1,
         date: `${dayNames[d.getDay()]}, ${d.getDate()} ${monthNames[d.getMonth()]}`,
@@ -700,7 +729,7 @@ export async function fetchLiveDestinationWeather(
         windKmh: Math.round(current.wind_speed_10m || 12),
         uvi: uvi,
         aqi: fallback.forecastDays[i]?.aqi || 40,
-        clothingTip: fallback.forecastDays[i]?.clothingTip || fallback.forecastDays[0]?.clothingTip || 'Comfortable layered travel attire.',
+        clothingTip: dynamicClothingTip,
         alert: rainProb > 50 ? 'Precipitation expected. Plan outdoor sightseeing during clearer morning hours.' : undefined
       });
     }

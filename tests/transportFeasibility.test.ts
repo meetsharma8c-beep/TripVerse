@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { getFeasibleTransportModes } from '../src/services/transportFeasibilityEngine';
+import { getFeasibleTransportModes, resolveTransitContext } from '../src/services/transportFeasibilityEngine';
 import { generateAITrip, PlannerInput } from '../src/services/plannerEngine';
 import { generateTransportDeals } from '../src/services/dealService';
+import { getDestinationWeather } from '../src/services/weatherService';
 
 describe('Transport Feasibility Engine — Geographic & Route Validation', () => {
 
@@ -158,5 +159,57 @@ describe('Transport Feasibility Engine — Geographic & Route Validation', () =>
     expect(longCab.dealPrice).toBeGreaterThan(shortCab.dealPrice);
     // Calculated durations must reflect distance
     expect(shortCab.route.duration).not.toBe(longCab.route.duration);
+  });
+
+  it('blocks car, bike, bus, and train for Vadodara -> New Jersey and never assigns an Indian airport', () => {
+    const resWithoutCoords = getFeasibleTransportModes('Vadodara', 'New Jersey', '2026-11-26');
+    expect(resWithoutCoords.availableModes).not.toContain('car');
+    expect(resWithoutCoords.availableModes).not.toContain('bike');
+    expect(resWithoutCoords.availableModes).not.toContain('bus');
+    expect(resWithoutCoords.availableModes).not.toContain('train');
+    expect(resWithoutCoords.availableModes).toContain('flight');
+    expect(resWithoutCoords.recommendedDefaultMode).toBe('flight');
+    expect(resWithoutCoords.routeType).toBe('international_overseas');
+
+    // Also verify when arbitrary non-India coordinates are passed for an unlisted overseas city
+    const resWithCoords = getFeasibleTransportModes(
+      'Vadodara',
+      'Princeton',
+      '2026-11-26',
+      { lat: 22.3072, lng: 73.1812 },
+      { lat: 40.3573, lng: -74.6672 }
+    );
+    expect(resWithCoords.availableModes).not.toContain('car');
+    expect(resWithCoords.availableModes).toContain('flight');
+    expect(resWithCoords.recommendedDefaultMode).toBe('flight');
+
+    // Transit context for New Jersey must NEVER fall back to Raja Bhoj Airport, Bhopal
+    const njTransit = resolveTransitContext('New Jersey', { lat: 40.0583, lng: -74.4057 });
+    expect(njTransit.isOverseas).toBe(true);
+    expect(njTransit.primaryAirport?.name).not.toContain('Raja Bhoj');
+    expect(njTransit.primaryAirport?.code).not.toBe('BHO');
+
+    // Full plannerEngine run: requesting 'car' from Vadodara to New Jersey MUST auto-promote to flight with realistic air duration
+    const njTrip = generateAITrip({
+      origin: 'Vadodara',
+      destination: 'New Jersey',
+      originCoords: { lat: 22.3072, lng: 73.1812 },
+      destCoords: { lat: 40.0583, lng: -74.4057 },
+      startDate: '2026-11-26',
+      durationDays: 7,
+      travelersCount: 2,
+      travelerType: 'couple',
+      budgetAmount: 250000,
+      transportMode: 'car',
+      preferences: ['food', 'sightseeing']
+    });
+    expect(njTrip.transportMode).toBe('flight');
+    expect(njTrip.routeDetails?.durationHours).toBeLessThan(25);
+    expect(njTrip.routeDetails?.distanceKm).toBeLessThan(14000);
+
+    // Weather fallback for New Jersey must NEVER leak Udaipur's 'Lakeside' or 'NH-48'
+    const njWeather = getDestinationWeather('New Jersey', 5);
+    expect(njWeather.currentCondition).not.toContain('Lakeside');
+    expect(njWeather.roadConditionAdvisory.title).not.toContain('NH-48');
   });
 });

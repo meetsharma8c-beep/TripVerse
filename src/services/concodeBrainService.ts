@@ -441,7 +441,8 @@ async function tryQueryServerlessAPI(
       ...(customConfig?.apiKey ? { 'X-API-Key': customConfig.apiKey, 'Authorization': `Bearer ${customConfig.apiKey}` } : {})
     };
 
-    const transitContext = resolveTransitContext(trip.destination);
+    const destCoords = trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates;
+    const transitContext = resolveTransitContext(trip.destination, destCoords);
     const memoryRing = getTravelerMemoryRing();
 
     const tripContextPayload = {

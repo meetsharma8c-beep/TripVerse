@@ -15,7 +15,8 @@ import { resolveApiUrl } from './deviceService';
 const ACTIVITY_TYPES = new Set(['food', 'attraction', 'viewpoint', 'nightlife', 'rest']);
 
 export function buildPrompt(input: PlannerInput, baseline: Trip): string {
-    const transitContext = resolveTransitContext(baseline.destination);
+    const destCoords = baseline.destinationDetails?.coordinates || baseline.routeDetails?.destinationCoordinates;
+    const transitContext = resolveTransitContext(baseline.destination, destCoords);
     const activeCurrency = baseline.currency || input.currency || getActiveCurrency();
     const currencyConfig = CURRENCIES[activeCurrency] || CURRENCIES.USD;
     const activeLanguage = getActiveLanguage();

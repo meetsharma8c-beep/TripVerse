@@ -477,11 +477,15 @@ export function generateAITrip(input: PlannerInput): Trip {
     ? input.transportMode
     : routeFeasibility.recommendedDefaultMode;
 
-  // Calculate real highway distance & duration
+  // Calculate genuine distance & duration appropriate to the feasible transport mode
   const straightLineDist = haversineDistKm(originCoords, destCoords);
-  const routeDistKm = Math.max(15, Math.round(straightLineDist * 1.25));
-  const avgSpeed = effectiveTransportMode === 'flight' ? 450 : effectiveTransportMode === 'bike' ? 55 : 68;
-  const routeHours = Math.max(1, Math.round((routeDistKm / avgSpeed) * 10) / 10);
+  const isFlightMode = effectiveTransportMode === 'flight' || routeFeasibility.routeType === 'international_overseas';
+  const routeDistKm = isFlightMode
+    ? Math.max(150, Math.round(straightLineDist * 1.04))
+    : Math.max(15, Math.round(straightLineDist * 1.25));
+  const routeHours = isFlightMode
+    ? Math.max(1.2, Math.round((routeDistKm / 820 + 1.5) * 10) / 10)
+    : Math.max(0.5, Math.round((routeDistKm / (effectiveTransportMode === 'bike' ? 55 : 68)) * 10) / 10);
 
   // Calculate budget allocation and live market calibration
   const isSingleDay = daysCount === 1;

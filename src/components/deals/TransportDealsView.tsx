@@ -68,13 +68,21 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
   const origin = (trip.origin || 'Origin').split(',')[0].trim();
   const destination = (trip.destination || 'Destination').split(',')[0].trim();
   const query = encodeURIComponent(`${origin} to ${destination}`);
-  const transitCtx = resolveTransitContext(trip.destination);
+  const originCoords = trip.routeDetails?.originCoordinates;
+  const destCoords = trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates;
+  const transitCtx = resolveTransitContext(trip.destination, destCoords);
   const booking = getBookingForTrip(trip.id);
 
   // Geographic feasibility check: evaluate which transport modes are physically available
   const feasibility = React.useMemo(() => {
-    return getFeasibleTransportModes(trip.origin || '', trip.destination || '', trip.startDate);
-  }, [trip.origin, trip.destination, trip.startDate]);
+    return getFeasibleTransportModes(
+      trip.origin || '',
+      trip.destination || '',
+      trip.startDate,
+      originCoords,
+      destCoords
+    );
+  }, [trip.origin, trip.destination, trip.startDate, originCoords, destCoords]);
 
   // Filter out any modes that are unavailable for this route/destination
   const visibleModes = React.useMemo(() => {
@@ -94,9 +102,102 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
     }
   }, [visibleModes, mode]);
 
-  // Derived 3-letter uppercase station / airport codes
-  const originCode = origin.slice(0, 3).toUpperCase() || 'ORG';
-  const destCode = destination.slice(0, 3).toUpperCase() || 'DST';
+  // Resolve real IATA / transit hub codes (avoid naive 3-letter truncation like VAD/NEW)
+  const KNOWN_HUB_CODES: Record<string, string> = {
+    vadodara: 'BDQ',
+    baroda: 'BDQ',
+    ahmedabad: 'AMD',
+    mumbai: 'BOM',
+    bombay: 'BOM',
+    delhi: 'DEL',
+    'new delhi': 'DEL',
+    bengaluru: 'BLR',
+    bangalore: 'BLR',
+    hyderabad: 'HYD',
+    chennai: 'MAA',
+    kolkata: 'CCU',
+    pune: 'PNQ',
+    jaipur: 'JAI',
+    udaipur: 'UDR',
+    goa: 'GOI',
+    kochi: 'COK',
+    surat: 'STV',
+    rajkot: 'HSR',
+    bhopal: 'BHO',
+    indore: 'IDR',
+    chandigarh: 'IXC',
+    lucknow: 'LKO',
+    varanasi: 'VNS',
+    amritsar: 'ATQ',
+    srinagar: 'SXR',
+    leh: 'IXL',
+    'new jersey': 'EWR',
+    newark: 'EWR',
+    'jersey city': 'EWR',
+    'new york': 'JFK',
+    london: 'LHR',
+    paris: 'CDG',
+    tokyo: 'HND',
+    kyoto: 'KIX',
+    osaka: 'KIX',
+    dubai: 'DXB',
+    'abu dhabi': 'AUH',
+    singapore: 'SIN',
+    bangkok: 'BKK',
+    bali: 'DPS',
+    'los angeles': 'LAX',
+    'san francisco': 'SFO',
+    chicago: 'ORD',
+    miami: 'MIA',
+    boston: 'BOS',
+    seattle: 'SEA',
+    toronto: 'YYZ',
+    sydney: 'SYD',
+    melbourne: 'MEL',
+    rome: 'FCO',
+    zurich: 'ZRH',
+    amsterdam: 'AMS',
+    frankfurt: 'FRA',
+    seoul: 'ICN',
+    'hong kong': 'HKG',
+    doha: 'DOH'
+  };
+
+  const resolveHubCode = (placeName: string, fallbackCode?: string): string => {
+    const lower = (placeName || '').toLowerCase().trim();
+    if (KNOWN_HUB_CODES[lower]) return KNOWN_HUB_CODES[lower];
+    for (const [key, code] of Object.entries(KNOWN_HUB_CODES)) {
+      if (lower.includes(key)) return code;
+    }
+    if (fallbackCode && fallbackCode.length === 3) return fallbackCode.toUpperCase();
+    return placeName.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase() || 'HUB';
+  };
+
+  const originTransitCtx = resolveTransitContext(trip.origin || '', originCoords);
+  const originCode = resolveHubCode(origin, originTransitCtx.primaryAirport?.code);
+  const destCode = resolveHubCode(destination, transitCtx.primaryAirport?.code);
+
+  const isOverseasFlight = feasibility.routeType === 'international_overseas';
+  const displayDistanceKm = trip.routeDetails?.distanceKm
+    ? (isOverseasFlight && trip.routeDetails.source !== 'geoapify_routing' && trip.routeDetails.distanceKm > 4000
+        ? Math.round((trip.routeDetails.distanceKm / 1.25) * 1.04)
+        : trip.routeDetails.distanceKm)
+    : undefined;
+  const displayDurationHours = isOverseasFlight && displayDistanceKm
+    ? Math.max(2, Math.round((displayDistanceKm / 820 + 1.5) * 10) / 10)
+    : trip.routeDetails?.durationHours;
+
+  const formatShortDate = (dateStr?: string, offsetDays = 0): string => {
+    if (!dateStr) return offsetDays > 0 ? `Day ${1 + offsetDays}` : 'Day 1';
+    const base = new Date(dateStr);
+    if (Number.isNaN(base.getTime())) return 'Day 1';
+    base.setDate(base.getDate() + offsetDays);
+    return base.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+  };
+
+  const arrivalDayOffset = displayDurationHours
+    ? (isOverseasFlight && displayDurationHours >= 12 ? Math.max(1, Math.floor(displayDurationHours / 24)) : Math.floor(displayDurationHours / 24))
+    : 0;
 
   const providers = {
     flight: [
@@ -175,7 +276,15 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
-              <span>{booking ? 'Confirmed' : `${(trip.transportMode || 'car').toUpperCase()} Plan`}</span>
+              <span>
+                {booking
+                  ? 'Confirmed'
+                  : `${(
+                      trip.transportMode && feasibility.availableModes.includes(trip.transportMode as any)
+                        ? trip.transportMode
+                        : feasibility.recommendedDefaultMode || 'flight'
+                    ).toUpperCase()} Plan`}
+              </span>
             </span>
             <Icon className="w-4 h-4 text-emerald-200" />
           </div>
@@ -206,8 +315,8 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
             {/* In-Between Route Arc */}
             <div className="flex-1 flex flex-col items-center justify-center px-2 min-w-0">
               <span className="text-[11px] font-bold text-[#2D5A3D] tracking-wide mb-1.5 whitespace-nowrap">
-                {trip.routeDetails?.durationHours
-                  ? `~${trip.routeDetails.durationHours}h`
+                {displayDurationHours
+                  ? (isOverseasFlight ? `~${displayDurationHours}h flight` : `~${displayDurationHours}h`)
                   : trip.bestTransportDeal?.route?.duration || 'Estimated Duration'}
               </span>
               <div className="relative w-full h-8 flex items-center justify-center">
@@ -217,7 +326,9 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
                 </div>
               </div>
               <span className="text-[10px] font-medium text-[#5A7362] mt-1.5 font-mono whitespace-nowrap tracking-tight">
-                {trip.routeDetails?.distanceKm ? `${trip.routeDetails.distanceKm} km (${trip.routeDetails.source === 'geoapify_routing' ? 'Live Route' : 'Est.'})` : 'Regional Route'}
+                {displayDistanceKm
+                  ? `${displayDistanceKm} km (${isOverseasFlight ? 'Air Est.' : trip.routeDetails?.source === 'geoapify_routing' ? 'Live Route' : 'Est.'})`
+                  : 'Regional Route'}
               </span>
             </div>
 
@@ -233,7 +344,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
                 {trip.bestTransportDeal?.route?.arrivalTime || 'Est. Arrival'}
               </span>
               <span className="text-[10px] text-slate-400 block">
-                {trip.startDate ? new Date(trip.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : 'Day 1'}
+                {formatShortDate(trip.startDate, arrivalDayOffset)}
               </span>
             </div>
 
@@ -250,9 +361,24 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
           <div className="flex items-center justify-between gap-4 pt-1">
             <div className="grid grid-cols-3 gap-4 flex-1">
               <div>
-                <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">Nearest Rail Hub</span>
-                <p className="text-xs sm:text-sm font-black text-[#152A1C] font-display mt-0.5 truncate" title={transitCtx.primaryRailwayStation?.name || `${destination} Jn`}>
-                  {transitCtx.primaryRailwayStation?.name || `${destination} Jn`}
+                <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">
+                  {isOverseasFlight ? 'Route Type' : 'Nearest Rail Hub'}
+                </span>
+                <p
+                  className="text-xs sm:text-sm font-black text-[#152A1C] font-display mt-0.5 truncate"
+                  title={
+                    isOverseasFlight
+                      ? 'International Air Corridor'
+                      : transitCtx.hasDirectTrain && transitCtx.primaryRailwayStation?.name
+                        ? transitCtx.primaryRailwayStation.name
+                        : 'No Direct Rail'
+                  }
+                >
+                  {isOverseasFlight
+                    ? 'Int’l Flight Only'
+                    : transitCtx.hasDirectTrain && transitCtx.primaryRailwayStation?.name
+                      ? transitCtx.primaryRailwayStation.name
+                      : 'No Direct Rail'}
                 </p>
               </div>
               <div>

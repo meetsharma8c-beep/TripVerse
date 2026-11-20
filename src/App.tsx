@@ -1254,6 +1254,22 @@ export function App() {
       return;
     }
 
+    // Do not attempt road-driving route calculation across oceans / flight-only intercontinental routes
+    const isFlightOrOverseasRoute =
+      trip.transportMode === 'flight' ||
+      (trip.routeDetails?.distanceKm && trip.routeDetails.distanceKm > 3500);
+    if (isFlightOrOverseasRoute) {
+      const flightTrip: Trip = {
+        ...trip,
+        travelDataStatus: 'live',
+        travelDataError: undefined,
+        breakStops: trip.breakStops.filter(stop => stop.source === 'user')
+      };
+      updateTrip(flightTrip);
+      inFlightRouteRequestKeyRef.current = null;
+      return;
+    }
+
     import('./services/travelDataService')
       .then(({ fetchGeoapifyTravelData, applyGeoapifyTravelData }) =>
         fetchGeoapifyTravelData(routeOrigin, trip.destination, trip.destinationDetails?.coordinates).then(data => ({
