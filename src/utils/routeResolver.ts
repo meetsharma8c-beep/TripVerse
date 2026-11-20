@@ -2,8 +2,32 @@ import { Trip, Destination } from '../types/trip';
 import { POPULAR_DESTINATIONS } from '../data/destinations';
 import { synthesizeDestination } from './destinationImages';
 
+/**
+ * Validates that a user-entered location or search query looks like a plausible place name
+ * (contains at least 2 Unicode letters and is not pure punctuation, digits, or emojis).
+ */
+export function isValidPlaceQuery(raw: string): boolean {
+  const trimmed = (raw || '').trim();
+  if (trimmed.length < 2 || trimmed.length > 120) return false;
+  // Require at least 2 letters (supports Latin + international scripts)
+  const letters = trimmed.match(/\p{L}/gu);
+  if (!letters || letters.length < 2) return false;
+  // Reject URL/code/HTML injection symbols or placeholder "does not exist" slugs
+  if (/[<>{}[\]\\|`~^]/.test(trimmed)) return false;
+  if (/(?:does[- ]not[- ]exist|undefined|null|nan)/i.test(trimmed)) return false;
+  return true;
+}
+
+function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value.replace(/%[0-9a-fA-F]{0,2}/g, '').trim();
+  }
+}
+
 function formatSlugToTitle(slug: string): string {
-  return decodeURIComponent(slug)
+  return safeDecodeURIComponent(slug)
     .replace(/^dest-/i, '')
     .replace(/-/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase())
@@ -19,6 +43,7 @@ export interface ResolvedRoute {
   openCollab?: boolean;
   openPro?: boolean;
   openResetPassword?: boolean;
+  routeNotice?: string;
 }
 
 /**
@@ -46,21 +71,63 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
         return { tab: 'explore', dest: match, tripId: null, openBooking: false, openPlanner: false };
       }
       const readableTitle = formatSlugToTitle(slug);
-      if (readableTitle.length >= 2) {
+      if (isValidPlaceQuery(readableTitle)) {
         const dynamicDest = synthesizeDestination(readableTitle);
         return { tab: 'explore', dest: dynamicDest, tripId: null, openBooking: false, openPlanner: false };
       }
+      return {
+        tab: 'explore',
+        dest: null,
+        tripId: null,
+        openBooking: false,
+        openPlanner: false,
+        routeNotice: 'That destination link could not be found. Browse curated destinations below.'
+      };
     }
     return { tab: 'explore', dest: null, tripId: null, openBooking: false, openPlanner: false };
   }
 
   if (pathname.startsWith('/trip/') || pathname.startsWith('/itinerary/')) {
-    const tripId = pathname.replace('/trip/', '').replace('/itinerary/', '').trim();
-    const found = loadedTrips.find(t => t.id.toLowerCase() === tripId);
+    const tripId = safeDecodeURIComponent(pathname.replace('/trip/', '').replace('/itinerary/', '')).trim();
+    const found = loadedTrips.find(t => t.id.toLowerCase() === tripId.toLowerCase());
     if (found) {
       return { tab: 'trip-detail', dest: null, tripId: found.id, openBooking: false, openPlanner: false };
     }
-    return { tab: 'trips', dest: null, tripId: null, openBooking: false, openPlanner: false };
+    return {
+      tab: 'trips',
+      dest: null,
+      tripId: null,
+      openBooking: false,
+      openPlanner: false,
+      routeNotice: tripId
+        ? `Trip "${tripId}" was not found in your saved portfolio. Showing your trips instead.`
+        : undefined
+    };
+  }
+
+  if (pathname.startsWith('/place/')) {
+    const slug = pathname.slice('/place/'.length).replace(/\/+$/, '').trim();
+    const readableTitle = formatSlugToTitle(slug);
+    if (isValidPlaceQuery(readableTitle)) {
+      const match = POPULAR_DESTINATIONS.find(
+        d => d.id.toLowerCase() === slug || d.name.toLowerCase() === readableTitle.toLowerCase()
+      );
+      return {
+        tab: 'explore',
+        dest: match || synthesizeDestination(readableTitle),
+        tripId: null,
+        openBooking: false,
+        openPlanner: false
+      };
+    }
+    return {
+      tab: 'explore',
+      dest: null,
+      tripId: null,
+      openBooking: false,
+      openPlanner: false,
+      routeNotice: 'That place link could not be found. Explore verified destinations below.'
+    };
   }
 
   if (pathname.startsWith('/booking')) {

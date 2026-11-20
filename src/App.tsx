@@ -226,6 +226,12 @@ export function App() {
   const [userProfile, setUserProfile] = useState<UserProfile>(loadUserProfile());
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(getCurrentUser());
   const [savedItemIds, setSavedItemIds] = useState<string[]>(() => loadSavedItemIds());
+  const [appNotice, setAppNotice] = useState<{
+    message: string;
+    tone?: 'info' | 'warning' | 'error';
+    retryInput?: PlannerInput;
+  } | null>(() => (initialRoute.routeNotice ? { message: initialRoute.routeNotice, tone: 'info' } : null));
+  const isGeneratingRef = useRef(false);
 
   // Sub-tab inside Trip Detail view
   const [tripSubTab, setTripSubTab] = useState<
@@ -446,15 +452,22 @@ export function App() {
         const localProfile = toUserProfile(user);
         setUserProfile(localProfile);
 
-        // 1. Immediately switch in-memory state to the user's local account data
+        // 1. Preserve any guest favorites/bookmarks before switching to user account storage
+        const guestSavedBeforeLogin = !isGuestUser(user) ? loadSavedItemIds(null) : [];
         const localUserTrips = loadTrips(user.uid);
         setTrips(localUserTrips);
         const userActiveId = getActiveTripId(user.uid);
         setActiveTripIdState(userActiveId);
-        const userSaved = loadSavedItemIds(user.uid);
+        const userSaved = Array.from(new Set([...loadSavedItemIds(user.uid), ...guestSavedBeforeLogin]));
         setSavedItemIds(userSaved);
+        if (guestSavedBeforeLogin.length > 0) {
+          saveSavedItemIds(userSaved, user.uid);
+        }
         const userStates = loadUserVisitedStates(user.uid);
         window.dispatchEvent(new CustomEvent('tripverse_visited_states_change', { detail: userStates }));
+
+        // Always migrate any guest-created draft trips even if the returning user already has cloud trips
+        const migratedGuestTrips = !isGuestUser(user) ? migrateGuestCreatedTripsToUser(user.uid) : [];
 
         // 2. Fetch and sync from Supabase PostgreSQL strictly for this user
         try {
@@ -467,22 +480,21 @@ export function App() {
           ]);
 
           if (cloudTrips && cloudTrips.length > 0) {
-            // User has cloud trips for their account: merge with local metadata and cache locally without re-uploading
-            const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips, localUserTrips);
+            // User has cloud trips for their account: merge with local + any newly migrated guest draft trips
+            const refreshedLocal = loadTrips(user.uid);
+            const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips, refreshedLocal);
             setTrips(mergedCloudTrips);
-            saveTrips(mergedCloudTrips, user.uid, { skipCloudSync: true });
+            saveTrips(mergedCloudTrips, user.uid, { skipCloudSync: migratedGuestTrips.length === 0 });
             if (!mergedCloudTrips.some(t => t.id === userActiveId)) {
               setActiveTripIdState(mergedCloudTrips[0].id);
               setActiveTripId(mergedCloudTrips[0].id, user.uid);
             }
           } else {
             // User has no cloud trips yet.
-            // Check if guest created a trip right before sign in, migrate it to this user
-            const migrated = migrateGuestCreatedTripsToUser(user.uid);
-            if (migrated.length > 0) {
+            if (migratedGuestTrips.length > 0) {
               const updatedTrips = loadTrips(user.uid);
               setTrips(updatedTrips);
-              saveAllUserTripsToSupabase(user.uid, migrated).catch(() => { });
+              saveAllUserTripsToSupabase(user.uid, migratedGuestTrips).catch(() => { });
             } else {
               // Only sync existing local user-created trips (NEVER unowned samples or other users' data)
               const userCreated = localUserTrips.filter(t => t.isUserCreated && t.userId === user.uid);
@@ -511,8 +523,12 @@ export function App() {
           }
 
           if (cloudSavedItems && cloudSavedItems.length > 0) {
-            setSavedItemIds(cloudSavedItems);
-            saveSavedItemIds(cloudSavedItems, user.uid);
+            const combinedSaved = Array.from(new Set([...cloudSavedItems, ...guestSavedBeforeLogin]));
+            setSavedItemIds(combinedSaved);
+            saveSavedItemIds(combinedSaved, user.uid);
+            if (combinedSaved.length > cloudSavedItems.length) {
+              saveUserSavedItemsToSupabase(user.uid, combinedSaved).catch(() => { });
+            }
           } else if (userSaved.length > 0) {
             saveUserSavedItemsToSupabase(user.uid, userSaved).catch(() => { });
           }
@@ -525,7 +541,7 @@ export function App() {
           console.warn('[Supabase Sync Notice]:', e);
         }
       } else {
-        // User logged out -> Switch cleanly to fresh Guest state (Option 2 ephemeral storage)
+        // User logged out -> Switch cleanly to fresh Guest state and exit private views
         resetGuestStorage();
         const guestProfile = loadUserProfile(null);
         setUserProfile(guestProfile);
@@ -537,6 +553,10 @@ export function App() {
         setSavedItemIds(guestSavedItems);
         const guestStates = loadUserVisitedStates(null);
         window.dispatchEvent(new CustomEvent('tripverse_visited_states_change', { detail: guestStates }));
+        setCurrentTab(prev => (prev === 'trip-detail' || prev === 'profile' || prev === 'saved' ? 'home' : prev));
+        if (typeof window !== 'undefined' && (window.location.pathname.startsWith('/trip/') || window.location.pathname === '/profile' || window.location.pathname === '/saved')) {
+          window.history.replaceState({ tab: 'home' }, '', '/');
+        }
       }
     });
 
@@ -1479,6 +1499,9 @@ export function App() {
   };
 
   const handleTripGenerated = async (input: PlannerInput) => {
+    // Guard against double-click / concurrent AI generation requests & double credit burn
+    if (isGeneratingRef.current) return;
+
     const activeUser = currentUser ?? getCurrentUser();
     const quota = getUserSubscriptionQuota(activeUser);
     if (!quota.canCreateTrip) {
@@ -1491,6 +1514,8 @@ export function App() {
       return;
     }
 
+    isGeneratingRef.current = true;
+    setAppNotice(null);
     setGenerationParams({
       destination: input.destinationName || input.destination || 'Custom Destination',
       duration: input.durationDays || 3,
@@ -1523,7 +1548,15 @@ export function App() {
       setActiveTripIdState(newTrip.id);
       setCurrentTab('trip-detail');
       setTripSubTab('itinerary');
+    } catch (fatalErr) {
+      console.error('[TripGeneration] Failed to generate trip:', fatalErr);
+      setAppNotice({
+        message: 'Could not generate your itinerary right now. Your preferences are saved — tap Retry to try again.',
+        tone: 'error',
+        retryInput: input
+      });
     } finally {
+      isGeneratingRef.current = false;
       setIsGeneratingTrip(false);
     }
   };
@@ -1786,7 +1819,27 @@ export function App() {
   };
 
   const handleAddOrUpdateActivity = async (dayNumber: number, activityData: Partial<ItineraryActivity>) => {
-    if (!activeTrip) return;
+    if (!activeTrip) {
+      setAppNotice({
+        message: 'Create or open a trip first before adding activities to an itinerary.',
+        tone: 'warning'
+      });
+      return;
+    }
+    const targetDay = activeTrip.itinerary.find(d => d.dayNumber === dayNumber);
+    const isEditingExisting = Boolean(activityData.id && targetDay?.activities.some(a => a.id === activityData.id));
+    const normalizedNewTitle = (activityData.title || '').trim().toLowerCase();
+    if (
+      !isEditingExisting &&
+      normalizedNewTitle &&
+      targetDay?.activities.some(a => (a.title || '').trim().toLowerCase() === normalizedNewTitle)
+    ) {
+      setAppNotice({
+        message: `"${activityData.title}" is already scheduled on Day ${dayNumber}.`,
+        tone: 'info'
+      });
+      return;
+    }
     let baseDestCoords =
       activeTrip.destinationDetails?.coordinates ||
       activeTrip.routeDetails?.destinationCoordinates;
@@ -2129,6 +2182,49 @@ export function App() {
 
       {/* Highway Offline Mode Detection Banner */}
       <OfflineStatusBar />
+
+      {/* Liquid Glass Inline Route / Error Recovery / Duplicate Feedback Banner */}
+      {appNotice && (
+        <div
+          role={appNotice.tone === 'error' ? 'alert' : 'status'}
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-[65] w-[calc(100%-2rem)] max-w-xl"
+        >
+          <div
+            className={`liquid-glass liquid-rim rounded-2xl px-4 py-3 shadow-lg flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold ${
+              appNotice.tone === 'error'
+                ? 'border-rose-300/80 text-rose-900 dark:text-rose-200'
+                : appNotice.tone === 'warning'
+                  ? 'border-amber-300/80 text-amber-900 dark:text-amber-200'
+                  : 'border-emerald-300/70 text-[#152A1C] dark:text-slate-100'
+            }`}
+          >
+            <span className="leading-snug">{appNotice.message}</span>
+            <div className="flex items-center gap-2 shrink-0">
+              {appNotice.retryInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const retryPayload = appNotice.retryInput!;
+                    setAppNotice(null);
+                    handleTripGenerated(retryPayload);
+                  }}
+                  className="min-h-0 px-3 py-1 rounded-xl bg-[#2D5A3D] text-white text-xs font-bold hover:bg-[#234730] cursor-pointer"
+                >
+                  Retry
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setAppNotice(null)}
+                aria-label="Dismiss notification"
+                className="min-h-0 px-1.5 py-0.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-300 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Desktop & Mobile Header */}
       <Navbar

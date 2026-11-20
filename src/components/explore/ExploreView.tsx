@@ -6,6 +6,7 @@ import { COMMUNITY_ITINERARIES, CreatorItinerary } from '../../services/communit
 import { triggerHaptic } from '../../services/deviceService';
 import confetti from 'canvas-confetti';
 import { handleImageError, synthesizeDestination } from '../../utils/destinationImages';
+import { isValidPlaceQuery } from '../../utils/routeResolver';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 import { resolveGlobalDestination } from '../../services/globalLocationResolver';
@@ -63,8 +64,9 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   useEffect(() => {
     let isCurrent = true;
     const trimmed = searchQuery.trim();
-    if (trimmed.length < 2) {
-      setLiveResolvedDest(null);
+    // Always clear stale async destination immediately when the query changes
+    setLiveResolvedDest(null);
+    if (!isValidPlaceQuery(trimmed)) {
       setIsResolvingGlobal(false);
       return;
     }
@@ -74,7 +76,6 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
            d.state.toLowerCase().includes(trimmed.toLowerCase())
     );
     if (hasExactCatalog) {
-      setLiveResolvedDest(null);
       setIsResolvingGlobal(false);
       return;
     }
@@ -159,10 +160,12 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
     { id: 'adventure', label: t('cat.adventure') },
   ];
 
+  const normalizedSearch = searchQuery.trim().toLowerCase();
   const filtered = POPULAR_DESTINATIONS.filter(dest => {
-    const matchesSearch = dest.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          dest.state.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          dest.tagline.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = !normalizedSearch ||
+                          dest.name.toLowerCase().includes(normalizedSearch) ||
+                          dest.state.toLowerCase().includes(normalizedSearch) ||
+                          dest.tagline.toLowerCase().includes(normalizedSearch);
 
     if (!matchesSearch) return false;
 
@@ -552,7 +555,31 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
         })}
 
         {filtered.length === 0 && searchQuery.trim().length > 0 && (() => {
-          const synthesized = liveResolvedDest || synthesizeDestination(searchQuery);
+          const trimmed = searchQuery.trim();
+          if (!isValidPlaceQuery(trimmed)) {
+            return (
+              <div className="col-span-full py-12 text-center space-y-3 liquid-glass rounded-3xl p-6">
+                <Compass className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
+                <h4 className="text-base font-bold text-slate-700 dark:text-slate-200">
+                  No matching destinations found
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  Enter a valid city, state, country, or landmark name (e.g. Kyoto, Goa, New Jersey, Swiss Alps).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedTag('all');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-[#2D5A3D] text-white text-xs font-bold hover:bg-[#234730] transition-colors cursor-pointer"
+                >
+                  Clear Search
+                </button>
+              </div>
+            );
+          }
+          const synthesized = liveResolvedDest || synthesizeDestination(trimmed);
           const isSaved = savedItemIds.includes(synthesized.id);
           return (
             <div className="col-span-full bg-gradient-to-br from-emerald-50/80 via-white to-slate-50 rounded-3xl p-6 sm:p-8 border border-emerald-200/80 shadow-md">

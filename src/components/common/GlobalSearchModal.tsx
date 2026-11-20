@@ -7,6 +7,7 @@ import { useModalBehavior } from '../../hooks/useModalBehavior';
 import { useLanguage } from '../../services/languageService';
 import { searchLocations, PreciseLocation } from '../../services/locationService';
 import { synthesizeDestination, handleImageError } from '../../utils/destinationImages';
+import { isValidPlaceQuery } from '../../utils/routeResolver';
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -51,7 +52,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   // Live worldwide location search (Wikipedia + Nominatim + Local Registry)
   useEffect(() => {
     const trimmed = query.trim();
-    if (!isOpen || trimmed.length < 2) {
+    if (!isOpen || !isValidPlaceQuery(trimmed)) {
       setGlobalSuggestions([]);
       setIsSearchingGlobal(false);
       return;
@@ -117,10 +118,10 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
         .slice(0, 4)
     : [];
 
-  // Always offer an instant synthesized destination option for the exact typed query if not already listed
+  // Offer an instant synthesized destination option only when the typed query is a valid place name
   const allCombinedMatches = [...catalogMatches, ...globalSynthesizedMatches];
   if (
-    normalizedQuery.length >= 2 &&
+    isValidPlaceQuery(query) &&
     !allCombinedMatches.some(d => d.name.toLowerCase() === normalizedQuery)
   ) {
     allCombinedMatches.push(synthesizeDestination(query.trim()));
@@ -138,7 +139,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
   // Quick App Actions
   const baseActions = [
-    ...(query.trim()
+    ...(isValidPlaceQuery(query)
       ? [
           {
             id: 'plan_searched_destination',
@@ -227,7 +228,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => {
-              if (e.key === 'Enter' && query.trim()) {
+              if (e.key === 'Enter' && isValidPlaceQuery(query)) {
                 e.preventDefault();
                 triggerHaptic('light');
                 onClose();

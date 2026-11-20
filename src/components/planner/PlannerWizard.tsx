@@ -63,6 +63,7 @@ import { getFeasibleTransportModes } from '../../services/transportFeasibilityEn
 import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
 import { syncLiveExchangeRates } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
+import { isValidPlaceQuery } from '../../utils/routeResolver';
 import { loadUserProfile } from '../../services/storageService';
 
 function detectDefaultOriginHub(): string {
@@ -125,8 +126,10 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
     return () => window.removeEventListener('tripverse_quota_updated', handleQuota);
   }, [currentUser]);
 
-  useModalBehavior(true);
+  useModalBehavior(true, onClose);
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const isSubmittingRef = React.useRef(false);
   const totalSteps = 9;
 
   // Step 1: Destination
@@ -356,7 +359,54 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
     }
   };
 
+  const validateStepOrAll = (step: number | 'all'): string | null => {
+    const cleanDest = destination.trim();
+    const cleanOrigin = origin.trim();
+    const normalizeCity = (s: string) => s.split(',')[0].trim().toLowerCase().replace(/\s+/g, ' ');
+
+    if (step === 1 || step === 'all') {
+      if (!isValidPlaceQuery(cleanDest)) {
+        return 'Please enter a valid destination city, region, or landmark (at least 2 letters).';
+      }
+      if (cleanOrigin && normalizeCity(cleanOrigin) === normalizeCity(cleanDest)) {
+        return `Origin and destination are both "${cleanDest.split(',')[0].trim()}". Choose a different destination or nearby getaway.`;
+      }
+    }
+
+    if (step === 2 || step === 'all') {
+      if (!Number.isFinite(duration) || duration < 1 || duration > 30) {
+        return 'Trip duration must be between 1 and 30 days.';
+      }
+      if (startDate) {
+        const todayIso = new Date().toISOString().split('T')[0];
+        if (startDate < todayIso) {
+          return 'Start date is in the past. Please choose today or a future departure date.';
+        }
+      }
+    }
+
+    if (step === 3 || step === 'all') {
+      if (!Number.isFinite(travelersCount) || travelersCount < 1 || travelersCount > 30) {
+        return 'Travelers count must be between 1 and 30.';
+      }
+    }
+
+    if (step === 4 || step === 'all') {
+      if (!Number.isFinite(budgetAmount) || budgetAmount < 500) {
+        return 'Please enter a realistic budget (minimum 500).';
+      }
+    }
+
+    return null;
+  };
+
   const handleNext = () => {
+    const stepErr = validateStepOrAll(currentStep);
+    if (stepErr) {
+      setValidationError(stepErr);
+      return;
+    }
+    setValidationError(null);
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -376,6 +426,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   };
 
   const handlePrev = () => {
+    setValidationError(null);
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
@@ -493,19 +544,31 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   };
 
   const handleFinalSubmit = () => {
+    if (isSubmittingRef.current) return;
+    const err = validateStepOrAll('all');
+    if (err) {
+      setValidationError(err);
+      return;
+    }
+    setValidationError(null);
+    isSubmittingRef.current = true;
     const finalTransportMode = transportFeasibility.availableModes.includes(transportMode)
       ? transportMode
       : transportFeasibility.recommendedDefaultMode;
 
+    const safeDuration = Math.min(30, Math.max(1, Math.round(duration || 3)));
+    const safeTravelers = Math.min(30, Math.max(1, Math.round(travelersCount || 2)));
+    const safeBudget = Math.max(500, Math.round(budgetAmount || 15000));
+
     const input: PlannerInput = {
-      origin,
+      origin: origin.trim(),
       originCoords,
-      destinationName: destination,
-      durationDays: duration,
-      travelersCount,
+      destinationName: destination.trim(),
+      durationDays: safeDuration,
+      travelersCount: safeTravelers,
       travelerType,
       budgetMode,
-      budgetAmount,
+      budgetAmount: safeBudget,
       preferences,
       specialRequests: specialRequests.trim(),
       transportMode: finalTransportMode,
@@ -520,6 +583,9 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
       selectedActivities: selectedSights
     };
     onTripGenerated(input);
+    setTimeout(() => {
+      isSubmittingRef.current = false;
+    }, 1500);
   };
 
   // Preference catalog
@@ -814,7 +880,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                                   {spot.state || spot.country}
                                 </span>
                                 <span className="text-[10px] font-mono font-semibold text-[#2D5A3D] bg-emerald-100/70 px-1.5 py-0.5 rounded-md">
-                                  {spot.coordinates.lat.toFixed(2)}°N, {spot.coordinates.lng.toFixed(2)}°E
+                                  {Math.abs(spot.coordinates.lat).toFixed(2)}°{spot.coordinates.lat >= 0 ? 'N' : 'S'}, {Math.abs(spot.coordinates.lng).toFixed(2)}°{spot.coordinates.lng >= 0 ? 'E' : 'W'}
                                 </span>
                               </div>
                               <p className="text-xs text-slate-500 truncate mt-0.5">
@@ -1861,6 +1927,24 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
           </div>
         </div>
 
+        {/* Inline Liquid Glass Validation Banner */}
+        {validationError && (
+          <div
+            role="alert"
+            className="mx-4 sm:mx-6 mb-2 px-3.5 py-2.5 rounded-2xl bg-rose-50/95 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center justify-between gap-2 animate-in fade-in"
+          >
+            <span>{validationError}</span>
+            <button
+              type="button"
+              onClick={() => setValidationError(null)}
+              aria-label="Dismiss validation message"
+              className="min-h-0 text-rose-500 hover:text-rose-700 font-bold px-1 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Bottom Navigation Controls */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-white/90 backdrop-blur-md flex items-center justify-between gap-2 shrink-0">
           <button
@@ -1881,22 +1965,32 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  if (!destination.trim()) {
-                    setDestination('Udaipur');
+                  if (isSubmittingRef.current) return;
+                  if (isGuest) {
+                    onClose();
+                    if (onOpenAuthModal) onOpenAuthModal();
+                    return;
                   }
-                  const finalDest = destination.trim() || 'Udaipur';
+                  const err = validateStepOrAll('all');
+                  if (err) {
+                    setValidationError(err);
+                    return;
+                  }
+                  setValidationError(null);
+                  isSubmittingRef.current = true;
+                  const finalDest = destination.trim();
                   const finalTransportMode = transportFeasibility.availableModes.includes(transportMode)
                     ? transportMode
                     : transportFeasibility.recommendedDefaultMode;
                   onTripGenerated({
-                    origin,
+                    origin: origin.trim(),
                     originCoords,
                     destinationName: finalDest,
-                    durationDays: duration,
-                    travelersCount,
+                    durationDays: Math.min(30, Math.max(1, Math.round(duration || 3))),
+                    travelersCount: Math.min(30, Math.max(1, Math.round(travelersCount || 2))),
                     travelerType,
                     budgetMode,
-                    budgetAmount,
+                    budgetAmount: Math.max(500, Math.round(budgetAmount || 15000)),
                     preferences,
                     specialRequests: specialRequests.trim(),
                     transportMode: finalTransportMode,
@@ -1910,6 +2004,9 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                     itineraryStyle,
                     selectedActivities: selectedSights
                   });
+                  setTimeout(() => {
+                    isSubmittingRef.current = false;
+                  }, 1500);
                 }}
                 data-testid="planner-instant-generate"
                 className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-[#2D5A3D]/30 bg-emerald-50/80 hover:bg-emerald-100/80 text-[#2D5A3D] font-bold text-xs transition-all cursor-pointer active:scale-95"

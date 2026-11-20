@@ -14,7 +14,7 @@ import { resolveEmergencyCountryCode, getEmergencyNumbersForCountry } from '../s
 import { selectHotelForTrip } from '../src/services/hotelService';
 import { generateSmartPackingList } from '../src/services/packingService';
 import { getTravelReadinessInfo } from '../src/services/travelReadinessService';
-import { buildGoogleMapsDayRouteUrl } from '../src/utils/routeResolver';
+import { buildGoogleMapsDayRouteUrl, isValidPlaceQuery } from '../src/utils/routeResolver';
 import type { Trip } from '../src/types/trip';
 
 const sampleTrip = (overrides: Partial<Trip> = {}): Trip => ({
@@ -247,6 +247,17 @@ describe('TripVerse Platform Improvements', () => {
       expect(url).toContain('origin=40.70310%2C-74.05390');
       expect(url).toContain('destination=40.34310%2C-74.65510');
       expect(url).toContain('waypoints=40.74400%2C-74.02700');
+    });
+
+    it('rejects empty, spaces-only, emoji/punctuation gibberish, and placeholder slugs in isValidPlaceQuery', () => {
+      expect(isValidPlaceQuery('')).toBe(false);
+      expect(isValidPlaceQuery('   ')).toBe(false);
+      expect(isValidPlaceQuery('&/"\'<>🔥🔥🔥')).toBe(false);
+      expect(isValidPlaceQuery('123456')).toBe(false);
+      expect(isValidPlaceQuery('does-not-exist-99999')).toBe(false);
+      expect(isValidPlaceQuery('New Jersey')).toBe(true);
+      expect(isValidPlaceQuery('Kyoto, Japan')).toBe(true);
+      expect(isValidPlaceQuery('Zürich')).toBe(true);
     });
   });
 });
