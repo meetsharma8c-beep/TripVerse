@@ -8,12 +8,44 @@ interface ScrollRevealProps {
   threshold?: number;
 }
 
+type RevealCallback = (isInitialFrame: boolean) => void;
+
+let sharedObserver: IntersectionObserver | null = null;
+const observedCallbacks = new Map<Element, RevealCallback>();
+const initialObserveTimestamps = new WeakMap<Element, number>();
+
+function getSharedIntersectionObserver(): IntersectionObserver | null {
+  if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
+    return null;
+  }
+  if (!sharedObserver) {
+    sharedObserver = new IntersectionObserver(
+      (entries) => {
+        const now = performance.now();
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const cb = observedCallbacks.get(entry.target);
+            if (cb) {
+              const registeredAt = initialObserveTimestamps.get(entry.target) ?? 0;
+              const isInitialFrame = now - registeredAt < 64;
+              observedCallbacks.delete(entry.target);
+              sharedObserver?.unobserve(entry.target);
+              cb(isInitialFrame);
+            }
+          }
+        }
+      },
+      { threshold: 0.01, rootMargin: '180px 0px 180px 0px' }
+    );
+  }
+  return sharedObserver;
+}
+
 export const ScrollReveal: React.FC<ScrollRevealProps> = ({
   children,
   className = '',
   delayMs = 0,
   direction = 'up',
-  threshold = 0.08
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState<boolean>(() => {
@@ -29,64 +61,40 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
   const [hasSettled, setHasSettled] = useState<boolean>(() => isVisible);
 
   useEffect(() => {
-    if (!isVisible || hasSettled) return;
-    const timer = window.setTimeout(() => setHasSettled(true), 650);
-    return () => window.clearTimeout(timer);
-  }, [isVisible, hasSettled]);
-
-  useEffect(() => {
     if (isVisible) return;
     const node = ref.current;
     if (!node) return;
 
-    const isNearViewport = () => {
-      const rect = node.getBoundingClientRect();
-      return (
-        rect.width > 0 &&
-        rect.height > 0 &&
-        rect.top <= window.innerHeight + 160 &&
-        rect.bottom >= -160
-      );
-    };
-
-    if (isNearViewport()) {
+    const observer = getSharedIntersectionObserver();
+    if (!observer) {
       setIsVisible(true);
+      setHasSettled(true);
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-            observer.disconnect();
-            break;
-          }
-        }
-      },
-      { threshold: Math.min(threshold, 0.01), rootMargin: '160px 0px 160px 0px' }
-    );
-
-    observer.observe(node);
-    const rafId = window.requestAnimationFrame(() => {
-      if (isNearViewport()) {
-        setIsVisible(true);
-        observer.disconnect();
+    initialObserveTimestamps.set(node, performance.now());
+    observedCallbacks.set(node, (isInitialFrame) => {
+      setIsVisible(true);
+      if (isInitialFrame) {
+        setHasSettled(true);
       }
     });
+    observer.observe(node);
 
     return () => {
-      window.cancelAnimationFrame(rafId);
-      observer.disconnect();
+      observedCallbacks.delete(node);
+      observer.unobserve(node);
     };
-  }, [isVisible, threshold]);
+  }, [isVisible]);
 
   const hiddenStyle =
     direction === 'scale'
-      ? 'opacity-0 scale-[0.96] translate-y-2'
+      ? 'opacity-0 scale-[0.97] translate-y-2'
       : direction === 'up'
-      ? 'opacity-0 translate-y-4'
+      ? 'opacity-0 translate-y-3'
       : 'opacity-0';
+
+  const effectiveDelay = delayMs > 0 && !hasSettled ? Math.min(delayMs, 120) : 0;
 
   return (
     <div
@@ -96,11 +104,11 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
           setHasSettled(true);
         }
       }}
-      style={delayMs > 0 && !hasSettled ? { transitionDelay: `${delayMs}ms` } : undefined}
+      style={effectiveDelay > 0 ? { transitionDelay: `${effectiveDelay}ms` } : undefined}
       className={`${
         hasSettled
           ? 'opacity-100'
-          : `transition-[opacity,transform] duration-600 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform] motion-reduce:transition-none motion-reduce:transform-none ${
+          : `transition-[opacity,transform] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:transform-none ${
               isVisible ? 'opacity-100 translate-y-0 scale-100' : hiddenStyle
             }`
       } ${className}`}

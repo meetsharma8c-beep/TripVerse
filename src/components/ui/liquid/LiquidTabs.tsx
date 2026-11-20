@@ -98,15 +98,16 @@ export const LiquidTabs: React.FC<LiquidTabsProps> = ({
       aria-label={ariaLabel}
       className={`relative inline-flex items-center gap-0.5 p-1 rounded-full glass-frosted liquid-rim ${className}`}
     >
-      {/* Sliding optical glass pill indicator */}
+      {/* Sliding optical glass pill indicator (GPU-composited translate3d) */}
       {indicator.ready && (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-white/95 dark:bg-emerald-950/85 border border-[#C8DAC6]/90 dark:border-emerald-400/35 shadow-[0_6px_16px_-4px_rgba(45,90,61,0.20),inset_0_1px_0_rgba(255,255,255,0.95)] dark:shadow-[0_6px_16px_-4px_rgba(16,185,129,0.28),inset_0_1px_0_rgba(255,255,255,0.16)]"
+          className="pointer-events-none absolute top-1 bottom-1 left-0 rounded-full bg-white/95 dark:bg-emerald-950/85 border border-[#C8DAC6]/90 dark:border-emerald-400/35 shadow-[0_6px_16px_-4px_rgba(45,90,61,0.20),inset_0_1px_0_rgba(255,255,255,0.95)] dark:shadow-[0_6px_16px_-4px_rgba(16,185,129,0.28),inset_0_1px_0_rgba(255,255,255,0.16)]"
           style={{
-            left: `${indicator.left}px`,
             width: `${indicator.width}px`,
-            transition: 'left 0.34s var(--lg-spring), width 0.34s var(--lg-spring)',
+            transform: `translate3d(${indicator.left}px, 0, 0)`,
+            transition: 'transform 0.32s var(--lg-spring), width 0.32s var(--lg-spring)',
+            willChange: 'transform, width',
           }}
         />
       )}

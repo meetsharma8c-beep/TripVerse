@@ -30,9 +30,9 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
   const mountTimeRef = useRef(initialMountTime);
 
   // Paced minimum display time for smooth, flicker-free rendering
-  const MIN_DISPLAY_MS = 600;
+  const MIN_DISPLAY_MS = 320;
   // Maximum safety timeout: only used as emergency fallback if an external script hangs
-  const MAX_TIMEOUT_MS = 6000;
+  const MAX_TIMEOUT_MS = 3500;
 
   useEffect(() => {
     onFinishRef.current = onFinish;
@@ -44,13 +44,13 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
     setIsExiting(true);
     triggerHaptic('light');
 
-    hideNativeSplashScreen(200);
+    hideNativeSplashScreen(150);
 
     setTimeout(() => {
       if (onFinishRef.current) {
         onFinishRef.current();
       }
-    }, 300);
+    }, 200);
   };
 
   // Cross-device video autoplay initialization
@@ -131,10 +131,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
       role="dialog"
       aria-label="TripVerse Opening"
       onClick={() => {
-        // Only permit manual dismissal once app loading has genuinely finished
-        if (isAppReady && progress >= 100) {
-          handleFinish();
-        }
+        handleFinish();
       }}
       className={`fixed inset-0 z-[9999] w-full max-w-[100vw] h-full max-h-[100dvh] flex flex-col justify-between select-none overflow-hidden bg-[#070C16] text-white transition-[opacity,transform] duration-550 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-opacity motion-reduce:duration-200 ${
         isExiting || !isAppReady || progress < 100

@@ -1351,16 +1351,9 @@ button:active {
   transition-duration: 75ms;
 }
 
-/* High-DPI Vector Logo & Graphic Sharpness for Android AMOLED & iOS Retina */
-img[src$=".svg"],
-svg {
-  shape-rendering: geometricPrecision;
-  text-rendering: geometricPrecision;
+/* High-DPI Vector Logo & Graphic Sharpness without forcing GPU layers on every SVG icon */
+img[src$=".svg"] {
   image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  transform: translateZ(0);
 }
 
 /* ==========================================================================

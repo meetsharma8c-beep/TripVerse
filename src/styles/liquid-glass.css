@@ -362,11 +362,12 @@ html.dark .glass-accent {
    CONCENTRIC CARD & INTERACTIVE PHYSICS
    ========================================================================== */
 .liquid-card-hover {
-  will-change: transform;
+  contain: layout style;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .liquid-card-hover:hover {
+    will-change: transform;
     transform: translateY(-4px);
     box-shadow:
       inset 0 1.5px 1.5px rgba(255, 255, 255, 0.94),
@@ -398,19 +399,18 @@ html.dark .glass-accent {
   --lg-outer-r: 28px;
   --lg-pad: 8px;
   border-radius: var(--lg-outer-r);
+  contain: layout style;
 }
 
 .liquid-concentric-inner {
   border-radius: max(8px, calc(var(--lg-outer-r, 28px) - var(--lg-pad, 8px)));
 }
 
-/* Progressive SVG Lens Refraction Layer (desktop fine-pointer only; prevents Android Chromium SVG blur jank/glitches) */
+/* Pure GPU-accelerated optical glass refraction (avoids CPU SVG feDisplacementMap scroll jank in Chromium) */
 @media (hover: hover) and (pointer: fine) and (min-width: 1024px) {
-  @supports (backdrop-filter: url(#tv-liquid-lens)) {
-    .glass-refractive {
-      backdrop-filter: blur(26px) saturate(185%) url(#tv-liquid-lens);
-      -webkit-backdrop-filter: blur(26px) saturate(185%);
-    }
+  .glass-refractive {
+    backdrop-filter: blur(26px) saturate(185%) brightness(1.03);
+    -webkit-backdrop-filter: blur(26px) saturate(185%) brightness(1.03);
   }
 }
 

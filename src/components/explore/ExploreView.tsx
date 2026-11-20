@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useDeferredValue } from 'react';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { Destination, UserProfile } from '../../types/trip';
 import { Search, Compass, Star, Sparkles, Bookmark, Crown, ArrowRight, Copy } from 'lucide-react';
@@ -160,29 +160,40 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
     { id: 'adventure', label: t('cat.adventure') },
   ];
 
-  const normalizedSearch = searchQuery.trim().toLowerCase();
-  const filtered = POPULAR_DESTINATIONS.filter(dest => {
-    const matchesSearch = !normalizedSearch ||
-                          dest.name.toLowerCase().includes(normalizedSearch) ||
-                          dest.state.toLowerCase().includes(normalizedSearch) ||
-                          dest.tagline.toLowerCase().includes(normalizedSearch);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const normalizedSearch = deferredSearchQuery.trim().toLowerCase();
+  const filtered = useMemo(
+    () =>
+      POPULAR_DESTINATIONS.filter(dest => {
+        const matchesSearch =
+          !normalizedSearch ||
+          dest.name.toLowerCase().includes(normalizedSearch) ||
+          dest.state.toLowerCase().includes(normalizedSearch) ||
+          dest.tagline.toLowerCase().includes(normalizedSearch);
 
-    if (!matchesSearch) return false;
+        if (!matchesSearch) return false;
 
-    if (selectedTag === 'all') return true;
-    if (selectedTag === 'trending') return dest.rating >= 4.8;
-    if (selectedTag === 'budget') return dest.startBudget <= 10000;
-    if (selectedTag === 'weekend') return dest.recommendedDuration.includes('2 - 3') || dest.recommendedDuration.includes('3') || dest.category === 'weekend';
-    if (selectedTag === 'roadtrip') return dest.category === 'roadtrip' || dest.category === 'heritage';
-    if (selectedTag === 'heritage') return dest.category === 'heritage';
-    if (selectedTag === 'mountain') return dest.category === 'mountain';
-    if (selectedTag === 'beach') return dest.category === 'beach';
-    if (selectedTag === 'nature') return dest.category === 'nature';
-    if (selectedTag === 'spiritual') return dest.category === 'spiritual';
-    if (selectedTag === 'adventure') return dest.category === 'adventure';
+        if (selectedTag === 'all') return true;
+        if (selectedTag === 'trending') return dest.rating >= 4.8;
+        if (selectedTag === 'budget') return dest.startBudget <= 10000;
+        if (selectedTag === 'weekend')
+          return (
+            dest.recommendedDuration.includes('2 - 3') ||
+            dest.recommendedDuration.includes('3') ||
+            dest.category === 'weekend'
+          );
+        if (selectedTag === 'roadtrip') return dest.category === 'roadtrip' || dest.category === 'heritage';
+        if (selectedTag === 'heritage') return dest.category === 'heritage';
+        if (selectedTag === 'mountain') return dest.category === 'mountain';
+        if (selectedTag === 'beach') return dest.category === 'beach';
+        if (selectedTag === 'nature') return dest.category === 'nature';
+        if (selectedTag === 'spiritual') return dest.category === 'spiritual';
+        if (selectedTag === 'adventure') return dest.category === 'adventure';
 
-    return true;
-  });
+        return true;
+      }),
+    [normalizedSearch, selectedTag]
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -462,6 +473,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                     alt={dest.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
+                    decoding="async"
                     onError={handleImageError}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />

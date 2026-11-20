@@ -353,26 +353,34 @@ export function App() {
   // Detect search engine crawlers / preview bots so they immediately render full content without splash screens or onboarding modals
   const isSearchCrawler = typeof navigator !== 'undefined' && /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebot|ia_archiver|twitterbot|linkedinbot|whatsapp|applebot|semrushbot|ahrefsbot|lighthouse|chrome-lighthouse|pagespeed|gtmetrix|headlesschrome/i.test(navigator.userAgent || '');
 
-  // Native & PWA App Opening Animation Screen State
+  // Native & PWA App Opening Animation Screen State (shown once per session for instant reloads)
   const [showSplash, setShowSplash] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.get('nosplash') === 'true' || isSearchCrawler) {
         return false;
       }
+      try {
+        if (window.sessionStorage.getItem('tripverse_splash_seen') === '1') {
+          return false;
+        }
+      } catch {}
     }
     return true;
   });
   const [splashPlatform, setSplashPlatform] = useState<'ios' | 'android' | undefined>(undefined);
 
   // Genuine App Initialization Tracking
-  const [isAppReady, setIsAppReady] = useState<boolean>(() => isSearchCrawler);
+  const [isAppReady, setIsAppReady] = useState<boolean>(() => !showSplash || isSearchCrawler);
   const [initStage, setInitStage] = useState<{ progress: number; message: string }>({
-    progress: 25,
+    progress: 40,
     message: 'Initializing travel intelligence...'
   });
 
   const handleFinishSplash = React.useCallback(() => {
+    try {
+      window.sessionStorage.setItem('tripverse_splash_seen', '1');
+    } catch {}
     setShowSplash(false);
   }, []);
 
@@ -651,10 +659,9 @@ export function App() {
 
     async function bootstrapApp() {
       try {
-        // Step 1: Storage & Initial Session Verification (25% progress)
         if (!isMounted) return;
         setInitStage({
-          progress: 25,
+          progress: 65,
           message: 'Verifying session & travel profile...'
         });
 
@@ -673,99 +680,24 @@ export function App() {
           setTrips(guestTrips);
         }
 
-        // Step 2: Live FX & Exchange Rates Synchronization (50% progress)
-        if (!isMounted) return;
-        setInitStage({
-          progress: 50,
-          message: 'Synchronizing real-time exchange rates...'
-        });
-
-        // Genuine network FX fetch with 1.2s timeout ceiling so offline or slow connections never block launch
-        await Promise.race([
-          syncLiveExchangeRates(),
-          new Promise((r) => setTimeout(r, 1200))
-        ]).catch(() => {});
-
-        // Step 3: Auth & Cloud Data Sync (75% progress)
-        if (!isMounted) return;
-        setInitStage({
-          progress: 75,
-          message: activeUser?.uid ? 'Syncing cloud itineraries...' : 'Connecting travel intelligence...'
-        });
-
-        if (activeUser?.uid) {
-          try {
-            const [cloudTrips, cloudProfile, cloudStates, cloudSavedItems] = await Promise.race([
-              Promise.all([
-                loadUserTripsFromSupabase(activeUser.uid).catch(() => null),
-                loadUserProfileFromSupabase(activeUser.uid).catch(() => null),
-                loadUserPassportFromSupabase(activeUser.uid).catch(() => null),
-                loadUserSavedItemsFromSupabase(activeUser.uid).catch(() => null)
-              ]),
-              new Promise<any[]>((r) => setTimeout(() => r([null, null, null, null]), 4500))
-            ]);
-
-            if (isMounted) {
-              const localCurrent = loadTrips(activeUser.uid);
-              const cloudIds = new Set((cloudTrips || []).map((t: Trip) => t.id));
-              const mergedCloudTrips = mergeCloudTripsWithLocal(cloudTrips || [], localCurrent, activeUser.uid);
-              const hasLocalUnpushed = cloudTrips !== null && mergedCloudTrips.some((t) => !cloudIds.has(t.id));
-              setTrips(mergedCloudTrips);
-              saveTrips(mergedCloudTrips, activeUser.uid, { skipCloudSync: true });
-              if (hasLocalUnpushed && mergedCloudTrips.length > 0) {
-                saveAllUserTripsToSupabase(activeUser.uid, mergedCloudTrips).catch(() => {});
-              }
-            }
-            if (cloudProfile && isMounted) {
-              const merged = { ...toUserProfile(activeUser), ...cloudProfile };
-              setUserProfile(merged);
-              saveUserProfile(merged, activeUser.uid);
-            }
-            if (cloudSavedItems && cloudSavedItems.length > 0 && isMounted) {
-              setSavedItemIds(cloudSavedItems);
-              saveSavedItemIds(cloudSavedItems, activeUser.uid);
-            }
-            if (cloudStates && cloudStates.length > 0 && isMounted) {
-              saveUserVisitedStates(cloudStates, activeUser.uid);
-              window.dispatchEvent(new CustomEvent('tripverse_visited_states_change', { detail: cloudStates }));
-            }
-          } catch (e) {
-            console.warn('[Bootstrap] Cloud sync notice:', e);
-          }
-        }
-
-        // Step 4: Font & Critical Visual Assets Preloading (95% progress)
-        if (!isMounted) return;
-        setInitStage({
-          progress: 95,
-          message: 'Preloading typography & visuals...'
-        });
+        // Background FX sync & asset preloading (never block initial interactive render)
+        syncLiveExchangeRates().catch(() => {});
+        void preloadVisualAsset('/tripverse-mark.png?v=10');
 
         const fontPromise = (typeof document !== 'undefined' && document.fonts && document.fonts.ready)
           ? document.fonts.ready.catch(() => {})
           : Promise.resolve();
 
-        const assetsPromise = Promise.all([
-          preloadVisualAsset('/tripverse-mark.png?v=10'),
-          preloadVisualAsset('/images/ai-robot-mascot.jpg')
-        ]);
-
         await Promise.race([
-          Promise.all([fontPromise, assetsPromise]),
-          new Promise((r) => setTimeout(r, 1000))
+          fontPromise,
+          new Promise((r) => setTimeout(r, 180))
         ]).catch(() => {});
 
-        // Step 5: Ready Handover (100% progress)
         if (!isMounted) return;
         setInitStage({
           progress: 100,
           message: 'Welcome to TripVerse'
         });
-
-        // Smooth transition pacing
-        await new Promise((r) => setTimeout(r, 150));
-
-        if (!isMounted) return;
         setIsAppReady(true);
       } catch (err) {
         console.warn('[Bootstrap] Error during bootstrap:', err);
