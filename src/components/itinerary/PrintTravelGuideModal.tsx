@@ -156,7 +156,9 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
                   <span>•</span>
                   <span>{trip.travelersCount} Travelers</span>
                   <span>•</span>
-                  <span className="capitalize">{trip.transportMode} Highway</span>
+                  <span className="capitalize">
+                    {isTrain ? 'Rail Transit' : isFlight ? 'Air Transit' : `${trip.transportMode} Highway`}
+                  </span>
                 </p>
               </div>
 
@@ -190,7 +192,7 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
               <span className="text-slate-500 text-[10px] block font-bold uppercase">Route Type</span>
               <span className="text-sm font-black text-slate-800 capitalize flex items-center gap-1">
                 <Car className="w-3.5 h-3.5 text-[#2D5A3D]" />
-                {trip.routeType} Highway
+                {isTrain ? 'Express Rail Corridor' : isFlight ? 'Air Corridor' : `${trip.routeType} Highway`}
               </span>
             </div>
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -202,7 +204,13 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
             </div>
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
               <span className="text-slate-500 text-[10px] block font-bold uppercase">
-                {trip.routeDetails?.source === 'geoapify_routing' ? 'Geoapify route distance & drive time' : 'Estimated distance & drive time'}
+                {isTrain
+                  ? 'Estimated rail distance & transit time'
+                  : isFlight
+                    ? 'Estimated flight distance & air time'
+                    : trip.routeDetails?.source === 'geoapify_routing'
+                      ? 'Geoapify route distance & drive time'
+                      : 'Estimated distance & drive time'}
               </span>
               <span className="text-sm font-black text-slate-800">
                 {trip.routeDetails

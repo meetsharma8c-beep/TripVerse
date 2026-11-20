@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Trip } from '../../types/trip';
-import { Navigation, Maximize2, Plane, MapPin } from 'lucide-react';
+import { Navigation, Maximize2, Plane, TrainFront, MapPin } from 'lucide-react';
 import { useLanguage } from '../../services/languageService';
 
 function buildGreatCircleArc(
@@ -82,8 +82,14 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
     return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   });
+  const isTrainTrip =
+    trip.transportMode === 'train' || /\brail transit\b/i.test(trip.aiRationale || '');
   const isFlightTrip =
-    trip.transportMode === 'flight' || (trip.routeDetails?.distanceKm ?? 0) > 3500;
+    !isTrainTrip &&
+    (trip.transportMode === 'flight' ||
+      /\bflight transit\b/i.test(trip.aiRationale || '') ||
+      (trip.routeDetails?.distanceKm ?? 0) > 3500);
+  const isNonRoadTrip = isFlightTrip || isTrainTrip;
   const [flightViewMode, setFlightViewMode] = useState<'local' | 'corridor'>('local');
 
   useEffect(() => {
@@ -161,18 +167,20 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
     layers.clearLayers();
 
     try {
-      const routeMatchesTrip = trip.routeDetails?.source === 'geoapify_routing' &&
+      const routeMatchesTrip =
+        !isNonRoadTrip &&
+        trip.routeDetails?.source === 'geoapify_routing' &&
         trip.routeDetails.origin === trip.origin &&
         trip.routeDetails.destination === trip.destination;
       const realRoute = routeMatchesTrip && trip.routeDetails?.encodedPolyline
         ? decodePolyline(trip.routeDetails.encodedPolyline)
         : [];
       if (realRoute.length < 2) {
-        // Flight Corridor Mode: Curved Great-Circle Arc between Origin and Destination
+        // Flight or Rail Corridor Mode: Great-Circle Arc (Flight) or Rail Track Corridor (Train)
         const origCoord = trip.originCoordinates || trip.routeDetails?.originCoordinates;
         const destCoord = trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates;
         if (
-          isFlightTrip &&
+          isNonRoadTrip &&
           flightViewMode === 'corridor' &&
           origCoord &&
           destCoord &&
@@ -183,12 +191,27 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
           const destPt: L.LatLngTuple = [Number(destCoord.lat), Number(destCoord.lng)];
           const arcPoints = buildGreatCircleArc(origPt, destPt, 48);
 
-          L.polyline(arcPoints, {
-            color: isDarkTheme ? '#34D399' : '#2D5A3D',
-            weight: 3,
-            dashArray: '8, 8',
-            opacity: 0.9
-          }).addTo(layers);
+          if (isTrainTrip) {
+            // Railway track style: solid rail bed + sleeper cross-ties dash
+            L.polyline(arcPoints, {
+              color: isDarkTheme ? '#065F46' : '#1E3E2B',
+              weight: 6,
+              opacity: 0.55
+            }).addTo(layers);
+            L.polyline(arcPoints, {
+              color: isDarkTheme ? '#34D399' : '#2D5A3D',
+              weight: 3,
+              dashArray: '6, 6',
+              opacity: 0.95
+            }).addTo(layers);
+          } else {
+            L.polyline(arcPoints, {
+              color: isDarkTheme ? '#34D399' : '#2D5A3D',
+              weight: 3,
+              dashArray: '8, 8',
+              opacity: 0.9
+            }).addTo(layers);
+          }
 
           L.circleMarker(origPt, {
             radius: 8,
@@ -197,7 +220,12 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
             fillColor: '#0284C7',
             fillOpacity: 1
           })
-            .bindPopup(makePopup(trip.origin || 'Origin', 'Departure hub'))
+            .bindPopup(
+              makePopup(
+                trip.origin || 'Origin',
+                isTrainTrip ? 'Origin Railway Junction' : 'Departure Airport Hub'
+              )
+            )
             .addTo(layers);
 
           L.circleMarker(destPt, {
@@ -207,22 +235,28 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
             fillColor: '#10B981',
             fillOpacity: 1
           })
-            .bindPopup(makePopup(trip.destination || 'Destination', 'Arrival destination'))
+            .bindPopup(
+              makePopup(
+                trip.destination || 'Destination',
+                isTrainTrip ? 'Destination Railway Junction' : 'Arrival Destination'
+              )
+            )
             .addTo(layers);
 
           map.invalidateSize();
           const bounds = L.latLngBounds(arcPoints);
           routeBoundsRef.current = bounds;
-          map.fitBounds(bounds, { padding: [44, 44], maxZoom: 6 });
+          map.fitBounds(bounds, { padding: [44, 44], maxZoom: 7 });
           return;
         }
 
-        // Local Sightseeing Map: Plot destination center, daily activity spots, and break stops cleanly
+        // Local Sightseeing Map: Plot destination center and daily destination activity spots
         const fallbackPoints: L.LatLngTuple[] = [];
+        const destCenter = trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates;
 
-        if (trip.destinationDetails?.coordinates) {
-          const lat = Number(trip.destinationDetails.coordinates.lat);
-          const lng = Number(trip.destinationDetails.coordinates.lng);
+        if (destCenter) {
+          const lat = Number(destCenter.lat);
+          const lng = Number(destCenter.lng);
           if (Number.isFinite(lat) && Number.isFinite(lng)) {
             const destPt: L.LatLngTuple = [lat, lng];
             fallbackPoints.push(destPt);
@@ -241,7 +275,20 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
         (trip.itinerary || []).forEach(day => {
           (day.activities || []).forEach(act => {
             if (act.coordinates && Number.isFinite(act.coordinates.lat) && Number.isFinite(act.coordinates.lng)) {
-              const pt: L.LatLngTuple = [Number(act.coordinates.lat), Number(act.coordinates.lng)];
+              const actLat = Number(act.coordinates.lat);
+              const actLng = Number(act.coordinates.lng);
+              // On Train/Flight Local Map view, skip origin-city departure/return pins (>0.8 deg away from destination)
+              // so the Local Map zooms cleanly into the destination's temples, hotels, and restaurants.
+              if (
+                isNonRoadTrip &&
+                destCenter &&
+                Number.isFinite(destCenter.lat) &&
+                Number.isFinite(destCenter.lng) &&
+                Math.hypot(actLat - Number(destCenter.lat), actLng - Number(destCenter.lng)) > 0.8
+              ) {
+                return;
+              }
+              const pt: L.LatLngTuple = [actLat, actLng];
               fallbackPoints.push(pt);
               L.circleMarker(pt, {
                 radius: 6,
@@ -256,15 +303,17 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
           });
         });
 
-        (trip.breakStops || []).forEach(stop => {
-          if (stop?.coordinates && Number.isFinite(stop.coordinates.lat) && Number.isFinite(stop.coordinates.lng)) {
-            const pt: L.LatLngTuple = [Number(stop.coordinates.lat), Number(stop.coordinates.lng)];
-            fallbackPoints.push(pt);
-            L.circleMarker(pt, { radius: 6, color: '#fff', weight: 2, fillColor: '#F59E0B', fillOpacity: 1 })
-              .bindPopup(makePopup(stop.name || 'Stop', 'Suggested break stop'))
-              .addTo(layers);
-          }
-        });
+        if (!isNonRoadTrip) {
+          (trip.breakStops || []).forEach(stop => {
+            if (stop?.coordinates && Number.isFinite(stop.coordinates.lat) && Number.isFinite(stop.coordinates.lng)) {
+              const pt: L.LatLngTuple = [Number(stop.coordinates.lat), Number(stop.coordinates.lng)];
+              fallbackPoints.push(pt);
+              L.circleMarker(pt, { radius: 6, color: '#fff', weight: 2, fillColor: '#F59E0B', fillOpacity: 1 })
+                .bindPopup(makePopup(stop.name || 'Stop', 'Suggested break stop'))
+                .addTo(layers);
+            }
+          });
+        }
 
         if (fallbackPoints.length > 0) {
           map.invalidateSize();
@@ -352,9 +401,11 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
     } catch (mapErr) {
       console.warn('[SmartRouteMap] Could not render polyline or bounds:', mapErr);
     }
-  }, [trip, isDarkTheme, flightViewMode, isFlightTrip]);
+  }, [trip, isDarkTheme, flightViewMode, isFlightTrip, isTrainTrip, isNonRoadTrip]);
 
-  const hasLiveRoute = trip.routeDetails?.source === 'geoapify_routing' &&
+  const hasLiveRoute =
+    !isNonRoadTrip &&
+    trip.routeDetails?.source === 'geoapify_routing' &&
     trip.routeDetails.origin === trip.origin &&
     trip.routeDetails.destination === trip.destination &&
     Boolean(trip.routeDetails.encodedPolyline);
@@ -371,23 +422,33 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">
-            {isFlightTrip ? t('Flight & Destination Map') : t('Driving route')}
+            {isFlightTrip
+              ? t('Flight & Destination Map')
+              : isTrainTrip
+                ? t('Rail & Destination Map')
+                : t('Driving route')}
           </span>
           <h2 className="text-xl font-bold text-[#0B2545] mt-0.5">
-            {isFlightTrip ? t('Interactive sightseeing & flight map') : t('Route and nearby places')}
+            {isFlightTrip
+              ? t('Interactive sightseeing & flight map')
+              : isTrainTrip
+                ? t('Interactive sightseeing & rail corridor map')
+                : t('Route and nearby places')}
           </h2>
           <p className="text-xs text-slate-500 mt-1">
             {hasLiveRoute
               ? `Geoapify Routing · ${trip.routeDetails?.distanceKm} km · ${t('about')} ${trip.routeDetails?.durationHours} h`
               : isFlightTrip
                 ? `${trip.origin} → ${trip.destination} · ${flightViewMode === 'local' ? t('Zoomed into daily sightseeing pins') : t('Great-circle flight corridor')}`
-                : hasLocalPins
-                  ? t('Showing destination and itinerary stops on interactive map')
-                  : t('Live road route unavailable · no route line shown')}
+                : isTrainTrip
+                  ? `${trip.origin} → ${trip.destination} · ${flightViewMode === 'local' ? t('Zoomed into destination sightseeing pins') : t('Direct railway corridor')}`
+                  : hasLocalPins
+                    ? t('Showing destination and itinerary stops on interactive map')
+                    : t('Live road route unavailable · no route line shown')}
           </p>
         </div>
         <div className="flex items-center flex-wrap gap-2">
-          {isFlightTrip && !hasLiveRoute && (
+          {isNonRoadTrip && !hasLiveRoute && (
             <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
               <button
                 type="button"
@@ -410,8 +471,8 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Plane className="w-3.5 h-3.5" />
-                <span>{t('Flight Arc')}</span>
+                {isTrainTrip ? <TrainFront className="w-3.5 h-3.5" /> : <Plane className="w-3.5 h-3.5" />}
+                <span>{isTrainTrip ? t('Rail Corridor') : t('Flight Arc')}</span>
               </button>
             </div>
           )}
@@ -439,9 +500,11 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
             ? t('Geoapify road geometry')
             : isFlightTrip
               ? (flightViewMode === 'local' ? t('Destination sightseeing pins') : t('Estimated air corridor'))
-              : hasLocalPins
-                ? t('Destination & activity pins')
-                : t('Route map unavailable')}
+              : isTrainTrip
+                ? (flightViewMode === 'local' ? t('Destination sightseeing pins') : t('Direct railway corridor'))
+                : hasLocalPins
+                  ? t('Destination & activity pins')
+                  : t('Route map unavailable')}
         </span>
         <button
           type="button"

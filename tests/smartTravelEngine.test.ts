@@ -306,4 +306,94 @@ describe('World-Class Smart Travel Engine (7 Cognitive Intelligence Domains)', (
     expect(enrichedTrip.itinerary[1].activities[0].indoorMirror).toBeDefined();
     expect(enrichedTrip.itinerary[1].activities[0].culturalTip).toBeDefined();
   });
+
+  it('never generates highway pitstops for train or flight trips and sanitizes legacy saved rail trips', async () => {
+    const { generateAITrip } = await import('../src/services/plannerEngine');
+    const { sanitizeNonRoadTripPitstops } = await import('../src/services/storageService');
+
+    const trainTrip = generateAITrip({
+      origin: 'Vadodara, Gujarat',
+      destination: 'Mathura',
+      durationDays: 4,
+      travelersCount: 3,
+      travelerType: 'family',
+      budgetAmount: 84500,
+      budgetMode: 'total',
+      preferences: ['culture', 'spiritual'],
+      transportMode: 'train',
+      accommodationType: '3star',
+      foodPreference: 'veg',
+      priorities: ['comfort']
+    });
+
+    expect(trainTrip.transportMode).toBe('train');
+    expect(trainTrip.breakStops).toEqual([]);
+    const allActivities = trainTrip.itinerary.flatMap(d => d.activities);
+    expect(allActivities.some(a => a.type === 'breakstop')).toBe(false);
+    expect(allActivities.some(a => a.tag === 'Station Arrival')).toBe(true);
+
+    // Verify sanitizeNonRoadTripPitstops cleans legacy saved train trips that had highway breakStops & driving polyline
+    const pollutedLegacyTrainTrip = {
+      ...trainTrip,
+      breakStops: [
+        {
+          id: 'bs-1',
+          name: 'Highway Fuel & Dhaba',
+          type: 'dhaba' as const,
+          location: 'NH-48',
+          distanceFromStartKm: 180,
+          detourDistanceKm: 0.5,
+          estimatedStopMinutes: 30,
+          rating: 4.3,
+          foodAvailable: true,
+          washroomAvailable: true,
+          fuelStationAvailable: true,
+          evChargingAvailable: false,
+          medicalFacilityAvailable: false,
+          parkingAvailable: true,
+          restAreaAvailable: true,
+          openingHours: '24/7',
+          description: 'Highway stop',
+          recommendationReason: 'En route',
+          coordinates: { lat: 24.5, lng: 74.5 }
+        }
+      ],
+      routeDetails: {
+        distanceKm: 740,
+        durationHours: 11.5,
+        source: 'geoapify_routing' as const,
+        encodedPolyline: 'mock_highway_polyline'
+      },
+      itinerary: trainTrip.itinerary.map((d, i) =>
+        i === 0
+          ? {
+              ...d,
+              activities: [
+                ...d.activities,
+                {
+                  id: 'act-1-bs',
+                  dayNumber: 1,
+                  time: '10:00 AM',
+                  title: 'Highway Food Plaza',
+                  type: 'breakstop' as const,
+                  location: 'NH-48',
+                  estimatedCost: 400,
+                  travelTimeMin: 60,
+                  distanceKm: 250,
+                  description: 'Highway break',
+                  tag: 'Break Stop'
+                }
+              ]
+            }
+          : d
+      )
+    };
+
+    const { trip: cleaned, modified } = sanitizeNonRoadTripPitstops(pollutedLegacyTrainTrip);
+    expect(modified).toBe(true);
+    expect(cleaned.breakStops).toEqual([]);
+    expect(cleaned.routeDetails?.encodedPolyline).toBeUndefined();
+    expect(cleaned.routeDetails?.source).toBe('estimate');
+    expect(cleaned.itinerary.flatMap(d => d.activities).some(a => a.type === 'breakstop')).toBe(false);
+  });
 });

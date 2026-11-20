@@ -256,10 +256,17 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
   const currentWeightKg = (packedCount * 0.42 + 1.2).toFixed(1);
   const totalWeightKg = (totalCount * 0.42 + 1.2).toFixed(1);
 
+  const essentialsLabel =
+    trip.transportMode === 'train'
+      ? 'Rail Essentials'
+      : trip.transportMode === 'flight'
+        ? 'Flight Essentials'
+        : 'Highway Essentials';
+
   const categories: { id: PackingCategory | 'all'; label: string }[] = [
     { id: 'all', label: `All Items (${totalCount})` },
     { id: 'documents', label: 'Documents' },
-    { id: 'essentials', label: 'Highway Essentials' },
+    { id: 'essentials', label: essentialsLabel },
     { id: 'clothing', label: 'Clothing' },
     { id: 'firstaid', label: 'First Aid' },
     { id: 'electronics', label: 'Tech & Power' },
@@ -705,7 +712,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
               onChange={e => setNewCustomItemCat(e.target.value as PackingCategory)}
               className="px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-medium text-slate-700"
             >
-              <option value="essentials">Highway Essentials</option>
+              <option value="essentials">{essentialsLabel}</option>
               <option value="clothing">Wardrobe</option>
               <option value="electronics">Tech & Power</option>
               <option value="firstaid">First Aid</option>

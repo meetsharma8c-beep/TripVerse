@@ -427,7 +427,13 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     let welcomeText = `[STATE:idle] Hi there! I'm your ConCode travel companion. Whether you have a destination in mind or just a weekend and a rough budget, I'd love to help you map it out. Where shall we begin?`;
 
     if (hasDestination && hasActivities) {
-      welcomeText = `[STATE:excited] Welcome back! Your itinerary for ${destName} is looking great. Whenever you feel ready, I can line up verified pitstops, budget checks, or weather forecasts—no rush at all.`;
+      const transitPhrase =
+        trip.transportMode === 'train'
+          ? 'station transfers, rail timings'
+          : trip.transportMode === 'flight'
+            ? 'airport transfers, flight logistics'
+            : 'verified pitstops';
+      welcomeText = `[STATE:excited] Welcome back! Your itinerary for ${destName} is looking great. Whenever you feel ready, I can line up ${transitPhrase}, budget checks, or weather forecasts—no rush at all.`;
     } else if (hasDestination) {
       welcomeText = `[STATE:listening] Heading to ${destName}? I can help map out your day-by-day pacing, budget allocation, and routes. Where would you like to start?`;
     }

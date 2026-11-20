@@ -146,6 +146,14 @@ export function sanitizeNonRoadTripPitstops(trip: Trip): { trip: Trip; modified:
   if (Array.isArray(trip.breakStops) && trip.breakStops.length > 0) {
     modified = true;
   }
+  if (trip.routeDetails?.source === 'geoapify_routing' || trip.routeDetails?.encodedPolyline) {
+    modified = true;
+  }
+  const hasRoadOnlyPacking = Array.isArray(trip.packingList) &&
+    trip.packingList.some(item => item.id === 'doc-2' || item.id === 'doc-5' || item.id === 'ess-2');
+  if (hasRoadOnlyPacking) {
+    modified = true;
+  }
 
   const destCoords = trip.destinationDetails?.coordinates;
   const originCoords = trip.originCoordinates;
@@ -209,6 +217,14 @@ export function sanitizeNonRoadTripPitstops(trip: Trip): { trip: Trip; modified:
       ...trip,
       transportMode: resolvedMode,
       breakStops: [],
+      routeDetails: trip.routeDetails
+        ? {
+            ...trip.routeDetails,
+            source: 'estimate',
+            encodedPolyline: undefined
+          }
+        : undefined,
+      packingList: hasRoadOnlyPacking ? undefined : trip.packingList,
       itinerary: cleanedItinerary
     }
   };

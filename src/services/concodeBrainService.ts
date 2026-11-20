@@ -1736,7 +1736,15 @@ export async function queryConcodeBrain(
       actionButtons: [
         { label: 'Food & Dining Guide', action: 'VIEW_ITINERARY', primary: true },
         { label: 'Top Places to Visit', action: 'VIEW_ITINERARY' },
-        { label: 'Highway Road & Pitstops', action: 'START_NAV' },
+        {
+          label:
+            tripContext?.transportMode === 'train'
+              ? 'Station & Local Directions'
+              : tripContext?.transportMode === 'flight'
+                ? 'Airport & Local Directions'
+                : 'Highway Road & Pitstops',
+          action: 'START_NAV'
+        },
         { label: 'Calculate Trip Budget', action: 'CHECK_BUDGET' }
       ]
     };
@@ -1812,7 +1820,15 @@ export async function queryConcodeBrain(
     actionButtons: [
       { label: `Best Food in ${activeDest}`, action: 'EXPLORE_FOOD', primary: true },
       { label: `Top Sights to Visit`, action: 'VIEW_ITINERARY' },
-      { label: `Highway Road & Pitstops`, action: 'START_NAV' },
+      {
+        label:
+          tripContext?.transportMode === 'train'
+            ? `Station & Local Directions`
+            : tripContext?.transportMode === 'flight'
+              ? `Airport & Local Directions`
+              : `Highway Road & Pitstops`,
+        action: 'START_NAV'
+      },
       { label: `Trip Cost Breakdown`, action: 'CHECK_BUDGET' }
     ]
   };
