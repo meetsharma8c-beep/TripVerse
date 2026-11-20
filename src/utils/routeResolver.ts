@@ -157,8 +157,8 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
   if (pathname === '/profile') {
     return { tab: 'profile', dest: null, tripId: null, openBooking: false, openPlanner: false };
   }
-  if (pathname === '/planner') {
-    return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: true };
+  if (pathname === '/planner' || pathname === '/ai-trip-planner' || pathname === '/road-trip-planner') {
+    return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: pathname === '/planner' };
   }
   if (pathname === '/reset-password' || pathname === '/reset-password/' || pathname.startsWith('/reset-password')) {
     return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: false, openResetPassword: true };

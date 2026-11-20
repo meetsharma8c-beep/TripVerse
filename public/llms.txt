@@ -1,0 +1,52 @@
+# TripVerse (trip-verse.com)
+
+> TripVerse is a free AI Trip Planner, Road Trip Route Engine, and Travel Itinerary Platform for Web, iOS, and Android. Travelers generate day-by-day itineraries, interactive driving & flight routes, highway fuel/EV/dining stops, multi-currency group budgets, live weather packing lists, and offline calendar/PDF travel guides across 10,000+ destinations worldwide.
+
+## Core Pages
+- [Home — Free AI Trip Planner](https://trip-verse.com/): Build custom day-by-day itineraries in seconds.
+- [Explore Destinations](https://trip-verse.com/explore): Browse 40 curated global and Indian travel guides.
+- [AI Trip Planner](https://trip-verse.com/ai-trip-planner): Automated AI itinerary, hotel, dining, and budget planning.
+- [Road Trip Route Planner](https://trip-verse.com/road-trip-planner): Highway driving routes with scenic stops, EV chargers, and fuel stations.
+- [XML Sitemap](https://trip-verse.com/sitemap.xml): Complete index of public travel guides.
+
+## Curated Destination Guides (40)
+- [Paris, France](https://trip-verse.com/destination/paris): Art • Gastronomy • The City of Light (5 Days, best time: Apr - Oct)
+- [Tokyo, Japan](https://trip-verse.com/destination/tokyo): Futuristic Metros • Neon Alleys • Ancient Shrines (6 Days, best time: Mar - May & Oct - Nov)
+- [Rome, Italy](https://trip-verse.com/destination/rome): The Eternal City • Colosseum • Trattorias (5 Days, best time: Apr - Jun & Sep - Oct)
+- [New York City, United States](https://trip-verse.com/destination/new-york): Skyline Horizons • Broadway • Central Park (5 Days, best time: Apr - Jun & Sep - Nov)
+- [Dubai, United Arab Emirates](https://trip-verse.com/destination/dubai): Dune Safaris • Burj Khalifa • Gold Souks (5 Days, best time: Nov - Mar)
+- [Barcelona, Spain](https://trip-verse.com/destination/barcelona): Gaudí Architecture • Mediterranean Coast • Tapas (5 Days, best time: May - Oct)
+- [Santorini, Greece](https://trip-verse.com/destination/santorini): Caldera Sunsets • Blue Domes • Volcanic Cliffs (4 Days, best time: Apr - Nov)
+- [Sydney, Australia](https://trip-verse.com/destination/sydney): Harbour Bridge • Opera House • Bondi Coastal Trails (6 Days, best time: Sep - Nov & Mar - May)
+- [Bangkok, Thailand](https://trip-verse.com/destination/bangkok): Golden Temples • Floating Markets • Street Banquets (4 Days, best time: Nov - Feb)
+- [Singapore, Singapore](https://trip-verse.com/destination/singapore): Gardens by the Bay • Marina Bay • Hawker Feasts (4 Days, best time: Year-round)
+- [London, United Kingdom](https://trip-verse.com/destination/london): Thames Bridges • Royal Palaces • West End (5 Days, best time: May - Sep)
+- [Bali, Indonesia](https://trip-verse.com/destination/bali): Islands • Temples • Emerald Terraces (7 Days, best time: Apr - Oct)
+- [Kyoto, Japan](https://trip-verse.com/destination/kyoto): Ancient Shrines • Bamboo Groves • Zen Gardens (5 Days, best time: Mar - May & Oct - Nov)
+- [Swiss Alps, Switzerland](https://trip-verse.com/destination/swiss-alps): Snow Peaks • Glacier Express • Alpine Lakes (6 Days, best time: Jun - Sep & Dec - Mar)
+- [Udaipur, India](https://trip-verse.com/destination/udaipur): Culture • Heritage • Royal Lakes (3 - 4 Days, best time: Oct - Mar)
+- [Manali, India](https://trip-verse.com/destination/manali): Nature • Adventure • Snow Peaks (4 - 5 Days, best time: All Year / Snow in Dec-Feb)
+- [Goa, India](https://trip-verse.com/destination/goa): Beaches • Chill • Portuguese Charm (3 - 5 Days, best time: Nov - Mar)
+- [Poicha, India](https://trip-verse.com/destination/poicha): Nilkanthdham Temple • Narmada River Ghats • Musical Fountain (2 - 3 Days, best time: Oct - Mar)
+- [Jaipur, India](https://trip-verse.com/destination/jaipur): Forts • Royal Architecture • Street Food (2 - 3 Days, best time: Oct - Mar)
+- [Kashmir, India](https://trip-verse.com/destination/kashmir): Paradise on Earth • Shikara • Valleys (5 - 6 Days, best time: Mar - Oct & Dec for Snow)
+- [Mumbai, India](https://trip-verse.com/destination/mumbai): Marine Drive • Bollywood • Coastal Pulse (2 - 3 Days, best time: Nov - Feb)
+- [Rishikesh, India](https://trip-verse.com/destination/rishikesh): Ganga Ghats • White-Water Rafting • Yoga (2 - 3 Days, best time: Sep - Apr)
+- [Meghalaya, India](https://trip-verse.com/destination/meghalaya): Living Root Bridges • Cloud Valleys • Caves (5 - 6 Days, best time: Oct - May)
+- [Kerala, India](https://trip-verse.com/destination/kerala): Gods Own Country • Backwaters • Tea Hills (4 - 6 Days, best time: Sep - Mar)
+- [Ladakh, India](https://trip-verse.com/destination/ladakh): High Mountain Passes • Pangong Tso • Monasteries (6 - 8 Days, best time: May - Sep)
+- [Varanasi, India](https://trip-verse.com/destination/varanasi): Ancient Ghats • Evening Aarti • Spiritual Pulse (2 - 3 Days, best time: Oct - Mar)
+- [Andaman & Nicobar, India](https://trip-verse.com/destination/andaman): Radhanagar Beach • Coral Reefs • Turquoise Lagoons (5 - 7 Days, best time: Oct - May)
+- [Ooty, India](https://trip-verse.com/destination/ooty): Nilgiri Blue Mountains • Toy Train • Botanical Vistas (3 - 4 Days, best time: All Year)
+- [Agra, India](https://trip-verse.com/destination/agra): Taj Mahal • Mughal Citadel • Architectural Wonder (1 - 2 Days, best time: Oct - Mar)
+- [Darjeeling, India](https://trip-verse.com/destination/darjeeling): Kanchenjunga Views • Himalayan Toy Train • Tea Gardens (3 - 4 Days, best time: Sep - Jun)
+- [Hampi, India](https://trip-verse.com/destination/hampi): UNESCO Boulders • Vijayanagara Empire • Tungabhadra (2 - 3 Days, best time: Oct - Feb)
+- [Jodhpur, India](https://trip-verse.com/destination/jodhpur): The Blue City • Mehrangarh Fort • Desert Culture (2 - 3 Days, best time: Oct - Mar)
+- [Pondicherry, India](https://trip-verse.com/destination/pondicherry): French Quarters • Promenade Beach • Auroville (2 - 3 Days, best time: Oct - Mar)
+- [Coorg, India](https://trip-verse.com/destination/coorg): Coffee Plantations • Western Ghats • Waterfalls (3 - 4 Days, best time: Oct - Apr)
+- [Spiti Valley, India](https://trip-verse.com/destination/spiti): Cold Desert • Key Monastery • High Passes (6 - 7 Days, best time: May - Oct)
+- [Shimla, India](https://trip-verse.com/destination/shimla): Mall Road • Ridge • Pine Forest Walks (2 - 3 Days, best time: Mar - Jun & Dec - Jan for Snow)
+- [Sikkim, India](https://trip-verse.com/destination/sikkim): Nathula Pass • Tsongo Lake • Buddhist Monasteries (5 - 6 Days, best time: Mar - May & Oct - Dec)
+- [Mount Abu, India](https://trip-verse.com/destination/mount-abu): Only Hill Station in Rajasthan • Nakki Lake • Dilwara (2 - 3 Days, best time: Sep - Mar)
+- [Amritsar, India](https://trip-verse.com/destination/amritsar): Golden Temple • Langar • Wagah Border (2 - 3 Days, best time: Oct - Mar)
+- [Jaisalmer, India](https://trip-verse.com/destination/jaisalmer): Golden City • Thar Desert Safari • Living Fort (3 - 4 Days, best time: Oct - Mar)

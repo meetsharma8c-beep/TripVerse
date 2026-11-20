@@ -3,80 +3,430 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://trip-verse.com/</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://trip-verse.com/og-banner.png</image:loc>
-      <image:title>Trip — Free AI Trip Planner, Road Trip Routes &amp; Travel Itineraries | TripVerse</image:title>
-    </image:image>
-    <image:image>
-      <image:loc>https://trip-verse.com/favicon-512x512.png?v=16</image:loc>
-      <image:title>TripVerse Official Logo</image:title>
+      <image:loc>https://trip-verse.com/og-banner.png?v=5</image:loc>
+      <image:title>TripVerse — Free AI Trip Planner &amp; Road Trip Route Engine</image:title>
     </image:image>
   </url>
   <url>
     <loc>https://trip-verse.com/explore</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://trip-verse.com/trips</loc>
-    <lastmod>2026-11-09</lastmod>
+    <loc>https://trip-verse.com/ai-trip-planner</loc>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://trip-verse.com/saved</loc>
-    <lastmod>2026-11-09</lastmod>
+    <loc>https://trip-verse.com/road-trip-planner</loc>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://trip-verse.com/profile</loc>
-    <lastmod>2026-11-09</lastmod>
+    <loc>https://trip-verse.com/destination/paris</loc>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Paris (France) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
   </url>
-  <url><loc>https://trip-verse.com/destination/paris</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/tokyo</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/rome</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/new-york</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/dubai</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/barcelona</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/santorini</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/sydney</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/bangkok</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/singapore</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/london</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/bali</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/kyoto</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/swiss-alps</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/udaipur</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/manali</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/goa</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/poicha</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/jaipur</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/kashmir</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/mumbai</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/rishikesh</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/meghalaya</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/kerala</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/ladakh</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://trip-verse.com/destination/varanasi</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/andaman</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/ooty</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/agra</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/darjeeling</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/hampi</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/jodhpur</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/pondicherry</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/coorg</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/spiti</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/shimla</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/sikkim</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/mount-abu</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/amritsar</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
-  <url><loc>https://trip-verse.com/destination/jaisalmer</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <url>
+    <loc>https://trip-verse.com/destination/tokyo</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Tokyo (Japan) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/rome</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Rome (Italy) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/new-york</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>New York City (United States) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/dubai</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Dubai (United Arab Emirates) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/barcelona</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1583422409516-2895a77efded?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Barcelona (Spain) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/santorini</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Santorini (Greece) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/sydney</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Sydney (Australia) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/bangkok</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Bangkok (Thailand) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/singapore</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Singapore (Singapore) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/london</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>London (United Kingdom) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/bali</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Bali (Indonesia) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/kyoto</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Kyoto (Japan) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/swiss-alps</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Swiss Alps (Switzerland) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/udaipur</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Udaipur (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/manali</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Manali (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/goa</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Goa (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/poicha</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Poicha (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/jaipur</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1477587458883-47145ed94245?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Jaipur (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/kashmir</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1595815771614-ade9d652a65d?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Kashmir (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/mumbai</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Mumbai (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/rishikesh</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>/images/destinations/rishikesh.jpg</image:loc>
+      <image:title>Rishikesh (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/meghalaya</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>/images/destinations/meghalaya.jpg</image:loc>
+      <image:title>Meghalaya (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/kerala</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Kerala (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/ladakh</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Ladakh (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/varanasi</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Varanasi (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/andaman</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1589308078059-be1415eab4c3?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Andaman &amp; Nicobar (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/ooty</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Ooty (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/agra</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Agra (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/darjeeling</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Darjeeling (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/hampi</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Hampi (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/jodhpur</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Jodhpur (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/pondicherry</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Pondicherry (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/coorg</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Coorg (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/spiti</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1580974852861-c381510bc98a?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Spiti Valley (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/shimla</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Shimla (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/sikkim</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Sikkim (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/mount-abu</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Mount Abu (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/amritsar</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1514222134-b57cbb8ce073?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Amritsar (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trip-verse.com/destination/jaisalmer</loc>
+    <lastmod>2026-11-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1509299349698-dd22323b5963?auto=format&amp;fit=crop&amp;w=1200&amp;q=80</image:loc>
+      <image:title>Jaisalmer (India) Trip Itinerary &amp; Travel Guide — TripVerse</image:title>
+    </image:image>
+  </url>
 </urlset>

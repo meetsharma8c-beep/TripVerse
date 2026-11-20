@@ -782,15 +782,30 @@ export function App() {
 
   // URL Pathname, Dynamic Document Title & SEO Meta Sync for Browser, Crawler & History Navigation
   useEffect(() => {
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
     let targetPath = '/';
     let targetTitle = 'TripVerse (Trip Verse) — Free AI Trip Planner, Road Trip Routes & Itineraries';
     let targetDesc = 'TripVerse (trip-verse.com) is the #1 free AI Trip Planner. Plan any trip in seconds with custom day-by-day trip itineraries, road trip routes, highway stops, hotel picks, live weather & group trip budgets across 10,000+ destinations worldwide.';
+    let targetImage = 'https://trip-verse.com/og-banner.png?v=5';
+    let isPrivateRoute = false;
 
     if (selectedDestinationForDetails) {
       targetPath = `/destination/${selectedDestinationForDetails.id}`;
-      targetTitle = `${selectedDestinationForDetails.name} Trip Itinerary & Travel Guide — TripVerse AI Trip Planner`;
+      targetTitle = `${selectedDestinationForDetails.name} Trip Itinerary & Travel Guide (${selectedDestinationForDetails.recommendedDuration || '3-5 Days'}) — Best Places & Budget | TripVerse`;
       targetDesc = selectedDestinationForDetails.description || `Plan a custom AI trip itinerary to ${selectedDestinationForDetails.name} (${selectedDestinationForDetails.state}) with smart road trip routes, best time to visit (${selectedDestinationForDetails.bestTime}), and curated local highlights on TripVerse.`;
+      if (selectedDestinationForDetails.image) {
+        targetImage = selectedDestinationForDetails.image;
+      }
+    } else if (currentTab === 'home' && currentPath === '/ai-trip-planner') {
+      targetPath = '/ai-trip-planner';
+      targetTitle = 'Free AI Trip Planner & Custom Day-by-Day Itinerary Generator | TripVerse';
+      targetDesc = 'Generate a personalized day-by-day travel itinerary in seconds with TripVerse Free AI Trip Planner. Includes verified landmarks, route optimization, hotels, live weather, packing lists, and group budget splitting.';
+    } else if (currentTab === 'home' && currentPath === '/road-trip-planner') {
+      targetPath = '/road-trip-planner';
+      targetTitle = 'Free Road Trip Planner — Highway Routes, Fuel, EV & Scenic Pitstops | TripVerse';
+      targetDesc = 'Plan smarter highway road trips with TripVerse Road Trip Planner. Map real driving routes, EV charging stations, fuel stops, scenic viewpoints, dhabas, weather alerts, and group fuel cost splits.';
     } else if (currentTab === 'trip-detail') {
+      isPrivateRoute = true;
       const active = trips.find(t => t.id === activeTripIdState) || trips[0];
       if (active) {
         targetPath = `/trip/${active.id}`;
@@ -802,28 +817,48 @@ export function App() {
       }
     } else if (currentTab === 'explore') {
       targetPath = '/explore';
-      targetTitle = 'Explore Trip Destinations, Road Trips & Travel Guides — TripVerse';
-      targetDesc = 'Browse curated trip destinations, scenic road trips, mountain getaways, heritage cities, and coastal escapes worldwide on TripVerse.';
+      targetTitle = 'Explore 40+ Best Travel Destinations & AI Trip Itineraries | TripVerse';
+      targetDesc = 'Discover curated travel destinations worldwide — from Paris, Tokyo, Bali, and Swiss Alps to Goa, Ladakh, Manali, Udaipur, and Kerala — with instant AI itineraries, route maps, and budgets.';
     } else if (currentTab === 'trips') {
+      isPrivateRoute = true;
       targetPath = '/trips';
       targetTitle = 'My Trips & Travel Itineraries — TripVerse AI Trip Planner';
     } else if (currentTab === 'saved') {
+      isPrivateRoute = true;
       targetPath = '/saved';
       targetTitle = 'Saved Trip Places & Pitstops — TripVerse';
     } else if (currentTab === 'profile') {
+      isPrivateRoute = true;
       targetPath = '/profile';
       targetTitle = 'Traveler Profile & Trip Passport — TripVerse';
     }
 
     document.title = targetTitle;
 
-    // Synchronize SEO meta description, Open Graph tags, and Canonical URL dynamically
+    // Synchronize SEO meta description, robots directive, Open Graph, Twitter Card, and Canonical URL dynamically
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', targetDesc);
+    const metaRobots = document.querySelector('meta[name="robots"]');
+    if (metaRobots) {
+      metaRobots.setAttribute(
+        'content',
+        isPrivateRoute
+          ? 'noindex, follow'
+          : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+      );
+    }
     const ogTitle = document.querySelector('meta[property="og:title"]');
     if (ogTitle) ogTitle.setAttribute('content', targetTitle);
     const ogDesc = document.querySelector('meta[property="og:description"]');
     if (ogDesc) ogDesc.setAttribute('content', targetDesc);
+    const ogImage = document.querySelector('meta[property="og:image"]');
+    if (ogImage) ogImage.setAttribute('content', targetImage);
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    if (twTitle) twTitle.setAttribute('content', targetTitle);
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (twDesc) twDesc.setAttribute('content', targetDesc);
+    const twImage = document.querySelector('meta[name="twitter:image"]');
+    if (twImage) twImage.setAttribute('content', targetImage);
     const canonicalUrl = `https://trip-verse.com${targetPath === '/' ? '/' : targetPath}`;
     const canonicalLink = document.querySelector('link[rel="canonical"]');
     if (canonicalLink) canonicalLink.setAttribute('href', canonicalUrl);
