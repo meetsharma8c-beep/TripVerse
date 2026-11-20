@@ -4,7 +4,8 @@ import { getActiveCurrency, formatCurrency } from '../../services/currencyServic
 import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
 import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
-import { Users, Wallet, Sparkles, Share2, Download, AlertTriangle, CheckCircle2, MessageSquareQuote, TrendingDown, Navigation, RotateCcw, Camera, Star, Leaf, ChevronRight, Edit3, Bed, Clock, Ticket, ShieldCheck } from 'lucide-react';
+import { downloadTripCalendarIcs } from '../../services/calendarExportService';
+import { Users, Wallet, Sparkles, Share2, Download, Calendar, AlertTriangle, CheckCircle2, MessageSquareQuote, TrendingDown, Navigation, RotateCcw, Camera, Star, Leaf, ChevronRight, Edit3, Bed, Clock, Ticket, ShieldCheck } from 'lucide-react';
 
 interface TripHeaderProps {
   trip: Trip;
@@ -440,6 +441,16 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
               <span>PDF Guide</span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => downloadTripCalendarIcs(trip)}
+            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs border border-[#E2EBE1] transition-colors cursor-pointer"
+            title="Export itinerary to Apple, Google, or Outlook Calendar (.ics)"
+          >
+            <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Calendar (.ics)</span>
+          </button>
         </div>
       </div>
 

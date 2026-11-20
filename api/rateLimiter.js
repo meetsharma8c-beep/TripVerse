@@ -35,7 +35,8 @@ export function checkRateLimit(key, limit = 20, windowMs = 60 * 1000) {
       current: 1,
       limit,
       remaining: limit - 1,
-      resetMs: windowMs
+      resetMs: windowMs,
+      distributed: false
     };
   }
 
@@ -49,7 +50,8 @@ export function checkRateLimit(key, limit = 20, windowMs = 60 * 1000) {
       current: existing.count,
       limit,
       remaining: 0,
-      resetMs
+      resetMs,
+      distributed: false
     };
   }
 
@@ -58,8 +60,88 @@ export function checkRateLimit(key, limit = 20, windowMs = 60 * 1000) {
     current: existing.count,
     limit,
     remaining,
-    resetMs
+    resetMs,
+    distributed: false
   };
+}
+
+/**
+ * Distributed rate limiter backed by Upstash Redis REST API when
+ * UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are configured.
+ * Automatically falls back to the in-memory limiter if Redis is unavailable.
+ *
+ * @param {string} key Identifier (e.g. endpoint:ip)
+ * @param {number} limit Maximum requests allowed in window
+ * @param {number} windowMs Time window in milliseconds
+ * @returns {Promise<{ allowed: boolean, current: number, limit: number, remaining: number, resetMs: number, distributed: boolean }>}
+ */
+export async function checkDistributedRateLimit(key, limit = 20, windowMs = 60 * 1000) {
+  const redisUrl = (process.env.UPSTASH_REDIS_REST_URL || '').trim().replace(/\/+$/, '');
+  const redisToken = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
+
+  if (!redisUrl || !redisToken || typeof fetch !== 'function') {
+    return checkRateLimit(key, limit, windowMs);
+  }
+
+  const redisKey = `tripverse:rl:${key}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 1500);
+
+  try {
+    const response = await fetch(`${redisUrl}/pipeline`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${redisToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify([
+        ['INCR', redisKey],
+        ['PTTL', redisKey]
+      ]),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      return checkRateLimit(key, limit, windowMs);
+    }
+
+    const results = await response.json();
+    const count = Number(results?.[0]?.result ?? 1);
+    let ttlMs = Number(results?.[1]?.result ?? -1);
+
+    if (count === 1 || ttlMs < 0) {
+      await fetch(`${redisUrl}/pexpire/${encodeURIComponent(redisKey)}/${windowMs}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${redisToken}` },
+        signal: controller.signal
+      }).catch(() => {});
+      ttlMs = windowMs;
+    }
+
+    const remaining = Math.max(0, limit - count);
+    return {
+      allowed: count <= limit,
+      current: count,
+      limit,
+      remaining,
+      resetMs: Math.max(0, ttlMs),
+      distributed: true
+    };
+  } catch {
+    return checkRateLimit(key, limit, windowMs);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Attach standard X-RateLimit-* response headers for transparency and client backoff.
+ */
+export function applyRateLimitHeaders(res, rateResult) {
+  if (!res || typeof res.setHeader !== 'function' || !rateResult) return;
+  res.setHeader('X-RateLimit-Limit', String(rateResult.limit));
+  res.setHeader('X-RateLimit-Remaining', String(rateResult.remaining));
+  res.setHeader('X-RateLimit-Reset', String(Math.ceil((Date.now() + (rateResult.resetMs || 0)) / 1000)));
 }
 
 /**

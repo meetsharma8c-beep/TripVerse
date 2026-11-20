@@ -495,3 +495,67 @@ export function subscribeToTripCollaboration(
     }
   };
 }
+
+export interface LiveCollaboratorPresence {
+  userId: string;
+  name: string;
+  activeTab?: string;
+  onlineAt: string;
+}
+
+/**
+ * Subscribe to live Supabase Realtime Presence for a trip room so co-travelers
+ * see who is currently viewing or editing the itinerary.
+ */
+export function subscribeToTripPresence(
+  tripId: string,
+  currentUser: { userId: string; name: string; activeTab?: string },
+  onPresenceSync: (members: LiveCollaboratorPresence[]) => void
+): () => void {
+  const supabase = getSupabaseClient();
+  const selfMember: LiveCollaboratorPresence = {
+    userId: currentUser.userId,
+    name: currentUser.name,
+    activeTab: currentUser.activeTab,
+    onlineAt: new Date().toISOString()
+  };
+
+  // Optimistically emit self presence immediately before realtime handshake completes
+  onPresenceSync([selfMember]);
+
+  if (!supabase || !tripId) {
+    return () => {};
+  }
+
+  let channel: any = null;
+  try {
+    channel = supabase.channel(`tripverse_presence_${tripId}`, {
+      config: { presence: { key: currentUser.userId } }
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState?.() || {};
+        const members: LiveCollaboratorPresence[] = [];
+        for (const entries of Object.values(state)) {
+          if (Array.isArray(entries) && entries.length > 0) {
+            members.push(entries[0] as LiveCollaboratorPresence);
+          }
+        }
+        onPresenceSync(members.length > 0 ? members : [selfMember]);
+      })
+      .subscribe(async (status: string) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track?.(selfMember);
+        }
+      });
+  } catch {
+    onPresenceSync([selfMember]);
+  }
+
+  return () => {
+    if (channel && supabase) {
+      supabase.removeChannel(channel);
+    }
+  };
+}

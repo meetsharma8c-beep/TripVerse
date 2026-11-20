@@ -311,7 +311,7 @@ export function translateText(rawText: string, targetLang?: LanguageCode): strin
     const inner = translateText(arrowForwardMatch[1], lang);
     return leadingWhitespace + `${inner} ${arrowForwardMatch[2]}` + trailingWhitespace;
   }
-  const bulletMatch = normalized.match(/^([•\*\-·]+)\s+(.+)$/);
+  const bulletMatch = normalized.match(/^([•*\-·]+)\s+(.+)$/);
   if (bulletMatch) {
     const inner = translateText(bulletMatch[2], lang);
     return leadingWhitespace + `${bulletMatch[1]} ${inner}` + trailingWhitespace;

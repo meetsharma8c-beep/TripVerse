@@ -18,7 +18,7 @@ function loadEnv() {
   content.split('\n').forEach(line => {
     const match = line.match(/^([^#=]+)=(.*)$/);
     if (match) {
-      env[match[1].trim()] = match[2].trim().replace(/^['\"]|['\"]$/g, '');
+      env[match[1].trim()] = match[2].trim().replace(/^['"]|['"]$/g, '');
     }
   });
   return env;

@@ -1,5 +1,5 @@
 import { CONCODE_MASTER_PROMPT, CONCODE_COMPACT_PROMPT, CONCODE_ITINERARY_PROMPT, CONCODE_BRAIN_MASTER_PROMPT } from './concodePrompt.js';
-import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js';
+import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from './rateLimiter.js';
 
 // Vercel Serverless Function: private TripVerse-to-CONCODE travel proxy.
 // The CONCODE key exists only in Vercel environment variables, never in the app bundle.
@@ -720,7 +720,8 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'METHOD_NOT_ALLOWED' });
 
   // Rate Limiting: Max 30 AI queries per minute per client IP
-  const rateLimitResult = checkRateLimit(`chat:${clientIp}`, 30, 60 * 1000);
+  const rateLimitResult = await checkDistributedRateLimit(`chat:${clientIp}`, 30, 60 * 1000);
+  applyRateLimitHeaders(res, rateLimitResult);
   res.setHeader('X-RateLimit-Limit', '30');
   res.setHeader('X-RateLimit-Remaining', String(rateLimitResult.remaining));
 

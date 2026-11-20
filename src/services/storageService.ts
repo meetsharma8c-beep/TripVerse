@@ -2,6 +2,7 @@ import { Trip, UserProfile, TripPhotoMemory, TripReview, ExpenseItem, PackingIte
 import { DEFAULT_USER_PROFILE } from '../data/initialTrips';
 import { getCurrentUser, toUserProfile } from './authService';
 import { calibrateTripWithLiveMarket } from './liveMarketPricingService';
+import { saveTripsToOfflineDb } from './offlineDbService';
 import { saveTripToSupabase, loadTripsFromSupabase, deleteTripFromSupabase, saveAllUserTripsToSupabase, saveProfileToSupabase, loadProfileFromSupabase, savePassportToSupabase, loadPassportFromSupabase, saveSavedPlaceToSupabase, deleteSavedPlaceFromSupabase, loadSavedPlacesFromSupabase, saveUserSavedItemsToSupabase, saveUserActiveTripToSupabase, loadUserActiveTripFromSupabase, saveExpenseToSupabase, saveReviewToSupabase, savePhotoToSupabase, deletePhotoFromSupabase, savePackingToSupabase } from './supabaseSyncService';
 
 /**
@@ -152,6 +153,8 @@ export function saveTrips(trips: Trip[], userId?: string | null, options?: { ski
     const uid = userId !== undefined ? userId : getCurrentUser()?.uid;
     const key = getUserStorageKey('tripverse_trips', uid);
     safeStorageSet(key, JSON.stringify(trips), uid);
+    // Mirror to IndexedDB asynchronously for large offline itineraries beyond the 5MB localStorage limit
+    saveTripsToOfflineDb(uid, trips).catch(() => {});
     if (uid && !options?.skipCloudSync) {
       // Sync to Supabase PostgreSQL cloud database
       saveAllUserTripsToSupabase(uid, trips).catch(() => {});

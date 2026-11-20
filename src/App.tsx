@@ -24,11 +24,7 @@ import {
   saveTripPacking,
   resetGuestStorage
 } from './services/storageService';
-import { generateAITrip, type PlannerInput } from './services/plannerEngine';
-import { generatePersonalizedTrip } from './services/aiTripPlanner';
-import { resolveLandmarkCoordinates } from './services/landmarkAtlasService';
-import { resolvePreciseLocationSync } from './services/locationService';
-import { applyGeoapifyTravelData, fetchGeoapifyTravelData, getBreakStopSection } from './services/travelDataService';
+import type { PlannerInput } from './services/plannerEngine';
 import { getStoredCurrency, setActiveCurrency, Currency, syncLiveExchangeRates } from './services/currencyService';
 import { generateNotifications } from './services/notificationService';
 import { AIAppAction } from './services/aiAssistant';
@@ -55,12 +51,14 @@ import { PopularDestinations } from './components/home/PopularDestinations';
 import { PublicLaunchSpotlight } from './components/home/PublicLaunchSpotlight';
 import { AIGenerationSkeleton } from './components/common/AIGenerationSkeleton';
 
-// Itinerary Components
-import { TripHeader } from './components/itinerary/TripHeader';
-import { DayTimeline } from './components/itinerary/DayTimeline';
-import { BreakStopCard } from './components/itinerary/BreakStopCard';
-import { BudgetOptimizer } from './components/itinerary/BudgetOptimizer';
-import { SafetyEmergency } from './components/itinerary/SafetyEmergency';
+// Itinerary Components (lazy-loaded so the Home screen doesn't pay for trip-detail JS)
+const getBreakStopSectionLocal = (stop: BreakStop): 'amenities' | 'fuel' | 'ev_charging' | 'medical' => {
+  if (stop.section) return stop.section;
+  if (stop.evChargingAvailable) return 'ev_charging';
+  if (stop.fuelStationAvailable) return 'fuel';
+  if (stop.medicalFacilityAvailable) return 'medical';
+  return 'amenities';
+};
 
 const CHUNK_RELOAD_COOLDOWN_MS = 15_000;
 const CHUNK_RELOAD_STORAGE_KEY = 'tripverse_chunk_reload_at';
@@ -84,6 +82,11 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
   );
 }
 
+const TripHeader = lazyWithRetry(() => import('./components/itinerary/TripHeader').then(m => ({ default: m.TripHeader })));
+const DayTimeline = lazyWithRetry(() => import('./components/itinerary/DayTimeline').then(m => ({ default: m.DayTimeline })));
+const BreakStopCard = lazyWithRetry(() => import('./components/itinerary/BreakStopCard').then(m => ({ default: m.BreakStopCard })));
+const BudgetOptimizer = lazyWithRetry(() => import('./components/itinerary/BudgetOptimizer').then(m => ({ default: m.BudgetOptimizer })));
+const SafetyEmergency = lazyWithRetry(() => import('./components/itinerary/SafetyEmergency').then(m => ({ default: m.SafetyEmergency })));
 const PackingWeatherView = lazyWithRetry(() => import('./components/itinerary/PackingWeatherView').then(m => ({ default: m.PackingWeatherView })));
 const TripSplitExpenses = lazyWithRetry(() => import('./components/itinerary/TripSplitExpenses').then(m => ({ default: m.TripSplitExpenses })));
 const LocalGemsView = lazyWithRetry(() => import('./components/itinerary/LocalGemsView').then(m => ({ default: m.LocalGemsView })));
@@ -1059,7 +1062,11 @@ export function App() {
         legalModalState.isOpen ||
         isBestDealModalOpen ||
         isPrintModalOpen ||
-        isCollabModalOpen
+        isCollabModalOpen ||
+        isFounderDashboardOpen ||
+        isPassportModalOpen ||
+        isEmergencySosOpen ||
+        isWrappedModalOpen
       ) {
         e.preventDefault();
         setIsBookingModalOpen(false);
@@ -1083,10 +1090,20 @@ export function App() {
         setIsBestDealModalOpen(false);
         setIsPrintModalOpen(false);
         setIsCollabModalOpen(false);
+        setIsFounderDashboardOpen(false);
+        setIsPassportModalOpen(false);
+        setIsEmergencySosOpen(false);
+        setIsWrappedModalOpen(false);
         return;
       }
 
-      // If user is on an inner tab or trip detail view, back button returns to 'home'
+      // Step cleanly back from trip-detail -> trips -> home
+      if (currentTab === 'trip-detail') {
+        e.preventDefault();
+        setCurrentTab('trips');
+        return;
+      }
+
       if (currentTab !== 'home') {
         e.preventDefault();
         setCurrentTab('home');
@@ -1122,6 +1139,10 @@ export function App() {
     isBestDealModalOpen,
     isPrintModalOpen,
     isCollabModalOpen,
+    isFounderDashboardOpen,
+    isPassportModalOpen,
+    isEmergencySosOpen,
+    isWrappedModalOpen,
     currentTab,
     trips,
     currentUser
@@ -1233,8 +1254,14 @@ export function App() {
       return;
     }
 
-    fetchGeoapifyTravelData(routeOrigin, trip.destination, trip.destinationDetails?.coordinates)
-      .then(data => {
+    import('./services/travelDataService')
+      .then(({ fetchGeoapifyTravelData, applyGeoapifyTravelData }) =>
+        fetchGeoapifyTravelData(routeOrigin, trip.destination, trip.destinationDetails?.coordinates).then(data => ({
+          data,
+          applyGeoapifyTravelData
+        }))
+      )
+      .then(({ data, applyGeoapifyTravelData }) => {
         if (cancelled) return;
         const currentTrip = tripsRef.current.find(item => item.id === tripId) || trip;
         updateTrip(applyGeoapifyTravelData(currentTrip, data));
@@ -1461,9 +1488,11 @@ export function App() {
     try {
       let newTrip: Trip;
       try {
+        const { generatePersonalizedTrip } = await import('./services/aiTripPlanner');
         newTrip = await generatePersonalizedTrip(input);
       } catch (err) {
         console.warn('[TripGeneration] Cloud AI generation fallback triggered:', err);
+        const { generateAITrip } = await import('./services/plannerEngine');
         newTrip = generateAITrip(input);
       }
       if (currentUser?.uid) {
@@ -1740,12 +1769,20 @@ export function App() {
     return Math.max(500, newActivitiesTotal + nonActivityTotal);
   };
 
-  const handleAddOrUpdateActivity = (dayNumber: number, activityData: Partial<ItineraryActivity>) => {
+  const handleAddOrUpdateActivity = async (dayNumber: number, activityData: Partial<ItineraryActivity>) => {
     if (!activeTrip) return;
-    const baseDestCoords =
+    let baseDestCoords =
       activeTrip.destinationDetails?.coordinates ||
-      activeTrip.routeDetails?.destinationCoordinates ||
-      resolvePreciseLocationSync(activeTrip.destination).coordinates;
+      activeTrip.routeDetails?.destinationCoordinates;
+    if (!baseDestCoords) {
+      const { resolvePreciseLocationSync } = await import('./services/locationService');
+      baseDestCoords = resolvePreciseLocationSync(activeTrip.destination).coordinates;
+    }
+    let resolvedCoords = activityData.coordinates;
+    if (!resolvedCoords && activityData.title) {
+      const { resolveLandmarkCoordinates } = await import('./services/landmarkAtlasService');
+      resolvedCoords = resolveLandmarkCoordinates(activityData.title, baseDestCoords);
+    }
     const updatedDays = activeTrip.itinerary.map(day => {
       if (day.dayNumber === dayNumber) {
         const existingIndex = day.activities.findIndex(a => a.id === activityData.id);
@@ -1766,7 +1803,7 @@ export function App() {
             travelTimeMin: activityData.travelTimeMin || 15,
             distanceKm: activityData.distanceKm || 2,
             description: activityData.description || '',
-            coordinates: activityData.coordinates || resolveLandmarkCoordinates(actTitle, baseDestCoords),
+            coordinates: resolvedCoords || baseDestCoords,
             tag: activityData.tag || 'Custom',
             completed: false,
             isCustom: true
@@ -2239,6 +2276,7 @@ export function App() {
 
           {/* VIEW 2: TRIP DETAILS & COMPLETE ITINERARY */}
           {currentTab === 'trip-detail' && activeTrip && (
+            <Suspense fallback={<ModalSkeleton />}>
             <div key="trip-detail" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
 
               {/* Desktop Back & AI Assistant Top Bar */}
@@ -2752,7 +2790,7 @@ export function App() {
                       { id: 'medical', title: 'Medical Facilities', detail: 'Clinics, hospitals, and pharmacies are listed separately. This is not emergency dispatch.' }
                     ] as const).map(section => {
                       const sectionStops = activeTrip.breakStops.filter(stop =>
-                        getBreakStopSection(stop) === section.id
+                        getBreakStopSectionLocal(stop) === section.id
                       );
                       return (
                         <details key={section.id} className="group mt-3 first:mt-0 rounded-2xl border border-slate-200 bg-white open:border-emerald-200 open:bg-emerald-50/20">
@@ -2811,6 +2849,7 @@ export function App() {
               )}
 
             </div>
+            </Suspense>
           )}
 
           {/* VIEW 2 EMPTY STATE: When trip-detail is opened but user has no active trip */}

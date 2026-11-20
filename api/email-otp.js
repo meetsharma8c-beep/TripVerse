@@ -1,6 +1,6 @@
 // Vercel Serverless Function: Genuine Email OTP Dispatch & Verification via Resend
 import crypto from 'crypto';
-import { applyCorsHeaders, checkRateLimit, escapeHtml, getClientIp } from './rateLimiter.js';
+import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, escapeHtml, getClientIp } from './rateLimiter.js';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const EPHEMERAL_DEV_SECRET = crypto.randomBytes(32).toString('hex');
@@ -62,7 +62,8 @@ export default async function handler(req, res) {
 
   // Rate Limiting per IP
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(`email-otp:${clientIp}`, 10, 10 * 60 * 1000);
+  const rateLimitResult = await checkDistributedRateLimit(`email-otp:${clientIp}`, 10, 10 * 60 * 1000);
+  applyRateLimitHeaders(res, rateLimitResult);
   if (!rateLimitResult.allowed) {
     return res.status(429).json({
       success: false,

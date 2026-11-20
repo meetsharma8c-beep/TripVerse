@@ -519,3 +519,36 @@ html.dark .liquid-topo-wash {
     transform: none !important;
   }
 }
+
+/* ==========================================================================
+   ACCESSIBILITY: HIGH CONTRAST & KEYBOARD FOCUS RINGS ON LIQUID GLASS
+   ========================================================================== */
+@media (prefers-contrast: more) {
+  .liquid-glass,
+  .glass-clear,
+  .glass-frosted,
+  .glass-elevated,
+  .liquid-glass-pill {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-color: rgba(15, 23, 42, 0.45) !important;
+  }
+
+  html.dark .liquid-glass,
+  html.dark .glass-clear,
+  html.dark .glass-frosted,
+  html.dark .glass-elevated,
+  html.dark .liquid-glass-pill,
+  .liquid-glass-dark,
+  .glass-clear-dark {
+    background: rgba(11, 18, 32, 0.96) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+  }
+}
+
+.liquid-glass-pill:focus-visible,
+.glass-accent:focus-visible,
+.glass-clear:focus-visible,
+.glass-clear-dark:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}

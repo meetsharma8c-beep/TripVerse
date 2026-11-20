@@ -104,7 +104,7 @@ export function extractCleanLandmarkName(rawTitle: string, destination: string):
 
   // Strip connecting prepositions
   text = text.replace(/\b(and|with|at|in|near|around|for|to)\b/gi, ' ');
-  text = text.replace(/[—,:\-\/]/g, ' ').replace(/\s+/g, ' ').trim();
+  text = text.replace(/[—,:\-/]/g, ' ').replace(/\s+/g, ' ').trim();
 
   const candidates: string[] = [];
 

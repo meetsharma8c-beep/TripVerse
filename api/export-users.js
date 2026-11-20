@@ -1,7 +1,7 @@
 // Vercel Serverless Function: Export Genuine Users to Excel / CSV format
 import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js';
+import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from './rateLimiter.js';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -42,7 +42,8 @@ export default async function handler(req, res) {
   }
 
   const clientIp = getClientIp(req);
-  const rate = checkRateLimit(`export-users:${clientIp}`, 10, 60 * 1000);
+  const rate = await checkDistributedRateLimit(`export-users:${clientIp}`, 10, 60 * 1000);
+  applyRateLimitHeaders(res, rate);
   if (!rate.allowed) {
     return res.status(429).json({ success: false, message: 'Too many requests' });
   }

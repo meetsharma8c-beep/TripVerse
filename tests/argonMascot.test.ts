@@ -62,7 +62,7 @@ describe('Argon AI Mascot State Machine & Emotion Intelligence', () => {
     for (const state of states) {
       const theme = ARGON_STATE_THEME[state];
       expect(theme.ledHex.length).toBe(7);
-      expect(theme.ledGlowRgba).toMatch(/rgba\(\d+,\s*\d+,\s*\d+,\s*[\d\.]+\)/);
+      expect(theme.ledGlowRgba).toMatch(/rgba\(\d+,\s*\d+,\s*\d+,\s*[\d.]+\)/);
     }
   });
 

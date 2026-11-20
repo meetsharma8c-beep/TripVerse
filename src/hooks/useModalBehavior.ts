@@ -78,12 +78,34 @@ function installTouchScrollGuard(): () => void {
   };
 }
 
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])'
+].join(', ');
+
+function getTopmostDialogContainer(): HTMLElement | null {
+  if (typeof document === 'undefined') return null;
+  const dialogs = Array.from(
+    document.querySelectorAll<HTMLElement>('[role="dialog"], [aria-modal="true"]')
+  ).filter((el) => el.offsetParent !== null || window.getComputedStyle(el).position === 'fixed');
+  return dialogs.length > 0 ? dialogs[dialogs.length - 1] : null;
+}
+
 /**
  * Shared modal behaviour: locks background page scrolling (on html rather than body so
- * position: sticky headers stay anchored, with touchmove boundary guards for iOS PWA/Safari)
+ * position: sticky headers stay anchored, with touchmove boundary guards for iOS PWA/Safari),
+ * traps keyboard focus inside the active dialog, restores focus on close,
  * and optionally closes on Escape. Reference-counted so nested overlays are safe.
  */
-export function useModalBehavior(isOpen: boolean, onClose?: () => void) {
+export function useModalBehavior(
+  isOpen: boolean,
+  onClose?: () => void,
+  containerRef?: React.RefObject<HTMLElement | null>
+) {
   const closeRef = useRef(onClose);
   useEffect(() => {
     closeRef.current = onClose;
@@ -91,6 +113,12 @@ export function useModalBehavior(isOpen: boolean, onClose?: () => void) {
 
   useEffect(() => {
     if (!isOpen) return;
+
+    const previouslyFocused =
+      typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
     if (lockCount++ === 0) {
       const root = document.documentElement;
       savedHtmlOverflow = root.style.overflow;
@@ -100,9 +128,42 @@ export function useModalBehavior(isOpen: boolean, onClose?: () => void) {
       root.dataset.scrollLocked = 'true';
       removeTouchGuard = installTouchScrollGuard();
     }
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && closeRef.current) closeRef.current();
+      if (e.key === 'Escape' && closeRef.current) {
+        closeRef.current();
+        return;
+      }
+
+      // WCAG 2.1 keyboard focus trap for open modal dialogs
+      if (e.key === 'Tab') {
+        const container = containerRef?.current || getTopmostDialogContainer();
+        if (!container) return;
+
+        const focusables = Array.from(
+          container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+        ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex !== -1);
+
+        if (focusables.length === 0) return;
+
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+
+        if (e.shiftKey) {
+          if (!active || !container.contains(active) || active === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (!active || !container.contains(active) || active === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
     };
+
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('keydown', onKey);
@@ -114,6 +175,10 @@ export function useModalBehavior(isOpen: boolean, onClose?: () => void) {
         removeTouchGuard?.();
         removeTouchGuard = null;
       }
+      // Restore keyboard focus to the element that triggered the modal
+      if (previouslyFocused && typeof previouslyFocused.focus === 'function' && document.contains(previouslyFocused)) {
+        previouslyFocused.focus({ preventScroll: true });
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, containerRef]);
 }

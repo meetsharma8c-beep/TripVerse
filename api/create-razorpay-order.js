@@ -1,5 +1,5 @@
 // Vercel Serverless Function: Create Razorpay Order
-import { applyCorsHeaders, checkRateLimit, getClientIp } from './rateLimiter.js';
+import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from './rateLimiter.js';
 
 export default async function handler(req, res) {
   applyCorsHeaders(req, res, 'POST, OPTIONS');
@@ -14,7 +14,8 @@ export default async function handler(req, res) {
 
   // Rate Limiting: Max 20 order creations per 5 minutes per IP
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(`order:${clientIp}`, 20, 5 * 60 * 1000);
+  const rateLimitResult = await checkDistributedRateLimit(`order:${clientIp}`, 20, 5 * 60 * 1000);
+  applyRateLimitHeaders(res, rateLimitResult);
   if (!rateLimitResult.allowed) {
     return res.status(429).json({
       ok: false,
