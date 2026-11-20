@@ -458,6 +458,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   }, [trip?.id, trip?.destination, trip?.itinerary]);
 
   const { language, t } = useLanguage();
+  const lastLoadedScopeKeyRef = useRef<string>(getChatStorageKey(trip?.id));
   const [messages, setMessages] = useState<ChatMessage[]>(() => getInitialMessages());
   const [inputQuery, setInputQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -564,18 +565,32 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     };
   }, []);
 
-  // Reload scoped chat history whenever active trip or signed-in account changes
+  // Reload scoped chat history ONLY when the actual user UID or active trip ID changes
+  // (NEVER on quota/profile updates for the same user or itinerary edits on the same trip, which previously wiped live AI replies!)
+  const getInitialMessagesRef = useRef(getInitialMessages);
   useEffect(() => {
-    setMessages(getInitialMessages());
-  }, [trip?.id, getInitialMessages]);
+    getInitialMessagesRef.current = getInitialMessages;
+  });
+
+  useEffect(() => {
+    const nextScopeKey = getChatStorageKey(trip?.id);
+    if (nextScopeKey !== lastLoadedScopeKeyRef.current) {
+      lastLoadedScopeKeyRef.current = nextScopeKey;
+      setMessages(getInitialMessagesRef.current());
+    }
+  }, [trip?.id]);
 
   useEffect(() => {
     const handleAuthChange = () => {
-      setMessages(getInitialMessages());
+      const nextScopeKey = getChatStorageKey(trip?.id);
+      if (nextScopeKey !== lastLoadedScopeKeyRef.current) {
+        lastLoadedScopeKeyRef.current = nextScopeKey;
+        setMessages(getInitialMessagesRef.current());
+      }
     };
     window.addEventListener('tripverse_auth_state_change', handleAuthChange);
     return () => window.removeEventListener('tripverse_auth_state_change', handleAuthChange);
-  }, [getInitialMessages]);
+  }, [trip?.id]);
 
   const refreshBrainHealth = useCallback(async () => {
     setIsCheckingBrain(true);
@@ -786,15 +801,25 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           ] : undefined
         };
 
-        consumeAssistantMinute(1);
         setMessages(prev => [...prev, aiMessage]);
+        consumeAssistantMinute(1);
       } else {
         const preparedQuery = preparePromptForConCode(query);
         const response = await processTravelCoPilotQuery(preparedQuery, trip);
         if (activeRequestIdRef.current !== reqId) return;
 
+        const safeAiMsg: ChatMessage = response?.message?.text
+          ? response.message
+          : {
+              id: `ai-${Date.now()}`,
+              sender: 'ai',
+              text: `[STATE:idle] I received your message — let me know how I can help with your ${cleanTripDest} trip!`,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              engine: 'concode_brain'
+            };
+
+        setMessages(prev => [...prev, safeAiMsg]);
         consumeAssistantMinute(1);
-        setMessages(prev => [...prev, response.message]);
 
         if (response.updatedTrip) {
           onUpdateTrip(response.updatedTrip);
