@@ -8,7 +8,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,19 +16,37 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    bundle {
+        language {
+            // Keep all 10 runtime languages bundled in Play Store AAB
+            enableSplit = false
+        }
+    }
+    def releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_FILE") ?: 'tripverse-release-key.jks'
+    def releaseKeystoreFile = file(releaseKeystorePath)
+    def releaseStorePassword = (System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: (project.findProperty('RELEASE_STORE_PASSWORD') ?: '')).toString().trim()
+    def releaseKeyAlias = (System.getenv("ANDROID_KEY_ALIAS") ?: (project.findProperty('RELEASE_KEY_ALIAS') ?: 'tripverse')).toString().trim()
+    def releaseKeyPassword = (System.getenv("ANDROID_KEY_PASSWORD") ?: (project.findProperty('RELEASE_KEY_PASSWORD') ?: releaseStorePassword)).toString().trim()
+    def hasReleaseSigning = releaseKeystoreFile.exists() && releaseStorePassword.length() > 0
+
     signingConfigs {
         release {
-            storeFile file(System.getenv("ANDROID_KEYSTORE_FILE") ?: 'tripverse-release-key.jks')
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: (project.findProperty('RELEASE_STORE_PASSWORD') ?: '')
-            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: (project.findProperty('RELEASE_KEY_ALIAS') ?: 'tripverse')
-            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: (project.findProperty('RELEASE_KEY_PASSWORD') ?: '')
+            if (hasReleaseSigning) {
+                storeFile releaseKeystoreFile
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
         }
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk {
+                debugSymbolLevel = 'FULL'
+            }
         }
     }
 }

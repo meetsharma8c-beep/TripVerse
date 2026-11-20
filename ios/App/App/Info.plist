@@ -49,7 +49,7 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
@@ -73,10 +73,34 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>TripVerse uses your microphone for voice-activated AI travel assistance.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>TripVerse accesses your photo library so you can attach travel memories to your itineraries.</string>
+	<string>TripVerse accesses your photo library so you can attach travel memories and scan landmarks or boarding passes.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>TripVerse saves exported travel memories and itinerary images to your photo library.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>TripVerse uses speech recognition to transcribe your voice travel questions.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>ai.tripverse.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tripverse</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>mailto</string>
+		<string>comgooglemaps</string>
+		<string>maps</string>
+		<string>upi</string>
+		<string>tez</string>
+		<string>phonepe</string>
+		<string>paytmmp</string>
+	</array>
 </dict>
 </plist>
