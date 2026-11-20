@@ -722,8 +722,6 @@ export default async function handler(req, res) {
   // Rate Limiting: Max 30 AI queries per minute per client IP
   const rateLimitResult = await checkDistributedRateLimit(`chat:${clientIp}`, 30, 60 * 1000);
   applyRateLimitHeaders(res, rateLimitResult);
-  res.setHeader('X-RateLimit-Limit', '30');
-  res.setHeader('X-RateLimit-Remaining', String(rateLimitResult.remaining));
 
   if (!rateLimitResult.allowed) {
     const retrySec = Math.ceil(rateLimitResult.resetMs / 1000);

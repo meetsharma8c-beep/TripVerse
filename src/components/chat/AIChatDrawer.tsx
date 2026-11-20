@@ -10,7 +10,7 @@ import {
 } from '../../services/concodeBrainService';
 import { resetConcodeSession, clearTravelerMemoryRing } from '../../services/concodeSession';
 import { ArgonAvatar } from '../argon/ArgonAvatar';
-import { ConCode3DAvatar } from '../argon/ConCode3DAvatar';
+const ConCode3DAvatar = lazy(() => import('../argon/ConCode3DAvatar').then(m => ({ default: m.ConCode3DAvatar })));
 import { preparePromptForConCode } from '../../services/concode/normalizeUserPrompt';
 import { inferArgonStateFromText, parseConCodeStreamResponse, ArgonState, ARGON_STATE_THEME } from '../argon/argon.types';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
@@ -42,9 +42,55 @@ function getChatStorage(): Storage | null {
   return user?.uid ? window.localStorage : window.sessionStorage;
 }
 
-function getChatStorageKey(): string {
+function getChatStorageKey(tripId?: string): string {
   const user = getCurrentUser();
-  return user?.uid ? `tripverse_chat_u_${user.uid}` : 'tripverse_chat_guest';
+  const base = user?.uid ? `tripverse_chat_u_${user.uid}` : 'tripverse_chat_guest';
+  const cleanTripId = (tripId || '').trim();
+  return cleanTripId ? `${base}_t_${cleanTripId}` : base;
+}
+
+const VOICE_LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  hi: 'hi-IN',
+  es: 'es-ES',
+  fr: 'fr-FR',
+  de: 'de-DE',
+  ja: 'ja-JP',
+  zh: 'zh-CN',
+  ar: 'ar-SA',
+  it: 'it-IT',
+  pt: 'pt-BR'
+};
+
+function compressImageDataUrl(dataUrl: string, maxDim = 960, quality = 0.78): Promise<string> {
+  return new Promise((resolve) => {
+    if (typeof Image === 'undefined' || typeof document === 'undefined') {
+      resolve(dataUrl);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, maxDim / Math.max(img.width || 1, img.height || 1));
+        const width = Math.max(1, Math.round((img.width || maxDim) * scale));
+        const height = Math.max(1, Math.round((img.height || maxDim) * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } catch {
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
 }
 
 function isSafeMarkdownHref(rawHref: string): boolean {
@@ -310,20 +356,32 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
   const [viewer3DLandmark, setViewer3DLandmark] = useState('Heritage Landmark');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [chatNotice, setChatNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          setUploadedImage(reader.result);
-          triggerHaptic('light');
-        }
-      };
-      reader.readAsDataURL(file);
+    // Reset input immediately so re-selecting the same file always triggers onChange
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setChatNotice('Please select a valid image file (JPG, PNG, or WebP).');
+      return;
     }
+    if (file.size > 12 * 1024 * 1024) {
+      setChatNotice('Image is too large (max 12 MB). Please choose a smaller photo.');
+      return;
+    }
+    setChatNotice(null);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      if (typeof reader.result === 'string') {
+        const compressed = await compressImageDataUrl(reader.result);
+        setUploadedImage(compressed);
+        triggerHaptic('light');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Active day tab state for structured itinerary cards
@@ -349,11 +407,11 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
   const cleanTripDest = (trip?.destination && trip.destination !== 'Custom Spot' ? trip.destination : (trip?.name || 'your destination')).split(',')[0].trim();
 
-  const getInitialMessages = (): ChatMessage[] => {
+  const getInitialMessages = useCallback((): ChatMessage[] => {
     try {
       const storage = getChatStorage();
       if (storage) {
-        const key = getChatStorageKey();
+        const key = getChatStorageKey(trip?.id);
         const saved = storage.getItem(key);
         if (saved) {
           const parsed = JSON.parse(saved);
@@ -369,9 +427,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     let welcomeText = `[STATE:idle] Hi there! I'm your ConCode travel companion. Whether you have a destination in mind or just a weekend and a rough budget, I'd love to help you map it out. Where shall we begin?`;
 
     if (hasDestination && hasActivities) {
-      welcomeText = `[STATE:excited] Welcome back! Your itinerary for ${destName} is looking great. Whenever you feel ready, I can line up verified highway pitstops, budget checks, or weather forecasts—no rush at all.`;
+      welcomeText = `[STATE:excited] Welcome back! Your itinerary for ${destName} is looking great. Whenever you feel ready, I can line up verified pitstops, budget checks, or weather forecasts—no rush at all.`;
     } else if (hasDestination) {
-      welcomeText = `[STATE:listening] Heading to ${destName}? I can help map out your day-by-day pacing, budget allocation, and highway routes. Where would you like to start?`;
+      welcomeText = `[STATE:listening] Heading to ${destName}? I can help map out your day-by-day pacing, budget allocation, and routes. Where would you like to start?`;
     }
 
     return [
@@ -397,10 +455,10 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         ]
       }
     ];
-  };
+  }, [trip?.id, trip?.destination, trip?.itinerary]);
 
-  const { t } = useLanguage();
-  const [messages, setMessages] = useState<ChatMessage[]>(getInitialMessages);
+  const { language, t } = useLanguage();
+  const [messages, setMessages] = useState<ChatMessage[]>(() => getInitialMessages());
   const [inputQuery, setInputQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -408,9 +466,21 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
+  const voicePrefixRef = useRef<string>('');
+  const isSendingRef = useRef(false);
+  const activeRequestIdRef = useRef(0);
   const supportsVoice = typeof window !== 'undefined' && Boolean((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
   useModalBehavior(isOpen, onClose);
+
+  // Cancel any in-flight request side-effects if the user closes the drawer
+  useEffect(() => {
+    if (!isOpen && isSendingRef.current) {
+      activeRequestIdRef.current += 1;
+      isSendingRef.current = false;
+      setIsProcessing(false);
+    }
+  }, [isOpen]);
 
   // Clean up speech recognition on unmount
   useEffect(() => {
@@ -427,7 +497,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     if (typeof window === 'undefined') return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert(t('Voice dictation is supported in Chrome, Safari, and Chromium-based browsers.'));
+      setChatNotice(t('Voice dictation is supported in Chrome, Safari, and Chromium-based browsers.'));
       return;
     }
 
@@ -441,10 +511,12 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     }
 
     try {
+      setChatNotice(null);
+      voicePrefixRef.current = inputQuery.trim();
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
+      recognition.lang = VOICE_LOCALE_MAP[language] || 'en-US';
 
       recognition.onstart = () => {
         setIsListening(true);
@@ -457,13 +529,17 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           transcript += event.results[i][0].transcript;
         }
         if (transcript) {
-          setInputQuery(transcript);
+          const prefix = voicePrefixRef.current;
+          setInputQuery(prefix ? `${prefix} ${transcript.trim()}` : transcript);
         }
       };
 
       recognition.onerror = (event: any) => {
         console.warn('[VoiceInput] Speech recognition notice:', event.error);
         setIsListening(false);
+        if (event.error === 'not-allowed') {
+          setChatNotice('Microphone permission was blocked. Allow mic access in browser settings to use voice input.');
+        }
       };
 
       recognition.onend = () => {
@@ -488,14 +564,18 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     };
   }, []);
 
-  // Reload messages when switching accounts or signing in/out
+  // Reload scoped chat history whenever active trip or signed-in account changes
+  useEffect(() => {
+    setMessages(getInitialMessages());
+  }, [trip?.id, getInitialMessages]);
+
   useEffect(() => {
     const handleAuthChange = () => {
       setMessages(getInitialMessages());
     };
     window.addEventListener('tripverse_auth_state_change', handleAuthChange);
     return () => window.removeEventListener('tripverse_auth_state_change', handleAuthChange);
-  }, []);
+  }, [getInitialMessages]);
 
   const refreshBrainHealth = useCallback(async () => {
     setIsCheckingBrain(true);
@@ -516,17 +596,22 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     return () => window.removeEventListener('tripverse_concode_config_updated', handleConfigUpdate);
   }, [refreshBrainHealth]);
 
-  // Save messages to user-scoped storage tier
+  // Save messages to user+trip-scoped storage tier (strip large base64 data URLs to prevent 5MB localStorage overflow)
   useEffect(() => {
     if (messages.length > 0) {
       try {
         const storage = getChatStorage();
         if (storage) {
-          storage.setItem(getChatStorageKey(), JSON.stringify(messages.slice(-20)));
+          const compact = messages.slice(-20).map((m) =>
+            m.imageUrl && m.imageUrl.startsWith('data:image/') && m.imageUrl.length > 30_000
+              ? { ...m, imageUrl: undefined }
+              : m
+          );
+          storage.setItem(getChatStorageKey(trip?.id), JSON.stringify(compact));
         }
       } catch {}
     }
-  }, [messages]);
+  }, [messages, trip?.id]);
 
   const handleSendMessageRef = useRef<(textToSend?: string) => Promise<void>>(async () => {});
 
@@ -564,7 +649,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     resetConcodeSession();
     const storage = getChatStorage();
     if (storage) {
-      storage.removeItem(getChatStorageKey());
+      storage.removeItem(getChatStorageKey(trip?.id));
     }
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.removeItem('tripverse_chat_guest');
@@ -593,23 +678,57 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     triggerHaptic('light');
   };
 
-  const handleCopyMessage = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedMsgId(id);
-    triggerHaptic('light');
-    setTimeout(() => setCopiedMsgId(null), 2000);
+  const handleCopyMessage = async (id: string, text: string) => {
+    let copied = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      }
+    } catch {
+      // Fallback for restricted WebViews / non-HTTPS contexts
+      try {
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(el);
+      } catch {
+        copied = false;
+      }
+    }
+    if (copied) {
+      setCopiedMsgId(id);
+      triggerHaptic('light');
+      setTimeout(() => setCopiedMsgId(null), 2000);
+    } else {
+      setChatNotice('Could not copy to clipboard — please select and copy the message text manually.');
+    }
+  };
+
+  const handleStopGenerating = () => {
+    activeRequestIdRef.current += 1;
+    isSendingRef.current = false;
+    setIsProcessing(false);
+    setChatNotice('Stopped AI generation. Your free quota was not charged.');
   };
 
   const handleSendMessage = async (textToSend?: string) => {
     const query = textToSend || inputQuery;
     const currentImage = uploadedImage;
-    if ((!query.trim() && !currentImage) || isProcessing) return;
+    if ((!query.trim() && !currentImage) || isProcessing || isSendingRef.current) return;
 
     if (!quota.isPro && quota.weeklyAssistantMinutesRemaining <= 0) {
       if (onOpenProModal) onOpenProModal();
       return;
     }
 
+    isSendingRef.current = true;
+    const reqId = ++activeRequestIdRef.current;
+    setChatNotice(null);
     triggerHaptic('light');
 
     const userMessage: ChatMessage = {
@@ -624,12 +743,12 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     setInputQuery('');
     setUploadedImage(null);
     setIsProcessing(true);
-    consumeAssistantMinute(1);
 
     try {
       if (currentImage) {
         // Run multimodal visual AI scan
         const scanResult = await scanTravelImage(currentImage, query);
+        if (activeRequestIdRef.current !== reqId) return;
         let summaryText = '';
         if (scanResult.type === 'landmark') {
           summaryText = `📸 **Visual Landmark Identification: ${scanResult.name}**\n\n📍 **Location:** ${scanResult.city}, ${scanResult.country}\n🏛️ **Architecture:** ${scanResult.architecturalStyle}\n⏱️ **Recommended Duration:** ${scanResult.suggestedDuration}\n🎟️ **Entry Fee:** ${scanResult.entryFee}\n☀️ **Best Time to Visit:** ${scanResult.bestTimeToVisit}\n\n${scanResult.description}`;
@@ -667,11 +786,14 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           ] : undefined
         };
 
+        consumeAssistantMinute(1);
         setMessages(prev => [...prev, aiMessage]);
       } else {
         const preparedQuery = preparePromptForConCode(query);
         const response = await processTravelCoPilotQuery(preparedQuery, trip);
+        if (activeRequestIdRef.current !== reqId) return;
 
+        consumeAssistantMinute(1);
         setMessages(prev => [...prev, response.message]);
 
         if (response.updatedTrip) {
@@ -682,29 +804,91 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         }
       }
     } catch (e) {
+      if (activeRequestIdRef.current !== reqId) return;
       console.error('Error processing query:', e);
       setMessages(prev => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           sender: 'ai',
-          text: 'ConCode AI encountered a temporary issue. Please try again.',
+          text: 'ConCode AI encountered a temporary issue. Your quota was not deducted — please try again.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           engine: 'concode_brain'
         }
       ]);
     } finally {
-      setIsProcessing(false);
+      if (activeRequestIdRef.current === reqId) {
+        isSendingRef.current = false;
+        setIsProcessing(false);
+      }
     }
   };
 
   const handleActionButton = (action: string, payload?: any) => {
     const switchToTripSection = (subTab: string) => {
       if (onAppAction) {
-        onAppAction({ type: 'SWITCH_TAB', payload: { tab: 'trips', subTab } });
+        onAppAction({ type: 'SWITCH_TAB', payload: { tab: 'trip-detail', subTab } });
       }
       onClose();
     };
+
+    if (action === 'add_activity' && payload?.title) {
+      const targetDayNum = Math.max(1, Number(payload.day) || 1);
+      const existingDays = Array.isArray(trip?.itinerary) ? trip.itinerary : [];
+      if (existingDays.length === 0) {
+        setChatNotice('Create or open a trip first before adding landmarks to an itinerary.');
+        return;
+      }
+      const targetDay = existingDays.find(d => d.dayNumber === targetDayNum) || existingDays[0];
+      const normalizedTitle = String(payload.title).trim().toLowerCase();
+      if (targetDay.activities.some(a => (a.title || '').trim().toLowerCase() === normalizedTitle)) {
+        setChatNotice(`"${payload.title}" is already scheduled on Day ${targetDay.dayNumber}.`);
+        return;
+      }
+      const newActivity = {
+        id: `act-ai-${Date.now()}`,
+        dayNumber: targetDay.dayNumber,
+        time: '02:00 PM',
+        title: String(payload.title).trim(),
+        type: 'attraction' as const,
+        location: trip.destination || String(payload.title).trim(),
+        estimatedCost: Math.max(0, Number(payload.cost) || 0),
+        travelTimeMin: 15,
+        distanceKm: 2,
+        description: String(payload.description || 'Added via ConCode Visual Landmark Scanner.'),
+        coordinates:
+          trip.destinationDetails?.coordinates ||
+          trip.routeDetails?.destinationCoordinates ||
+          targetDay.activities[0]?.coordinates ||
+          { lat: 0, lng: 0 },
+        tag: 'AI Scanner',
+        completed: false,
+        isCustom: true
+      };
+      const updatedItinerary = existingDays.map(d =>
+        d.dayNumber === targetDay.dayNumber
+          ? {
+              ...d,
+              activities: [...d.activities, newActivity],
+              dayEstimatedCost: (d.dayEstimatedCost || 0) + newActivity.estimatedCost
+            }
+          : d
+      );
+      onUpdateTrip({ ...trip, itinerary: updatedItinerary });
+      triggerHaptic('success');
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ai-add-${Date.now()}`,
+          sender: 'ai',
+          text: `[STATE:excited] Added **${newActivity.title}** to **Day ${targetDay.dayNumber}** of your ${cleanTripDest} itinerary.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          engine: 'concode_brain',
+          actionButtons: [{ label: 'View Itinerary', action: 'VIEW_ITINERARY', primary: true }]
+        }
+      ]);
+      return;
+    }
 
     if (action === 'PLAN_ACTIVE_DEST') {
       const targetDest = payload?.destination || cleanTripDest || 'Dubai';
@@ -789,7 +973,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       const dest = trip.destination || 'Dubai';
       const flightUrl = `https://www.google.com/travel/flights?q=flights+from+${encodeURIComponent(origin)}+to+${encodeURIComponent(dest)}`;
       window.open(flightUrl, '_blank', 'noopener,noreferrer');
-    } else if (action === 'TRANSPORT_DEALS' || action === 'VIEW_DEALS') {
+    } else if (action === 'TRANSPORT_DEALS') {
       if (onAppAction) onAppAction({ type: 'OPEN_MODAL', payload: { modal: 'deals' } });
       onClose();
     } else if (action === 'VIEW_ROUTE') {
@@ -865,14 +1049,24 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           />
 
           <div className="relative z-10 flex items-center gap-3 min-w-0 flex-1">
-            {/* Living 3D Avatar (100% Unboxed & Borderless) */}
+            {/* Living 3D Avatar (100% Unboxed & Borderless, lazy-loaded so Three.js doesn't delay drawer open) */}
             <div className="relative flex items-center justify-center shrink-0">
-              <ConCode3DAvatar
-                emotion={argonHeaderState}
-                isSpeaking={Boolean(audioTour.isPlaying || argonHeaderState === 'speaking')}
-                size="sm"
-                className="w-12 h-12 sm:w-13 sm:h-13 drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-105"
-              />
+              <Suspense
+                fallback={
+                  <ArgonAvatar
+                    state={argonHeaderState}
+                    size="sm"
+                    className="w-12 h-12 sm:w-13 sm:h-13"
+                  />
+                }
+              >
+                <ConCode3DAvatar
+                  emotion={argonHeaderState}
+                  isSpeaking={Boolean(audioTour.isPlaying || argonHeaderState === 'speaking')}
+                  size="sm"
+                  className="w-12 h-12 sm:w-13 sm:h-13 drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-105"
+                />
+              </Suspense>
               <span
                 className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#0E2818] transition-colors duration-300 pointer-events-none"
                 style={{
@@ -1024,8 +1218,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             <button
               key={chip.label}
               type="button"
+              disabled={isProcessing}
               onClick={() => handleSendMessage(chip.prompt)}
-              className="text-[11px] px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/15 dark:border-emerald-500/20 text-slate-700 dark:text-slate-200 font-semibold whitespace-nowrap hover:border-emerald-500/50 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40 hover:shadow-[0_2px_12px_rgba(16,185,129,0.14)] transition-all flex items-center gap-1.5 flex-shrink-0 shadow-2xs cursor-pointer active:scale-95"
+              className="text-[11px] px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/15 dark:border-emerald-500/20 text-slate-700 dark:text-slate-200 font-semibold whitespace-nowrap hover:border-emerald-500/50 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40 hover:shadow-[0_2px_12px_rgba(16,185,129,0.14)] transition-all flex items-center gap-1.5 flex-shrink-0 shadow-2xs cursor-pointer active:scale-95 disabled:opacity-45 disabled:pointer-events-none"
             >
               {chip.icon && <chip.icon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
               <span>{chip.label}</span>
@@ -1121,7 +1316,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   </div>
 
                   {/* Interactive Structured Itinerary Card */}
-                  {msg.structuredItinerary && (
+                  {msg.structuredItinerary && Array.isArray(msg.structuredItinerary.days) && msg.structuredItinerary.days.length > 0 && (
                     <div className="bg-white dark:bg-slate-800/95 rounded-2xl border border-slate-200/90 dark:border-slate-700 shadow-md p-3.5 space-y-3 overflow-hidden">
                       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/80 pb-2.5 gap-2">
                         <div className="flex items-center gap-1.5 font-bold text-xs text-[#0B2545] dark:text-slate-100 min-w-0">
@@ -1264,9 +1459,11 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                       <div className="pt-2.5 space-y-2">
                         {primaryBtn && (
                           <button
-                            key={primaryBtn.label}
+                            key={`${primaryBtn.action}-primary`}
+                            type="button"
+                            disabled={isProcessing}
                             onClick={() => handleActionButton(primaryBtn.action, primaryBtn.payload)}
-                            className="w-full px-4 py-3 rounded-2xl text-xs font-bold text-left transition-all duration-200 shadow-[0_8px_25px_rgba(16,185,129,0.22)] hover:shadow-[0_10px_32px_rgba(16,185,129,0.32)] cursor-pointer active:scale-98 flex items-center justify-between group gap-2.5 bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] text-white border border-emerald-400/30 backdrop-blur-md"
+                            className="w-full px-4 py-3 rounded-2xl text-xs font-bold text-left transition-all duration-200 shadow-[0_8px_25px_rgba(16,185,129,0.22)] hover:shadow-[0_10px_32px_rgba(16,185,129,0.32)] cursor-pointer active:scale-98 flex items-center justify-between group gap-2.5 bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] text-white border border-emerald-400/30 backdrop-blur-md disabled:opacity-50 disabled:pointer-events-none"
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
                               <div className="w-6 h-6 rounded-lg bg-emerald-400/20 border border-emerald-300/30 flex items-center justify-center shrink-0">
@@ -1282,11 +1479,13 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                         )}
                         {secondaryBtns.length > 0 && (
                           <div className={`grid ${secondaryBtns.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-2`}>
-                            {secondaryBtns.map((btn) => (
+                            {secondaryBtns.map((btn, btnIdx) => (
                               <button
-                                key={btn.label}
+                                key={`${btn.action}-${btnIdx}`}
+                                type="button"
+                                disabled={isProcessing}
                                 onClick={() => handleActionButton(btn.action, btn.payload)}
-                                className="px-3.5 py-2.5 rounded-xl text-[11px] font-semibold text-left transition-all duration-200 cursor-pointer active:scale-98 flex items-center justify-between group gap-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/20 dark:border-emerald-500/25 shadow-[0_4px_16px_rgba(16,185,129,0.08)] hover:shadow-[0_6px_22px_rgba(16,185,129,0.20)] hover:border-emerald-500/50 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/50 text-slate-700 dark:text-slate-200"
+                                className="px-3.5 py-2.5 rounded-xl text-[11px] font-semibold text-left transition-all duration-200 cursor-pointer active:scale-98 flex items-center justify-between group gap-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/20 dark:border-emerald-500/25 shadow-[0_4px_16px_rgba(16,185,129,0.08)] hover:shadow-[0_6px_22px_rgba(16,185,129,0.20)] hover:border-emerald-500/50 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/50 text-slate-700 dark:text-slate-200 disabled:opacity-50 disabled:pointer-events-none"
                               >
                                 <span className="truncate">{btn.label}</span>
                                 <ArrowRight className="w-3 h-3 text-emerald-600/70 dark:text-emerald-400/70 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -1312,7 +1511,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                 <Sparkles className="w-4 h-4 text-emerald-300 animate-spin" />
                 <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900 animate-ping" />
               </div>
-              <div className="px-4 py-3 bg-white/95 dark:bg-slate-800/95 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl rounded-tl-xs text-xs text-slate-700 dark:text-slate-200 font-semibold shadow-[0_4px_20px_rgba(20,50,30,0.06)] flex items-center gap-2.5">
+              <div className="px-4 py-3 bg-white/95 dark:bg-slate-800/95 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl rounded-tl-xs text-xs text-slate-700 dark:text-slate-200 font-semibold shadow-[0_4px_20px_rgba(20,50,30,0.06)] flex items-center gap-2.5 flex-wrap">
                 <Activity className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse shrink-0" />
                 <span>ConCode AI reasoning travel schedule & budget...</span>
                 <span className="flex gap-1 ml-1">
@@ -1320,6 +1519,13 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.15s]" />
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" />
                 </span>
+                <button
+                  type="button"
+                  onClick={handleStopGenerating}
+                  className="min-h-0 ml-auto px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-[10px] font-bold hover:bg-rose-100 cursor-pointer transition-colors"
+                >
+                  Stop
+                </button>
               </div>
             </div>
           )}
@@ -1327,6 +1533,23 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
         {/* Input Bar - Elevated Floating Glass Capsule with Soft Blurred Emerald Glow */}
         <div className="p-3 sm:p-4 pb-safe bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-emerald-950/10 dark:border-white/10 shrink-0">
+          {/* Inline Liquid Glass Notice Banner (replaces raw alert() & surfaces photo/clipboard/voice feedback) */}
+          {chatNotice && (
+            <div
+              role="status"
+              className="mb-2 px-3 py-2 rounded-xl bg-amber-50/95 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-[11px] font-semibold text-amber-900 dark:text-amber-200 flex items-center justify-between gap-2 animate-in fade-in"
+            >
+              <span className="leading-snug">{chatNotice}</span>
+              <button
+                type="button"
+                onClick={() => setChatNotice(null)}
+                aria-label="Dismiss notice"
+                className="min-h-0 px-1 text-amber-700 dark:text-amber-300 hover:text-amber-950 cursor-pointer font-bold"
+              >
+                ✕
+              </button>
+            </div>
+          )}
           {/* Uploaded Image Preview Chip */}
           {uploadedImage && (
             <div className="mb-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-xs flex items-center justify-between animate-in fade-in">
@@ -1372,7 +1595,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               value={inputQuery}
               onChange={(e) => setInputQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
                   handleSendMessage();
                 }
