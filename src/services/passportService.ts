@@ -75,7 +75,7 @@ export const INITIAL_STAMPS: PassportStamp[] = [
     country: 'India',
     countryCode: 'IN',
     category: 'landmark',
-    unlockedAt: '2026-10-15T10:00:00.000Z',
+    unlockedAt: null,
     icon: 'mountain',
     color: '#15803D', // Emerald
     sealText: 'SOLANG VALLEY • 3,200M',
@@ -105,7 +105,7 @@ export const INITIAL_STAMPS: PassportStamp[] = [
     country: 'India',
     countryCode: 'IN',
     category: 'landmark',
-    unlockedAt: '2026-10-20T14:30:00.000Z',
+    unlockedAt: null,
     icon: 'monument',
     color: '#B45309', // Amber
     sealText: 'TAJ MAHAL • UNESCO',
@@ -180,7 +180,7 @@ export const INITIAL_STAMPS: PassportStamp[] = [
     country: 'India',
     countryCode: 'IN',
     category: 'country',
-    unlockedAt: '2026-09-01T08:00:00.000Z',
+    unlockedAt: null,
     icon: 'flag',
     color: '#EA580C', // Saffron
     sealText: 'IMMIGRATION BUREAU • IN',
@@ -305,8 +305,8 @@ export function getPassportProfile(userEmail?: string, userName?: string): Digit
     isFounder,
     travelTier: tier,
     stampsCount: unlocked.length,
-    countriesVisited: Math.max(1, countries),
-    totalKmTraveled: unlocked.length * 1420 + 2500
+    countriesVisited: countries,
+    totalKmTraveled: unlocked.length * 1420
   };
 }
 

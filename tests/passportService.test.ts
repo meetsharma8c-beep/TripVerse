@@ -19,12 +19,12 @@ describe('Digital Passport Service (passportService)', () => {
     localStorage.clear();
   });
 
-  it('retrieves default initial stamps with locked and verified entries', () => {
+  it('retrieves default initial stamps starting locked until earned by the traveler', () => {
     const stamps = getPassportStamps('traveler@example.com');
     expect(stamps.length).toBeGreaterThan(5);
     const manali = stamps.find(s => s.id === 'stamp_manali_himalayas');
     expect(manali).toBeDefined();
-    expect(manali?.unlockedAt).not.toBeNull();
+    expect(manali?.unlockedAt).toBeNull();
   });
 
   it('exclusively unlocks Founder Genesis stamp for meet.sharma8c@gmail.com', () => {

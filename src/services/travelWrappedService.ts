@@ -35,37 +35,22 @@ export function computeTravelWrapped(
 ): TravelWrappedStats {
   const isFounder = (userEmail || '').trim().toLowerCase() === FOUNDER_EMAIL;
 
-  // Filter trips for given year or all trips if small set
-  const relevantTrips = trips.length > 0 ? trips : [
-    {
-      id: 'default-manali',
-      name: 'Manali Alpine Expedition',
-      destination: 'Manali, Himachal Pradesh, India',
-      duration: 5,
-      budget: 25000,
-      travelers: 2,
-      startDate: '2026-10-15',
-      endDate: '2026-10-20',
-      status: 'completed',
-      itinerary: [
-        {
-          day: 1,
-          date: '2026-10-15',
-          activities: [
-            { id: '1', title: 'Hadimba Pagoda Temple', time: '10:00 AM', cost: 0, category: 'sightseeing', description: 'Cedar forest exploration' }
-          ]
-        }
-      ]
-    } as any
-  ];
+  // Only compute stats from the user's actual trips (never fabricate a default trip when trips is empty)
+  const relevantTrips = Array.isArray(trips) ? trips.filter(Boolean) : [];
 
   let totalDays = 0;
+  let routeKmTotal = 0;
   const countriesSet = new Set<string>();
   const citiesSet = new Set<string>();
   const allActivities: string[] = [];
 
   relevantTrips.forEach(t => {
-    totalDays += (t.duration || 4);
+    const daysCount = Number(t.durationDays || (t as any).duration || (Array.isArray(t.itinerary) ? t.itinerary.length : 0) || 1);
+    totalDays += daysCount;
+    const rawDist = Number(t.routeDetails?.distanceKm || 0);
+    if (Number.isFinite(rawDist) && rawDist > 0) {
+      routeKmTotal += Math.round(rawDist);
+    }
     const dest = t.destination || t.name || 'Global Destination';
     const parts = dest.split(',').map((p: string) => p.trim());
     if (parts.length > 1) {
@@ -87,8 +72,12 @@ export function computeTravelWrapped(
     }
   });
 
-  // Calculate kilometers (approx 950km per city + base)
-  const totalKm = (citiesSet.size * 950) + (totalDays * 120) + (isFounder ? 5000 : 1200);
+  // Calculate kilometers strictly from actual trips (0 km when user has 0 trips)
+  const totalKm = relevantTrips.length === 0
+    ? 0
+    : routeKmTotal > 0
+      ? routeKmTotal
+      : (citiesSet.size * 950) + (totalDays * 120);
 
   // Determine Traveler Archetype with zero emojis
   const destString = Array.from(citiesSet).join(' ').toLowerCase();
@@ -136,7 +125,7 @@ export function computeTravelWrapped(
     };
   }
 
-  const topLandmark = allActivities[0] || (citiesSet.has('Paris') ? 'Eiffel Tower' : citiesSet.has('Dubai') ? 'Burj Khalifa' : 'Hadimba Pagoda Temple');
+  const topLandmark = allActivities[0] || (citiesSet.has('Paris') ? 'Eiffel Tower' : citiesSet.has('Dubai') ? 'Burj Khalifa' : relevantTrips[0]?.destination || 'None Yet');
 
   return {
     year,

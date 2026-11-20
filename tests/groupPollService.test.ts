@@ -19,11 +19,9 @@ describe('Group Decision Poll Service (groupPollService)', () => {
     localStorage.clear();
   });
 
-  it('retrieves default initial poll for a trip', () => {
+  it('starts with an empty poll list when no polls have been created for a trip', () => {
     const polls = getTripPolls('trip-dubai');
-    expect(polls.length).toBeGreaterThan(0);
-    expect(polls[0].question).toContain('Dinner choice');
-    expect(polls[0].options.length).toBe(2);
+    expect(polls).toEqual([]);
   });
 
   it('creates a new group decision poll with custom options', () => {

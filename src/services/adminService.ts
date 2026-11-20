@@ -172,12 +172,12 @@ export async function fetchFounderUserRoster(): Promise<{ users: AdminUserRecord
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  const totalRegistered = Math.max(140, users.length);
-  const activeSignedUsers = Math.max(130, users.filter(u => u.lastSignInAt).length);
-  const genuineTravelers = Math.max(17, users.filter(u => u.isGenuine).length);
+  const totalRegistered = users.length;
+  const activeSignedUsers = users.filter(u => u.lastSignInAt).length;
+  const genuineTravelers = users.filter(u => u.isGenuine).length;
   const proSubscribers = users.filter(u => u.tier === 'pro').length;
   const vipFounders = users.filter(u => u.tier === 'vip_founder').length;
-  const freeAccounts = totalRegistered - proSubscribers - vipFounders;
+  const freeAccounts = Math.max(0, totalRegistered - proSubscribers - vipFounders);
 
   return {
     users,

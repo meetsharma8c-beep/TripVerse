@@ -85,10 +85,10 @@ describe('Founder Command Center & Admin Service Unit Tests', () => {
 
     const { users, metrics } = await fetchFounderUserRoster();
 
-    // Verify metrics integrity
-    expect(metrics.totalRegistered).toBeGreaterThanOrEqual(140);
-    expect(metrics.activeSignedUsers).toBeGreaterThanOrEqual(130);
-    expect(metrics.genuineTravelers).toBeGreaterThanOrEqual(17);
+    // Verify metrics reflect actual registered users (zero artificial floors)
+    expect(metrics.totalRegistered).toBeGreaterThanOrEqual(1);
+    expect(metrics.activeSignedUsers).toBeGreaterThanOrEqual(1);
+    expect(metrics.genuineTravelers).toBeGreaterThanOrEqual(1);
     expect(metrics.vipFounders).toBe(1);
 
     // Verify user list contains Founder with VIP Founder tier
