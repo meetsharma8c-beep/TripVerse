@@ -1071,6 +1071,12 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     ? parsedLatestAi.state
     : 'idle';
 
+  const handleGlassPointerMove = (e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+  };
+
   if (!isOpen) return null;
 
   const drawerMarkup = (
@@ -1079,22 +1085,37 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       aria-modal="true"
       aria-label="AI Travel Assistant"
       onClick={onClose}
-      className="fixed inset-0 z-[95] overflow-hidden overscroll-contain bg-slate-900/65 flex justify-end items-end sm:items-stretch"
+      className="fixed inset-0 z-[95] overflow-hidden overscroll-contain liquid-chat-backdrop flex justify-end items-end sm:items-stretch"
     >
       
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-md md:max-w-lg bg-white/97 dark:bg-slate-900/97 h-[92dvh] sm:h-[calc(100dvh-1.5rem)] sm:my-3 sm:mr-3 max-h-[100dvh] rounded-t-3xl sm:rounded-[28px] shadow-[0_-10px_40px_rgba(16,185,129,0.12)] sm:shadow-[0_24px_60px_-12px_rgba(7,23,44,0.38)] flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden border-t sm:border border-emerald-500/20 dark:border-white/15"
+        className="w-full sm:max-w-md md:max-w-lg liquid-chat-shell liquid-rim h-[92dvh] sm:h-[calc(100dvh-1.5rem)] sm:my-3 sm:mr-3 max-h-[100dvh] rounded-t-[34px] sm:rounded-[32px] flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden"
       >
         
-        {/* Mobile Pull Handle */}
-        <div className="w-12 h-1.5 bg-slate-300/80 dark:bg-slate-700 rounded-full mx-auto my-2 sm:hidden shrink-0" />
+        {/* Mobile Liquid Glass Pull Handle */}
+        <div className="w-11 h-1.5 bg-slate-400/45 dark:bg-white/25 rounded-full mx-auto my-2 sm:hidden shrink-0" />
 
-        {/* Unified Luxury ConCode AI Header */}
-        <div className="relative px-4 sm:px-5 py-3.5 bg-gradient-to-r from-[#0C2415] via-[#163D25] to-[#0E2818] text-white flex items-center justify-between gap-2 border-b border-emerald-500/20 shadow-[0_4px_24px_rgba(16,185,129,0.18)] shrink-0 overflow-hidden">
+        {/* Unified Optical Smoked-Emerald Liquid Glass Header */}
+        <div
+          onMouseMove={handleGlassPointerMove}
+          className="liquid-chat-header liquid-sheen px-4 sm:px-5 py-3.5 text-white flex items-center justify-between gap-2 shrink-0 overflow-hidden"
+        >
+          {/* Delicate Topographic Contour SVG Overlay for Editorial Depth */}
+          <svg
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-8 -top-8 w-52 h-36 text-emerald-200/[0.11]"
+            viewBox="0 0 220 140"
+            fill="none"
+          >
+            <path d="M10 120 C60 80, 110 105, 165 55 S 205 25, 218 10" stroke="currentColor" strokeWidth="1.4" />
+            <path d="M35 132 C85 92, 130 116, 182 68 S 212 38, 224 22" stroke="currentColor" strokeWidth="1.2" />
+            <path d="M0 95 C55 55, 105 78, 155 32" stroke="currentColor" strokeWidth="1" />
+          </svg>
+
           {/* Subtle Ambient Radial Glow Behind Avatar */}
           <div 
-            className="pointer-events-none absolute -left-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 transition-all duration-700"
+            className="pointer-events-none absolute -left-6 -top-6 w-36 h-36 rounded-full blur-2xl opacity-45 transition-all duration-700"
             style={{ backgroundColor: ARGON_STATE_THEME[argonHeaderState].ledHex }}
           />
 
@@ -1177,10 +1198,10 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             </div>
           </div>
 
-          <div className="relative z-10 flex items-center gap-1 shrink-0">
+          <div className="relative z-10 flex items-center gap-1.5 shrink-0">
             <button
               onClick={handleClearChat}
-              className="p-2 rounded-xl text-emerald-100/70 hover:text-red-300 hover:bg-white/10 transition-colors cursor-pointer"
+              className="min-h-0 p-2 rounded-xl liquid-chat-icon-btn text-emerald-100/85 hover:text-rose-200 cursor-pointer active:scale-95"
               title={t('Clear Conversation History')}
             >
               <Trash2 className="w-4 h-4" />
@@ -1189,15 +1210,15 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             <button
               onClick={refreshBrainHealth}
               disabled={isCheckingBrain}
-              className="p-2 rounded-xl text-emerald-100/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="min-h-0 p-2 rounded-xl liquid-chat-icon-btn text-emerald-100/85 hover:text-white cursor-pointer active:scale-95"
               title={t('Refresh AI Status')}
             >
-              <RefreshCw className={`w-4 h-4 ${isCheckingBrain ? 'animate-spin text-emerald-400' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isCheckingBrain ? 'animate-spin text-emerald-300' : ''}`} />
             </button>
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-emerald-100/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="min-h-0 p-2 rounded-xl liquid-chat-icon-btn text-emerald-100/85 hover:text-white cursor-pointer active:scale-95"
               aria-label="Close Assistant"
             >
               <X className="w-5 h-5" />
@@ -1256,9 +1277,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           </div>
         )}
 
-        {/* Quick Scenario Chips Carousel */}
+        {/* Quick Scenario Chips Carousel — Liquid Glass Pills */}
         <div
-          className="px-3.5 py-2.5 bg-gradient-to-r from-[#F4F7F3] via-white to-[#F4F7F3] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border-b border-emerald-950/5 dark:border-slate-800 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0 shadow-2xs pr-8"
+          className="liquid-chat-chip-bar px-3.5 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0 pr-8"
           style={{
             maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 100%)',
             WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 100%)',
@@ -1270,7 +1291,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               type="button"
               disabled={isProcessing}
               onClick={() => handleSendMessage(chip.prompt)}
-              className="text-[11px] px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/15 dark:border-emerald-500/20 text-slate-700 dark:text-slate-200 font-semibold whitespace-nowrap hover:border-emerald-500/50 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40 hover:shadow-[0_2px_12px_rgba(16,185,129,0.14)] transition-all flex items-center gap-1.5 flex-shrink-0 shadow-2xs cursor-pointer active:scale-95 disabled:opacity-45 disabled:pointer-events-none"
+              className="min-h-0 liquid-chat-chip text-[11px] px-3 py-1.5 rounded-full text-slate-700 dark:text-slate-200 font-semibold whitespace-nowrap hover:text-emerald-800 dark:hover:text-emerald-300 flex items-center gap-1.5 flex-shrink-0 cursor-pointer active:scale-95 disabled:opacity-45 disabled:pointer-events-none"
             >
               {chip.icon && <chip.icon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
               <span>{chip.label}</span>
@@ -1278,8 +1299,8 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           ))}
         </div>
 
-        {/* Message Stream */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-gradient-to-b from-[#F7FAF5] via-[#F3F6F1] to-[#ECF2EB] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        {/* Message Stream — Organic Liquid Caustic Mesh */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 liquid-chat-stream">
           {messages.map((msg) => {
             const isAi = msg.sender === 'ai';
             const parsed = isAi
@@ -1353,11 +1374,11 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                     </div>
                   )}
 
-                  {/* Message Bubble */}
-                  <div className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-[13px] leading-relaxed overflow-hidden break-words ${
+                  {/* Optical Liquid Glass Message Bubble */}
+                  <div className={`p-3.5 sm:p-4 text-xs sm:text-[13px] leading-relaxed overflow-hidden break-words liquid-rim ${
                     isAi
-                      ? 'w-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-slate-800 dark:text-slate-100 rounded-tl-xs border border-emerald-500/15 dark:border-emerald-500/20 shadow-[0_6px_28px_rgba(16,185,129,0.08)]'
-                      : 'w-fit ml-auto bg-gradient-to-br from-[#1E4D34] via-[#245D3F] to-[#2D6E4B] text-white font-medium rounded-tr-xs shadow-md shadow-emerald-950/20'
+                      ? 'w-full liquid-chat-bubble-ai text-slate-800 dark:text-slate-100 rounded-[22px] rounded-tl-[6px]'
+                      : 'w-fit ml-auto liquid-chat-bubble-user text-white font-medium rounded-[22px] rounded-tr-[6px]'
                   }`}>
                     {isAi ? (
                       <FormattedAIMessage text={parsed.cleanText} />
@@ -1368,7 +1389,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
                   {/* Interactive Structured Itinerary Card */}
                   {msg.structuredItinerary && Array.isArray(msg.structuredItinerary.days) && msg.structuredItinerary.days.length > 0 && (
-                    <div className="bg-white dark:bg-slate-800/95 rounded-2xl border border-slate-200/90 dark:border-slate-700 shadow-md p-3.5 space-y-3 overflow-hidden">
+                    <div className="liquid-chat-card liquid-rim rounded-[22px] p-3.5 space-y-3 overflow-hidden">
                       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/80 pb-2.5 gap-2">
                         <div className="flex items-center gap-1.5 font-bold text-xs text-[#0B2545] dark:text-slate-100 min-w-0">
                           <Calendar className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -1456,7 +1477,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                     const buffer = Number(String(msg.budgetBreakdown.buffer || 0).replace(/[^0-9.-]+/g, '')) || 0;
 
                     return (
-                      <div className="bg-white dark:bg-slate-800/95 rounded-2xl border border-slate-200/90 dark:border-slate-700 shadow-md p-3.5 space-y-3 overflow-hidden">
+                      <div className="liquid-chat-card liquid-rim rounded-[22px] p-3.5 space-y-3 overflow-hidden">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/80 pb-2">
                           <span className="text-xs font-bold text-[#0B2545] dark:text-slate-100 flex items-center gap-1.5">
                             <Coins className="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -1513,8 +1534,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                             key={`${primaryBtn.action}-primary`}
                             type="button"
                             disabled={isProcessing}
+                            onMouseMove={handleGlassPointerMove}
                             onClick={() => handleActionButton(primaryBtn.action, primaryBtn.payload)}
-                            className="w-full px-4 py-3 rounded-2xl text-xs font-bold text-left transition-all duration-200 shadow-[0_8px_25px_rgba(16,185,129,0.22)] hover:shadow-[0_10px_32px_rgba(16,185,129,0.32)] cursor-pointer active:scale-98 flex items-center justify-between group gap-2.5 bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] text-white border border-emerald-400/30 backdrop-blur-md disabled:opacity-50 disabled:pointer-events-none"
+                            className="w-full px-4 py-3 rounded-[20px] text-xs font-bold text-left transition-all duration-200 cursor-pointer active:scale-98 flex items-center justify-between group gap-2.5 liquid-chat-bubble-user liquid-rim liquid-sheen text-white disabled:opacity-50 disabled:pointer-events-none"
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
                               <div className="w-6 h-6 rounded-lg bg-emerald-400/20 border border-emerald-300/30 flex items-center justify-center shrink-0">
@@ -1522,7 +1544,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                               </div>
                               <span className="break-words min-w-0 font-bold">{primaryBtn.label}</span>
                             </div>
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] text-emerald-100 font-bold shrink-0 uppercase tracking-wider group-hover:bg-white/20 transition-all">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/12 border border-white/20 text-[10px] text-emerald-100 font-bold shrink-0 uppercase tracking-wider group-hover:bg-white/22 transition-all">
                               <span>Action</span>
                               <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1" />
                             </div>
@@ -1536,7 +1558,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                                 type="button"
                                 disabled={isProcessing}
                                 onClick={() => handleActionButton(btn.action, btn.payload)}
-                                className="px-3.5 py-2.5 rounded-xl text-[11px] font-semibold text-left transition-all duration-200 cursor-pointer active:scale-98 flex items-center justify-between group gap-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/20 dark:border-emerald-500/25 shadow-[0_4px_16px_rgba(16,185,129,0.08)] hover:shadow-[0_6px_22px_rgba(16,185,129,0.20)] hover:border-emerald-500/50 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/50 text-slate-700 dark:text-slate-200 disabled:opacity-50 disabled:pointer-events-none"
+                                className="px-3.5 py-2.5 rounded-2xl text-[11px] font-semibold text-left cursor-pointer active:scale-98 flex items-center justify-between group gap-2 liquid-chat-chip text-slate-700 dark:text-slate-200 disabled:opacity-50 disabled:pointer-events-none"
                               >
                                 <span className="truncate">{btn.label}</span>
                                 <ArrowRight className="w-3 h-3 text-emerald-600/70 dark:text-emerald-400/70 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -1562,7 +1584,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                 <Sparkles className="w-4 h-4 text-emerald-300 animate-spin" />
                 <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900 animate-ping" />
               </div>
-              <div className="px-4 py-3 bg-white/95 dark:bg-slate-800/95 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl rounded-tl-xs text-xs text-slate-700 dark:text-slate-200 font-semibold shadow-[0_4px_20px_rgba(20,50,30,0.06)] flex items-center gap-2.5 flex-wrap">
+              <div className="px-4 py-3 liquid-chat-bubble-ai liquid-rim rounded-[20px] rounded-tl-[6px] text-xs text-slate-700 dark:text-slate-200 font-semibold flex items-center gap-2.5 flex-wrap">
                 <Activity className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse shrink-0" />
                 <span>ConCode AI reasoning travel schedule & budget...</span>
                 <span className="flex gap-1 ml-1">
@@ -1573,7 +1595,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                 <button
                   type="button"
                   onClick={handleStopGenerating}
-                  className="min-h-0 ml-auto px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-[10px] font-bold hover:bg-rose-100 cursor-pointer transition-colors"
+                  className="min-h-0 ml-auto px-2.5 py-1 rounded-full bg-rose-500/10 dark:bg-rose-500/20 border border-rose-300/60 dark:border-rose-500/40 text-rose-700 dark:text-rose-200 text-[10px] font-bold hover:bg-rose-500/20 cursor-pointer transition-colors"
                 >
                   Stop
                 </button>
@@ -1582,8 +1604,8 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           )}
         </div>
 
-        {/* Input Bar - Elevated Floating Glass Capsule with Soft Blurred Emerald Glow */}
-        <div className="p-3 sm:p-4 pb-safe bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-emerald-950/10 dark:border-white/10 shrink-0">
+        {/* Input Bar - Floating Optical Liquid Glass Capsule Dock */}
+        <div className="liquid-chat-dock p-3 sm:p-4 pb-safe shrink-0">
           {/* Inline Liquid Glass Notice Banner (replaces raw alert() & surfaces photo/clipboard/voice feedback) */}
           {chatNotice && (
             <div
@@ -1636,7 +1658,10 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               </button>
             </div>
           )}
-          <div className="flex items-end gap-1.5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-emerald-500/25 dark:border-emerald-500/30 shadow-[0_4px_20px_rgba(16,185,129,0.12)] focus-within:border-emerald-500/60 focus-within:shadow-[0_0_25px_rgba(16,185,129,0.25)] rounded-2xl px-3 py-1.5 transition-all">
+          <div
+            onMouseMove={handleGlassPointerMove}
+            className="liquid-chat-composer liquid-rim liquid-sheen flex items-end gap-1.5 rounded-[24px] px-3.5 py-2"
+          >
             <Compass className="w-4 h-4 text-emerald-600/70 dark:text-emerald-400/70 shrink-0 hidden sm:block mb-2.5" />
             <textarea
               ref={textareaRef}
@@ -1690,9 +1715,10 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
             <button
+              type="button"
               onClick={() => handleSendMessage()}
               disabled={(!inputQuery.trim() && !uploadedImage) || isProcessing}
-              className="min-h-0 w-10 h-10 rounded-xl bg-gradient-to-r from-[#18442D] via-[#245D3F] to-[#18442D] hover:from-[#1E5237] hover:to-[#225C3C] text-white flex items-center justify-center shadow-sm shadow-emerald-950/20 transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shrink-0"
+              className="min-h-0 w-10 h-10 rounded-full liquid-chat-bubble-user liquid-rim text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shrink-0"
               aria-label={t('Send Message')}
             >
               <Send className="w-4 h-4" />
