@@ -272,8 +272,13 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
       resizeObserver.observe(mountRef.current);
     }
 
-    // 6. Animation loop
+    // 6. Visibility-aware animation loop (pauses cleanly when tab/app is backgrounded)
+    let isVisible = typeof document === 'undefined' ? true : !document.hidden;
     const animate = () => {
+      if (!isVisible) {
+        animFrameIdRef.current = 0;
+        return;
+      }
       animFrameIdRef.current = requestAnimationFrame(animate);
 
       if (isAutoRotateRef.current && !isDragging && rootGroup) {
@@ -286,10 +291,21 @@ export const Landmark3DViewer: React.FC<Landmark3DViewerProps> = ({
 
       renderer.render(scene, camera);
     };
+    const handleVisibility = () => {
+      isVisible = !document.hidden;
+      if (isVisible && !animFrameIdRef.current) {
+        animate();
+      } else if (!isVisible && animFrameIdRef.current) {
+        cancelAnimationFrame(animFrameIdRef.current);
+        animFrameIdRef.current = 0;
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
     animate();
 
     // 7. Cleanup
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
       if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
       resizeObserver.disconnect();
       dom.removeEventListener('mousedown', onPointerDown);

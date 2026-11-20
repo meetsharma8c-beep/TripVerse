@@ -170,7 +170,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
             <ScrollReveal
               key={dest.id}
               delayMs={(idx % 4) * 55}
-              className="h-full"
+              className="h-full tv-cv-card"
             >
               <LiquidCard
                 onClick={() => onSelectDestination(dest)}
@@ -186,6 +186,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
                     alt={dest.name}
                     className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                     loading="lazy"
+                    decoding="async"
                     onError={handleImageError}
                   />
                   {/* Subtle vignette for badge legibility */}

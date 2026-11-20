@@ -439,7 +439,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
             <ScrollReveal
               key={dest.id}
               delayMs={(idx % 4) * 55}
-              className="bg-white dark:bg-[#0C1523] rounded-[28px] overflow-hidden border border-[#E2EBE1] dark:border-slate-800 shadow-[0_4px_20px_rgba(45,90,61,0.05)] hover:shadow-[0_16px_36px_rgba(45,90,61,0.12)] hover:border-[#2D5A3D] dark:hover:border-emerald-600 card-elevate flex flex-col justify-between group cursor-pointer"
+              className="tv-cv-card bg-white dark:bg-[#0C1523] rounded-[28px] overflow-hidden border border-[#E2EBE1] dark:border-slate-800 shadow-[0_4px_20px_rgba(45,90,61,0.05)] hover:shadow-[0_16px_36px_rgba(45,90,61,0.12)] hover:border-[#2D5A3D] dark:hover:border-emerald-600 card-elevate flex flex-col justify-between group cursor-pointer"
             >
               <div 
                 role="button"

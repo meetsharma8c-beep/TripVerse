@@ -592,7 +592,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       : 'border-slate-200 opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <img src={preset} alt="preset" className="w-full h-full object-cover" />
+                  <img src={preset} alt="preset" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -767,7 +767,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         : 'border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <img src={account.photoURL} alt={account.displayName} className="w-9 h-9 rounded-full object-cover" />
+                    <img src={account.photoURL} alt={account.displayName} loading="lazy" decoding="async" className="w-9 h-9 rounded-full object-cover" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-slate-900 truncate">{account.displayName}</p>
                       <p className="text-[11px] text-slate-500 truncate">{account.email || account.phoneNumber || 'Phone Account'}</p>

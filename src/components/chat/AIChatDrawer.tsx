@@ -1071,10 +1071,26 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     ? parsedLatestAi.state
     : 'idle';
 
+  const glassRectCacheRef = useRef<WeakMap<HTMLElement, DOMRect>>(new WeakMap());
+  const glassSheenRafRef = useRef<number | null>(null);
+
   const handleGlassPointerMove = (e: React.MouseEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
-    e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+    if (typeof window !== 'undefined' && !window.matchMedia?.('(hover: hover)').matches) return;
+    const el = e.currentTarget;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    if (glassSheenRafRef.current === null) {
+      glassSheenRafRef.current = window.requestAnimationFrame(() => {
+        glassSheenRafRef.current = null;
+        let rect = glassRectCacheRef.current.get(el);
+        if (!rect) {
+          rect = el.getBoundingClientRect();
+          glassRectCacheRef.current.set(el, rect);
+        }
+        el.style.setProperty('--mouse-x', `${clientX - rect.left}px`);
+        el.style.setProperty('--mouse-y', `${clientY - rect.top}px`);
+      });
+    }
   };
 
   if (!isOpen) return null;
@@ -1098,7 +1114,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
         {/* Unified Optical Smoked-Emerald Liquid Glass Header */}
         <div
+          onMouseEnter={(e) => { glassRectCacheRef.current.set(e.currentTarget, e.currentTarget.getBoundingClientRect()); }}
           onMouseMove={handleGlassPointerMove}
+          onMouseLeave={(e) => { glassRectCacheRef.current.delete(e.currentTarget); }}
           className="liquid-chat-header liquid-sheen px-4 sm:px-5 py-3.5 text-white flex items-center justify-between gap-2 shrink-0 overflow-hidden"
         >
           {/* Delicate Topographic Contour SVG Overlay for Editorial Depth */}
@@ -1370,7 +1388,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
                   {/* Attached Image Thumbnail */}
                   {msg.imageUrl && (
                     <div className="mb-2 max-w-xs rounded-2xl overflow-hidden border border-emerald-500/30 shadow-md">
-                      <img src={msg.imageUrl} alt="Uploaded attachment" className="w-full max-h-48 object-cover" />
+                      <img src={msg.imageUrl} alt="Uploaded attachment" loading="lazy" decoding="async" className="w-full max-h-48 object-cover" />
                     </div>
                   )}
 
@@ -1627,7 +1645,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           {uploadedImage && (
             <div className="mb-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-xs flex items-center justify-between animate-in fade-in">
               <div className="flex items-center gap-2">
-                <img src={uploadedImage} alt="Preview" className="w-8 h-8 rounded-lg object-cover border border-emerald-400" />
+                <img src={uploadedImage} alt="Preview" decoding="async" className="w-8 h-8 rounded-lg object-cover border border-emerald-400" />
                 <span className="text-emerald-800 dark:text-emerald-200 font-semibold text-[11px]">
                   📸 Photo attached — ConCode ready to scan
                 </span>

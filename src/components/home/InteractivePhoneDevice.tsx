@@ -1096,6 +1096,8 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                       <img 
                         src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" 
                         alt="Camera scene"
+                        loading="lazy"
+                        decoding="async"
                         style={{
                           transform: `scale(${cameraZoom === 0.5 ? 0.9 : cameraZoom === 2 ? 1.4 : cameraZoom === 5 ? 2.1 : 1}) ${cameraLensFlipped ? 'scaleX(-1)' : ''}`,
                           transition: 'transform 0.4s cubic-bezier(0.16,1,0.3,1)'
@@ -1150,6 +1152,8 @@ export const InteractivePhoneDevice: React.FC<InteractivePhoneDeviceProps> = ({
                         <img 
                           src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=120&q=80" 
                           alt="Thumbnail"
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       </button>

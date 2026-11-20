@@ -877,6 +877,36 @@ html.dark .liquid-chat-composer:focus-within {
   }
 }
 
+/* Eliminate expensive nested backdrop-filter GPU passes inside glass cards & bars */
+.glass-frosted .glass-clear,
+.glass-elevated .glass-clear,
+.liquid-glass .glass-clear {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+html.dark .glass-frosted .glass-clear,
+html.dark .glass-elevated .glass-clear,
+html.dark .liquid-glass .glass-clear {
+  background: rgba(15, 23, 42, 0.82);
+}
+
+.glass-frosted .glass-clear-dark,
+.glass-elevated .glass-clear-dark,
+.liquid-glass .glass-clear-dark {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(10, 22, 16, 0.72);
+}
+
+.glass-frosted .glass-accent,
+.glass-elevated .glass-accent,
+.liquid-glass .glass-accent {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 /* Native iOS / Android WebView smooth inertial scrolling & selection hygiene */
 html.os-ios,
 html.os-android {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, useCallback, startTransition, Suspense, lazy } from 'react';
 import { LiquidGlassFilters } from './components/ui/liquid';
 import { Trip, Destination, BreakStop, BudgetBreakdown, UserProfile, ItineraryActivity, DayPlan } from './types/trip';
 import {
@@ -850,7 +850,9 @@ export function App() {
   }, []);
 
   const handleNavigateTab = useCallback((tab: string) => {
-    setCurrentTab(tab);
+    startTransition(() => {
+      setCurrentTab(tab);
+    });
     scrollPageToTopInstant();
   }, [scrollPageToTopInstant]);
 
@@ -858,7 +860,9 @@ export function App() {
     subTab: 'itinerary' | 'hub' | 'packing' | 'expenses' | 'gems' | 'deals' | 'route' | 'breakstops' | 'budget' | 'safety',
     options?: { scrollTargetId?: string; forceScroll?: boolean }
   ) => {
-    setTripSubTab(subTab);
+    startTransition(() => {
+      setTripSubTab(subTab);
+    });
     window.setTimeout(() => {
       const targetEl = options?.scrollTargetId
         ? document.getElementById(options.scrollTargetId) || tripSubSectionRef.current
@@ -887,6 +891,36 @@ export function App() {
     }
     scrollPageToTopInstant();
   }, [currentTab, scrollPageToTopInstant]);
+
+  // Idle background prefetch of core navigation & AI drawer chunks so first-tap transitions are 0ms instant
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const warmCoreChunks = () => {
+      void import('./components/explore/ExploreView');
+      void import('./components/trips/MyTripsView');
+      void import('./components/saved/SavedItemsView');
+      void import('./components/profile/ProfileView');
+      void import('./components/planner/PlannerWizard');
+      void import('./components/chat/AIChatDrawer');
+    };
+    const ric = (window as any).requestIdleCallback as ((cb: () => void, opts?: { timeout: number }) => number) | undefined;
+    const cic = (window as any).cancelIdleCallback as ((id: number) => void) | undefined;
+    let timerId: number | undefined;
+    let idleId: number | undefined;
+
+    timerId = window.setTimeout(() => {
+      if (ric) {
+        idleId = ric(warmCoreChunks, { timeout: 2500 });
+      } else {
+        warmCoreChunks();
+      }
+    }, 1500);
+
+    return () => {
+      if (timerId !== undefined) window.clearTimeout(timerId);
+      if (idleId !== undefined && cic) cic(idleId);
+    };
+  }, []);
 
   // Overlay modal state tracking for Android back gesture & browser history synchronization
   const isOverlayModalOpen = Boolean(

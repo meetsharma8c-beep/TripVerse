@@ -252,7 +252,7 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
                 {secondsRemaining > 0 ? (
                   <div className="space-y-2">
                     <div className="relative mx-auto w-40 h-40 p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white shadow-xs flex items-center justify-center">
-                      <img src={qrCodeUrl} alt="Scan to pay settlement" className="w-full h-full object-contain rounded-lg" />
+                      <img src={qrCodeUrl} alt="Scan to pay settlement" decoding="async" className="w-full h-full object-contain rounded-lg" />
                       <div className="absolute inset-0 m-auto w-8 h-8 rounded-lg bg-white/95 border border-emerald-700 shadow-sm flex items-center justify-center">
                         <span className="text-[10px] font-black text-emerald-800">UPI</span>
                       </div>

@@ -335,7 +335,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
                   {/* Image Preview if chosen */}
                   {photoUrl && (
                     <div className="w-32 h-24 rounded-2xl overflow-hidden border border-emerald-300 relative group shrink-0">
-                      <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={photoUrl} alt="Preview" decoding="async" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-[10px] font-bold">
                         <Check className="w-4 h-4" />
                       </div>
@@ -368,7 +368,7 @@ export const TripPhotoJournalModal: React.FC<TripPhotoJournalModalProps> = ({
                             : 'border-slate-200 hover:border-emerald-300'
                         }`}
                       >
-                        <img src={preset.url} alt={preset.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        <img src={preset.url} alt={preset.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-1.5 flex flex-col justify-end">
                           <span className="text-[9px] font-bold text-white leading-tight line-clamp-2">
                             {preset.title}

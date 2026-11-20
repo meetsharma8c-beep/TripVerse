@@ -64,9 +64,10 @@ export const ConCode3DAvatar: React.FC<ConCode3DAvatarProps> = ({
 
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+      renderer = new THREE.WebGLRenderer({ antialias: !isCoarsePointer, alpha: true, powerPreference: 'high-performance' });
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isCoarsePointer ? 1.5 : 2));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.15;
       container.appendChild(renderer.domElement);
@@ -280,7 +281,10 @@ export const ConCode3DAvatar: React.FC<ConCode3DAvatarProps> = ({
     const clock = new THREE.Clock();
     let blinkTimer = 0;
     let nextBlink = 2.5;
-    let animationFrameId: number;
+    let animationFrameId: number | null = null;
+    let isPageVisible = typeof document === 'undefined' ? true : !document.hidden;
+    let isInViewport = true;
+    let cachedRect: DOMRect | null = null;
 
     const target = {
       headRotX: 0,
@@ -297,12 +301,14 @@ export const ConCode3DAvatar: React.FC<ConCode3DAvatarProps> = ({
       ledScale: 1,
     };
 
-    // Pointer tracking listener
+    // Pointer tracking listener (desktop fine-pointer only, cached rect to avoid layout thrashing)
+    const hasFinePointer = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
+    const invalidateRect = () => { cachedRect = null; };
     const handlePointerMove = (e: MouseEvent) => {
-      if (!enablePointerTracking) return;
-      const rect = container.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
+      if (!enablePointerTracking || !hasFinePointer || !isInViewport || !isPageVisible) return;
+      if (!cachedRect) cachedRect = container.getBoundingClientRect();
+      const centerX = cachedRect.left + cachedRect.width / 2;
+      const centerY = cachedRect.top + cachedRect.height / 2;
       const dx = (e.clientX - centerX) / (window.innerWidth / 2);
       const dy = (e.clientY - centerY) / (window.innerHeight / 2);
       mouseRef.current = {
@@ -311,11 +317,18 @@ export const ConCode3DAvatar: React.FC<ConCode3DAvatarProps> = ({
       };
     };
 
-    window.addEventListener('mousemove', handlePointerMove, { passive: true });
+    if (enablePointerTracking && hasFinePointer) {
+      window.addEventListener('mousemove', handlePointerMove, { passive: true });
+      window.addEventListener('scroll', invalidateRect, { passive: true });
+    }
 
     const animate = () => {
+      if (!isPageVisible || !isInViewport) {
+        animationFrameId = null;
+        return;
+      }
       animationFrameId = requestAnimationFrame(animate);
-      const dt = clock.getDelta();
+      const dt = Math.min(clock.getDelta(), 0.05);
       const elapsed = clock.getElapsedTime();
       const { emotion: currentEmotion, isSpeaking: speaking } = stateRef.current;
 
@@ -473,10 +486,45 @@ export const ConCode3DAvatar: React.FC<ConCode3DAvatarProps> = ({
       renderer.render(scene, camera);
     };
 
+    const startLoopIfActive = () => {
+      if (isPageVisible && isInViewport && animationFrameId === null) {
+        clock.getDelta(); // Reset delta after pause to prevent jump
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      isPageVisible = !document.hidden;
+      if (isPageVisible) {
+        startLoopIfActive();
+      } else if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const visibilityObserver = typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver(
+          (entries) => {
+            isInViewport = entries.some((entry) => entry.isIntersecting);
+            if (isInViewport) {
+              startLoopIfActive();
+            } else if (animationFrameId !== null) {
+              cancelAnimationFrame(animationFrameId);
+              animationFrameId = null;
+            }
+          },
+          { threshold: 0.01 }
+        )
+      : null;
+    visibilityObserver?.observe(container);
+
     animate();
 
     // Resize Observer
     const resizeObserver = new ResizeObserver((entries) => {
+      invalidateRect();
       for (const entry of entries) {
         const newW = entry.contentRect.width;
         const newH = entry.contentRect.height;
@@ -491,9 +539,14 @@ export const ConCode3DAvatar: React.FC<ConCode3DAvatarProps> = ({
 
     // Cleanup on unmount
     return () => {
-      window.removeEventListener('mousemove', handlePointerMove);
+      if (enablePointerTracking && hasFinePointer) {
+        window.removeEventListener('mousemove', handlePointerMove);
+        window.removeEventListener('scroll', invalidateRect);
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      visibilityObserver?.disconnect();
       resizeObserver.disconnect();
-      cancelAnimationFrame(animationFrameId);
+      if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
       renderer.dispose();
       whiteShellMat.dispose();
       sageGreenMat.dispose();

@@ -156,10 +156,15 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  html:focus-within {
-    scroll-behavior: smooth;
-  }
+/* Offscreen layout & paint skipping for smooth 60-120fps scrolling on long grids & sections */
+.tv-cv-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 360px;
+}
+
+.tv-cv-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 640px;
 }
 
 body {

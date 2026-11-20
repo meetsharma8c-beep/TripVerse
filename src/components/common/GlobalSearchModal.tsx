@@ -325,6 +325,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                         onError={(e) => handleImageError(e, dest.name)}
                         className="w-10 h-10 rounded-xl object-cover shrink-0"
                         loading="lazy"
+                        decoding="async"
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
