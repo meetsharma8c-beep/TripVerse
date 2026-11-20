@@ -11,7 +11,7 @@ import { useLanguage } from '../../services/languageService';
 import { resolveGlobalDestination } from '../../services/globalLocationResolver';
 import { DestinationDetailModal } from './DestinationDetailModal';
 import { ScrollReveal } from '../common/ScrollReveal';
-import { LiquidChip } from '../ui/liquid';
+import { LiquidChip, LiquidSearchDock } from '../ui/liquid';
 
 interface ExploreViewProps {
   onPlanTripForDestination: (destName: string) => void;
@@ -184,34 +184,62 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
-      {/* Search and Header Banner */}
-      <div className="bg-gradient-to-r from-[#152A1C] via-[#2D5A3D] to-[#1B3624] rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
-        <div className="max-w-2xl relative z-10 space-y-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#A8C7A5]">
-            {t('explore.discoveryBadge')}
+      {/* Cinematic Smoked-Glass Atlas Banner with Topographic Contours */}
+      <div className="bg-gradient-to-br from-[#102317] via-[#1E422B] to-[#152A1C] rounded-[32px] p-6 sm:p-10 text-white shadow-[0_24px_60px_-14px_rgba(21,42,28,0.45)] border border-white/15 liquid-rim relative overflow-hidden">
+        {/* Delicate Topographic Contour SVG Overlay */}
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-10 -top-10 w-[440px] h-[320px] text-emerald-200/[0.09]"
+          viewBox="0 0 440 320"
+          fill="none"
+        >
+          <path d="M20 280 C120 190, 210 250, 310 140 S 400 70, 430 20" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M60 300 C160 215, 240 270, 345 165 S 415 95, 440 55" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M100 315 C200 240, 275 285, 375 190 S 430 125, 450 90" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M40 240 C150 120, 260 180, 380 80" stroke="currentColor" strokeWidth="2" className="liquid-route-trace" />
+        </svg>
+
+        <div className="max-w-2xl relative z-10 space-y-3.5">
+          <span className="glass-clear-dark inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-200 px-3 py-1 rounded-full">
+            <Compass className="w-3.5 h-3.5 text-emerald-300" />
+            <span>{t('explore.discoveryBadge')}</span>
           </span>
-          <h1 className="text-2xl sm:text-4xl font-display font-bold tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-display font-black tracking-tight leading-[1.06]">
             {t('explore.title')}
           </h1>
-          <p className="text-xs sm:text-sm text-[#E8EFE7] font-normal leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#DCEAD9] font-normal leading-relaxed max-w-xl">
             {t('explore.subtitle')}
           </p>
 
-          {/* Search Input */}
-          <div className="pt-2 relative">
-            <Search className="w-5 h-5 text-[#8EA78D] absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('explore.searchPlaceholder')}
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white dark:bg-slate-900 text-[#152A1C] dark:text-white placeholder:text-[#5A7362] dark:placeholder:text-slate-400 font-semibold text-sm focus:outline-none focus:ring-4 focus:ring-[#8EA78D]/30 shadow-md border border-transparent dark:border-slate-800"
-            />
+          {/* Optical Capsule Search Dock */}
+          <div className="pt-2">
+            <LiquidSearchDock className="py-1.5 pr-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <Search className="w-5 h-5 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('explore.searchPlaceholder')}
+                  className="w-full py-2 bg-transparent text-[#152A1C] dark:text-white placeholder:text-[#57685D] dark:placeholder:text-slate-400 font-semibold text-sm focus:outline-none border-0 ring-0 shadow-none"
+                  style={{ backgroundColor: 'transparent' }}
+                />
+              </div>
+              {searchQuery.trim() && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="min-h-0 px-3 py-1.5 rounded-full glass-clear text-xs font-bold text-[#2D5A3D] dark:text-emerald-300 cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
+            </LiquidSearchDock>
           </div>
         </div>
 
-        {/* Decorative background glow */}
-        <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-[#8EA78D]/20 to-transparent pointer-events-none" />
+        {/* Soft ambient emerald mist glow */}
+        <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-emerald-400/15 to-transparent pointer-events-none" />
       </div>
 
       {/* Filter Tabs with Clear Scroll Affordance */}

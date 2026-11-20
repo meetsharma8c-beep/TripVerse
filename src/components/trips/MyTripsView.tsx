@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Trip } from '../../types/trip';
-import { MapPin, ArrowRight, Share2, Trash2, Sparkles, Clock, Camera, Star } from 'lucide-react';
+import { MapPin, ArrowRight, Share2, Trash2, Sparkles, Clock, Camera, Star, Compass, Route } from 'lucide-react';
 import { handleImageError } from '../../utils/destinationImages';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
+import { LiquidCard, LiquidTabs, LiquidButton } from '../ui/liquid';
 
 interface MyTripsViewProps {
   trips: Trip[];
@@ -48,156 +49,226 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
 
   const filteredTrips = activeTab === 'all'
     ? trips
-    : trips.filter(t => t.status === activeTab);
+    : trips.filter(tr => tr.status === activeTab);
+
+  const portfolioStats = useMemo(() => {
+    const totalKm = trips.reduce((acc, tr) => acc + Math.round(tr.routeDetails?.distanceKm || tr.durationDays * 65), 0);
+    const totalDays = trips.reduce((acc, tr) => acc + (tr.durationDays || 0), 0);
+    return { totalKm, totalDays };
+  }, [trips]);
 
   const getStatusBadge = (status: Trip['status']) => {
     switch (status) {
       case 'upcoming':
-        return { label: t('trips.upcoming'), bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+        return { label: t('trips.upcoming'), dot: 'bg-emerald-400', text: 'text-emerald-900 dark:text-emerald-200' };
       case 'ongoing':
-        return { label: t('trips.ongoing'), bg: 'bg-blue-50 text-blue-700 border-blue-200' };
+        return { label: t('trips.ongoing'), dot: 'bg-sky-400', text: 'text-sky-900 dark:text-sky-200' };
       case 'completed':
-        return { label: t('trips.completed'), bg: 'bg-slate-100 text-slate-700 border-slate-200' };
+        return { label: t('trips.completed'), dot: 'bg-slate-400', text: 'text-slate-800 dark:text-slate-200' };
       case 'draft':
-        return { label: t('trips.draft'), bg: 'bg-amber-50 text-amber-700 border-amber-200' };
+        return { label: t('trips.draft'), dot: 'bg-amber-400', text: 'text-amber-900 dark:text-amber-200' };
     }
   };
 
+  const featuredTrip = filteredTrips.length > 0
+    ? filteredTrips.find(tr => tr.id === activeTripId) || filteredTrips[0]
+    : null;
+  const remainingTrips = featuredTrip
+    ? filteredTrips.filter(tr => tr.id !== featuredTrip.id)
+    : [];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
       
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D] dark:text-emerald-400">{t('trips.portfolio')}</span>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#152A1C] dark:text-white tracking-tight">
-            {t('trips.title')}
-          </h1>
-          <p className="text-xs sm:text-sm text-[#5A7362] dark:text-slate-400 mt-0.5 font-medium">
-            {t('trips.subtitle')}
-          </p>
-        </div>
-
-        <button
-          onClick={onOpenPlanner}
-          className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-bold text-xs sm:text-sm shadow-[0_4px_16px_rgba(45,90,61,0.2)] active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
+      {/* Editorial Topographic Portfolio Banner */}
+      <div className="relative glass-frosted liquid-rim liquid-topo-wash rounded-[30px] p-6 sm:p-8 overflow-hidden">
+        {/* Subtle Decorative Topographic Contour SVG */}
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-12 -top-10 w-80 h-64 text-[#2D5A3D]/[0.07] dark:text-emerald-300/[0.08]"
+          viewBox="0 0 320 240"
+          fill="none"
         >
-          <Sparkles className="w-4 h-4 text-emerald-300" />
-          <span>{t('trips.planNew')}</span>
-        </button>
-      </div>
+          <path d="M20 210 C80 140, 140 190, 220 110 S 290 50, 310 20" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M50 230 C110 165, 165 205, 245 130 S 300 75, 320 45" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M85 240 C140 185, 190 220, 265 150 S 310 100, 325 75" stroke="currentColor" strokeWidth="1.5" />
+          <circle cx="245" cy="92" r="46" stroke="currentColor" strokeWidth="1.2" strokeDasharray="4 4" />
+        </svg>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#E2EBE1] dark:border-slate-800 pb-3 overflow-x-auto scrollbar-none">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === tab.id
-                ? 'bg-[#2D5A3D] text-white shadow-xs'
-                : 'bg-white dark:bg-slate-900/80 text-[#5A7362] dark:text-slate-300 border border-[#E2EBE1] dark:border-slate-800 hover:border-[#8EA78D] hover:bg-[#F8FAF7] dark:hover:bg-slate-800'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Trip Cards Grid */}
-      {filteredTrips.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#0C1523] rounded-3xl border border-[#E2EBE1] dark:border-slate-800 p-8 space-y-5 shadow-xs max-w-md mx-auto animate-fade-in">
-          <div className="w-20 h-20 rounded-3xl bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-400 flex items-center justify-center mx-auto shadow-inner border border-[#8EA78D]/30 dark:border-emerald-800/40">
-            <MapPin className="w-9 h-9 stroke-[1.8]" />
-          </div>
-          <div className="space-y-1.5">
-            <h3 className="text-xl font-bold font-display text-[#152A1C] dark:text-white">
-              {trips.length === 0 ? t('trips.emptyTitle') : "No trips in this category"}
-            </h3>
-            <p className="text-xs text-[#5A7362] dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
-              {trips.length === 0 
-                ? t('trips.emptySubtitle') 
-                : "No saved journeys found for the selected filter."}
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2D5A3D] dark:text-emerald-400">
+              <Compass className="w-3.5 h-3.5" />
+              <span>{t('trips.portfolio')}</span>
+            </span>
+            <h1 className="text-3xl sm:text-4xl font-display font-black text-[#152A1C] dark:text-white tracking-tight leading-[1.08]">
+              {t('trips.title')}
+            </h1>
+            <p className="text-xs sm:text-sm text-[#57685D] dark:text-slate-300 leading-relaxed max-w-xl">
+              {t('trips.subtitle')}
             </p>
           </div>
-          <button
-            onClick={onOpenPlanner}
-            className="px-6 py-2.5 rounded-2xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-bold text-xs shadow-md shadow-[#2D5A3D]/20 active:scale-95 transition-all inline-flex items-center gap-2 cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4 text-emerald-300" />
-            <span>{t('trips.planNew')}</span>
-          </button>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="glass-clear liquid-rim rounded-2xl px-4 py-2.5 flex items-center gap-4 text-xs">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 block">Journeys</span>
+                <span className="text-base font-black font-display text-[#152A1C] dark:text-white tabular-nums">{trips.length}</span>
+              </div>
+              <span className="h-7 w-px bg-[#DCE7DB] dark:bg-white/10" />
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 block">Days</span>
+                <span className="text-base font-black font-display text-[#152A1C] dark:text-white tabular-nums">{portfolioStats.totalDays}</span>
+              </div>
+              <span className="h-7 w-px bg-[#DCE7DB] dark:bg-white/10" />
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 block">Mapped</span>
+                <span className="text-base font-black font-display text-[#2D5A3D] dark:text-emerald-400 tabular-nums">{portfolioStats.totalKm.toLocaleString()} km</span>
+              </div>
+            </div>
+
+            <LiquidButton variant="accent" size="lg" onClick={onOpenPlanner}>
+              <Sparkles className="w-4 h-4 text-emerald-200" />
+              <span>{t('trips.planNew')}</span>
+            </LiquidButton>
+          </div>
+        </div>
+      </div>
+
+      {/* Morphing Liquid Glass Filter Tabs */}
+      <div className="overflow-x-auto scrollbar-none pb-1">
+        <LiquidTabs
+          items={tabs}
+          activeId={activeTab}
+          onSelect={(id) => setActiveTab(id as any)}
+          ariaLabel="Filter journeys by status"
+        />
+      </div>
+
+      {/* Empty State or Asymmetric Editorial Portfolio */}
+      {filteredTrips.length === 0 ? (
+        <div className="relative glass-frosted liquid-rim liquid-topo-wash rounded-[32px] p-8 sm:p-12 overflow-hidden animate-fade-in">
+          <div className="max-w-2xl mx-auto text-center space-y-6 relative z-10">
+            {/* Animated Expedition Route Arc Illustration */}
+            <div className="relative mx-auto max-w-md h-24 flex items-center justify-between px-4">
+              <svg
+                aria-hidden="true"
+                className="absolute inset-x-10 top-1/2 -translate-y-1/2 w-[calc(100%-5rem)] h-16 pointer-events-none"
+                viewBox="0 0 320 64"
+                fill="none"
+              >
+                <path
+                  d="M 8 44 C 90 -6, 230 -6, 312 44"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  className="text-[#2D5A3D]/55 dark:text-emerald-400/60 liquid-route-trace"
+                  strokeLinecap="round"
+                />
+              </svg>
+
+              <div className="relative z-10 w-12 h-12 rounded-2xl glass-elevated liquid-rim flex items-center justify-center text-[#2D5A3D] dark:text-emerald-300">
+                <Compass className="w-6 h-6" />
+              </div>
+
+              <div className="relative z-10 -mt-8 px-3 py-1 rounded-full glass-clear liquid-rim text-[10px] font-bold uppercase tracking-widest text-[#2D5A3D] dark:text-emerald-300">
+                Ready to Plot
+              </div>
+
+              <div className="relative z-10 w-12 h-12 rounded-2xl glass-accent liquid-rim flex items-center justify-center text-white">
+                <MapPin className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-2xl sm:text-3xl font-display font-black text-[#152A1C] dark:text-white tracking-tight">
+                {trips.length === 0 ? (
+                  <>
+                    Your atlas is{' '}
+                    <span className="font-serif italic font-normal text-[#2D5A3D] dark:text-emerald-400">wide open.</span>
+                  </>
+                ) : (
+                  'No journeys in this filter'
+                )}
+              </h3>
+              <p className="text-xs sm:text-sm text-[#57685D] dark:text-slate-300 max-w-md mx-auto leading-relaxed">
+                {trips.length === 0
+                  ? t('trips.emptySubtitle')
+                  : 'Switch tabs above or plot a brand new AI-curated route with live highway stops and budget tracking.'}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+              {['Himalayan Alpine Loop', 'Amalfi Coastal Drive', 'Kyoto Heritage Trail'].map((idea) => (
+                <button
+                  key={idea}
+                  type="button"
+                  onClick={onOpenPlanner}
+                  className="min-h-0 glass-clear liquid-rim liquid-press px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#152A1C] dark:text-slate-200 hover:text-[#2D5A3D] dark:hover:text-emerald-300 cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Route className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400" />
+                  <span>{idea}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="pt-2">
+              <LiquidButton variant="accent" size="lg" onClick={onOpenPlanner}>
+                <Sparkles className="w-4 h-4 text-emerald-200" />
+                <span>{t('trips.planNew')}</span>
+              </LiquidButton>
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTrips.map((trip) => {
-            const badge = getStatusBadge(trip.status);
-            const isSelected = trip.id === activeTripId;
-            const totalActivities = trip.itinerary?.reduce((acc, day) => acc + (day.activities?.length || 0), 0) || 0;
-
+        <div className="space-y-6">
+          {/* Asymmetric Featured Active Journey Spread */}
+          {featuredTrip && (() => {
+            const badge = getStatusBadge(featuredTrip.status);
+            const totalActivities = featuredTrip.itinerary?.reduce((acc, day) => acc + (day.activities?.length || 0), 0) || 0;
             return (
-              <div
-                key={trip.id}
-                className={`bg-white dark:bg-[#0C1523] rounded-3xl overflow-hidden border transition-all duration-200 flex flex-col justify-between group ${
-                  isSelected 
-                    ? 'border-emerald-400 dark:border-emerald-500 shadow-md ring-2 ring-emerald-500/20' 
-                    : 'border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg'
-                }`}
+              <LiquidCard
+                outerRadius={30}
+                innerPadding={10}
+                className="grid grid-cols-1 lg:grid-cols-12 group cursor-pointer"
+                onClick={() => onSelectTrip(featuredTrip.id)}
               >
-                <div>
-                  {/* Top Image Banner */}
-                  <div className="relative h-44 overflow-hidden">
+                <div className="lg:col-span-6 p-2.5">
+                  <div className="relative h-60 sm:h-72 lg:h-full min-h-[240px] liquid-concentric-inner overflow-hidden bg-slate-200 dark:bg-slate-800">
                     <img
-                      src={trip.destinationDetails?.image || 'https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?auto=format&fit=crop&w=800&q=80'}
-                      alt={trip.destination}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                      decoding="async"
+                      src={featuredTrip.destinationDetails?.image || 'https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?auto=format&fit=crop&w=1000&q=80'}
+                      alt={featuredTrip.destination}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      loading="eager"
                       onError={handleImageError}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
-
-                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.8 rounded-full border backdrop-blur-md bg-white/90 ${badge.bg}`}>
-                          {badge.label}
-                        </span>
-
-                        {trip.review && (
-                          <span className="text-[10px] font-bold px-2 py-0.8 rounded-full border border-amber-300 backdrop-blur-md bg-amber-500/90 text-white flex items-center gap-1 shadow-2xs">
-                            <Star className="w-3 h-3 fill-white" />
-                            <span>{trip.review.rating}.0</span>
-                          </span>
-                        )}
-
-                        {trip.photos && trip.photos.length > 0 && (
-                          <span className="text-[10px] font-bold px-2 py-0.8 rounded-full border border-emerald-300 backdrop-blur-md bg-[#2D5A3D]/90 text-white flex items-center gap-1 shadow-2xs">
-                            <Camera className="w-3 h-3" />
-                            <span>{trip.photos.length} Photos</span>
-                          </span>
-                        )}
-                      </div>
-
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                    <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-2">
+                      <span className={`glass-clear inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full ${badge.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                        {badge.label}
+                      </span>
                       <div className="flex items-center gap-1.5">
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onShareTrip(trip);
+                            onShareTrip(featuredTrip);
                           }}
-                          className="p-1.5 rounded-full bg-white/85 hover:bg-white text-slate-700 backdrop-blur-md transition-colors"
+                          className="min-h-0 p-2 rounded-full glass-clear liquid-press text-[#152A1C] dark:text-slate-100 cursor-pointer"
                           title="Share"
                         >
                           <Share2 className="w-3.5 h-3.5" />
                         </button>
                         {trips.length > 1 && (
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm(`Delete trip "${trip.name}"?`)) {
-                                onDeleteTrip(trip.id);
+                              if (confirm(`Delete trip "${featuredTrip.name}"?`)) {
+                                onDeleteTrip(featuredTrip.id);
                               }
                             }}
-                            className="p-1.5 rounded-full bg-white/85 hover:bg-red-50 hover:text-red-600 text-slate-700 backdrop-blur-md transition-colors"
+                            className="min-h-0 p-2 rounded-full glass-clear liquid-press text-rose-600 dark:text-rose-400 cursor-pointer"
                             title="Delete"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -205,101 +276,250 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                         )}
                       </div>
                     </div>
-
-                    <div className="absolute bottom-3 left-3 right-3 text-white">
-                      <p className="text-[11px] font-semibold text-emerald-300 drop-shadow-sm truncate">{trip.origin} →</p>
-                      <h3 className="font-bold text-lg leading-tight font-display drop-shadow-md truncate">{trip.name}</h3>
+                    <div className="absolute bottom-4 left-4 right-4 text-white">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300 block">
+                        Featured Active Route • {featuredTrip.origin} →
+                      </span>
+                      <h2 className="text-2xl sm:text-3xl font-display font-black tracking-tight drop-shadow-md truncate">
+                        {featuredTrip.name}
+                      </h2>
                     </div>
                   </div>
+                </div>
 
-                  {/* Body Info */}
-                  <div className="p-5 space-y-4">
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 min-w-0">
-                        <span className="badge-caps text-slate-400 block">Duration & Team</span>
-                        <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
-                          {trip.durationDays} Days • {trip.travelersCount} Pax
+                <div className="lg:col-span-6 p-5 sm:p-7 flex flex-col justify-between gap-5">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-2.5">
+                      <div className="glass-clear liquid-rim rounded-2xl p-3 min-w-0">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 block">Duration</span>
+                        <span className="text-sm sm:text-base font-black font-display text-[#152A1C] dark:text-white tabular-nums truncate block">
+                          {featuredTrip.durationDays}d • {featuredTrip.travelersCount}p
                         </span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 min-w-0">
-                        <span className="badge-caps text-slate-400 block">Est. Cost</span>
-                        <span className="font-extrabold text-[#2D5A3D] dark:text-emerald-400 font-display truncate block">
-                          {formatCurrency(trip.estimatedTotal, currency)}
+                      <div className="glass-clear liquid-rim rounded-2xl p-3 min-w-0">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 block">Est. Budget</span>
+                        <span className="text-sm sm:text-base font-black font-display text-[#2D5A3D] dark:text-emerald-400 tabular-nums truncate block">
+                          {formatCurrency(featuredTrip.estimatedTotal, currency)}
+                        </span>
+                      </div>
+                      <div className="glass-clear liquid-rim rounded-2xl p-3 min-w-0">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 block">Pit Stops</span>
+                        <span className="text-sm sm:text-base font-black font-display text-[#152A1C] dark:text-white tabular-nums truncate block">
+                          {featuredTrip.breakStops.length} Stops
                         </span>
                       </div>
                     </div>
 
-                    {/* Progress Bar for Activities / Itinerary */}
                     {totalActivities > 0 && (
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-semibold text-slate-500 dark:text-slate-400">Plan Completeness</span>
-                          <span className="font-bold text-[#2D5A3D] dark:text-emerald-400">{totalActivities} Activities</span>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-[#57685D] dark:text-slate-400">Itinerary Readiness</span>
+                          <span className="font-bold text-[#2D5A3D] dark:text-emerald-400 tabular-nums">{totalActivities} Curated Stops</span>
                         </div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div className="w-full bg-[#E2EBE1] dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                           <div
-                            className="bg-trip-gradient h-full rounded-full transition-all duration-500"
-                            style={{ width: trip.status === 'completed' ? '100%' : trip.status === 'ongoing' ? '70%' : '40%' }}
+                            className="h-full rounded-full bg-gradient-to-r from-[#2D5A3D] via-emerald-500 to-[#2D5A3D] liquid-progress-bar"
+                            style={{ width: featuredTrip.status === 'completed' ? '100%' : featuredTrip.status === 'ongoing' ? '72%' : '48%' }}
                           />
                         </div>
                       </div>
                     )}
-
-                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{trip.breakStops.length} Break Stops</span>
-                      </div>
-                      {trip.photos && trip.photos.length > 0 ? (
-                        <span className="text-emerald-700 dark:text-emerald-400 font-medium">{trip.photos.length} Memories Saved</span>
-                      ) : (
-                        <span className="text-slate-400">Ready to travel</span>
-                      )}
-                    </div>
                   </div>
-                </div>
 
-                {/* Card Action CTAs */}
-                <div className="p-5 pt-0 space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <LiquidButton
+                      variant="accent"
+                      size="md"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectTrip(featuredTrip.id);
+                      }}
+                    >
+                      <span>Open Itinerary &amp; Map</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </LiquidButton>
+
                     {onOpenMemories && (
-                      <button
+                      <LiquidButton
+                        variant="frosted"
+                        size="md"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onOpenMemories(trip);
+                          onOpenMemories(featuredTrip);
                         }}
-                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#E8EFE7] dark:bg-emerald-950/60 hover:bg-[#dce7db] dark:hover:bg-emerald-900/60 text-[#2D5A3D] dark:text-emerald-300 font-bold text-xs border border-[#8EA78D]/30 dark:border-emerald-800/40 transition-colors cursor-pointer"
                       >
-                        <Camera className="w-3.5 h-3.5" />
+                        <Camera className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400" />
                         <span>Memories</span>
-                      </button>
+                      </LiquidButton>
                     )}
+
                     {onOpenReview && (
-                      <button
+                      <LiquidButton
+                        variant="frosted"
+                        size="md"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onOpenReview(trip);
+                          onOpenReview(featuredTrip);
                         }}
-                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-200 font-bold text-xs border border-amber-200 dark:border-amber-800/50 transition-colors cursor-pointer"
                       >
-                        <Star className={`w-3.5 h-3.5 ${trip.review ? 'fill-amber-500 text-amber-500' : 'text-amber-500'}`} />
-                        <span>{trip.review ? `${trip.review.rating}.0 Star` : 'Review'}</span>
-                      </button>
+                        <Star className={`w-4 h-4 ${featuredTrip.review ? 'fill-amber-500 text-amber-500' : 'text-amber-500'}`} />
+                        <span>{featuredTrip.review ? `${featuredTrip.review.rating}.0` : 'Review'}</span>
+                      </LiquidButton>
                     )}
                   </div>
-
-                  <button
-                    onClick={() => onSelectTrip(trip.id)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#2D5A3D] hover:bg-[#234730] text-white font-bold text-xs transition-colors cursor-pointer active:scale-95 shadow-2xs"
-                  >
-                    <span>Open Itinerary & Map</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
                 </div>
-
-              </div>
+              </LiquidCard>
             );
-          })}
+          })()}
+
+          {/* Remaining Journeys Grid */}
+          {remainingTrips.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {remainingTrips.map((trip) => {
+                const badge = getStatusBadge(trip.status);
+                const totalActivities = trip.itinerary?.reduce((acc, day) => acc + (day.activities?.length || 0), 0) || 0;
+
+                return (
+                  <LiquidCard
+                    key={trip.id}
+                    outerRadius={28}
+                    innerPadding={8}
+                    className="flex flex-col justify-between group cursor-pointer"
+                    onClick={() => onSelectTrip(trip.id)}
+                  >
+                    <div>
+                      <div className="p-2 pb-0">
+                        <div className="relative h-44 liquid-concentric-inner overflow-hidden">
+                          <img
+                            src={trip.destinationDetails?.image || 'https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?auto=format&fit=crop&w=800&q=80'}
+                            alt={trip.destination}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                            decoding="async"
+                            onError={handleImageError}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+
+                          <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2">
+                            <span className={`glass-clear inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${badge.text}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                              {badge.label}
+                            </span>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onShareTrip(trip);
+                                }}
+                                className="min-h-0 p-1.5 rounded-full glass-clear liquid-press text-[#152A1C] dark:text-slate-100 cursor-pointer"
+                                title="Share"
+                              >
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
+                              {trips.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`Delete trip "${trip.name}"?`)) {
+                                      onDeleteTrip(trip.id);
+                                    }
+                                  }}
+                                  className="min-h-0 p-1.5 rounded-full glass-clear liquid-press text-rose-600 dark:text-rose-400 cursor-pointer"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="absolute bottom-3 left-3 right-3 text-white">
+                            <p className="text-[11px] font-semibold text-emerald-300 drop-shadow-sm truncate">{trip.origin} →</p>
+                            <h3 className="font-bold text-lg leading-tight font-display drop-shadow-md truncate">{trip.name}</h3>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-4 sm:p-5 space-y-3.5">
+                        <div className="grid grid-cols-2 gap-2.5 text-xs">
+                          <div className="glass-clear rounded-xl p-2.5 min-w-0">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 block">Duration</span>
+                            <span className="font-bold text-[#152A1C] dark:text-slate-100 tabular-nums truncate block">
+                              {trip.durationDays}d • {trip.travelersCount} Pax
+                            </span>
+                          </div>
+                          <div className="glass-clear rounded-xl p-2.5 min-w-0">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#57685D] dark:text-slate-400 block">Est. Cost</span>
+                            <span className="font-extrabold text-[#2D5A3D] dark:text-emerald-400 font-display tabular-nums truncate block">
+                              {formatCurrency(trip.estimatedTotal, currency)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-[#57685D] dark:text-slate-400">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>{trip.breakStops.length} Break Stops</span>
+                          </span>
+                          <span className="font-semibold text-[#2D5A3D] dark:text-emerald-400 tabular-nums">
+                            {totalActivities} Stops
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 sm:p-5 pt-0 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        {onOpenMemories && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenMemories(trip);
+                            }}
+                            className="min-h-0 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl glass-clear liquid-press text-[#2D5A3D] dark:text-emerald-300 font-bold text-xs cursor-pointer"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>Memories</span>
+                          </button>
+                        )}
+                        {onOpenReview && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenReview(trip);
+                            }}
+                            className="min-h-0 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl glass-clear liquid-press text-amber-800 dark:text-amber-300 font-bold text-xs cursor-pointer"
+                          >
+                            <Star className={`w-3.5 h-3.5 ${trip.review ? 'fill-amber-500 text-amber-500' : 'text-amber-500'}`} />
+                            <span>{trip.review ? `${trip.review.rating}.0 ★` : 'Review'}</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <LiquidButton
+                        variant="accent"
+                        size="md"
+                        className="w-full"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectTrip(trip.id);
+                        }}
+                      >
+                        <span>Open Itinerary &amp; Map</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </LiquidButton>
+                    </div>
+                  </LiquidCard>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

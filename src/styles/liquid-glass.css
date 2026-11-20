@@ -341,6 +341,34 @@ html.dark .liquid-card-hover:hover {
   }
 }
 
+/* Animated SVG Route Path Trace (signature travel micro-interaction) */
+@keyframes tvRouteDashFlow {
+  0% {
+    stroke-dashoffset: 32;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.liquid-route-trace {
+  stroke-dasharray: 6 6;
+  animation: tvRouteDashFlow 2.2s linear infinite;
+}
+
+/* Ambient Topographic Contour Wash (gives glass surfaces authentic cartographic depth) */
+.liquid-topo-wash {
+  background-image:
+    radial-gradient(ellipse 68% 58% at 88% 18%, rgba(45, 90, 61, 0.14), transparent 62%),
+    radial-gradient(ellipse 55% 48% at 14% 85%, rgba(168, 199, 165, 0.24), transparent 60%);
+}
+
+html.dark .liquid-topo-wash {
+  background-image:
+    radial-gradient(ellipse 68% 58% at 88% 18%, rgba(16, 185, 129, 0.16), transparent 62%),
+    radial-gradient(ellipse 55% 48% at 14% 85%, rgba(45, 90, 61, 0.28), transparent 60%);
+}
+
 /* ==========================================================================
    ACCESSIBILITY: REDUCED TRANSPARENCY & REDUCED MOTION
    ========================================================================== */
@@ -373,6 +401,10 @@ html.dark .liquid-card-hover:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .liquid-route-trace {
+    animation: none !important;
+  }
+
   .liquid-glass,
   .glass-clear,
   .glass-clear-dark,
