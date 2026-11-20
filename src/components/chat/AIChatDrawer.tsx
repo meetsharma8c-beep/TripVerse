@@ -644,12 +644,37 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   }, [isOpen, initialQuery, refreshBrainHealth]);
 
   useEffect(() => {
-    if (isOpen && scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
+    if (!isOpen || !scrollRef.current) return;
+    const container = scrollRef.current;
+    const latestMsg = messages[messages.length - 1];
+
+    const rafId = window.requestAnimationFrame(() => {
+      if (!container) return;
+
+      // When the AI finishes replying, scroll to the START (top) of that reply so the user reads from the beginning
+      if (!isProcessing && latestMsg?.sender === 'ai' && messages.length > 1) {
+        const msgNodes = container.querySelectorAll<HTMLElement>('[data-msg-id]');
+        const latestNode = Array.from(msgNodes).find((el) => el.dataset.msgId === latestMsg.id);
+        if (latestNode) {
+          const containerRect = container.getBoundingClientRect();
+          const nodeRect = latestNode.getBoundingClientRect();
+          const targetTop = Math.max(0, container.scrollTop + (nodeRect.top - containerRect.top) - 12);
+          container.scrollTo({
+            top: targetTop,
+            behavior: 'smooth',
+          });
+          return;
+        }
+      }
+
+      // While user is sending or AI is thinking, scroll to bottom so the spinner is visible
+      container.scrollTo({
+        top: container.scrollHeight,
         behavior: messages.length <= 2 ? 'auto' : 'smooth',
       });
-    }
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
   }, [isOpen, messages, isProcessing]);
 
   useEffect(() => {
@@ -1266,6 +1291,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             return (
               <div
                 key={msg.id}
+                data-msg-id={msg.id}
                 className={`flex items-start gap-2.5 sm:gap-3 ${isAi ? '' : 'flex-row-reverse'}`}
               >
                 <div className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center flex-shrink-0 pt-0.5">
