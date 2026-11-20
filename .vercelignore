@@ -2,7 +2,8 @@ android/
 ios/
 tests/
 scratch/
-scripts/
+scripts/*
+!scripts/generate-seo-pages.mjs
 *.xlsx
 *.csv
 .git
