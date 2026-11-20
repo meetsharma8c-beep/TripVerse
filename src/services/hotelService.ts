@@ -530,17 +530,12 @@ function synthesizeHotelForDestination(
   }
 
   if (tier === 'boutique' || tier === 'mid_range') {
+    const tierLabel = tier === 'boutique' ? 'Boutique' : 'Mid-Range';
     const hotelName = isJapan
-      ? `Modern Machiya Boutique Hotel, ${cleanDest}`
+      ? `Recommended ${tierLabel} Stay (Machiya / Ryokan Style) • ${cleanDest}`
       : isNordicOrEurope
-        ? `Old Town Historic Boutique Inn, ${cleanDest}`
-        : isLatinAmerica
-          ? `Posada Colonial Boutique Inn, ${cleanDest}`
-          : isOceania
-            ? `Alpine Heritage Boutique Lodge, ${cleanDest}`
-            : isSoutheastAsia
-              ? `Tropical Garden Boutique Hotel, ${cleanDest}`
-              : `${cleanDest} Boutique Retreat & Courtyard`;
+        ? `Recommended ${tierLabel} Stay (Old Town) • ${cleanDest}`
+        : `Recommended ${tierLabel} Stay • Central ${cleanDest}`;
 
     return {
       id: `hotel-btq-${Date.now()}`,
@@ -549,20 +544,20 @@ function synthesizeHotelForDestination(
       tier: tier,
       starRating: tier === 'boutique' ? 4 : 3,
       userRating: 4.6,
-      reviewCount: 1120,
+      reviewCount: 0,
       nightlyRate: Math.max(3200, Math.round(nightlyTargetRate)),
       currency: activeCurrency,
       image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-      address: `Scenic Center Road, ${cleanDest}`,
-      neighborhood: 'Cultural Heritage Zone',
-      amenities: ['Courtyard Breakfast', 'Rooftop Lounge', 'High-Speed Wi-Fi', 'Travel Concierge'],
-      roomType: 'Deluxe Heritage Double Room',
+      address: `Central District, ${cleanDest} (Compare live addresses via booking links)`,
+      neighborhood: 'Central Transit & Sightseeing Area',
+      amenities: ['Breakfast Options', 'High-Speed Wi-Fi', 'Transit Access', '24/7 Reception'],
+      roomType: 'Standard / Deluxe Double Room',
       bookingUrl: deepLinks.bookingDotCom,
       googleHotelsUrl: deepLinks.googleHotels,
       agodaUrl: deepLinks.agoda,
       bookingPartner: 'Booking.com',
-      cancellationPolicy: 'Free cancellation up to 24 hours prior',
-      highlights: ['Authentic architectural styling with modern comforts', 'Short stroll to local markets and dining hubs']
+      cancellationPolicy: 'Compare free-cancellation options on Booking.com / Google Hotels',
+      highlights: ['Curated stay tier matched to your budget — tap to compare live verified hotels & reviews', 'Prioritize central neighborhoods close to your daily itinerary stops']
     };
   }
 
@@ -603,14 +598,8 @@ function synthesizeHotelForDestination(
     };
   }
 
-  // Budget Tier Default
-  const budgetName = isNordicOrEurope
-    ? `Scandic City Comfort Hotel, ${cleanDest}`
-    : isJapan
-      ? `Comfort Inn & Suites, ${cleanDest}`
-      : isLatinAmerica
-        ? `Posada del Sol Comfort Stay, ${cleanDest}`
-        : `${cleanDest} City Center Comfort Hotel`;
+  // Budget Tier Default (honest tier recommendation — never fabricate a fictional hotel brand)
+  const budgetName = `Recommended Value Stay • Central ${cleanDest}`;
 
   return {
     id: `hotel-bdgt-${Date.now()}`,
@@ -619,20 +608,20 @@ function synthesizeHotelForDestination(
     tier: 'budget',
     starRating: 3,
     userRating: 4.4,
-    reviewCount: 840,
+    reviewCount: 0,
     nightlyRate: Math.max(1800, Math.round(nightlyTargetRate)),
     currency: activeCurrency,
     image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80',
-    address: `Central Transit District, ${cleanDest}`,
-    neighborhood: 'Convenient City Center',
-    amenities: ['Complimentary Hot Breakfast', '24/7 Front Desk', 'Free Wi-Fi', 'Clean Sanitized Linen'],
-    roomType: 'Comfort Double Executive Room',
+    address: `Central Transit District, ${cleanDest} (Compare live addresses via booking links)`,
+    neighborhood: 'Central Transit & Sightseeing Area',
+    amenities: ['Breakfast Options', '24/7 Front Desk', 'Free Wi-Fi', 'Transit Access'],
+    roomType: 'Standard Double Room',
     bookingUrl: deepLinks.bookingDotCom,
     googleHotelsUrl: deepLinks.googleHotels,
     agodaUrl: deepLinks.agoda,
     bookingPartner: 'Booking.com',
-    cancellationPolicy: 'Pay at hotel / Free cancellation',
-    highlights: ['Exceptional value for budget travelers & families', 'Clean, quiet rooms with quick transit access']
+    cancellationPolicy: 'Compare pay-at-property & free cancellation rates live',
+    highlights: ['Budget-matched stay tier — tap to compare live verified properties on Booking.com & Google Hotels', 'Look for 8.0+ guest ratings near central transit hubs']
   };
 }
 

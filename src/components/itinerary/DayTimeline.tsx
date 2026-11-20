@@ -6,7 +6,8 @@ import { resolveDestinationImage, handleImageError, DEFAULT_TRAVEL_FALLBACK_IMAG
 import { fetchOriginalPhoto, getInstantPhoto } from '../../services/originalPhotoService';
 import { getDestinationHighlights, calculateTransitBetween, resolveLandmarkCoordinates } from '../../services/landmarkAtlasService';
 import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, ShieldCheck, Zap, Activity, Building2, Moon, RotateCcw, CalendarPlus } from 'lucide-react';
-import { triggerHaptic } from '../../services/deviceService';
+import { triggerHaptic, openExternalUrl } from '../../services/deviceService';
+import { buildGoogleMapsDayRouteUrl } from '../../utils/routeResolver';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
 import { toggleDayWeatherMode } from '../../services/smartTravelEngine';
 
@@ -464,6 +465,27 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                             <span>{isRainActive ? 'Rain Mode Active (Indoor Mirrors)' : 'Rain Forecast? Swap to Indoor Mirrors'}</span>
                           </button>
                         )}
+
+                        {activeDay.activities.length > 0 && (() => {
+                          const dayMapUrl = buildGoogleMapsDayRouteUrl(activeDay.activities, destination);
+                          if (!dayMapUrl) return null;
+                          return (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                triggerHaptic('light');
+                                openExternalUrl(dayMapUrl);
+                              }}
+                              className="spring-tap px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-[#2D5A3D] border border-[#DCE7DB] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                              title={`Open all ${activeDay.activities.length} Day ${day.dayNumber} stops as a route in Google Maps`}
+                            >
+                              <Navigation className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Day Route</span>
+                              <span className="sm:hidden">Map</span>
+                            </button>
+                          );
+                        })()}
 
                         {onAddActivity && (
                           <button

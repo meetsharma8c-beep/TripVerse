@@ -9,6 +9,12 @@ import {
 } from '../src/services/offlineDbService';
 import { generateTripIcs, parseActivityTime } from '../src/services/calendarExportService';
 import { subscribeToTripPresence } from '../src/services/collaborationService';
+import { resolveConcodeSafetyRadar } from '../src/services/concodeSafetyRadarService';
+import { resolveEmergencyCountryCode, getEmergencyNumbersForCountry } from '../src/services/emergencySosService';
+import { selectHotelForTrip } from '../src/services/hotelService';
+import { generateSmartPackingList } from '../src/services/packingService';
+import { getTravelReadinessInfo } from '../src/services/travelReadinessService';
+import { buildGoogleMapsDayRouteUrl } from '../src/utils/routeResolver';
 import type { Trip } from '../src/types/trip';
 
 const sampleTrip = (overrides: Partial<Trip> = {}): Trip => ({
@@ -175,6 +181,72 @@ describe('TripVerse Platform Improvements', () => {
       expect(synced[0].userId).toBe('u-1');
       expect(typeof unsub).toBe('function');
       unsub();
+    });
+  });
+
+  describe('Global Safety Radar, Travel Readiness, Packing & Day Google Maps Route', () => {
+    it('returns 911 (US/CA) and 000 (AU) emergency numbers and never leaks India 100/108 globally', () => {
+      expect(resolveEmergencyCountryCode('New Jersey')).toBe('US');
+      expect(getEmergencyNumbersForCountry('US').universalOrPolice).toBe('911');
+      expect(resolveEmergencyCountryCode('Toronto, Canada')).toBe('CA');
+      expect(getEmergencyNumbersForCountry('CA').universalOrPolice).toBe('911');
+      expect(resolveEmergencyCountryCode('Sydney, Australia')).toBe('AU');
+      expect(getEmergencyNumbersForCountry('AU').universalOrPolice).toBe('000');
+
+      const njRadar = resolveConcodeSafetyRadar('New Jersey');
+      const numbers = njRadar.emergencyNumbers.map(n => n.number);
+      expect(numbers).toContain('911');
+      expect(numbers.join(' ')).not.toContain('100');
+      expect(numbers.join(' ')).not.toContain('108');
+    });
+
+    it('uses honest non-fabricated stay tier names for unlisted global cities', () => {
+      const result = selectHotelForTrip({
+        destination: 'New Jersey',
+        durationDays: 5,
+        travelersCount: 2,
+        totalBudget: 150000,
+        accommodationType: 'budget'
+      });
+      expect(result.recommendedHotel.name).not.toContain('City Center Comfort Hotel');
+      expect(result.recommendedHotel.name).toContain('Recommended');
+    });
+
+    it('generates international + cold-climate packing items for 1°C New Jersey', () => {
+      const njTrip = sampleTrip({
+        destination: 'New Jersey',
+        destinationDetails: { coordinates: { lat: 40.0583, lng: -74.4057 }, country: 'United States' } as any
+      });
+      const items = generateSmartPackingList(njTrip, { minTempC: 1, maxTempC: 10, maxRainProb: 60 });
+      const names = items.map(i => i.name).join(' | ');
+      expect(names).toContain('Passport');
+      expect(names).toContain('Insulated Winter Coat');
+      expect(names).toContain('Umbrella');
+    });
+
+    it('provides Before You Fly travel readiness for overseas destinations and null for domestic India', () => {
+      const us = getTravelReadinessInfo('New Jersey');
+      expect(us).not.toBeNull();
+      expect(us?.countryCode).toBe('US');
+      expect(us?.plugTypes).toContain('Type A');
+      expect(us?.emergencyDial).toBe('911');
+
+      expect(getTravelReadinessInfo('Vadodara, Gujarat')).toBeNull();
+    });
+
+    it('builds a valid multi-waypoint Google Maps directions URL for a full day itinerary', () => {
+      const url = buildGoogleMapsDayRouteUrl(
+        [
+          { title: 'Liberty State Park', coordinates: { lat: 40.7031, lng: -74.0539 } },
+          { title: 'Hoboken Waterfront', coordinates: { lat: 40.744, lng: -74.027 } },
+          { title: 'Princeton University', coordinates: { lat: 40.3431, lng: -74.6551 } }
+        ],
+        'New Jersey'
+      );
+      expect(url).toContain('https://www.google.com/maps/dir/?');
+      expect(url).toContain('origin=40.70310%2C-74.05390');
+      expect(url).toContain('destination=40.34310%2C-74.65510');
+      expect(url).toContain('waypoints=40.74400%2C-74.02700');
     });
   });
 });

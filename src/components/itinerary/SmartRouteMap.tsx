@@ -1,8 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Trip } from '../../types/trip';
-import { Navigation, Maximize2 } from 'lucide-react';
+import { Navigation, Maximize2, Plane, MapPin } from 'lucide-react';
 import { useLanguage } from '../../services/languageService';
+
+function buildGreatCircleArc(
+  start: L.LatLngTuple,
+  end: L.LatLngTuple,
+  segments = 40
+): L.LatLngTuple[] {
+  const pts: L.LatLngTuple[] = [];
+  const dLat = end[0] - start[0];
+  const dLng = end[1] - start[1];
+  const distDeg = Math.hypot(dLat, dLng);
+  // Subtle northern curvature so flight arcs look natural on Web Mercator
+  const arcLift = Math.min(18, Math.max(2, distDeg * 0.16));
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const lat = start[0] + dLat * t + Math.sin(Math.PI * t) * arcLift;
+    const lng = start[1] + dLng * t;
+    pts.push([Math.max(-85, Math.min(85, lat)), lng]);
+  }
+  return pts;
+}
 
 interface SmartRouteMapProps {
   trip: Trip;
@@ -62,6 +82,9 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
     return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   });
+  const isFlightTrip =
+    trip.transportMode === 'flight' || (trip.routeDetails?.distanceKm ?? 0) > 3500;
+  const [flightViewMode, setFlightViewMode] = useState<'local' | 'corridor'>('local');
 
   useEffect(() => {
     const syncTheme = () => {
@@ -145,7 +168,56 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
         ? decodePolyline(trip.routeDetails.encodedPolyline)
         : [];
       if (realRoute.length < 2) {
-        // Fallback: Plot destination center, activity spots, and break stops cleanly
+        // Flight Corridor Mode: Curved Great-Circle Arc between Origin and Destination
+        const origCoord = trip.originCoordinates || trip.routeDetails?.originCoordinates;
+        const destCoord = trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates;
+        if (
+          isFlightTrip &&
+          flightViewMode === 'corridor' &&
+          origCoord &&
+          destCoord &&
+          Number.isFinite(origCoord.lat) &&
+          Number.isFinite(destCoord.lat)
+        ) {
+          const origPt: L.LatLngTuple = [Number(origCoord.lat), Number(origCoord.lng)];
+          const destPt: L.LatLngTuple = [Number(destCoord.lat), Number(destCoord.lng)];
+          const arcPoints = buildGreatCircleArc(origPt, destPt, 48);
+
+          L.polyline(arcPoints, {
+            color: isDarkTheme ? '#34D399' : '#2D5A3D',
+            weight: 3,
+            dashArray: '8, 8',
+            opacity: 0.9
+          }).addTo(layers);
+
+          L.circleMarker(origPt, {
+            radius: 8,
+            color: '#fff',
+            weight: 3,
+            fillColor: '#0284C7',
+            fillOpacity: 1
+          })
+            .bindPopup(makePopup(trip.origin || 'Origin', 'Departure hub'))
+            .addTo(layers);
+
+          L.circleMarker(destPt, {
+            radius: 9,
+            color: '#fff',
+            weight: 3,
+            fillColor: '#10B981',
+            fillOpacity: 1
+          })
+            .bindPopup(makePopup(trip.destination || 'Destination', 'Arrival destination'))
+            .addTo(layers);
+
+          map.invalidateSize();
+          const bounds = L.latLngBounds(arcPoints);
+          routeBoundsRef.current = bounds;
+          map.fitBounds(bounds, { padding: [44, 44], maxZoom: 6 });
+          return;
+        }
+
+        // Local Sightseeing Map: Plot destination center, daily activity spots, and break stops cleanly
         const fallbackPoints: L.LatLngTuple[] = [];
 
         if (trip.destinationDetails?.coordinates) {
@@ -280,56 +352,109 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
     } catch (mapErr) {
       console.warn('[SmartRouteMap] Could not render polyline or bounds:', mapErr);
     }
-  }, [trip, isDarkTheme]);
+  }, [trip, isDarkTheme, flightViewMode, isFlightTrip]);
 
   const hasLiveRoute = trip.routeDetails?.source === 'geoapify_routing' &&
     trip.routeDetails.origin === trip.origin &&
     trip.routeDetails.destination === trip.destination &&
     Boolean(trip.routeDetails.encodedPolyline);
 
+  const hasLocalPins = Boolean(
+    trip.destinationDetails?.coordinates ||
+    trip.routeDetails?.destinationCoordinates ||
+    (trip.itinerary || []).some(d => (d.activities || []).some(a => Boolean(a.coordinates)))
+  );
+  const canRenderInteractiveMap = hasLiveRoute || hasLocalPins;
+
   return (
     <div id="smart-route-map" className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-4 scroll-mt-24">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Driving route')}</span>
-          <h2 className="text-xl font-bold text-[#0B2545] mt-0.5">{t('Route and nearby places')}</h2>
+          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">
+            {isFlightTrip ? t('Flight & Destination Map') : t('Driving route')}
+          </span>
+          <h2 className="text-xl font-bold text-[#0B2545] mt-0.5">
+            {isFlightTrip ? t('Interactive sightseeing & flight map') : t('Route and nearby places')}
+          </h2>
           <p className="text-xs text-slate-500 mt-1">
             {hasLiveRoute
               ? `Geoapify Routing · ${trip.routeDetails?.distanceKm} km · ${t('about')} ${trip.routeDetails?.durationHours} h`
-              : t('Live road route unavailable · no route line shown')}
+              : isFlightTrip
+                ? `${trip.origin} → ${trip.destination} · ${flightViewMode === 'local' ? t('Zoomed into daily sightseeing pins') : t('Great-circle flight corridor')}`
+                : hasLocalPins
+                  ? t('Showing destination and itinerary stops on interactive map')
+                  : t('Live road route unavailable · no route line shown')}
           </p>
         </div>
-        {onOpenLiveNav && (
-          <button
-            onClick={onOpenLiveNav}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-trip-gradient text-white font-bold text-xs shadow-sm"
-          >
-            <Navigation className="w-3.5 h-3.5" />
-            <span>{t('Get directions')}</span>
-          </button>
-        )}
+        <div className="flex items-center flex-wrap gap-2">
+          {isFlightTrip && !hasLiveRoute && (
+            <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setFlightViewMode('local')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  flightViewMode === 'local'
+                    ? 'bg-white text-[#2D5A3D] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{t('Local Map')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFlightViewMode('corridor')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  flightViewMode === 'corridor'
+                    ? 'bg-white text-[#2D5A3D] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Plane className="w-3.5 h-3.5" />
+                <span>{t('Flight Arc')}</span>
+              </button>
+            </div>
+          )}
+          {onOpenLiveNav && (
+            <button
+              onClick={onOpenLiveNav}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-trip-gradient text-white font-bold text-xs shadow-sm cursor-pointer"
+            >
+              <Navigation className="w-3.5 h-3.5" />
+              <span>{t('Get directions')}</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {!hasLiveRoute && (
+      {!canRenderInteractiveMap && (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">
           {t('No live route is available to display. You can still enter the origin and destination in a navigation app to get directions.')}
         </p>
       )}
 
       <div className="flex items-center justify-between text-xs text-slate-600">
-        <span>{hasLiveRoute ? t('Geoapify road geometry') : t('Route map unavailable')}</span>
+        <span>
+          {hasLiveRoute
+            ? t('Geoapify road geometry')
+            : isFlightTrip
+              ? (flightViewMode === 'local' ? t('Destination sightseeing pins') : t('Estimated air corridor'))
+              : hasLocalPins
+                ? t('Destination & activity pins')
+                : t('Route map unavailable')}
+        </span>
         <button
           type="button"
           onClick={() => {
             const map = mapInstanceRef.current;
             if (!map) return;
             if (routeBoundsRef.current && routeBoundsRef.current.isValid()) {
-              map.fitBounds(routeBoundsRef.current, { padding: [32, 32], maxZoom: 12 });
+              map.fitBounds(routeBoundsRef.current, { padding: [32, 32], maxZoom: 13 });
             } else {
               map.setView([20, 0], 2);
             }
           }}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 cursor-pointer"
         >
           <Maximize2 className="w-3.5 h-3.5" />
           {t('Recenter')}
@@ -338,7 +463,7 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
 
       <div className="relative w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200">
         <div ref={mapContainerRef} className="w-full h-full" />
-        {!hasLiveRoute && (
+        {!canRenderInteractiveMap && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/75 p-6 text-center text-sm font-semibold text-slate-600">
             {t('A live driving route is needed to draw an accurate map.')}
           </div>

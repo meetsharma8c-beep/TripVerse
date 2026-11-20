@@ -41,6 +41,27 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
     ).then((liveWeather) => {
       if (isMounted) {
         setWeather(liveWeather);
+        const days = liveWeather.forecastDays || [];
+        if (days.length > 0) {
+          const weatherHint = {
+            minTempC: Math.min(...days.map(d => d.minTempC)),
+            maxTempC: Math.max(...days.map(d => d.maxTempC)),
+            maxRainProb: Math.max(...days.map(d => d.rainProbPercent))
+          };
+          const climateSuggestions = generateSmartPackingList(latestTripRef.current, weatherHint).filter(item =>
+            item.id.startsWith('cloth-cold-') || item.id.startsWith('ess-rain-') || item.id.startsWith('firstaid-heat-')
+          );
+          if (climateSuggestions.length > 0) {
+            setPackingItems(prev => {
+              const existingIds = new Set(prev.map(i => i.id));
+              const additions = climateSuggestions.filter(i => !existingIds.has(i.id));
+              if (additions.length === 0) return prev;
+              const merged = [...prev, ...additions];
+              saveTripPacking(latestTripRef.current.id, merged);
+              return merged;
+            });
+          }
+        }
       }
     });
     return () => {

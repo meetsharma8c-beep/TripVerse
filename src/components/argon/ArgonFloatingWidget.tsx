@@ -43,6 +43,7 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(() =>
     typeof document !== 'undefined' && document.documentElement.dataset.scrollLocked === 'true'
   );
+  const [isDocked, setIsDocked] = useState(false);
   const [shouldLoad3D, setShouldLoad3D] = useState(false);
 
   // Defer loading the Three.js 3D mascot bundle until browser is idle so FCP/LCP stay fast
@@ -156,6 +157,36 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
     }
   };
 
+  // When docked to edge, render a compact non-intrusive pill so cards (e.g. Weather) stay 100% unobstructed on mobile
+  if (isDocked) {
+    return (
+      <div
+        className={`fixed z-[41] tv-hide-short-landscape select-none ${className}`}
+        style={{
+          bottom: 'calc(4.85rem + env(safe-area-inset-bottom, 0px))',
+          right: 'calc(0.5rem + env(safe-area-inset-right, 0px))',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setIsDocked(false);
+            onOpenChat();
+          }}
+          className="min-h-0 flex items-center gap-1.5 rounded-full bg-[#2D5A3D]/95 text-white px-3 py-2 text-xs font-bold shadow-lg border border-white/25 backdrop-blur-md cursor-pointer active:scale-95 transition-transform"
+          aria-label="Expand ConCode AI Co-Pilot"
+          title="Open ConCode AI Co-Pilot"
+        >
+          <span
+            className="h-2 w-2 rounded-full animate-pulse"
+            style={{ backgroundColor: activeTheme.ledHex }}
+          />
+          <span>AI</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`fixed z-[41] tv-hide-short-landscape flex flex-col items-end gap-2 select-none ${className}`}
@@ -167,6 +198,19 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
       }}
       aria-label="ConCode AI Co-Pilot"
     >
+      {/* Quick Minimize / Dock pill on mobile so the 3D mascot never permanently obscures underlying cards */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsDocked(true);
+        }}
+        aria-label="Minimize AI mascot to compact button"
+        title="Minimize mascot"
+        className="min-h-0 lg:opacity-0 lg:hover:opacity-100 focus:opacity-100 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-300 w-5 h-5 flex items-center justify-center text-[11px] font-bold shadow-xs cursor-pointer transition-opacity -mb-2 mr-1 z-30"
+      >
+        −
+      </button>
       {/* Proactive Speech Bubble - Shown on desktop (lg+) to avoid covering mobile & landscape hero controls */}
       {showHintBubble && (
         <div className="hidden lg:flex group relative items-center gap-2 rounded-2xl border border-emerald-900/10 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-3.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-100 shadow-[0_8px_24px_rgba(30,58,47,0.14)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 max-w-[340px] whitespace-nowrap">

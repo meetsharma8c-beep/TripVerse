@@ -1,5 +1,6 @@
 import { resolveCanonicalDestination } from './canonicalCityService';
 import { resolvePreciseLocationSync } from './locationService';
+import { COUNTRY_EMERGENCY_REGISTRY, resolveEmergencyCountryCode } from './emergencySosService';
 
 export interface ScamItem {
   title: string;
@@ -818,18 +819,33 @@ export function resolveConcodeSafetyRadar(destinationName: string = ''): Destina
   }
 
   // =========================================================================
-  // 19. GLOBAL INTERNATIONAL FALLBACK
+  // 19. GLOBAL INTERNATIONAL FALLBACK (Country-Aware Emergency Numbers)
   // =========================================================================
+  const resolvedIso = resolveEmergencyCountryCode(raw);
+  const countryEntry = resolvedIso && resolvedIso !== 'IN' ? COUNTRY_EMERGENCY_REGISTRY[resolvedIso] : undefined;
+
+  const fallbackEmergencyNumbers = countryEntry
+    ? [
+        { label: `${countryEntry.countryName} Emergency (Police / Fire / Medical)`, number: countryEntry.universalOrPolice },
+        ...(countryEntry.ambulance !== countryEntry.universalOrPolice
+          ? [{ label: 'Emergency Medical / Ambulance', number: countryEntry.ambulance }]
+          : []),
+        ...(countryEntry.touristPoliceOrHelp
+          ? [{ label: 'Non-Emergency / Tourist Assistance', number: countryEntry.touristPoliceOrHelp }]
+          : []),
+        { label: 'International Consular SOS', number: '+1-202-501-4444' }
+      ]
+    : [
+        { label: 'Universal Emergency (EU / GSM)', number: '112' },
+        { label: 'North America Emergency', number: '911' },
+        { label: 'Consular & International SOS Helpline', number: '+1-202-501-4444' }
+      ];
+
   return {
     advisoryLevel: 'Exercise Normal Caution',
-    country: canonical.country || 'International',
-    region: 'Global',
-    emergencyNumbers: [
-      { label: 'Universal International Emergency', number: '112' },
-      { label: 'Local Police Assistance', number: '100 / 112' },
-      { label: 'Medical Ambulance Helpline', number: '108 / 112' },
-      { label: 'Consular & International SOS Helpline', number: '+1-202-501-4444' }
-    ],
+    country: countryEntry?.countryName || canonical.country || 'International',
+    region: countryEntry ? countryEntry.countryCode : 'Global',
+    emergencyNumbers: fallbackEmergencyNumbers,
     safeNeighborhoods: ['City Center', 'Well-lit Pedestrian Promenades', 'Central Transit Hubs'],
     cautionAreas: ['Poorly-lit alleys after midnight', 'Unregulated unlicensed taxis without meters'],
     commonScams: [

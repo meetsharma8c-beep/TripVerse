@@ -4,8 +4,11 @@ import { getActiveCurrency, formatCurrency } from '../../services/currencyServic
 import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
 import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
-import { downloadTripCalendarIcs } from '../../services/calendarExportService';
-import { Users, Wallet, Sparkles, Share2, Download, Calendar, AlertTriangle, CheckCircle2, MessageSquareQuote, TrendingDown, Navigation, RotateCcw, Camera, Star, Leaf, ChevronRight, Edit3, Bed, Clock, Ticket, ShieldCheck } from 'lucide-react';
+import { downloadTripCalendarIcs, generateTripIcs } from '../../services/calendarExportService';
+import { saveOfflineKv, loadOfflineKv } from '../../services/offlineDbService';
+import { getTravelReadinessInfo } from '../../services/travelReadinessService';
+import { getEmergencyNumbersForCountry, resolveEmergencyCountryCode } from '../../services/emergencySosService';
+import { Users, Wallet, Sparkles, Share2, Download, Calendar, WifiOff, AlertTriangle, CheckCircle2, MessageSquareQuote, TrendingDown, Navigation, RotateCcw, Camera, Star, Leaf, ChevronRight, Edit3, Bed, Clock, Ticket, ShieldCheck } from 'lucide-react';
 
 interface TripHeaderProps {
   trip: Trip;
@@ -42,6 +45,31 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
 }) => {
   const { t } = useLanguage();
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
+  const [isOfflineReady, setIsOfflineReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    loadOfflineKv<{ savedAt: number }>(`offline_bundle:${trip.id}`)
+      .then((bundle) => {
+        if (active) setIsOfflineReady(Boolean(bundle?.savedAt));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [trip.id]);
+
+  const handleSaveTripOffline = async () => {
+    const countryCode = resolveEmergencyCountryCode(trip.destination);
+    await saveOfflineKv(`offline_bundle:${trip.id}`, {
+      savedAt: Date.now(),
+      trip,
+      ics: generateTripIcs(trip),
+      emergency: getEmergencyNumbersForCountry(countryCode),
+      readiness: getTravelReadinessInfo(trip.destination)
+    });
+    setIsOfflineReady(true);
+  };
 
   useEffect(() => {
     const handleCurrencyEvent = (e: Event) => {
@@ -450,6 +478,29 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           >
             <Calendar className="w-3.5 h-3.5 text-emerald-600" />
             <span>Calendar (.ics)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSaveTripOffline}
+            className={`spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium text-xs border transition-colors cursor-pointer ${
+              isOfflineReady
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                : 'bg-white hover:bg-[#F4F6F2] text-slate-700 border-[#E2EBE1]'
+            }`}
+            title="Cache full itinerary, emergency numbers & calendar into offline device storage for Airplane Mode"
+          >
+            {isOfflineReady ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Offline Ready</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-3.5 h-3.5 text-slate-500" />
+                <span>Save Offline</span>
+              </>
+            )}
           </button>
         </div>
       </div>

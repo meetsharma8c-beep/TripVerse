@@ -161,3 +161,50 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
 
   return { tab: 'home', dest: null, tripId: null, openBooking: false, openPlanner: false };
 }
+
+/**
+ * Builds a single multi-waypoint Google Maps Directions URL connecting all stops
+ * of a trip day in chronological order (origin -> waypoints -> destination).
+ * Caps waypoints at 9 per Google Maps URL specification.
+ */
+export function buildGoogleMapsDayRouteUrl(
+  activities: Array<{ title?: string; location?: string; coordinates?: { lat: number; lng: number } }>,
+  destination?: string
+): string | null {
+  if (!Array.isArray(activities) || activities.length === 0) return null;
+
+  const destSuffix = (destination || '').trim();
+  const formatStop = (act: { title?: string; location?: string; coordinates?: { lat: number; lng: number } }): string => {
+    if (act.coordinates && Number.isFinite(act.coordinates.lat) && Number.isFinite(act.coordinates.lng)) {
+      return `${act.coordinates.lat.toFixed(5)},${act.coordinates.lng.toFixed(5)}`;
+    }
+    const label = (act.location || act.title || '').trim();
+    if (!label) return destSuffix;
+    return destSuffix && !label.toLowerCase().includes(destSuffix.toLowerCase().split(',')[0])
+      ? `${label}, ${destSuffix}`
+      : label;
+  };
+
+  const stops = activities.map(formatStop).filter(Boolean);
+  if (stops.length === 0) return null;
+
+  if (stops.length === 1) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stops[0])}`;
+  }
+
+  const origin = stops[0];
+  const dest = stops[stops.length - 1];
+  const waypoints = stops.slice(1, -1).slice(0, 9);
+
+  const params = new URLSearchParams({
+    api: '1',
+    origin,
+    destination: dest,
+    travelmode: 'driving'
+  });
+  if (waypoints.length > 0) {
+    params.set('waypoints', waypoints.join('|'));
+  }
+
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}

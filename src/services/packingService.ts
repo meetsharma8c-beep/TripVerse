@@ -1,12 +1,25 @@
 import { PackingItem, Trip } from '../types/trip';
+import { resolveTransitContext } from './transportFeasibilityEngine';
 
-export function generateSmartPackingList(trip: Trip): PackingItem[] {
+export interface PackingWeatherHint {
+  minTempC?: number;
+  maxTempC?: number;
+  maxRainProb?: number;
+}
+
+export function generateSmartPackingList(trip: Trip, weatherHint?: PackingWeatherHint): PackingItem[] {
   const destLower = (trip.destination || '').toLowerCase();
   const prefs = trip.preferences || [];
   const mode = trip.transportMode || 'car';
   const country = (trip.destinationDetails?.country || '').toLowerCase();
-  const isInternational = Boolean(country && country !== 'india' && country !== 'worldwide') ||
-    ['tokyo', 'japan', 'paris', 'london', 'bali', 'maldives', 'singapore', 'dubai', 'bangkok', 'new york'].some(k => destLower.includes(k));
+  const transitCtx = resolveTransitContext(
+    trip.destination || '',
+    trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates
+  );
+  const isInternational =
+    Boolean(transitCtx.isOverseas) ||
+    Boolean(country && country !== 'india' && country !== 'worldwide') ||
+    ['tokyo', 'japan', 'paris', 'london', 'bali', 'maldives', 'singapore', 'dubai', 'bangkok', 'new york', 'new jersey'].some(k => destLower.includes(k));
   const isFlight = mode === 'flight' || isInternational;
   const isTrain = mode === 'train';
 
@@ -144,6 +157,31 @@ export function generateSmartPackingList(trip: Trip): PackingItem[] {
       { id: 'cloth-bch-3', name: 'Flip Flops / Crocs for Sand', category: 'clothing', isPacked: false },
       { id: 'cloth-bch-4', name: 'Wide-Brim Sun Hat', category: 'clothing', isPacked: false },
       { id: 'toil-bch-1', name: 'Aloe Vera Gel / After-Sun Soothing Lotion', category: 'toiletries', isPacked: false }
+    );
+  }
+
+  // Climate-adaptive additions from live/seasonal forecast temperatures
+  const minTemp = weatherHint?.minTempC;
+  const maxTemp = weatherHint?.maxTempC;
+  const maxRain = weatherHint?.maxRainProb;
+
+  if (typeof minTemp === 'number' && minTemp <= 8 && !isMountain) {
+    items.push(
+      { id: 'cloth-cold-1', name: 'Insulated Winter Coat / Down Jacket', category: 'clothing', isPacked: false, note: `Forecast lows near ${Math.round(minTemp)}°C — pack warm outerwear` },
+      { id: 'cloth-cold-2', name: 'Thermal Base Layers & Warm Wool Socks', category: 'clothing', isPacked: false, note: 'Essential for crisp mornings and sub-10°C evenings' },
+      { id: 'cloth-cold-3', name: 'Knit Beanie, Scarf & Touchscreen Gloves', category: 'clothing', isPacked: false }
+    );
+  }
+
+  if (typeof maxRain === 'number' && maxRain >= 45) {
+    items.push(
+      { id: 'ess-rain-1', name: 'Compact Windproof Travel Umbrella / Rain Shell', category: 'clothing', isPacked: false, note: `Up to ${Math.round(maxRain)}% precipitation probability during your dates` }
+    );
+  }
+
+  if (typeof maxTemp === 'number' && maxTemp >= 32) {
+    items.push(
+      { id: 'firstaid-heat-1', name: 'Electrolyte Hydration Sachets & Insulated Bottle', category: 'firstaid', isPacked: false, note: `Daytime highs around ${Math.round(maxTemp)}°C — stay hydrated` }
     );
   }
 

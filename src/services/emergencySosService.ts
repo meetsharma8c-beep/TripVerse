@@ -103,6 +103,59 @@ export const COUNTRY_EMERGENCY_REGISTRY: Record<string, CountryEmergencyNumbers>
     fire: '118',
     touristPoliceOrHelp: '1414',
     embassyNotes: 'Alpine Air Rescue (REGA) is 1414. Universal emergency is 112.'
+  },
+  CA: {
+    countryCode: 'CA',
+    countryName: 'Canada',
+    universalOrPolice: '911',
+    ambulance: '911',
+    fire: '911',
+    touristPoliceOrHelp: '311',
+    embassyNotes: 'Dial 911 for police, fire, or ambulance anywhere in Canada.'
+  },
+  AU: {
+    countryCode: 'AU',
+    countryName: 'Australia',
+    universalOrPolice: '000',
+    ambulance: '000',
+    fire: '000',
+    touristPoliceOrHelp: '131 444',
+    embassyNotes: 'Dial 000 (Triple Zero) for police, fire, or ambulance; 112 also works from mobile phones.'
+  },
+  NZ: {
+    countryCode: 'NZ',
+    countryName: 'New Zealand',
+    universalOrPolice: '111',
+    ambulance: '111',
+    fire: '111',
+    touristPoliceOrHelp: '105',
+    embassyNotes: 'Dial 111 for police, fire, or ambulance; 105 for non-emergency police.'
+  },
+  DE: {
+    countryCode: 'DE',
+    countryName: 'Germany',
+    universalOrPolice: '110',
+    ambulance: '112',
+    fire: '112',
+    embassyNotes: 'Dial 112 for medical/fire emergencies and 110 for police across Germany.'
+  },
+  ES: {
+    countryCode: 'ES',
+    countryName: 'Spain',
+    universalOrPolice: '112',
+    ambulance: '112',
+    fire: '112',
+    touristPoliceOrHelp: '091',
+    embassyNotes: 'Dial 112 for all emergencies in Spain; 091 for National Police.'
+  },
+  NL: {
+    countryCode: 'NL',
+    countryName: 'Netherlands',
+    universalOrPolice: '112',
+    ambulance: '112',
+    fire: '112',
+    touristPoliceOrHelp: '0900-8844',
+    embassyNotes: 'Dial 112 for life-safety emergencies across the Netherlands.'
   }
 };
 
@@ -175,13 +228,19 @@ const DESTINATION_COUNTRY_MATCHERS: Array<{ code: string; pattern: RegExp }> = [
   { code: 'FR', pattern: /\b(france|paris|nice|lyon|marseille|bordeaux|chamonix|riviera)\b/i },
   { code: 'AE', pattern: /\b(uae|united arab emirates|dubai|abu dhabi|sharjah)\b/i },
   { code: 'JP', pattern: /\b(japan|tokyo|kyoto|osaka|sapporo|hiroshima|fukuoka|nara|okinawa)\b/i },
-  { code: 'US', pattern: /\b(usa|u\.s\.a\.|united states|new york|nyc|los angeles|san francisco|chicago|miami|seattle|las vegas|hawaii|california|texas|florida)\b/i },
-  { code: 'GB', pattern: /\b(uk|u\.k\.|united kingdom|england|scotland|wales|london|edinburgh|manchester|liverpool|bath|oxford)\b/i },
+  { code: 'US', pattern: /\b(usa|u\.s\.a\.|united states|new york|nyc|new jersey|newark|jersey city|hoboken|princeton|atlantic city|los angeles|san francisco|san diego|chicago|miami|orlando|seattle|boston|philadelphia|washington|atlanta|dallas|houston|austin|denver|las vegas|hawaii|alaska|california|texas|florida|pennsylvania|massachusetts|illinois|virginia|georgia|arizona|colorado|ohio|michigan|north carolina|connecticut)\b/i },
+  { code: 'CA', pattern: /\b(canada|toronto|vancouver|montreal|calgary|ottawa|banff|quebec|ontario|british columbia)\b/i },
+  { code: 'GB', pattern: /\b(uk|u\.k\.|united kingdom|england|scotland|wales|london|edinburgh|manchester|liverpool|bath|oxford|cambridge)\b/i },
+  { code: 'AU', pattern: /\b(australia|sydney|melbourne|brisbane|perth|adelaide|gold coast|cairns|tasmania)\b/i },
+  { code: 'NZ', pattern: /\b(new zealand|auckland|queenstown|wellington|christchurch|rotorua)\b/i },
+  { code: 'DE', pattern: /\b(germany|berlin|munich|frankfurt|hamburg|cologne|stuttgart|bavaria)\b/i },
+  { code: 'ES', pattern: /\b(spain|madrid|barcelona|seville|valencia|malaga|ibiza|mallorca|granada)\b/i },
+  { code: 'NL', pattern: /\b(netherlands|amsterdam|rotterdam|utrecht|the hague)\b/i },
   { code: 'SG', pattern: /\b(singapore|sentosa|marina bay)\b/i },
   { code: 'TH', pattern: /\b(thailand|bangkok|phuket|chiang mai|krabi|pattaya|koh samui)\b/i },
   { code: 'IT', pattern: /\b(italy|rome|venice|florence|milan|naples|amalfi|tuscany|sicily)\b/i },
   { code: 'CH', pattern: /\b(switzerland|zurich|zürich|geneva|interlaken|lucerne|zermatt|bern|basel)\b/i },
-  { code: 'IN', pattern: /\b(india|delhi|mumbai|goa|jaipur|udaipur|bengaluru|bangalore|kerala|kashmir|manali|ladakh|varanasi|kolkata|chennai|hyderabad|agra|rishikesh)\b/i },
+  { code: 'IN', pattern: /\b(india|delhi|mumbai|goa|jaipur|udaipur|bengaluru|bangalore|kerala|kashmir|manali|ladakh|varanasi|kolkata|chennai|hyderabad|agra|rishikesh|vadodara|ahmedabad|surat|pune)\b/i },
 ];
 
 export function resolveEmergencyCountryCode(destination?: string): string {

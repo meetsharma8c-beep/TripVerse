@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bus, Car, ExternalLink, Plane, Train, Bike, QrCode, CloudSun, CheckCircle2, Circle, Download, ChevronRight, Ticket, Sparkles, Luggage, Info } from 'lucide-react';
+import { Bus, Car, ExternalLink, Plane, Train, Bike, QrCode, CloudSun, CheckCircle2, Circle, Download, ChevronRight, Ticket, Sparkles, Luggage, Info, Globe, Plug, Clock, ShieldAlert } from 'lucide-react';
 import { Trip, TransportMode, PackingItem, WeatherForecast } from '../../types/trip';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
 import { fetchLiveDestinationWeather, getDestinationWeather } from '../../services/weatherService';
@@ -7,6 +7,7 @@ import { loadTripPacking, saveTripPacking } from '../../services/storageService'
 import { generateSmartPackingList } from '../../services/packingService';
 import { resolveTransitContext, getFeasibleTransportModes } from '../../services/transportFeasibilityEngine';
 import { getBookingForTrip } from '../../services/paymentGatewayService';
+import { getTravelReadinessInfo } from '../../services/travelReadinessService';
 import { useLanguage } from '../../services/languageService';
 
 interface TransportDealsViewProps {
@@ -198,6 +199,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
   const arrivalDayOffset = displayDurationHours
     ? (isOverseasFlight && displayDurationHours >= 12 ? Math.max(1, Math.floor(displayDurationHours / 24)) : Math.floor(displayDurationHours / 24))
     : 0;
+  const readinessInfo = isOverseasFlight ? getTravelReadinessInfo(trip.destination) : null;
 
   const providers = {
     flight: [
@@ -358,14 +360,14 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
           </div>
 
           {/* Transit Hub & Summary Details */}
-          <div className="flex items-center justify-between gap-4 pt-1">
-            <div className="grid grid-cols-3 gap-4 flex-1">
-              <div>
+          <div className="flex items-start justify-between gap-3 pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 flex-1 min-w-0">
+              <div className="min-w-0">
                 <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">
                   {isOverseasFlight ? 'Route Type' : 'Nearest Rail Hub'}
                 </span>
                 <p
-                  className="text-xs sm:text-sm font-black text-[#152A1C] font-display mt-0.5 truncate"
+                  className="text-xs sm:text-sm font-black text-[#152A1C] font-display mt-0.5 leading-snug line-clamp-2"
                   title={
                     isOverseasFlight
                       ? 'International Air Corridor'
@@ -381,13 +383,16 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
                       : 'No Direct Rail'}
                 </p>
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">Nearest Airport</span>
-                <p className="text-xs sm:text-sm font-black text-[#152A1C] font-display mt-0.5 truncate" title={transitCtx.primaryAirport?.name || `${destination} Region`}>
+                <p
+                  className="text-xs sm:text-sm font-black text-[#152A1C] font-display mt-0.5 leading-snug line-clamp-2"
+                  title={transitCtx.primaryAirport?.name || `${destination} Region`}
+                >
                   {transitCtx.primaryAirport?.name || `${destination} Region`}
                 </p>
               </div>
-              <div>
+              <div className="col-span-2 sm:col-span-1">
                 <span className="text-[10px] uppercase font-bold text-[#5A7362] tracking-wider block">Travelers</span>
                 <p className="text-xs sm:text-sm font-black text-[#152A1C] font-display mt-0.5">{trip.travelersCount} Pax</p>
               </div>
@@ -482,6 +487,56 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
           </div>
 
         </div>
+
+        {/* Before You Fly: International Travel Readiness Card */}
+        {readinessInfo && (
+          <div className="border-t border-[#E2EBE1] p-4 sm:p-5 bg-[#F8FAF7]/80 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-[#2D5A3D]" />
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#2D5A3D]">
+                  Before You Fly • {readinessInfo.countryName} Essentials
+                </span>
+              </div>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-extrabold">
+                <ShieldAlert className="w-3 h-3" />
+                <span>Emergency: {readinessInfo.emergencyDial}</span>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+              <div className="p-3 rounded-2xl bg-white border border-[#E2EBE1] flex items-start gap-2.5">
+                <Plug className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-[#5A7362]">Power & Voltage</span>
+                  <span className="block font-bold text-[#152A1C] mt-0.5">{readinessInfo.plugTypes} · {readinessInfo.voltage}</span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-white border border-[#E2EBE1] flex items-start gap-2.5">
+                <Clock className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-[#5A7362]">Timezone & Jet Lag</span>
+                  <span className="block font-semibold text-[#152A1C] mt-0.5">{readinessInfo.timezoneSummary}</span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-white border border-[#E2EBE1]">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-[#5A7362]">Currency & Tipping</span>
+                <span className="block font-semibold text-[#152A1C] mt-0.5">{readinessInfo.currencyAndTipping}</span>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-white border border-[#E2EBE1]">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-[#5A7362]">Local Transit Card</span>
+                <span className="block font-semibold text-[#152A1C] mt-0.5">{readinessInfo.localTransitTip}</span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-[#5A7362] bg-white/90 border border-[#E2EBE1] rounded-xl px-3 py-2">
+              <strong className="text-[#152A1C]">Entry / Visa:</strong> {readinessInfo.entryReminder}
+            </p>
+          </div>
+        )}
 
         {/* Screen 3: Packing Checklist with Persistent Checkboxes */}
         <div className="border-t border-[#E2EBE1] p-4 sm:p-5 bg-[#F8FAF7]/60 space-y-3">
