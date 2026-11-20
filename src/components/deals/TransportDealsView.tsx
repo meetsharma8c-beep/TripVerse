@@ -162,7 +162,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
       {/* ============================================================== */}
       {/* SCREEN 3: SIGNATURE TRANSIT SUMMARY & ROUTE DOSSIER CARD        */}
       {/* ============================================================== */}
-      <div className="rounded-3xl overflow-hidden border border-[#E2EBE1] shadow-[0_10px_30px_rgba(45,90,61,0.06)] bg-white">
+      <div className="glass-frosted liquid-rim rounded-3xl overflow-hidden border border-[#E2EBE1]/80 shadow-[0_10px_30px_rgba(45,90,61,0.06)] bg-white/95 backdrop-blur-md">
         
         {/* Scalloped Header Banner (Emerald Forest) */}
         <div className="bg-[#2D5A3D] text-white px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
@@ -204,19 +204,19 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
             </div>
 
             {/* In-Between Route Arc */}
-            <div className="flex-1 flex flex-col items-center justify-center px-2">
-              <span className="text-[10px] font-bold text-[#5A7362] mb-1">
+            <div className="flex-1 flex flex-col items-center justify-center px-2 min-w-0">
+              <span className="text-[11px] font-bold text-[#2D5A3D] tracking-wide mb-1.5 whitespace-nowrap">
                 {trip.routeDetails?.durationHours
                   ? `~${trip.routeDetails.durationHours}h`
                   : trip.bestTransportDeal?.route?.duration || 'Estimated Duration'}
               </span>
-              <div className="relative w-full flex items-center justify-center">
-                <div className="w-full border-t-2 border-dashed border-[#8EA78D]/50" />
-                <div className="absolute w-7 h-7 rounded-full bg-[#E8EFE7] border border-[#8EA78D]/40 text-[#2D5A3D] flex items-center justify-center shadow-2xs">
-                  <Icon className="w-3.5 h-3.5" />
+              <div className="relative w-full h-8 flex items-center justify-center">
+                <div className="w-full border-t-2 border-dashed border-[#8EA78D]/45" />
+                <div className="absolute w-8 h-8 rounded-full bg-[#E8EFE7] border-2 border-white text-[#2D5A3D] flex items-center justify-center shadow-xs">
+                  <Icon className="w-4 h-4" />
                 </div>
               </div>
-              <span className="text-[10px] text-slate-400 mt-1 font-mono">
+              <span className="text-[10px] font-medium text-[#5A7362] mt-1.5 font-mono whitespace-nowrap tracking-tight">
                 {trip.routeDetails?.distanceKm ? `${trip.routeDetails.distanceKm} km (${trip.routeDetails.source === 'geoapify_routing' ? 'Live Route' : 'Est.'})` : 'Regional Route'}
               </span>
             </div>
@@ -414,7 +414,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
       {/* ============================================================== */}
       {/* DIRECT PROVIDER SEARCH & COMPARISON                            */}
       {/* ============================================================== */}
-      <section className="space-y-5 rounded-3xl border border-[#E2EBE1] bg-white p-5 shadow-sm sm:p-7">
+      <section className="glass-frosted liquid-rim space-y-5 rounded-3xl border border-[#E2EBE1]/80 bg-white/95 backdrop-blur-md p-5 shadow-sm sm:p-7">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('External Provider Search')}</p>
           <h2 className="mt-1 text-xl font-bold font-display text-[#152A1C]">{t('Compare Live Transport & Booking')}</h2>
