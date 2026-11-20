@@ -19,7 +19,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
-import { triggerHaptic } from '../../services/deviceService';
+import { triggerHaptic, printOrShareDocument } from '../../services/deviceService';
 import {
   computeTravelWrapped,
   generateWrappedSocialText,
@@ -63,7 +63,10 @@ export const TripWrappedModal: React.FC<TripWrappedModalProps> = ({
 
   const handlePrint = () => {
     triggerHaptic('light');
-    window.print();
+    void printOrShareDocument({
+      title: 'TripVerse Travel Wrapped',
+      text: generateWrappedSocialText(stats),
+    });
   };
 
   const renderArchetypeInsignia = (className = 'w-5 h-5') => {

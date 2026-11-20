@@ -30,7 +30,7 @@ import confetti from 'canvas-confetti';
 import { Trip, CurrencyCode } from '../../types/trip';
 import { formatCurrency, CURRENCIES, convertFromINR } from '../../services/currencyService';
 import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
-import { triggerHaptic } from '../../services/deviceService';
+import { triggerHaptic, saveOrShareFile } from '../../services/deviceService';
 import { getCurrentUser } from '../../services/authService';
 import { 
   BookingRecord, 
@@ -594,20 +594,18 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
     }
   };
 
-  // Download Invoice as clean text / HTML document via React ref
+  // Cross-platform invoice download / native OS share sheet
   const handleDownloadInvoice = () => {
-    if (!confirmedBooking || !downloadAnchorRef.current) return;
+    if (!confirmedBooking) return;
     triggerHaptic('light');
     const text = generateTicketReceiptText(confirmedBooking, currency);
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const anchor = downloadAnchorRef.current;
-    anchor.href = url;
-    anchor.download = `TripVerse_Tax_Invoice_${confirmedBooking.id}.txt`;
-    anchor.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1500);
+    void saveOrShareFile({
+      filename: `TripVerse_Tax_Invoice_${confirmedBooking.id}.txt`,
+      content: text,
+      mimeType: 'text/plain;charset=utf-8',
+      title: `TripVerse Tax Invoice (${confirmedBooking.pnr})`,
+      text,
+    });
   };
 
   if (typeof document === 'undefined') return null;

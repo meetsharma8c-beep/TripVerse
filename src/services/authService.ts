@@ -2111,12 +2111,39 @@ export function switchAccount(userId: string): AuthUser {
 }
 
 /**
- * Remove an account from locally remembered list
+ * Permanently remove an account and its locally stored trips, chats, and session data
+ * (Apple App Store Guideline 5.1.1(v) & Google Play Account Deletion compliance).
  */
 export function deleteAccount(userId: string): void {
   const accounts = loadAccounts();
   const filtered = accounts.filter(a => a.user.uid !== userId);
   saveAccounts(filtered);
+
+  // Purge user-scoped local caches (trips, chat histories, preferences)
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const keysToDelete: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes(userId)) {
+          keysToDelete.push(key);
+        }
+      }
+      keysToDelete.forEach((k) => localStorage.removeItem(k));
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      const sKeys: string[] = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && key.includes(userId)) {
+          sKeys.push(key);
+        }
+      }
+      sKeys.forEach((k) => sessionStorage.removeItem(k));
+    }
+  } catch {
+    // Ignore restricted storage environments
+  }
 
   const current = getCurrentUser();
   if (current?.uid === userId) {

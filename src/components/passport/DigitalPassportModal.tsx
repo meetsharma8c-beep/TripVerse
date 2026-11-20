@@ -15,7 +15,7 @@ import {
   Compass
 } from 'lucide-react';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
-import { triggerHaptic } from '../../services/deviceService';
+import { triggerHaptic, printOrShareDocument } from '../../services/deviceService';
 import {
   getPassportProfile,
   getPassportStamps,
@@ -95,7 +95,10 @@ export const DigitalPassportModal: React.FC<DigitalPassportModalProps> = ({
 
   const handlePrint = () => {
     triggerHaptic('light');
-    window.print();
+    void printOrShareDocument({
+      title: `TripVerse Digital Passport — ${profile.holderName}`,
+      text: `TripVerse Digital Passport • ${profile.holderName} • ${profile.countriesVisited} Territories • ${profile.totalKmTraveled.toLocaleString()} km`,
+    });
   };
 
   const unlockedCount = stamps.filter(s => !!s.unlockedAt).length;

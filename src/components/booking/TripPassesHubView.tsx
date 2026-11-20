@@ -4,7 +4,7 @@ import { fetchLiveDestinationWeather, getDestinationWeather } from '../../servic
 import { loadTripPacking, saveTripPacking } from '../../services/storageService';
 import { generateSmartPackingList } from '../../services/packingService';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
-import { triggerHaptic } from '../../services/deviceService';
+import { triggerHaptic, saveOrShareFile } from '../../services/deviceService';
 import { ArrowLeft, Bell, MoreVertical, Plane, Car, Train, Bus, ChevronRight, Sun, CloudSun, CloudRain, CheckCircle2, Circle, Download, Share2, CreditCard } from 'lucide-react';
 import { getBookingForTrip, BookingRecord, generateTicketReceiptText } from '../../services/paymentGatewayService';
 import { getActiveCurrency } from '../../services/currencyService';
@@ -225,18 +225,15 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (!downloadAnchorRef.current) return;
               triggerHaptic('light');
               const text = generateTicketReceiptText(booking, getActiveCurrency());
-              const blob = new Blob([text], { type: 'text/plain' });
-              const url = URL.createObjectURL(blob);
-              const anchor = downloadAnchorRef.current;
-              anchor.href = url;
-              anchor.download = `TripVerse_Tax_Invoice_${booking.id}.txt`;
-              anchor.click();
-              setTimeout(() => {
-                URL.revokeObjectURL(url);
-              }, 1500);
+              void saveOrShareFile({
+                filename: `TripVerse_Tax_Invoice_${booking.id}.txt`,
+                content: text,
+                mimeType: 'text/plain;charset=utf-8',
+                title: `TripVerse Tax Invoice (${booking.pnr})`,
+                text,
+              });
             }}
             className="shrink-0 px-3 py-1.5 rounded-xl border border-emerald-300 bg-white text-emerald-900 text-xs font-bold hover:bg-emerald-50 transition-colors shadow-2xs cursor-pointer"
           >

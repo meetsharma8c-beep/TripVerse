@@ -5,14 +5,26 @@ const config: CapacitorConfig = {
   appName: 'TripVerse',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+  },
+  ios: {
+    contentInset: 'never',
+    allowsLinkPreview: false,
+    scrollEnabled: true,
+    backgroundColor: '#070C16',
+  },
+  android: {
+    backgroundColor: '#070C16',
+    allowMixedContent: false,
+    captureInput: true,
+    webContentsDebuggingEnabled: false,
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 1200,
       launchAutoHide: false,
       launchFadeOutDuration: 300,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: '#070C16',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,

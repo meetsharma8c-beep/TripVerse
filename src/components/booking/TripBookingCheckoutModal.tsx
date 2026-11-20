@@ -6,7 +6,7 @@ import { buildHotelBookingUrl } from '../../services/hotelService';
 import { buildFlightBookingUrl, buildTrainBookingUrl, buildBusBookingUrl, buildCabBookingUrl } from '../../services/dealService';
 import { TripPaymentGatewayModal } from '../payment/TripPaymentGatewayModal';
 import { getBookingForTrip, BookingRecord, generateTicketReceiptText } from '../../services/paymentGatewayService';
-import { triggerHaptic } from '../../services/deviceService';
+import { triggerHaptic, saveOrShareFile } from '../../services/deviceService';
 import { useLanguage } from '../../services/languageService';
 import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
 
@@ -152,20 +152,18 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
     setExistingBooking(booking);
   };
 
-  // Download existing invoice via React ref
+  // Cross-platform invoice download / native OS share sheet
   const handleDownloadInvoice = () => {
-    if (!existingBooking || !downloadAnchorRef.current) return;
+    if (!existingBooking) return;
     triggerHaptic('light');
     const text = generateTicketReceiptText(existingBooking, currency);
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const anchor = downloadAnchorRef.current;
-    anchor.href = url;
-    anchor.download = `TripVerse_Tax_Invoice_${existingBooking.id}.txt`;
-    anchor.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1500);
+    void saveOrShareFile({
+      filename: `TripVerse_Tax_Invoice_${existingBooking.id}.txt`,
+      content: text,
+      mimeType: 'text/plain;charset=utf-8',
+      title: `TripVerse Tax Invoice (${existingBooking.pnr})`,
+      text,
+    });
   };
 
   return (

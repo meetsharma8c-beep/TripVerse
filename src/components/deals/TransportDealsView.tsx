@@ -9,6 +9,7 @@ import { resolveTransitContext, getFeasibleTransportModes } from '../../services
 import { getBookingForTrip } from '../../services/paymentGatewayService';
 import { getTravelReadinessInfo } from '../../services/travelReadinessService';
 import { useLanguage } from '../../services/languageService';
+import { printOrShareDocument } from '../../services/deviceService';
 
 interface TransportDealsViewProps {
   trip: Trip;
@@ -582,7 +583,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
         <div className="p-4 sm:p-5 bg-white border-t border-[#E2EBE1]">
           <button
             type="button"
-            onClick={onOpenPrint || (() => window.print())}
+            onClick={onOpenPrint || (() => { void printOrShareDocument({ title: `${trip.destination} Travel Pass`, text: `${trip.origin} to ${trip.destination} — TripVerse Transit Summary` }); })}
             className="w-full py-3.5 px-6 rounded-full bg-[#2D5A3D] hover:bg-[#244931] text-white font-display font-bold text-sm shadow-md shadow-[#2D5A3D]/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
           >
             <Download className="w-4 h-4" />

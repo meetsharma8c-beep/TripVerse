@@ -841,3 +841,53 @@ html.dark .liquid-chat-composer:focus-within {
     background: #0E1726 !important;
   }
 }
+
+/* ==========================================================================
+   MOBILE GPU & TOUCH PERFORMANCE OPTIMIZATIONS (iOS WKWebView & Android)
+   Keeps Liquid Glass optical aesthetics crisp at locked 60-120fps on mobile GPUs
+   ========================================================================== */
+@media (max-width: 768px), (hover: none) {
+  .liquid-chat-backdrop {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .liquid-chat-shell {
+    backdrop-filter: blur(16px) saturate(165%);
+    -webkit-backdrop-filter: blur(16px) saturate(165%);
+    will-change: transform;
+  }
+
+  .liquid-glass,
+  .glass-frosted,
+  .glass-elevated {
+    backdrop-filter: blur(14px) saturate(155%);
+    -webkit-backdrop-filter: blur(14px) saturate(155%);
+  }
+
+  /* Avoid sticky hover transforms and pointer-tracking repaints on touchscreens */
+  .liquid-card-hover:hover,
+  .liquid-chat-chip:hover,
+  .liquid-chat-action-secondary:hover {
+    transform: none;
+  }
+
+  .liquid-sheen::after {
+    display: none;
+  }
+}
+
+/* Native iOS / Android WebView smooth inertial scrolling & selection hygiene */
+html.os-ios,
+html.os-android {
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+}
+
+html.os-ios input,
+html.os-ios textarea,
+html.os-android input,
+html.os-android textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}

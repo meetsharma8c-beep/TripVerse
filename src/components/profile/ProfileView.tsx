@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { UserProfile, Trip } from '../../types/trip';
 import { getStoredCurrency, formatCurrency, Currency } from '../../services/currencyService';
-import { User, MapPin, Briefcase, Mail, Phone, Sparkles, Check, RotateCcw, Edit3, ShieldCheck, Compass, LogOut, Users, X, Image as ImageIcon, Bell, Lock, FileText, MessageSquare, ChevronRight, Crown, CheckCircle2, Zap } from 'lucide-react';
+import { User, MapPin, Briefcase, Mail, Phone, Sparkles, Check, RotateCcw, Edit3, ShieldCheck, Compass, LogOut, Users, X, Image as ImageIcon, Bell, Lock, FileText, MessageSquare, ChevronRight, Crown, CheckCircle2, Zap, Trash2, AlertTriangle } from 'lucide-react';
 import { DigitalPassport } from './DigitalPassport';
 import { loadUserVisitedStates, resetGuestStorage } from '../../services/storageService';
 import { 
   getCurrentUser, 
   isGuestUser,
   signOut as authSignOut, 
+  deleteAccount,
   getSavedAccounts, 
   switchAccount, 
   updateAuthProfile, 
@@ -64,6 +65,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [activeBadgesCount, setActiveBadgesCount] = useState<number>(0);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [isToggling2Fa, setIsToggling2Fa] = useState(false);
+  const [confirmingDeleteAccount, setConfirmingDeleteAccount] = useState(false);
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => propCurrentUser ?? getCurrentUser());
 
@@ -179,6 +181,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       if (onSignOut) {
         onSignOut();
       }
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (!currentUser) return;
+    deleteAccount(currentUser.uid);
+    setConfirmingDeleteAccount(false);
+    setAuthUser(null);
+    if (onSignOut) {
+      onSignOut();
     }
   };
 
@@ -925,56 +937,99 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       )}
 
       {/* Account Session & Security Card */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5 text-center sm:text-left">
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-            currentUser ? 'bg-emerald-50 text-[#2D5A3D] border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
-          }`}>
-            <User className="w-5 h-5" />
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 text-center sm:text-left">
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+              currentUser ? 'bg-emerald-50 text-[#2D5A3D] border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
+            }`}>
+              <User className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">
+                {currentUser 
+                  ? `Signed in as ${currentUser.email || currentUser.displayName || 'Verified Traveler'}`
+                  : 'Guest Session Active'}
+              </h4>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {currentUser 
+                  ? 'Your journeys and preferences are synced with the cloud.'
+                  : 'You are browsing anonymously. Sign in to sync across devices.'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-sm font-bold text-slate-900">
-              {currentUser 
-                ? `Signed in as ${currentUser.email || currentUser.displayName || 'Verified Traveler'}`
-                : 'Guest Session Active'}
-            </h4>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {currentUser 
-                ? 'Your journeys and preferences are synced with the cloud.'
-                : 'You are browsing anonymously. Sign in to sync across devices.'}
-            </p>
+
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-center sm:justify-end">
+            {currentUser ? (
+              <>
+                <button
+                  onClick={handleSignOut}
+                  className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDeleteAccount(true)}
+                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 font-semibold text-xs border border-rose-200/80 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Account</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleResetGuestData}
+                  className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="Reset local guest cache and start afresh"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Guest Session</span>
+                </button>
+                <button
+                  onClick={onOpenAuthModal}
+                  className="px-5 py-2.5 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <User className="w-4 h-4" />
+                  <span>Sign In / Register</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-center sm:justify-end">
-          {currentUser ? (
-            <button
-              onClick={handleSignOut}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
-            </button>
-          ) : (
-            <>
+        {/* In-App 2-Step Account Deletion Confirmation (App Store 5.1.1(v) & Play Store Compliance) */}
+        {currentUser && confirmingDeleteAccount && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50/80 dark:bg-rose-950/30 dark:border-rose-800/60 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-rose-900 dark:text-rose-200">
+                <p className="font-bold">Permanently delete your TripVerse account & local data?</p>
+                <p className="text-rose-700 dark:text-rose-300/90 mt-0.5">
+                  This clears your saved trips, AI chat history, and account credentials on this device and signs you out immediately.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
               <button
-                onClick={handleResetGuestData}
-                className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                title="Reset local guest cache and start afresh"
+                type="button"
+                onClick={() => setConfirmingDeleteAccount(false)}
+                className="px-3.5 py-2 rounded-xl bg-white text-slate-700 font-semibold text-xs border border-slate-200 hover:bg-slate-50 cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Guest Session</span>
+                Cancel
               </button>
               <button
-                onClick={onOpenAuthModal}
-                className="px-5 py-2.5 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                type="button"
+                onClick={handleDeleteAccount}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs cursor-pointer"
               >
-                <User className="w-4 h-4" />
-                <span>Sign In / Register</span>
+                Confirm Delete
               </button>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <TripVerseProModal

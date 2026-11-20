@@ -4,7 +4,10 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
 
-const NativeSystemUI = registerPlugin<{ setTheme: (options: { dark: boolean }) => Promise<void> }>('NativeSystemUI');
+const NativeSystemUI = registerPlugin<{
+  setTheme: (options: { dark: boolean }) => Promise<void>;
+  haptic: (options: { style: 'light' | 'medium' | 'heavy' | 'success' | 'warning' }) => Promise<void>;
+}>('NativeSystemUI');
 
 const PRODUCTION_API_ORIGIN = 'https://trip-verse.com';
 
@@ -239,9 +242,7 @@ export function syncThemeStatusBar(isDark?: boolean): void {
     try {
       StatusBar.setStyle({ style: darkActive ? Style.Dark : Style.Light }).catch(() => {});
       StatusBar.setBackgroundColor({ color: darkActive ? '#070C16' : '#FFFFFF' }).catch(() => {});
-      if (Capacitor.getPlatform() === 'android') {
-        NativeSystemUI.setTheme({ dark: darkActive }).catch(() => {});
-      }
+      NativeSystemUI.setTheme({ dark: darkActive }).catch(() => {});
     } catch {
       // Ignore on unsupported platforms
     }
@@ -312,6 +313,27 @@ export function initDeviceServices(onBackPress?: () => boolean) {
     setTimeout(() => {
       hideNativeSplashScreen(400);
     }, 3000);
+
+    // Deep Links & Universal Links (tripverse:// and https://trip-verse.com/...)
+    CapApp.addListener('appUrlOpen', ({ url }) => {
+      if (!url || typeof window === 'undefined') return;
+      try {
+        const parsed = new URL(url);
+        let nextPath = '/';
+        if (parsed.protocol === 'tripverse:') {
+          const hostSegment = parsed.hostname ? `/${parsed.hostname}` : '';
+          nextPath = `${hostSegment}${parsed.pathname || ''}${parsed.search || ''}${parsed.hash || ''}` || '/';
+        } else if (parsed.hostname === 'trip-verse.com' || parsed.hostname === 'www.trip-verse.com') {
+          nextPath = `${parsed.pathname || '/'}${parsed.search || ''}${parsed.hash || ''}`;
+        } else {
+          return;
+        }
+        window.history.pushState({}, '', nextPath);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } catch (err) {
+        console.warn('[TripVerse] Ignored malformed deep link:', url, err);
+      }
+    });
 
     // Android hardware back button handler
     CapApp.addListener('backButton', ({ canGoBack }) => {
@@ -393,6 +415,12 @@ export function triggerHaptic(type: 'light' | 'medium' | 'heavy' | 'success' | '
   if (typeof window === 'undefined') return;
 
   try {
+    // Native iOS Taptic Engine via TripVerseNativeUIPlugin (iOS WKWebView lacks navigator.vibrate)
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
+      NativeSystemUI.haptic({ style: type }).catch(() => {});
+      return;
+    }
+
     // Only attempt vibration if user has interacted with the document (browser security requirement)
     if ('userActivation' in navigator && !(navigator as any).userActivation.hasBeenActive) {
       return;
@@ -419,6 +447,104 @@ export function triggerHaptic(type: 'light' | 'medium' | 'heavy' | 'success' | '
     }
   } catch {
     // Ignore unsupported environments
+  }
+}
+
+/**
+ * Cross-platform file export that works identically on Desktop Web, iOS WKWebView, and Android WebView.
+ * Native WebViews ignore `<a download="blob:...">`, so native platforms invoke the OS Share Sheet
+ * (Save to Files, Add to Calendar, AirDrop, Nearby Share) with safe clipboard fallback.
+ */
+export async function saveOrShareFile(options: {
+  filename: string;
+  content: string;
+  mimeType?: string;
+  title?: string;
+  text?: string;
+}): Promise<boolean> {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return false;
+  const mimeType = options.mimeType || 'text/plain;charset=utf-8';
+  const blob = new Blob([options.content], { type: mimeType });
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const nav = window.navigator as Navigator & {
+        canShare?: (data?: ShareData) => boolean;
+      };
+      if (typeof File !== 'undefined' && typeof nav.share === 'function') {
+        const file = new File([blob], options.filename, { type: mimeType });
+        if (!nav.canShare || nav.canShare({ files: [file] })) {
+          await nav.share({
+            files: [file],
+            title: options.title || options.filename,
+            text: options.text,
+          });
+          return true;
+        }
+      }
+      if (typeof nav.share === 'function') {
+        await nav.share({
+          title: options.title || options.filename,
+          text: options.text || options.content,
+        });
+        return true;
+      }
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return false;
+    }
+
+    // Last-resort native fallback: copy content cleanly to clipboard
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(options.content);
+        return true;
+      }
+    } catch {
+      // Fall through to anchor download attempt
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = options.filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  return true;
+}
+
+/**
+ * Cross-platform print / save-PDF helper.
+ * Android WebView silently ignores `window.print()`, so native apps fall back to the OS Share Sheet
+ * (which exposes AirPrint / Save to Files on iOS and Print / Save PDF on Android).
+ */
+export async function printOrShareDocument(options?: {
+  title?: string;
+  text?: string;
+  filename?: string;
+}): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        await navigator.share({
+          title: options?.title || document.title || 'TripVerse Travel Guide',
+          text: options?.text || 'TripVerse Travel Itinerary & Dossier (https://trip-verse.com)',
+        });
+        return;
+      }
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
+    }
+  }
+
+  try {
+    window.print();
+  } catch (err) {
+    console.warn('[TripVerse] Print dialog unavailable on this device:', err);
   }
 }
 

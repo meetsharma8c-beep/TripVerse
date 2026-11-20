@@ -17,7 +17,7 @@ const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m 
 import { X, Send, Sparkles, Bot, User, Check, RefreshCw, Activity, Coins, Utensils, Copy, Trash2, Calendar, Clock, Sun, Sunset, ArrowRight, TrendingDown, Crown, Shield, Users, Compass, Mic, MicOff, FileText, Plane, Camera, Headphones, Pause, Play, Square } from 'lucide-react';
 import { scanTravelImage, VisualScanResult } from '../../services/visualAiScannerService';
 import { startAudioTour, pauseAudioTour, resumeAudioTour, stopAudioTour, setAudioTourListener, AudioTourState } from '../../services/audioTourService';
-import { triggerHaptic } from '../../services/deviceService';
+import { triggerHaptic, openExternalUrl } from '../../services/deviceService';
 import { getUserSubscriptionQuota, consumeAssistantMinute } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import { formatCurrency, getActiveCurrency, CURRENCIES } from '../../services/currencyService';
@@ -1022,7 +1022,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       const origin = trip.origin || 'Delhi';
       const dest = trip.destination || 'Dubai';
       const flightUrl = `https://www.google.com/travel/flights?q=flights+from+${encodeURIComponent(origin)}+to+${encodeURIComponent(dest)}`;
-      window.open(flightUrl, '_blank', 'noopener,noreferrer');
+      openExternalUrl(flightUrl);
     } else if (action === 'TRANSPORT_DEALS') {
       if (onAppAction) onAppAction({ type: 'OPEN_MODAL', payload: { modal: 'deals' } });
       onClose();
@@ -1090,7 +1090,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-md md:max-w-lg liquid-chat-shell liquid-rim h-[92dvh] sm:h-[calc(100dvh-1.5rem)] sm:my-3 sm:mr-3 max-h-[100dvh] rounded-t-[34px] sm:rounded-[32px] flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden"
+        className="w-full sm:max-w-md md:max-w-lg liquid-chat-shell liquid-rim h-[92dvh] sm:h-[calc(100dvh-1.5rem)] sm:my-3 sm:mr-3 max-h-[var(--visual-viewport-height,100dvh)] rounded-t-[34px] sm:rounded-[32px] flex flex-col animate-in slide-in-from-bottom sm:slide-in-from-right duration-300 overflow-hidden"
       >
         
         {/* Mobile Liquid Glass Pull Handle */}

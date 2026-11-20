@@ -5,6 +5,7 @@ import { loadTripPacking } from '../../services/storageService';
 import { formatCurrency, getActiveCurrency } from '../../services/currencyService';
 import { getBreakStopSection } from '../../services/travelDataService';
 import { useLanguage } from '../../services/languageService';
+import { printOrShareDocument } from '../../services/deviceService';
 import { 
   Printer, 
   Calendar, 
@@ -61,7 +62,10 @@ export function PrintTravelGuideModal({ trip, isOpen, onClose }: PrintTravelGuid
     window.addEventListener('afterprint', cleanup);
     setTimeout(cleanup, 60000);
 
-    window.print();
+    void printOrShareDocument({
+      title: cleanFileName,
+      text: `${trip.destination} (${trip.durationDays} days) — TripVerse Travel Guide Dossier`,
+    });
   };
 
   const routeMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(trip.origin)}&destination=${encodeURIComponent(trip.destination)}`;

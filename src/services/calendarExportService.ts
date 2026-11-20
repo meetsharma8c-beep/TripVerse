@@ -3,6 +3,7 @@
 // for one-tap import into Apple Calendar, Google Calendar, and Outlook.
 
 import type { Trip, ItineraryActivity } from '../types/trip';
+import { saveOrShareFile } from './deviceService';
 
 function escapeIcsText(value: string): string {
   return String(value || '')
@@ -149,24 +150,22 @@ export function generateTripIcs(trip: Trip): string {
 }
 
 /**
- * Trigger a browser download of the trip's .ics calendar file.
+ * Trigger a cross-platform download or native OS Share Sheet export of the trip's .ics calendar file.
  */
 export function downloadTripCalendarIcs(trip: Trip): boolean {
   if (typeof window === 'undefined' || typeof document === 'undefined') return false;
   const icsContent = generateTripIcs(trip);
-  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
   const safeName = (trip.destination || 'tripverse-itinerary')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${safeName || 'tripverse'}-itinerary.ics`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  void saveOrShareFile({
+    filename: `${safeName || 'tripverse'}-itinerary.ics`,
+    content: icsContent,
+    mimeType: 'text/calendar;charset=utf-8',
+    title: `${trip.destination || 'TripVerse'} Calendar Itinerary`,
+    text: `Import your ${trip.destination || 'TripVerse'} itinerary into Apple Calendar or Google Calendar.`,
+  });
   return true;
 }
