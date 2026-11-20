@@ -30,6 +30,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'ongoing' | 'completed' | 'draft'>('all');
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleCurrencyChange = (e: CustomEvent<SupportedCurrency>) => {
@@ -259,14 +260,39 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                         >
                           <Share2 className="w-3.5 h-3.5" />
                         </button>
-                        {trips.length > 1 && (
+                        {confirmDeleteId === featuredTrip.id ? (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full glass-clear border border-rose-400/50"
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDeleteId(null);
+                                onDeleteTrip(featuredTrip.id);
+                              }}
+                              className="min-h-0 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold cursor-pointer"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDeleteId(null);
+                              }}
+                              className="min-h-0 px-1.5 py-0.5 rounded-full text-[10px] font-bold text-[#152A1C] dark:text-slate-200 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm(`Delete trip "${featuredTrip.name}"?`)) {
-                                onDeleteTrip(featuredTrip.id);
-                              }
+                              setConfirmDeleteId(featuredTrip.id);
                             }}
                             className="min-h-0 p-2 rounded-full glass-clear liquid-press text-rose-600 dark:text-rose-400 cursor-pointer"
                             title="Delete"
@@ -419,14 +445,39 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
                               >
                                 <Share2 className="w-3.5 h-3.5" />
                               </button>
-                              {trips.length > 1 && (
+                              {confirmDeleteId === trip.id ? (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full glass-clear border border-rose-400/50"
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setConfirmDeleteId(null);
+                                      onDeleteTrip(trip.id);
+                                    }}
+                                    className="min-h-0 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold cursor-pointer"
+                                  >
+                                    Delete
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setConfirmDeleteId(null);
+                                    }}
+                                    className="min-h-0 px-1.5 py-0.5 rounded-full text-[10px] font-bold text-[#152A1C] dark:text-slate-200 cursor-pointer"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ) : (
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (confirm(`Delete trip "${trip.name}"?`)) {
-                                      onDeleteTrip(trip.id);
-                                    }
+                                    setConfirmDeleteId(trip.id);
                                   }}
                                   className="min-h-0 p-1.5 rounded-full glass-clear liquid-press text-rose-600 dark:text-rose-400 cursor-pointer"
                                   title="Delete"

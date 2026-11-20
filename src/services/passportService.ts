@@ -4,6 +4,8 @@
  * 100% professional and zero-emoji compliance.
  */
 
+import { loadTrips } from './storageService';
+
 export interface PassportStamp {
   id: string;
   name: string;
@@ -235,44 +237,120 @@ export const INITIAL_STAMPS: PassportStamp[] = [
   }
 ];
 
+function loadRawPassportStamps(isFounder: boolean): PassportStamp[] {
+  const raw = localStorage.getItem(STORAGE_KEY_PASSPORT_STAMPS);
+  let stamps: PassportStamp[];
+  if (!raw) {
+    stamps = INITIAL_STAMPS.map(s => ({ ...s }));
+  } else {
+    const parsed: PassportStamp[] = JSON.parse(raw);
+    const byId = new Map(parsed.map(s => [s.id, s]));
+    stamps = INITIAL_STAMPS.map(init => byId.get(init.id) || { ...init });
+  }
+
+  let dirty = !raw;
+
+  // Ensure Founder Genesis stamp is always unlocked for the Founder
+  stamps = stamps.map(s => {
+    if (s.id === 'founder_genesis' && isFounder && !s.unlockedAt) {
+      dirty = true;
+      return { ...s, unlockedAt: new Date().toISOString() };
+    }
+    return s;
+  });
+
+  // Auto-unlock stamps corresponding to real trips saved in the user's account
+  try {
+    const savedTrips = loadTrips().filter(t => t && t.id && t.id !== 'discovery-co-pilot');
+    if (savedTrips.length > 0) {
+      const unlockMap = new Map<string, string>();
+      for (const trip of savedTrips) {
+        const hay = `${trip.destination || ''} ${trip.name || ''} ${trip.destinationDetails?.country || ''} ${trip.destinationDetails?.state || ''}`.toLowerCase();
+        const ts = trip.createdAt || new Date().toISOString();
+        if (/india|manali|himachal|kasol|solang|agra|mathura|vrindavan|goa|udaipur|jaipur|kerala|munnar|ladakh|leh|varanasi|rishikesh|shimla|darjeeling|andaman|ooty|coorg|mumbai|delhi|vadodara|gujarat|rajasthan/i.test(hay)) {
+          if (!unlockMap.has('stamp_country_india')) unlockMap.set('stamp_country_india', ts);
+        }
+        if (/manali|solang|himachal|kasol|rohtang/i.test(hay)) {
+          if (!unlockMap.has('stamp_manali_himalayas')) unlockMap.set('stamp_manali_himalayas', ts);
+        }
+        if (/agra|taj mahal/i.test(hay)) {
+          if (!unlockMap.has('stamp_taj_mahal')) unlockMap.set('stamp_taj_mahal', ts);
+        }
+        if (/paris|france/i.test(hay)) {
+          if (!unlockMap.has('stamp_country_france')) unlockMap.set('stamp_country_france', ts);
+          if (/paris|eiffel/i.test(hay) && !unlockMap.has('stamp_eiffel_paris')) {
+            unlockMap.set('stamp_eiffel_paris', ts);
+          }
+        }
+        if (/dubai|uae|united arab emirates|abu dhabi/i.test(hay)) {
+          if (!unlockMap.has('stamp_country_uae')) unlockMap.set('stamp_country_uae', ts);
+          if (/dubai|burj/i.test(hay) && !unlockMap.has('stamp_burj_khalifa')) {
+            unlockMap.set('stamp_burj_khalifa', ts);
+          }
+        }
+        if (/japan|tokyo|kyoto|osaka/i.test(hay)) {
+          if (!unlockMap.has('stamp_country_japan')) unlockMap.set('stamp_country_japan', ts);
+          if (/kyoto|fushimi|inari|tokyo|japan/i.test(hay) && !unlockMap.has('stamp_fushimi_inari')) {
+            unlockMap.set('stamp_fushimi_inari', ts);
+          }
+        }
+        if (/rome|italy|colosseum/i.test(hay)) {
+          if (!unlockMap.has('stamp_colosseum')) unlockMap.set('stamp_colosseum', ts);
+        }
+        if (/singapore|marina bay/i.test(hay)) {
+          if (!unlockMap.has('stamp_marina_bay')) unlockMap.set('stamp_marina_bay', ts);
+        }
+      }
+
+      if (unlockMap.size > 0) {
+        stamps = stamps.map(s => {
+          const autoTs = unlockMap.get(s.id);
+          if (autoTs && !s.unlockedAt) {
+            dirty = true;
+            return { ...s, unlockedAt: autoTs };
+          }
+          return s;
+        });
+      }
+    }
+  } catch {
+    // Safe fallback in isolated test environments
+  }
+
+  if (dirty) {
+    localStorage.setItem(STORAGE_KEY_PASSPORT_STAMPS, JSON.stringify(stamps));
+  }
+  return stamps;
+}
+
 export function getPassportStamps(userEmail?: string): PassportStamp[] {
   if (typeof window === 'undefined') return INITIAL_STAMPS;
 
   const isFounder = (userEmail || '').trim().toLowerCase() === FOUNDER_EMAIL;
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_PASSPORT_STAMPS);
-    if (!raw) {
-      const stamps = INITIAL_STAMPS.map(s => {
-        if (s.id === 'founder_genesis') {
-          return { ...s, unlockedAt: isFounder ? new Date().toISOString() : null };
-        }
-        return s;
-      });
-      localStorage.setItem(STORAGE_KEY_PASSPORT_STAMPS, JSON.stringify(stamps));
-      return isFounder ? stamps : stamps.filter(s => !s.isFounderOnly);
-    }
-
-    const parsed: PassportStamp[] = JSON.parse(raw);
-    return isFounder ? parsed : parsed.filter(s => !s.isFounderOnly);
+    const stamps = loadRawPassportStamps(isFounder);
+    return isFounder ? stamps : stamps.filter(s => !s.isFounderOnly);
   } catch {
     return INITIAL_STAMPS;
   }
 }
 
-export function unlockPassportStamp(stampId: string): PassportStamp[] {
+export function unlockPassportStamp(stampId: string, userEmail?: string): PassportStamp[] {
   if (typeof window === 'undefined') return INITIAL_STAMPS;
 
+  const isFounder = (userEmail || '').trim().toLowerCase() === FOUNDER_EMAIL;
+
   try {
-    const stamps = getPassportStamps();
-    const updated = stamps.map(s => {
+    const rawStamps = loadRawPassportStamps(isFounder);
+    const updated = rawStamps.map(s => {
       if (s.id === stampId && !s.unlockedAt) {
         return { ...s, unlockedAt: new Date().toISOString() };
       }
       return s;
     });
     localStorage.setItem(STORAGE_KEY_PASSPORT_STAMPS, JSON.stringify(updated));
-    return updated;
+    return isFounder ? updated : updated.filter(s => !s.isFounderOnly);
   } catch {
     return INITIAL_STAMPS;
   }
@@ -283,7 +361,19 @@ export function getPassportProfile(userEmail?: string, userName?: string): Digit
   const stamps = getPassportStamps(userEmail);
   const unlocked = stamps.filter(s => !!s.unlockedAt);
 
-  const countries = new Set(unlocked.map(s => s.countryCode)).size;
+  const countrySet = new Set(unlocked.map(s => s.countryCode));
+  let realTripKm = 0;
+  try {
+    const savedTrips = loadTrips().filter(t => t && t.id && t.id !== 'discovery-co-pilot');
+    for (const trip of savedTrips) {
+      realTripKm += Math.round(trip.routeDetails?.distanceKm || (trip.durationDays || 1) * 180);
+      if (trip.destinationDetails?.country) {
+        countrySet.add(trip.destinationDetails.country.toUpperCase().slice(0, 3));
+      }
+    }
+  } catch {}
+
+  const countries = countrySet.size;
 
   let tier: DigitalPassportProfile['travelTier'] = 'Novice Explorer';
   if (isFounder || unlocked.length >= 8) {
@@ -306,7 +396,7 @@ export function getPassportProfile(userEmail?: string, userName?: string): Digit
     travelTier: tier,
     stampsCount: unlocked.length,
     countriesVisited: countries,
-    totalKmTraveled: unlocked.length * 1420
+    totalKmTraveled: Math.max(unlocked.length * 1420, realTripKm)
   };
 }
 

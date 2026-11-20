@@ -15,7 +15,7 @@ import { ScrollReveal } from '../common/ScrollReveal';
 import { LiquidChip, LiquidSearchDock } from '../ui/liquid';
 
 interface ExploreViewProps {
-  onPlanTripForDestination: (destName: string) => void;
+  onPlanTripForDestination: (destName: string, durationDays?: number) => void;
   savedItemIds: string[];
   onToggleSaved: (id: string) => void;
   userProfile?: UserProfile;
@@ -58,7 +58,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
         colors: ['#2D5A3D', '#D4AF37', '#10B981']
       });
     } catch {}
-    onPlanTripForDestination(itinerary.destination);
+    onPlanTripForDestination(itinerary.destination, itinerary.durationDays);
   };
 
   useEffect(() => {

@@ -135,13 +135,24 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
   // Flight & Train Mode Economics
   const isFlight = trip.transportMode === 'flight';
   const isTrain = trip.transportMode === 'train';
-  const isInternational = /tokyo|japan|paris|france|london|uk|bali|indonesia|singapore|dubai|uae|maldives|bangkok|thailand|new york|usa|switzerland/i.test(trip.destination);
+  const destCountry = (trip.destinationDetails?.country || '').trim().toLowerCase();
+  const isInternational =
+    (destCountry.length > 0 && destCountry !== 'india') ||
+    /tokyo|japan|paris|france|london|uk|bali|indonesia|singapore|dubai|uae|maldives|bangkok|thailand|new york|new jersey|usa|united states|canada|switzerland|rome|italy|spain|barcelona|greece|santorini|australia|sydney|germany|vietnam|sri lanka|nepal|bhutan|qatar|doha|turkey|istanbul|egypt|south korea|seoul/i.test(
+      `${trip.destination} ${trip.name}`
+    );
 
   // Flight Splitter State
   const [flightClass, setFlightClass] = useState<'economy' | 'premium' | 'business'>('economy');
   const [airfarePerPerson, setAirfarePerPerson] = useState<number>(isInternational ? 38000 : 6500);
   const [hasBaggageAddon, setHasBaggageAddon] = useState<boolean>(isInternational);
   const [airportTransferTotal, setAirportTransferTotal] = useState<number>(isInternational ? 3500 : 1500);
+
+  useEffect(() => {
+    setAirfarePerPerson(isInternational ? 38000 : 6500);
+    setHasBaggageAddon(isInternational);
+    setAirportTransferTotal(isInternational ? 3500 : 1500);
+  }, [trip.id, isInternational]);
 
   // Train Splitter State
   const [trainClass, setTrainClass] = useState<'sleeper' | 'ac3' | 'ac2' | 'ac1'>('ac3');

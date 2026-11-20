@@ -18,11 +18,6 @@ import {
   saveUserSavedItemsToSupabase,
   saveUserActiveTripToSupabase,
   loadUserActiveTripFromSupabase,
-  saveExpenseToSupabase,
-  saveReviewToSupabase,
-  savePhotoToSupabase,
-  deletePhotoFromSupabase,
-  savePackingToSupabase,
   isPlaceholderDiscoveryTrip,
   isTripDeletedInCloud,
   canonicalizeAccountEmail,
@@ -509,7 +504,7 @@ export function saveTripExpenses(tripId: string, expenses: ExpenseItem[], userId
     const key = getUserStorageKey(`tripverse_expenses_${tripId}`, uid);
     safeStorageSet(key, JSON.stringify(expenses), uid);
 
-    // Update the trip object so it syncs to cloud
+    // Update the trip object so it syncs atomically (including expense deletions) to cloud
     const trip = getTripById(tripId, uid);
     if (trip) {
       saveOrUpdateTrip({
@@ -518,8 +513,12 @@ export function saveTripExpenses(tripId: string, expenses: ExpenseItem[], userId
       }, uid);
     }
 
-    if (uid) {
-      expenses.forEach(exp => saveExpenseToSupabase(uid, exp).catch(() => {}));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('tripverse_trip_expenses_changed', {
+          detail: { tripId, expenses }
+        })
+      );
     }
   } catch (e) {
     console.error('Error saving trip expenses', e);
@@ -558,9 +557,6 @@ export function saveTripPacking(tripId: string, items: PackingItem[], userId?: s
         ...trip,
         packingList: items
       }, uid);
-    }
-    if (uid) {
-      savePackingToSupabase(uid, tripId, items).catch(() => {});
     }
   } catch (e) {
     console.error('Error saving trip packing list', e);
@@ -601,9 +597,6 @@ export function saveTripPhoto(photo: TripPhotoMemory, userId?: string | null): v
         photos: updated
       }, uid);
     }
-    if (uid) {
-      savePhotoToSupabase(uid, photo).catch(() => {});
-    }
   } catch (e) {
     console.error('Error saving photo memory', e);
   }
@@ -627,9 +620,6 @@ export function deleteTripPhoto(tripId: string, photoId: string, userId?: string
         photos: updated
       }, uid);
     }
-    if (uid) {
-      deletePhotoFromSupabase(uid, photoId).catch(() => {});
-    }
   } catch (e) {
     console.error('Error deleting photo memory', e);
   }
@@ -647,9 +637,6 @@ export function saveTripReview(tripId: string, review: TripReview, userId?: stri
         ...trip,
         review
       }, uid);
-    }
-    if (uid) {
-      saveReviewToSupabase(uid, tripId, review).catch(() => {});
     }
   } catch (e) {
     console.error('Error saving trip review', e);

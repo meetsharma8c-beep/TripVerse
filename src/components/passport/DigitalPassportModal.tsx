@@ -58,7 +58,7 @@ export const DigitalPassportModal: React.FC<DigitalPassportModalProps> = ({
 
   const handleStampAction = (stamp: PassportStamp) => {
     triggerHaptic('success');
-    const updated = unlockPassportStamp(stamp.id);
+    const updated = unlockPassportStamp(stamp.id, userEmail);
     setStamps(updated);
     setProfile(getPassportProfile(userEmail, userName));
     setSelectedStamp({ ...stamp, unlockedAt: new Date().toISOString() });

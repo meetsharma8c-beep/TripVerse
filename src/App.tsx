@@ -239,7 +239,7 @@ export function App() {
   const [tripSubTab, setTripSubTab] = useState<
     'itinerary' | 'hub' | 'packing' | 'expenses' | 'gems' | 'deals' | 'route' | 'breakstops' | 'budget' | 'safety'
   >('itinerary');
-  const [tripsViewMode, setTripsViewMode] = useState<'passes' | 'portfolio'>('passes');
+  const [tripsViewMode, setTripsViewMode] = useState<'passes' | 'portfolio'>('portfolio');
   const [isTripIslandExpanded, setIsTripIslandExpanded] = useState(false);
 
   // Modals & Drawers
@@ -613,10 +613,21 @@ export function App() {
     };
     window.addEventListener('tripverse_open_reset_password_modal', handlePasswordRecoveryEvent);
 
+    const handleTripExpensesChanged = (e: Event) => {
+      const detail = (e as CustomEvent<{ tripId?: string; expenses?: Trip['expenses'] }>).detail;
+      if (detail?.tripId && Array.isArray(detail.expenses)) {
+        setTrips(prev =>
+          prev.map(t => (t.id === detail.tripId ? { ...t, expenses: detail.expenses } : t))
+        );
+      }
+    };
+    window.addEventListener('tripverse_trip_expenses_changed', handleTripExpensesChanged);
+
     return () => {
       unsub();
       window.removeEventListener('tripverse_quota_updated', handleQuotaUpdate);
       window.removeEventListener('tripverse_open_reset_password_modal', handlePasswordRecoveryEvent);
+      window.removeEventListener('tripverse_trip_expenses_changed', handleTripExpensesChanged);
     };
   }, []);
 
@@ -1674,6 +1685,9 @@ export function App() {
       const nextId = updated.length > 0 ? updated[0].id : '';
       setActiveTripIdState(nextId);
       setActiveTripId(nextId, currentUser?.uid);
+    }
+    if (updated.length === 0 && currentTab === 'trip-detail') {
+      setCurrentTab('trips');
     }
   };
 
@@ -3181,7 +3195,6 @@ export function App() {
                   activeTripId={activeTripIdState}
                   onSelectTrip={(id) => {
                     handleSelectTrip(id);
-                    setTripsViewMode('passes');
                   }}
                   onOpenPlanner={() => handleOpenPlannerWithPrefill()}
                   onDeleteTrip={handleDeleteTrip}
@@ -3201,8 +3214,11 @@ export function App() {
             <div key="explore" className="animate-fade-in">
               <ExploreView
                 userProfile={userProfile}
-                onPlanTripForDestination={(destName) => {
-                  handleOpenPlannerWithPrefill({ destination: destName });
+                onPlanTripForDestination={(destName, durationDays) => {
+                  handleOpenPlannerWithPrefill({
+                    destination: destName,
+                    ...(durationDays ? { duration: durationDays } : {})
+                  });
                 }}
                 savedItemIds={savedItemIds}
                 onToggleSaved={handleToggleSaved}
