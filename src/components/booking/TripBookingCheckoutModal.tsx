@@ -497,10 +497,10 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                               <div className="flex items-center justify-end gap-1 text-amber-500 text-xs font-bold">
                                 <Star className="w-3.5 h-3.5 fill-current" />
                                 <span>{hotel.userRating}</span>
-                                <span className="text-slate-400 font-normal">({hotel.reviewCount})</span>
+                                <span className="text-slate-400 font-normal">({hotel.starRating}★ Tier)</span>
                               </div>
                               <span className="text-sm font-black text-emerald-800 dark:text-emerald-400 block mt-0.5 font-mono">
-                                ₹{hotel.nightlyRate.toLocaleString('en-IN')}<span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">/night</span>
+                                Est. {formatCurrency(hotel.nightlyRate, currency)}<span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">/night</span>
                               </span>
                             </div>
                           </div>
@@ -576,7 +576,7 @@ export const TripBookingCheckoutModal: React.FC<TripBookingCheckoutModalProps> =
                         {bestTransport.badge || 'Recommended Option'}
                       </span>
                       <span className="text-xs sm:text-sm font-black text-emerald-900 dark:text-emerald-300 font-mono">
-                        ₹{bestTransport.dealPrice.toLocaleString('en-IN')}{' '}
+                        Est. {formatCurrency(bestTransport.dealPrice, currency)}{' '}
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">({bestTransport.priceUnit.replace('_', ' ')})</span>
                       </span>
                     </div>
