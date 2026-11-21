@@ -41,10 +41,12 @@ export interface RefundGuidance {
 
 export interface ReplanOption {
   id: string;
-  type: 'alternate_dates' | 'new_destination';
+  type: 'alternate_dates' | 'new_destination' | 'switch_transport' | 'indoor_weather_swap';
   title: string;
   destination: string;
   datesLabel: string;
+  newStartDate?: string;
+  newTransportMode?: 'car' | 'bike' | 'bus' | 'train' | 'flight';
   durationDays: number;
   estimatedCost: number;
   costDelta: number; // positive = more expensive, negative = savings
@@ -53,4 +55,5 @@ export interface ReplanOption {
   image: string;
   highlights: string[];
   isRecommended?: boolean;
+  coordinates?: { lat: number; lng: number };
 }

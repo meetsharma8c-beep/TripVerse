@@ -3403,7 +3403,7 @@ export function App() {
           <TripReplanningModal
             trip={activeTrip}
             isOpen={isReplanningOpen}
-            initialReason={activeDisruption?.type || 'flight_cancellation'}
+            initialReason={activeDisruption?.type}
             initialScreen={replanningInitialScreen}
             onClose={() => setIsReplanningOpen(false)}
             onApplyReplannedTrip={(updatedTrip) => {
