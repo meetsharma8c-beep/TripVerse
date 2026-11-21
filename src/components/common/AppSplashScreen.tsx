@@ -20,10 +20,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
 }) => {
   const [isExiting, setIsExiting] = useState(false);
   const [progress, setProgress] = useState(18);
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const [videoError, setVideoError] = useState(false);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
   const onFinishRef = useRef(onFinish);
   const hasFinishedRef = useRef(false);
   const [initialMountTime] = useState(() => Date.now());
@@ -53,32 +50,10 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
     }, 200);
   };
 
-  // Cross-device video autoplay initialization
+  // Hide native Capacitor splash screen once React splash mounts
   useEffect(() => {
     triggerHaptic('light');
-    hideNativeSplashScreen(250);
-
-    const video = videoRef.current;
-    if (video) {
-      video.muted = true;
-      video.defaultMuted = true;
-      video.playsInline = true;
-      video.controls = false;
-      video.setAttribute('webkit-playsinline', 'true');
-      video.setAttribute('playsinline', 'true');
-
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setVideoLoaded(true);
-          })
-          .catch(() => {
-            setVideoLoaded(false);
-            setVideoError(true);
-          });
-      }
-    }
+    hideNativeSplashScreen(180);
   }, []);
 
   // Smooth genuine loading progress interpolation towards real app ready target
@@ -148,46 +123,16 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({
         backfaceVisibility: 'hidden'
       }}
     >
-      {/* 1. Cross-Device Ambient Video & Ken Burns Horizon Layer */}
+      {/* 1. Lightweight GPU Ken Burns Horizon Layer (avoids 4.7MB startup video contention) */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#070C16]">
         <img
           src="/videos/app-opening-poster.jpg"
           alt="TripVerse scenic horizon"
-          className={`absolute inset-0 w-full h-full object-cover pointer-events-none select-none transition-[opacity,transform] duration-[2200ms] ease-out tv-splash-kenburns ${
-            videoLoaded && !videoError ? 'opacity-0' : 'opacity-85'
-          }`}
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none opacity-85 tv-splash-kenburns"
           loading="eager"
+          decoding="async"
+          fetchPriority="high"
         />
-
-        {!videoError && (
-          <video
-            ref={videoRef}
-            src="/videos/app-opening.mp4"
-            poster="/videos/app-opening-poster.jpg"
-            autoPlay
-            loop
-            muted
-            playsInline
-            controls={false}
-            // @ts-ignore iOS & Android webview specific attributes
-            webkit-playsinline="true"
-            x5-playsinline="true"
-            x5-video-player-type="h5"
-            preload="auto"
-            disablePictureInPicture
-            disableRemotePlayback
-            onLoadedData={() => setVideoLoaded(true)}
-            onError={() => {
-              setVideoLoaded(false);
-              setVideoError(true);
-            }}
-            width={1280}
-            height={720}
-            className={`tv-ambient-video w-full h-full object-cover pointer-events-none select-none transition-opacity duration-700 tv-splash-kenburns ${
-              videoLoaded ? 'opacity-85' : 'opacity-0'
-            }`}
-          />
-        )}
 
         {/* Multi-layered Emerald & Deep Forest Atmospheric Vignette */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#070C16]/80 via-[#0A1812]/55 to-[#070C16]/95 pointer-events-none" />

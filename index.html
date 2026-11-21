@@ -204,10 +204,16 @@
     }
     </script>
 
-    <!-- Google Fonts: Sora (headings) and Plus Jakarta Sans (body & UI) -->
+    <!-- Preload Above-the-Fold Brand Mark & Hero LCP Poster for Instant First Paint -->
+    <link rel="preload" as="image" href="/tripverse-mark.svg?v=12" fetchpriority="high" />
+    <link rel="preload" as="image" href="/videos/app-opening-poster.jpg" fetchpriority="high" />
+
+    <!-- Google Fonts: Non-render-blocking async load with instant system font fallback -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..700;1,300..700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Sora:wght@500;600;700;800&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet"></noscript>
 
     <!-- Official Google Identity Services SDK for Direct Vercel OAuth 2.0 (Zero delay) -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>

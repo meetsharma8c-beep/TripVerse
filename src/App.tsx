@@ -40,17 +40,12 @@ import { Logo } from './components/common/Logo';
 import { ModalSkeleton } from './components/common/SkeletonLoader';
 import { OfflineStatusBar } from './components/common/OfflineStatusBar';
 import type { LegalTab } from './components/common/LegalTrustModal';
-import { PwaInstallPrompt } from './components/common/PwaInstallPrompt';
 import { AppSplashScreen } from './components/common/AppSplashScreen';
 import { PullToRefresh } from './components/common/PullToRefresh';
 import { ArgonFloatingWidget } from './components/argon/ArgonFloatingWidget';
 
-// Home Components
+// Above-the-fold Home Hero (eager for instant LCP); below-the-fold sections lazy-loaded below
 import { HeroSection } from './components/home/HeroSection';
-import { FeaturePillars } from './components/home/FeaturePillars';
-import { PopularDestinations } from './components/home/PopularDestinations';
-import { PublicLaunchSpotlight } from './components/home/PublicLaunchSpotlight';
-import { AIGenerationSkeleton } from './components/common/AIGenerationSkeleton';
 
 // Itinerary Components (lazy-loaded so the Home screen doesn't pay for trip-detail JS)
 const getBreakStopSectionLocal = (stop: BreakStop): 'amenities' | 'fuel' | 'ev_charging' | 'medical' => {
@@ -139,8 +134,15 @@ import {
   isTripDeletedInCloud,
 } from './services/supabaseSyncService';
 
+// Below-the-fold Home sections & conditional overlays (lazy-loaded to speed up initial FCP/LCP)
+const FeaturePillars = lazyWithRetry(() => import('./components/home/FeaturePillars').then(m => ({ default: m.FeaturePillars })));
+const PopularDestinations = lazyWithRetry(() => import('./components/home/PopularDestinations').then(m => ({ default: m.PopularDestinations })));
+const PublicLaunchSpotlight = lazyWithRetry(() => import('./components/home/PublicLaunchSpotlight').then(m => ({ default: m.PublicLaunchSpotlight })));
+const AIGenerationSkeleton = lazyWithRetry(() => import('./components/common/AIGenerationSkeleton').then(m => ({ default: m.AIGenerationSkeleton })));
+const PwaInstallPrompt = lazyWithRetry(() => import('./components/common/PwaInstallPrompt').then(m => ({ default: m.PwaInstallPrompt })));
+
 // Disruption Banner
-import { DisruptionBanner } from './components/replanning/DisruptionBanner';
+const DisruptionBanner = lazyWithRetry(() => import('./components/replanning/DisruptionBanner').then(m => ({ default: m.DisruptionBanner })));
 import { DisruptionAlert } from './types/replanning';
 
 // Lazy-Loaded Heavy Modals for Optimized Code Splitting & CWV Speed
@@ -180,7 +182,6 @@ import {
   MoreVertical,
   Search
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 import { resolveRouteFromBrowser } from './utils/routeResolver';
 import { POPULAR_DESTINATIONS } from './data/destinations';
@@ -1833,16 +1834,18 @@ export function App() {
     };
     handleUpdateTrip(updated);
 
-    try {
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.7 },
-        colors: ['#2D5A3D', '#386B49', '#F59E0B']
+    import('canvas-confetti')
+      .then(({ default: fireConfetti }) => {
+        fireConfetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.7 },
+          colors: ['#2D5A3D', '#386B49', '#F59E0B']
+        });
+      })
+      .catch(() => {
+        // safe fallback
       });
-    } catch {
-      // safe fallback
-    }
   };
 
   const handleExportTrip = () => {
@@ -2262,12 +2265,14 @@ export function App() {
 
       {/* 0b. Stepped AI Trip Generation Loading Skeleton Screen */}
       {isGeneratingTrip && (
-        <AIGenerationSkeleton
-          destination={generationParams.destination}
-          duration={generationParams.duration}
-          travelers={generationParams.travelers}
-          budget={generationParams.budget}
-        />
+        <Suspense fallback={null}>
+          <AIGenerationSkeleton
+            destination={generationParams.destination}
+            duration={generationParams.duration}
+            travelers={generationParams.travelers}
+            budget={generationParams.budget}
+          />
+        </Suspense>
       )}
 
       {/* Highway Offline Mode Detection Banner */}
@@ -2356,31 +2361,37 @@ export function App() {
                 onSelectDestination={(dest) => setSelectedDestinationForDetails(dest)}
               />
 
-              {/* Official Public Release 2.0 Spotlight & Viral Share */}
-              <div className="hidden lg:block">
-                <PublicLaunchSpotlight
-                  onOpenPlanner={() => handleOpenPlannerWithPrefill()}
-                  onExplore={() => handleNavigateTab('explore')}
-                />
-              </div>
+              <Suspense fallback={null}>
+                {/* Official Public Release 2.0 Spotlight & Viral Share */}
+                <div className="hidden lg:block tv-cv-section">
+                  <PublicLaunchSpotlight
+                    onOpenPlanner={() => handleOpenPlannerWithPrefill()}
+                    onExplore={() => handleNavigateTab('explore')}
+                  />
+                </div>
 
-              {/* Brand 5 Feature Pillars */}
-              <FeaturePillars />
+                {/* Brand 5 Feature Pillars */}
+                <div className="tv-cv-section">
+                  <FeaturePillars />
+                </div>
 
-              {/* Popular Destinations Showcase */}
-              <PopularDestinations
-                onSelectDestination={(dest) => {
-                  setSelectedDestinationForDetails(dest);
-                }}
-                onPlanTripForDestination={(destName) => {
-                  handleOpenPlannerWithPrefill({
-                    destination: destName
-                  });
-                }}
-                savedItemIds={savedItemIds}
-                onToggleSaved={handleToggleSaved}
-                onViewAllExplore={() => handleNavigateTab('explore')}
-              />
+                {/* Popular Destinations Showcase */}
+                <div className="tv-cv-section">
+                  <PopularDestinations
+                    onSelectDestination={(dest) => {
+                      setSelectedDestinationForDetails(dest);
+                    }}
+                    onPlanTripForDestination={(destName) => {
+                      handleOpenPlannerWithPrefill({
+                        destination: destName
+                      });
+                    }}
+                    savedItemIds={savedItemIds}
+                    onToggleSaved={handleToggleSaved}
+                    onViewAllExplore={() => handleNavigateTab('explore')}
+                  />
+                </div>
+              </Suspense>
 
               {/* Semantic SEO Authority Hub: Trip Planning Guide, Popular Trip Routes & FAQ */}
               <section
@@ -3628,7 +3639,9 @@ export function App() {
       />
 
       {/* PWA Free Install Banner & iOS Guide */}
-      <PwaInstallPrompt />
+      <Suspense fallback={null}>
+        <PwaInstallPrompt />
+      </Suspense>
 
     </div>
   );

@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, getStoredCurrency, SupportedCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
-import { searchLocations, PreciseLocation } from '../../services/locationService';
+import type { PreciseLocation } from '../../services/locationService';
 import { Trip, Destination } from '../../types/trip';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { ScrollReveal } from '../common/ScrollReveal';
@@ -68,21 +68,36 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const [currency, setCurrency] = useState<SupportedCurrency>(getStoredCurrency());
   const [heroVideoError, setHeroVideoError] = useState(false);
   const [heroVideoPlaying, setHeroVideoPlaying] = useState(false);
+  const [shouldMountHeroVideo, setShouldMountHeroVideo] = useState(false);
   const heroVideoRef = React.useRef<HTMLVideoElement>(null);
 
-  // Seamless automated loop playback across all OS & Low Power Mode (iOS/Android/macOS/Windows)
+  // Defer mounting the 4.7MB ambient hero video until after initial interactive paint (LCP/FCP stay instant)
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const conn = (navigator as any)?.connection;
+    const isDataSaver = Boolean(conn?.saveData || /^(?:slow-2g|2g|3g)$/i.test(conn?.effectiveType || ''));
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (isDataSaver || prefersReducedMotion) return;
+
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof win.requestIdleCallback === 'function') {
+      const id = win.requestIdleCallback(() => setShouldMountHeroVideo(true), { timeout: 2200 });
+      return () => {
+        win.cancelIdleCallback?.(id);
+      };
+    }
+    const timer = globalThis.setTimeout(() => setShouldMountHeroVideo(true), 1600);
+    return () => globalThis.clearTimeout(timer);
+  }, []);
+
+  // Seamless automated loop playback + IntersectionObserver auto-pause when scrolled past hero (0% offscreen video GPU cost)
+  useEffect(() => {
+    if (!shouldMountHeroVideo) return;
     const video = heroVideoRef.current;
     if (!video || heroVideoError) return;
-
-    // Respect Data Saver (cellular roaming) and Reduced Motion accessibility settings
-    const conn = (navigator as any)?.connection;
-    const isDataSaver = Boolean(conn?.saveData || /^(?:slow-2g|2g)$/i.test(conn?.effectiveType || ''));
-    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (isDataSaver || prefersReducedMotion) {
-      setHeroVideoPlaying(false);
-      return;
-    }
 
     video.muted = true;
     video.defaultMuted = true;
@@ -94,8 +109,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     video.setAttribute('webkit-playsinline', 'true');
     video.setAttribute('autoplay', '');
 
+    let inViewport = true;
     const attemptAutoPlay = () => {
-      if (!video || heroVideoError) return;
+      if (!video || heroVideoError || !inViewport) return;
       video.muted = true;
       const playPromise = video.play();
       if (playPromise !== undefined) {
@@ -104,9 +120,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             setHeroVideoPlaying(true);
           })
           .catch(() => {
-            // If iOS Low Power Mode or strict battery saver blocks HTML5 video autoplay,
-            // keep heroVideoPlaying false so the <video> stays hidden (never showing a native play button)
-            // while the continuous Ken Burns poster animation runs underneath.
             setHeroVideoPlaying(false);
           });
       }
@@ -114,9 +127,28 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
     attemptAutoPlay();
 
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries[0]?.isIntersecting ?? true;
+          inViewport = visible;
+          if (visible && document.visibilityState === 'visible') {
+            attemptAutoPlay();
+          } else if (!visible && !video.paused) {
+            video.pause();
+          }
+        },
+        { threshold: 0.05 }
+      );
+      observer.observe(video);
+    }
+
     const handleVisibilityOrTouch = () => {
-      if (document.visibilityState === 'visible' && video.paused) {
+      if (document.visibilityState === 'visible' && inViewport && video.paused) {
         attemptAutoPlay();
+      } else if (document.visibilityState !== 'visible' && !video.paused) {
+        video.pause();
       }
     };
 
@@ -125,11 +157,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     window.addEventListener('click', handleVisibilityOrTouch, { passive: true, once: true });
 
     return () => {
+      observer?.disconnect();
       document.removeEventListener('visibilitychange', handleVisibilityOrTouch);
       window.removeEventListener('touchstart', handleVisibilityOrTouch);
       window.removeEventListener('click', handleVisibilityOrTouch);
     };
-  }, [heroVideoError]);
+  }, [shouldMountHeroVideo, heroVideoError]);
 
   // Location suggestions state
   const [suggestions, setSuggestions] = useState<PreciseLocation[]>([]);
@@ -235,6 +268,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
+        const { searchLocations } = await import('../../services/locationService');
         const results = await searchLocations(destination);
         if (isCurrent) {
           setSuggestions(results);
@@ -473,16 +507,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <span>{t('hero.exploreDestinations')}</span>
               </button>
             </div>
-            {/* Continuous automated Ken Burns scenic animation (also guarantees zero play icon if OS battery saver blocks video) */}
+            {/* Continuous automated Ken Burns scenic animation (instant LCP paint; zero play icon in Low Power Mode) */}
             <img
               src="/videos/app-opening-poster.jpg"
               alt="Serene nature landscape with misty mountains and lake"
               className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none tv-hero-ambient-loop"
               loading="eager"
+              decoding="async"
+              fetchPriority="high"
             />
 
-            {/* Ambient Cross-Device Video Scenery — only visible while actively playing so iOS Low Power Mode never overlays a Play button */}
-            {!heroVideoError && (
+            {/* Ambient Cross-Device Video Scenery — deferred until idle & paused when scrolled offscreen */}
+            {shouldMountHeroVideo && !heroVideoError && (
               <video
                 ref={heroVideoRef}
                 src="/videos/app-opening.mp4"
@@ -909,6 +945,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <img
                 src="/images/ai-robot-mascot.jpg"
                 alt="TripVerse AI Travel Mascot"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover rounded-xl"
               />
             </div>

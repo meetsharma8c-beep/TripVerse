@@ -46,17 +46,23 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
   const [isDocked, setIsDocked] = useState(false);
   const [shouldLoad3D, setShouldLoad3D] = useState(false);
 
-  // Defer loading the Three.js 3D mascot bundle until browser is idle so FCP/LCP stay fast
+  // Defer loading the 533KB Three.js 3D mascot bundle on desktop idle (and skip on mobile/data-saver so scrolling stays 120fps)
   useEffect(() => {
-    if (shouldLoad3D) return;
-    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    if (shouldLoad3D || typeof window === 'undefined') return;
+    const isDesktop = window.innerWidth >= 1024;
+    const conn = (navigator as any)?.connection;
+    const isDataSaver = Boolean(conn?.saveData || /^(?:slow-2g|2g|3g)$/i.test(conn?.effectiveType || ''));
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!isDesktop || isDataSaver || prefersReducedMotion) return;
+
+    if ('requestIdleCallback' in window) {
       const id = (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number })
-        .requestIdleCallback(() => setShouldLoad3D(true), { timeout: 2500 });
+        .requestIdleCallback(() => setShouldLoad3D(true), { timeout: 3500 });
       return () => {
         (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback?.(id);
       };
     }
-    const timer = setTimeout(() => setShouldLoad3D(true), 1200);
+    const timer = setTimeout(() => setShouldLoad3D(true), 3000);
     return () => clearTimeout(timer);
   }, [shouldLoad3D]);
 
@@ -189,6 +195,11 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
 
   return (
     <div
+      onPointerEnter={() => {
+        if (!shouldLoad3D && typeof window !== 'undefined' && window.innerWidth >= 1024) {
+          setShouldLoad3D(true);
+        }
+      }}
       className={`fixed z-[41] tv-hide-short-landscape flex flex-col items-end gap-2 select-none ${className}`}
       style={{
         bottom: 'calc(4.65rem + env(safe-area-inset-bottom, 0px))',
