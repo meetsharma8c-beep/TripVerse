@@ -3,7 +3,8 @@
 > TripVerse is a free AI Trip Planner, Road Trip Route Engine, and Travel Itinerary Platform for Web, iOS, and Android. Travelers generate day-by-day itineraries, interactive driving & flight routes, highway fuel/EV/dining stops, multi-currency group budgets, live weather packing lists, and offline calendar/PDF travel guides across 10,000+ destinations worldwide.
 
 ## Core Pages
-- [Home — Free AI Trip Planner](https://trip-verse.com/): Build custom day-by-day itineraries in seconds.
+- [Home — TripVerse Free AI Trip Planner](https://trip-verse.com/): Build custom day-by-day itineraries in seconds.
+- [About TripVerse](https://trip-verse.com/about): Official overview of TripVerse (trip-verse.com), founded by Meet Sharma.
 - [Explore Destinations](https://trip-verse.com/explore): Browse 40 curated global and Indian travel guides.
 - [AI Trip Planner](https://trip-verse.com/ai-trip-planner): Automated AI itinerary, hotel, dining, and budget planning.
 - [Road Trip Route Planner](https://trip-verse.com/road-trip-planner): Highway driving routes with scenic stops, EV chargers, and fuel stations.

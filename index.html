@@ -12,14 +12,16 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=16" />
     <link rel="shortcut icon" href="/favicon.ico?v=16" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-    <title>TripVerse (Trip Verse) — Free AI Trip Planner, Road Trip Routes &amp; Itineraries</title>
-    <meta name="description" content="TripVerse (trip-verse.com) is the #1 free AI Trip Planner. Plan any trip in seconds with custom day-by-day trip itineraries, road trip routes, highway stops, hotel picks, live weather &amp; group trip budgets across 10,000+ destinations worldwide." />
-    <meta name="keywords" content="trip, trip planner, plan a trip, ai trip planner, tripverse, trip-verse, road trip, road trip planner, trip itinerary, travel planner, free trip planner, holiday trip planner, weekend trip, family trip, budget trip planner, vacation planner, best trip app, trip route planner" />
-    <meta name="author" content="TripVerse Platform Team" />
+    <title>TripVerse — Free AI Trip Planner &amp; Custom Itineraries</title>
+    <meta name="description" content="TripVerse (trip-verse.com) is a free AI Trip Planner for day-by-day travel itineraries, rail &amp; flight routes, road trip pitstops, hotel picks, live weather, and group budgets across 10,000+ destinations in India and worldwide." />
+    <meta name="keywords" content="TripVerse, Trip Verse, trip-verse.com, AI trip planner, free trip planner, travel itinerary generator, India trip planner, road trip planner, train trip planner, group travel budget" />
+    <meta name="author" content="Meet Sharma, TripVerse" />
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <link rel="canonical" href="https://trip-verse.com/" />
     <link rel="alternate" hreflang="x-default" href="https://trip-verse.com/" />
     <link rel="alternate" hreflang="en" href="https://trip-verse.com/" />
+    <link rel="alternate" hreflang="en-IN" href="https://trip-verse.com/" />
+    <link rel="alternate" hreflang="en-US" href="https://trip-verse.com/" />
     
     <!-- Android & PWA Meta -->
     <meta name="theme-color" content="#15803D" />
@@ -61,8 +63,8 @@
     <meta property="og:url" content="https://trip-verse.com/" />
     <meta property="og:site_name" content="TripVerse" />
     <meta property="og:locale" content="en_US" />
-    <meta property="og:title" content="TripVerse (Trip Verse) — Free AI Trip Planner, Road Trip Routes &amp; Itineraries" />
-    <meta property="og:description" content="TripVerse (trip-verse.com) — Plan your next trip in seconds with day-by-day AI trip itineraries, scenic road trip stops, budget tracking, live weather, and hotel picks worldwide." />
+    <meta property="og:title" content="TripVerse — Free AI Trip Planner &amp; Custom Itineraries" />
+    <meta property="og:description" content="Plan any trip in seconds with TripVerse (trip-verse.com): day-by-day AI itineraries, rail &amp; flight routes, road trip pitstops, live weather, hotel picks, and group budgets worldwide." />
     <meta property="og:image" content="https://trip-verse.com/og-banner.png?v=5" />
     <meta property="og:image:secure_url" content="https://trip-verse.com/og-banner.png?v=5" />
     <meta property="og:image:type" content="image/png" />
@@ -89,9 +91,12 @@
           "@id": "https://trip-verse.com/#website",
           "url": "https://trip-verse.com/",
           "name": "TripVerse",
-          "alternateName": ["TripVerse", "Trip Verse", "trip-verse", "tripverse.com", "trip-verse.com", "TripVerse AI Trip Planner", "Trip Planner"],
-          "description": "TripVerse (trip-verse.com) is the #1 free AI trip planner for day-by-day travel itineraries, road trip routes, highway stops, and budget optimization.",
-          "inLanguage": "en-US",
+          "alternateName": "Trip Verse",
+          "description": "TripVerse (trip-verse.com) is a free AI trip planner for custom day-by-day travel itineraries, train and flight routes, road trip pitstops, live weather, and group budget tracking.",
+          "inLanguage": ["en", "en-IN", "en-US"],
+          "publisher": {
+            "@id": "https://trip-verse.com/#organization"
+          },
           "potentialAction": {
             "@type": "SearchAction",
             "target": {
@@ -105,8 +110,22 @@
           "@type": "Organization",
           "@id": "https://trip-verse.com/#organization",
           "name": "TripVerse",
+          "alternateName": "Trip Verse",
           "legalName": "TripVerse Travel Technologies",
           "url": "https://trip-verse.com/",
+          "foundingDate": "2026",
+          "founder": {
+            "@type": "Person",
+            "name": "Meet Sharma"
+          },
+          "areaServed": ["India", "United States", "United Kingdom", "Worldwide"],
+          "knowsAbout": [
+            "AI Trip Planning",
+            "Custom Travel Itineraries",
+            "India Rail & Road Trip Routing",
+            "Travel Budget Optimization"
+          ],
+          "description": "TripVerse (trip-verse.com) is an AI-powered travel planning platform for Web, iOS, and Android that builds day-by-day itineraries, transit routes, live weather forecasts, and group expense budgets.",
           "logo": {
             "@type": "ImageObject",
             "@id": "https://trip-verse.com/#logo",
@@ -222,6 +241,11 @@
     <div id="root">
       <!-- Pre-hydration luxury splash screen (harmonized with pure vector SVG mark) -->
       <div id="pre-app-splash" style="position:fixed;inset:0;background:#070C16;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity 0.35s cubic-bezier(0.22,1,0.36,1);">
+        <script>
+          if (/googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|applebot|lighthouse|chrome-lighthouse|pagespeed|headlesschrome/i.test(navigator.userAgent || '')) {
+            document.currentScript.parentElement.style.display = 'none';
+          }
+        </script>
         <div style="position:relative;display:flex;align-items:center;justify-content:center;">
           <div class="pre-splash-aura" style="position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle, rgba(34,197,94,0.26) 0%, rgba(7,12,22,0) 70%);filter:blur(24px);animation:tvPreAura 2s ease-in-out infinite;"></div>
           <div class="pre-splash-card" style="position:relative;width:96px;height:96px;display:flex;align-items:center;justify-content:center;background:transparent;box-shadow:none;border:none;animation:tvPrePulse 1.8s cubic-bezier(0.22,1,0.36,1) infinite;">
@@ -284,30 +308,31 @@
       </style>
     </div>
     <!-- Search Engine Indexable Semantic Shell for Crawlers (Googlebot, Bingbot) -->
+    <!-- SEO_NOSCRIPT_START -->
     <noscript>
       <main style="padding: 2.5rem 1.5rem; max-width: 960px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0F172A; line-height: 1.6;">
         <p style="font-size: 1.125rem; color: #0F172A; font-weight: 600; margin-bottom: 1.5rem;">
-          Plan any trip in seconds with TripVerse — the #1 free AI Trip Planner for custom day-by-day travel itineraries, road trip highway routes, pitstops, hotel picks, live weather, and group trip budgets across 10,000+ destinations worldwide.
+          Plan any trip in seconds with TripVerse (trip-verse.com) — the free AI Trip Planner for custom day-by-day travel itineraries, rail and flight routes, road trip highway stops, hotel picks, live weather, and group trip budgets across 10,000+ destinations in India and worldwide.
         </p>
         <header style="text-align: center; margin-bottom: 2.5rem;">
           <h1 style="font-size: 2.25rem; font-weight: 800; color: #152A1C; margin-bottom: 0.75rem; letter-spacing: -0.025em;">
-            TripVerse (Trip Verse) — Free AI Trip Planner, Road Trip Routes &amp; Travel Itineraries
+            TripVerse — Free AI Trip Planner &amp; Custom Travel Itineraries
           </h1>
           <p style="font-size: 1.125rem; color: #475569; max-width: 720px; margin: 0 auto;">
-            Plan any trip in seconds. TripVerse generates custom day-by-day trip itineraries, highway road trip stops, budget calculations, and hotel curation for over 10,000 destinations worldwide.
+            TripVerse generates custom day-by-day trip itineraries, train and flight plans, highway road trip stops, budget calculations, and hotel curation for over 10,000 destinations worldwide.
           </p>
         </header>
 
         <section style="margin-bottom: 2.5rem;">
           <h2 style="font-size: 1.5rem; font-weight: 700; color: #15803D; margin-bottom: 0.5rem;">Why Plan Your Trip with TripVerse AI?</h2>
           <p style="color: #334155; margin-bottom: 1rem;">
-            Whether you are planning a weekend road trip, an international multi-city vacation, a solo backpacking trip, or a family holiday, TripVerse creates practical, date-aware trip itineraries populated with verified attractions, authentic photo journals, and local dining gems.
+            Whether you are planning a weekend road trip, an Indian rail journey, an international multi-city vacation, a solo backpacking trip, or a family holiday, TripVerse creates practical, date-aware trip itineraries populated with verified attractions, live OpenStreetMap local dining gems, and real-time weather.
           </p>
           <ul style="padding-left: 1.25rem; color: #334155;">
             <li style="margin-bottom: 0.5rem;"><strong>AI Trip Itinerary Generator:</strong> Personalized day-wise schedules with visiting times, ticket estimates, historical insights, and real-time route optimization.</li>
-            <li style="margin-bottom: 0.5rem;"><strong>Highway &amp; Driving Road Trip Planner:</strong> Discover scenic viewpoints, EV charging stations, fuel stops, and highway dhabas &amp; food courts directly along your route.</li>
+            <li style="margin-bottom: 0.5rem;"><strong>Multi-Mode Transit Planning:</strong> Mode-aware routing for Flights, Trains (IRCTC rail hubs), Buses, and Self-Drive Road Trips with EV/fuel pitstops.</li>
             <li style="margin-bottom: 0.5rem;"><strong>Trip Budget Tracker &amp; Split Expenses:</strong> Multi-currency converter with real-time exchange rates, expense logging, and group bill splitting.</li>
-            <li style="margin-bottom: 0.5rem;"><strong>Live Trip Weather &amp; Packing Assistant:</strong> Hyper-local meteorological forecasts with AI-generated smart packing checklists.</li>
+            <li style="margin-bottom: 0.5rem;"><strong>Live Trip Weather &amp; Smart Replanning:</strong> Open-Meteo forecasts with 1-click indoor rain shields, date shifting, and smart packing checklists.</li>
             <li style="margin-bottom: 0.5rem;"><strong>Offline Trip Access &amp; PDF Guides:</strong> Download beautifully formatted travel guides to keep your trip itinerary accessible anywhere in the world.</li>
           </ul>
         </section>
@@ -315,9 +340,13 @@
         <section style="margin-bottom: 2.5rem;">
           <h2 style="font-size: 1.5rem; font-weight: 700; color: #15803D; margin-bottom: 0.5rem;">Explore Popular Trip Destinations</h2>
           <p style="color: #334155; margin-bottom: 0.75rem;">
-            Browse curated trip itineraries and travel guides for top global and Indian destinations:
+            Browse curated trip itineraries and travel guides on TripVerse:
           </p>
           <p style="color: #334155;">
+            <a href="https://trip-verse.com/about">About TripVerse</a> •
+            <a href="https://trip-verse.com/ai-trip-planner">AI Trip Planner</a> •
+            <a href="https://trip-verse.com/road-trip-planner">Road Trip Planner</a> •
+            <a href="https://trip-verse.com/explore">Explore All Destinations</a> •
             <a href="https://trip-verse.com/destination/paris">Paris Trip</a> •
             <a href="https://trip-verse.com/destination/tokyo">Tokyo Trip</a> •
             <a href="https://trip-verse.com/destination/rome">Rome Trip</a> •
@@ -337,10 +366,11 @@
         </section>
 
         <footer style="border-top: 1px solid #E2E8F0; padding-top: 1.5rem; text-align: center; color: #64748B; font-size: 0.875rem;">
-          <p>&copy; 2026 TripVerse. All rights reserved. Visit <a href="https://trip-verse.com/" style="color: #15803D; text-decoration: underline;">https://trip-verse.com/</a> to start planning your next trip.</p>
+          <p>&copy; 2026 TripVerse (trip-verse.com). Founded by Meet Sharma. All rights reserved.</p>
         </footer>
       </main>
     </noscript>
+    <!-- SEO_NOSCRIPT_END -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

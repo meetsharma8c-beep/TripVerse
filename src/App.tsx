@@ -757,8 +757,8 @@ export function App() {
   useEffect(() => {
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
     let targetPath = '/';
-    let targetTitle = 'TripVerse (Trip Verse) — Free AI Trip Planner, Road Trip Routes & Itineraries';
-    let targetDesc = 'TripVerse (trip-verse.com) is the #1 free AI Trip Planner. Plan any trip in seconds with custom day-by-day trip itineraries, road trip routes, highway stops, hotel picks, live weather & group trip budgets across 10,000+ destinations worldwide.';
+    let targetTitle = 'TripVerse — Free AI Trip Planner & Custom Itineraries';
+    let targetDesc = 'TripVerse (trip-verse.com) is a free AI Trip Planner for day-by-day travel itineraries, rail & flight routes, road trip pitstops, hotel picks, live weather, and group budgets across 10,000+ destinations in India and worldwide.';
     let targetImage = 'https://trip-verse.com/og-banner.png?v=5';
     let isPrivateRoute = false;
 
@@ -769,6 +769,10 @@ export function App() {
       if (selectedDestinationForDetails.image) {
         targetImage = selectedDestinationForDetails.image;
       }
+    } else if (currentTab === 'home' && currentPath === '/about') {
+      targetPath = '/about';
+      targetTitle = 'About TripVerse (trip-verse.com) — AI Trip Planner by Meet Sharma';
+      targetDesc = 'TripVerse (trip-verse.com) is an independent AI Trip Planner founded by Meet Sharma for Web, iOS, and Android. Plan custom day-by-day itineraries, rail and flight routes, road trip pitstops, live weather, and group budgets.';
     } else if (currentTab === 'home' && currentPath === '/ai-trip-planner') {
       targetPath = '/ai-trip-planner';
       targetTitle = 'Free AI Trip Planner & Custom Day-by-Day Itinerary Generator | TripVerse';

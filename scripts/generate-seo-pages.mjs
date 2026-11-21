@@ -117,6 +117,14 @@ function buildPageHtml(baseHtml, config) {
     /<link\s+rel="alternate"\s+hreflang="en"\s+href="[^"]*"\s*\/?>/i,
     `<link rel="alternate" hreflang="en" href="${escapeHtml(canonicalUrl)}" />`
   );
+  html = html.replace(
+    /<link\s+rel="alternate"\s+hreflang="en-IN"\s+href="[^"]*"\s*\/?>/i,
+    `<link rel="alternate" hreflang="en-IN" href="${escapeHtml(canonicalUrl)}" />`
+  );
+  html = html.replace(
+    /<link\s+rel="alternate"\s+hreflang="en-US"\s+href="[^"]*"\s*\/?>/i,
+    `<link rel="alternate" hreflang="en-US" href="${escapeHtml(canonicalUrl)}" />`
+  );
 
   // Replace Open Graph tags
   html = html.replace(
@@ -171,11 +179,11 @@ function buildPageHtml(baseHtml, config) {
     );
   }
 
-  // Replace <noscript> crawler shell with unique, topic-focused semantic HTML
+  // Replace ONLY the body crawler <noscript> shell (never the Google Fonts <noscript> inside <head>!)
   if (noscriptHtml) {
     html = html.replace(
-      /<noscript>[\s\S]*?<\/noscript>/i,
-      `<noscript>\n${noscriptHtml}\n    </noscript>`
+      /<!--\s*SEO_NOSCRIPT_START\s*-->[\s\S]*?<!--\s*SEO_NOSCRIPT_END\s*-->/i,
+      `<!-- SEO_NOSCRIPT_START -->\n    <noscript>\n${noscriptHtml}\n    </noscript>\n    <!-- SEO_NOSCRIPT_END -->`
     );
   }
 
@@ -454,6 +462,86 @@ ${allDestLinks}
       </main>`,
   });
   writePage('road-trip-planner', roadTripHtml);
+
+  // 4. /about (Dedicated Brand Entity & Knowledge Graph Authority Page for "TripVerse")
+  const aboutHtml = buildPageHtml(baseHtml, {
+    title: 'About TripVerse (trip-verse.com) — AI Trip Planner by Meet Sharma',
+    description:
+      'TripVerse (trip-verse.com) is an independent AI Trip Planner founded by Meet Sharma for Web, iOS, and Android. Plan custom day-by-day itineraries, rail and flight routes, road trip pitstops, live weather, and group budgets across 10,000+ destinations.',
+    canonicalPath: '/about',
+    keywords:
+      'About TripVerse, TripVerse AI Trip Planner, trip-verse.com, Meet Sharma TripVerse, TripVerse official website',
+    jsonLdGraph: [
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_ORIGIN}/` },
+          { '@type': 'ListItem', position: 2, name: 'About TripVerse', item: `${SITE_ORIGIN}/about` },
+        ],
+      },
+      {
+        '@type': 'AboutPage',
+        '@id': `${SITE_ORIGIN}/about#page`,
+        url: `${SITE_ORIGIN}/about`,
+        name: 'About TripVerse (trip-verse.com)',
+        description:
+          'Official brand overview of TripVerse (trip-verse.com), the free AI trip planning platform for Web, iOS, and Android.',
+        mainEntity: {
+          '@type': 'Organization',
+          '@id': `${SITE_ORIGIN}/#organization`,
+          name: 'TripVerse',
+          alternateName: 'Trip Verse',
+          url: `${SITE_ORIGIN}/`,
+          foundingDate: '2026',
+          founder: {
+            '@type': 'Person',
+            name: 'Meet Sharma',
+          },
+          sameAs: [
+            'https://twitter.com/TripVerseApp',
+            'https://github.com/meetsharma8c-beep/TripVerse',
+          ],
+        },
+      },
+      {
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'What is TripVerse (trip-verse.com)?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'TripVerse (trip-verse.com) is a free AI Trip Planner and itinerary platform for Web, iOS, and Android founded by Meet Sharma. It generates custom day-by-day travel itineraries, mode-aware train, flight, and road trip routes, live Open-Meteo weather forecasts, OpenStreetMap local food trails, and multi-currency group budgets.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Is TripVerse free to use?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Yes. TripVerse lets travelers generate unlimited personalized trip itineraries, packing checklists, route maps, and printable offline PDF guides for free at https://trip-verse.com.',
+            },
+          },
+        ],
+      },
+    ],
+    noscriptHtml: `      <main style="padding:2.5rem 1.5rem;max-width:920px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0F172A;line-height:1.65;">
+        <nav aria-label="Breadcrumb" style="font-size:0.875rem;margin-bottom:1.25rem;color:#475569;">
+          <a href="${SITE_ORIGIN}/">TripVerse Home</a> / <span>About TripVerse</span>
+        </nav>
+        <h1>About TripVerse — Free AI Trip Planner (trip-verse.com)</h1>
+        <p><strong>TripVerse</strong> (<a href="${SITE_ORIGIN}/">https://trip-verse.com</a>) is a modern AI-powered travel planning platform founded by Meet Sharma for Web, iOS, and Android. Unlike traditional static travel agencies, TripVerse builds interactive, real-time day-by-day itineraries tailored to your transport mode (Train, Flight, Bus, or Self-Drive Road Trip), budget, dietary preference, and live weather.</p>
+        <h2>Core Capabilities of TripVerse</h2>
+        <ul>
+          <li><strong>AI Day-by-Day Itinerary Engine:</strong> Real landmarks, realistic transit timing, and 1-click Smart Replanning for rain, date shifts, or mode changes.</li>
+          <li><strong>Mode-Aware Transit Intelligence:</strong> Dedicated IRCTC rail hub logic, global flight routing, and highway road-trip pitstops only when driving.</li>
+          <li><strong>Live Open Data:</strong> Open-Meteo weather forecasts, OpenStreetMap local food &amp; hidden gem discovery, and Wikipedia hands-free audio tours.</li>
+          <li><strong>Multi-Currency Budgets &amp; Offline Access:</strong> Real-time currency conversion, group expense splitting, and printable offline PDF travel dossiers.</li>
+        </ul>
+        <p><a href="${SITE_ORIGIN}/">Start Planning on TripVerse</a> • <a href="${SITE_ORIGIN}/explore">Explore Destinations</a> • <a href="${SITE_ORIGIN}/ai-trip-planner">AI Trip Planner</a></p>
+      </main>`,
+  });
+  writePage('about', aboutHtml);
 }
 
 function buildSitemapXml(destinations) {
@@ -463,9 +551,10 @@ function buildSitemapXml(destinations) {
       priority: '1.0',
       changefreq: 'daily',
       images: [
-        { loc: `${SITE_ORIGIN}/og-banner.png?v=5`, title: 'TripVerse — Free AI Trip Planner & Road Trip Route Engine' },
+        { loc: `${SITE_ORIGIN}/og-banner.png?v=5`, title: 'TripVerse — Free AI Trip Planner & Custom Itineraries' },
       ],
     },
+    { loc: `${SITE_ORIGIN}/about`, priority: '0.95', changefreq: 'weekly', images: [] },
     { loc: `${SITE_ORIGIN}/explore`, priority: '0.95', changefreq: 'daily', images: [] },
     { loc: `${SITE_ORIGIN}/ai-trip-planner`, priority: '0.95', changefreq: 'weekly', images: [] },
     { loc: `${SITE_ORIGIN}/road-trip-planner`, priority: '0.90', changefreq: 'weekly', images: [] },
@@ -508,7 +597,8 @@ function buildLlmsTxt(destinations) {
 > TripVerse is a free AI Trip Planner, Road Trip Route Engine, and Travel Itinerary Platform for Web, iOS, and Android. Travelers generate day-by-day itineraries, interactive driving & flight routes, highway fuel/EV/dining stops, multi-currency group budgets, live weather packing lists, and offline calendar/PDF travel guides across 10,000+ destinations worldwide.
 
 ## Core Pages
-- [Home — Free AI Trip Planner](${SITE_ORIGIN}/): Build custom day-by-day itineraries in seconds.
+- [Home — TripVerse Free AI Trip Planner](${SITE_ORIGIN}/): Build custom day-by-day itineraries in seconds.
+- [About TripVerse](${SITE_ORIGIN}/about): Official overview of TripVerse (trip-verse.com), founded by Meet Sharma.
 - [Explore Destinations](${SITE_ORIGIN}/explore): Browse ${destinations.length} curated global and Indian travel guides.
 - [AI Trip Planner](${SITE_ORIGIN}/ai-trip-planner): Automated AI itinerary, hotel, dining, and budget planning.
 - [Road Trip Route Planner](${SITE_ORIGIN}/road-trip-planner): Highway driving routes with scenic stops, EV chargers, and fuel stations.

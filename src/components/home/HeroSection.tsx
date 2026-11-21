@@ -472,7 +472,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         <div className="max-w-4xl mx-auto mb-8 sm:mb-10 text-center sm:text-left">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/60 border border-[#DCE7DB] dark:border-emerald-800/60 text-[#2D5A3D] dark:text-emerald-300 text-xs font-bold shadow-2xs mb-4 tv-stagger-1">
             <Sparkles className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400 shrink-0 animate-pulse" />
-            <span>AI-Powered Travel Planning Made Effortless</span>
+            <span>TripVerse • AI-Powered Travel Planning Made Effortless</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-black text-[#152A1C] dark:text-slate-100 tracking-tight leading-[1.08] mb-3.5 text-balance tv-stagger-1">
@@ -481,7 +481,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </h1>
 
           <p className="text-base sm:text-lg text-[#57685D] dark:text-slate-300 max-w-2xl font-normal leading-relaxed text-pretty mb-6 tv-stagger-2">
-            AI-powered travel planning made effortless. Plan custom day-by-day itineraries, highway pit stops, and budget-optimized routes.
+            TripVerse builds custom day-by-day itineraries, train &amp; flight routes, highway road-trip pitstops, live weather plans, and real-time budgets in seconds.
           </p>
 
           {/* Serene Dynamic Landscape Visual */}
