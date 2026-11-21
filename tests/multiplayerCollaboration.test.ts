@@ -117,7 +117,7 @@ describe('Multiplayer Realtime Collaboration Service', () => {
     );
 
     expect(typeof unsubscribe).toBe('function');
-    expect(['CONNECTING', 'LIVE']).toContain(capturedStatus);
+    expect(['CONNECTING', 'LIVE', 'LOCAL_ONLY']).toContain(capturedStatus);
     unsubscribe();
   });
 });

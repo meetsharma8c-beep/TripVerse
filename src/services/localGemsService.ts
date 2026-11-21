@@ -8,9 +8,10 @@ export interface DestinationGems {
   foodGems: LocalFoodGem[];
   hiddenGems: HiddenGem[];
   isLiveGenerated?: boolean;
+  discoverySource?: 'live_ai' | 'live_osm' | 'curated';
 }
 
-const GEMS_CACHE_PREFIX = 'tripverse_ai_gems_v2_';
+const GEMS_CACHE_PREFIX = 'tripverse_ai_gems_v3_';
 
 // Real-world photographic high-resolution asset pool for genuine travel cards
 const CATEGORY_IMAGES: Record<string, string[]> = {
@@ -88,25 +89,161 @@ export async function fetchGenuineDestinationGems(
   try {
     const aiGems = await queryAIForDestinationGems(cleanDest, options?.foodPreference);
     if (aiGems && aiGems.foodGems.length > 0) {
+      const tagged: DestinationGems = { ...aiGems, discoverySource: 'live_ai' };
       if (typeof window !== 'undefined') {
         try {
-          sessionStorage.setItem(cacheKey, JSON.stringify(aiGems));
+          sessionStorage.setItem(cacheKey, JSON.stringify(tagged));
         } catch {}
       }
-      return aiGems;
+      return tagged;
     }
   } catch (err) {
-    console.warn(`[LocalGems] Live AI discovery for ${cleanDest} encountered error, using curated intelligence:`, err);
+    console.warn(`[LocalGems] Live AI discovery for ${cleanDest} encountered error, trying OpenStreetMap live POI discovery:`, err);
   }
 
-  // 3. Fallback to authentic knowledge synthesis for the destination
-  const synthesized = synthesizeAuthenticGemsForDestination(cleanDest);
+  // 3. Live OpenStreetMap (Overpass) real-world POI discovery using destination GPS coordinates
+  if (options?.coordinates && Number.isFinite(options.coordinates.lat) && Number.isFinite(options.coordinates.lng)) {
+    try {
+      const osmGems = await queryOpenStreetMapGems(cleanDest, options.coordinates, options.foodPreference);
+      if (osmGems && (osmGems.foodGems.length > 0 || osmGems.hiddenGems.length > 0)) {
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem(cacheKey, JSON.stringify(osmGems));
+          } catch {}
+        }
+        return osmGems;
+      }
+    } catch (err) {
+      console.warn(`[LocalGems] Live OSM discovery for ${cleanDest} failed, falling back to curated catalog:`, err);
+    }
+  }
+
+  // 4. Fallback to verified curated destination catalog
+  const synthesized: DestinationGems = {
+    ...synthesizeAuthenticGemsForDestination(cleanDest),
+    discoverySource: 'curated'
+  };
   if (typeof window !== 'undefined') {
     try {
       sessionStorage.setItem(cacheKey, JSON.stringify(synthesized));
     } catch {}
   }
   return synthesized;
+}
+
+/**
+ * Live OpenStreetMap Overpass API discovery for genuine real-world eateries,
+ * cafes, sweet shops, viewpoints, and historic monuments around the destination coordinates.
+ */
+async function queryOpenStreetMapGems(
+  destination: string,
+  coords: Coordinates,
+  foodPreference?: string
+): Promise<DestinationGems | null> {
+  if (typeof fetch === 'undefined') return null;
+
+  const lat = Number(coords.lat.toFixed(5));
+  const lng = Number(coords.lng.toFixed(5));
+  const query = `[out:json][timeout:6];(node["amenity"~"^(restaurant|cafe|fast_food|ice_cream|sweets)$"]["name"](around:5000,${lat},${lng});node["tourism"~"^(viewpoint|museum|attraction)$"]["name"](around:9000,${lat},${lng});node["historic"~"^(monument|memorial|castle|ruins|stepwell|fort)$"]["name"](around:9000,${lat},${lng}););out body 40;`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 7_000);
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `data=${encodeURIComponent(query)}`,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) return null;
+
+    const json = await res.json().catch(() => null);
+    const elements: any[] = Array.isArray(json?.elements) ? json.elements : [];
+    if (elements.length === 0) return null;
+
+    const preferVeg = /\b(veg|vegetarian|vegan|jain)\b/i.test(foodPreference || '');
+    const seenNames = new Set<string>();
+    const foodGems: LocalFoodGem[] = [];
+    const hiddenGems: HiddenGem[] = [];
+
+    for (const el of elements) {
+      const tags = el?.tags || {};
+      const name: string = String(tags['name:en'] || tags.name || '').trim();
+      if (!name || name.length < 3 || seenNames.has(name.toLowerCase())) continue;
+      seenNames.add(name.toLowerCase());
+
+      const street = [tags['addr:street'], tags['addr:suburb'] || tags['addr:city']].filter(Boolean).join(', ');
+      const location = street || `${destination} Center`;
+      const elCoords: Coordinates | undefined =
+        typeof el.lat === 'number' && typeof el.lon === 'number'
+          ? { lat: Number(el.lat.toFixed(5)), lng: Number(el.lon.toFixed(5)) }
+          : undefined;
+
+      if (tags.amenity && foodGems.length < 6) {
+        const cuisineRaw = String(tags.cuisine || '').replace(/_/g, ' ').replace(/;/g, ', ').trim();
+        const isVegTag = tags['diet:vegetarian'] === 'only' || tags['diet:vegetarian'] === 'yes' || tags['diet:vegan'] === 'only' || /sweet|mithai|veg|bakery|cafe|coffee|ice_cream|chaat|dhaba|south_indian/i.test(`${name} ${cuisineRaw} ${tags.amenity}`);
+        if (preferVeg && tags['diet:vegetarian'] === 'no') continue;
+
+        const category: LocalFoodGem['category'] =
+          tags.amenity === 'cafe' ? 'rooftop_cafe'
+            : tags.amenity === 'ice_cream' || /sweet|mithai|bakery/i.test(`${name} ${cuisineRaw}`) ? 'sweet_shop'
+              : tags.amenity === 'fast_food' ? 'street_food'
+                : 'heritage_dhaba';
+
+        foodGems.push({
+          id: `osm-food-${el.id}`,
+          name,
+          dish: cuisineRaw ? `${cuisineRaw.charAt(0).toUpperCase() + cuisineRaw.slice(1)} Specialties` : `Local ${destination} ${tags.amenity.replace('_', ' ')}`,
+          category,
+          location,
+          pricePerPerson: category === 'street_food' || category === 'sweet_shop' ? 180 : 350,
+          rating: 4.5,
+          isVegetarian: isVegTag,
+          image: getRandomImage(category, foodGems.length),
+          bestTimeToVisit: tags.opening_hours || (category === 'rooftop_cafe' ? '4:00 PM - 8:00 PM' : '12:30 PM - 9:00 PM'),
+          whySpecial: `Verified real-world ${tags.amenity.replace('_', ' ')} mapped in ${destination}${cuisineRaw ? ` serving ${cuisineRaw}` : ''}. Confirm live menu & hours on Google Maps before visiting.`,
+          mustTry: cuisineRaw ? `House ${cuisineRaw.split(',')[0].trim()} specialty` : 'Ask for the daily local specialty',
+          coordinates: elCoords
+        });
+      } else if ((tags.tourism || tags.historic) && hiddenGems.length < 4) {
+        const kind = String(tags.tourism || tags.historic || 'viewpoint').replace(/_/g, ' ');
+        const category: HiddenGem['category'] =
+          tags.tourism === 'viewpoint' ? 'secret_viewpoint'
+            : tags.historic ? 'ancient_stepwell'
+              : 'artisan_village';
+
+        hiddenGems.push({
+          id: `osm-gem-${el.id}`,
+          title: name,
+          category,
+          location,
+          rating: 4.6,
+          crowdLevel: tags.tourism === 'viewpoint' ? 'peaceful' : 'moderate',
+          image: getRandomImage(category === 'ancient_stepwell' ? 'secret_viewpoint' : category, hiddenGems.length),
+          bestTimeOfDay: tags.tourism === 'viewpoint' ? '5:00 PM - 6:30 PM (Golden Hour)' : '9:00 AM - 11:30 AM',
+          description: tags.description || `Mapped real-world ${kind} in ${destination}. Tap Maps Directions for exact walking or transit navigation.`,
+          insiderTip: tags.opening_hours ? `Listed hours: ${tags.opening_hours}` : 'Visit early morning or late afternoon for the best light and thinner crowds.',
+          coordinates: elCoords
+        });
+      }
+    }
+
+    if (foodGems.length === 0 && hiddenGems.length === 0) return null;
+
+    // Supplement hiddenGems from curated catalog only if OSM returned food but 0 viewpoints
+    const fallback = synthesizeAuthenticGemsForDestination(destination);
+    return {
+      destination,
+      isLiveGenerated: true,
+      discoverySource: 'live_osm',
+      foodGems: foodGems.length > 0 ? foodGems : fallback.foodGems,
+      hiddenGems: hiddenGems.length > 0 ? hiddenGems : fallback.hiddenGems
+    };
+  } catch {
+    clearTimeout(timeoutId);
+    return null;
+  }
 }
 
 /**
@@ -232,6 +369,88 @@ Respond ONLY with valid JSON in this exact structure:
  */
 function synthesizeAuthenticGemsForDestination(destination: string): DestinationGems {
   const norm = destination.toLowerCase().trim();
+
+  // 0. Mathura & Vrindavan (Braj Bhoomi, India)
+  if (norm.includes('mathura') || norm.includes('vrindavan') || norm.includes('govardhan') || norm.includes('gokul')) {
+    return {
+      destination,
+      foodGems: [
+        {
+          id: 'mathura-food-1',
+          name: 'Brijwasi Mithai Wala (Holi Gate)',
+          dish: 'Authentic Mathura Peda, Bedai & Aloo Dubki',
+          category: 'sweet_shop',
+          location: 'Holi Gate, Tilak Dwar, Mathura',
+          pricePerPerson: 150,
+          rating: 4.8,
+          isVegetarian: true,
+          image: getRandomImage('sweet_shop', 0),
+          bestTimeToVisit: '8:00 AM - 11:30 AM (Breakfast & Mithai)',
+          whySpecial: 'Century-old Mathura institution famous across Uttar Pradesh for slow-caramelized desi-ghee Mathura Pedas and crisp morning bedai-jalebi.',
+          mustTry: 'Warm caramelized Mathura Peda & morning Bedai with hing-spiced aloo sabzi',
+          coordinates: { lat: 27.4924, lng: 77.6737 }
+        },
+        {
+          id: 'mathura-food-2',
+          name: 'Shankar Mithai Wala',
+          dish: 'Kulhad Kesariya Lassi, Rabri & Malpua',
+          category: 'street_food',
+          location: 'Near Holi Gate Chowk, Mathura',
+          pricePerPerson: 120,
+          rating: 4.7,
+          isVegetarian: true,
+          image: getRandomImage('street_food', 1),
+          bestTimeToVisit: '11:00 AM - 7:30 PM',
+          whySpecial: 'Hand-churned thick saffron lassi topped with fresh malai and khoya, served in earthen clay kulhads.',
+          mustTry: 'Kulhad Kesariya Lassi & warm Malai Rabri',
+          coordinates: { lat: 27.4931, lng: 77.6745 }
+        },
+        {
+          id: 'mathura-food-3',
+          name: 'Oma Pehalwan Kachori Wale',
+          dish: 'Crisp Hing Kachori & Jalebi Breakfast',
+          category: 'heritage_dhaba',
+          location: 'Chatta Bazar, Near Dwarkadhish Temple, Mathura',
+          pricePerPerson: 90,
+          rating: 4.8,
+          isVegetarian: true,
+          image: getRandomImage('heritage_dhaba', 0),
+          bestTimeToVisit: '7:30 AM - 10:30 AM',
+          whySpecial: 'Legendary old-city breakfast stall serving puffed hing-dal kachoris with tangy pumpkin and potato curry right off the kadhai.',
+          mustTry: 'Hot Hing Kachori with spiced Sitaphal (pumpkin) sabzi',
+          coordinates: { lat: 27.5021, lng: 77.6844 }
+        }
+      ],
+      hiddenGems: [
+        {
+          id: 'mathura-gem-1',
+          title: 'Kusum Sarovar Sandstone Stepwell Reservoir',
+          category: 'ancient_stepwell',
+          location: 'Govardhan Parikrama Marg (23 km from Mathura Jn)',
+          rating: 4.9,
+          crowdLevel: 'peaceful',
+          image: getRandomImage('secret_viewpoint', 0),
+          bestTimeOfDay: '4:30 PM - 6:15 PM (Golden Hour Reflections)',
+          description: '18th-century red-sandstone chhatris and stepped reservoir reflecting golden sunset light over calm emerald water.',
+          insiderTip: 'Visit an hour before sunset when the carved stone pavilions glow amber and mirror perfectly in the tank.',
+          coordinates: { lat: 27.5153, lng: 77.4659 }
+        },
+        {
+          id: 'mathura-gem-2',
+          title: 'Vishram Ghat Evening Yamuna Aarti',
+          category: 'secret_viewpoint',
+          location: 'Yamuna Riverfront, Old Mathura',
+          rating: 4.8,
+          crowdLevel: 'moderate',
+          image: getRandomImage('secret_viewpoint', 1),
+          bestTimeOfDay: '6:15 PM - 7:15 PM (Dusk)',
+          description: 'Sacred central riverfront ghat lined with historic stone arches where floating oil diyas illuminate the Yamuna at dusk.',
+          insiderTip: 'Take a wooden rowboat from the adjacent ghat 15 minutes before dusk to watch the oil-lamp aarti from the water.',
+          coordinates: { lat: 27.5037, lng: 77.6869 }
+        }
+      ]
+    };
+  }
 
   // 1. Manali & Himachal
   if (norm.includes('manali') || norm.includes('himachal') || norm.includes('kullu')) {

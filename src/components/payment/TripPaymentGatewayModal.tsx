@@ -104,9 +104,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
   // Netbanking Form States
   const [selectedBank, setSelectedBank] = useState<string>('hdfc');
 
-  // Wallet & Coins States
-  const [useTravelCoins, setUseTravelCoins] = useState<boolean>(false);
-  const TRAVEL_COINS_VALUE = 1500; // ₹1,500 wallet coins
+  // Wallet balance (genuine ledger balance; ₹0 until earned via verified completed bookings)
+  const TRAVEL_COINS_VALUE = 0;
 
   // Download anchor ref (clean React ref, zero manual DOM manipulation)
   const downloadAnchorRef = useRef<HTMLAnchorElement>(null);
@@ -182,8 +181,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
   const isProSub = packageType === 'pro_subscription';
 
-  // Calculate taxes, discounts and net payable
-  const coinDiscount = useTravelCoins ? Math.min(TRAVEL_COINS_VALUE, initialBaseAmount * 0.2) : 0;
+  // Calculate taxes, discounts and net payable (only verified promo coupons apply; no fabricated coin credits)
+  const coinDiscount = 0;
   const promoDiscount = appliedCoupon ? appliedCoupon.discount : 0;
   const netDiscount = Math.round(coinDiscount + promoDiscount);
   
@@ -222,7 +221,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
         { id: 'upi_qr' as PaymentMethodType, label: t('UPI / QR'), icon: QrCode, badge: t('5 Min') },
         { id: 'card' as PaymentMethodType, label: t('Cards'), icon: CreditCard, badge: t('Debit/Credit') },
         { id: 'netbanking' as PaymentMethodType, label: t('NetBanking'), icon: Landmark, badge: t('50+ Banks') },
-        { id: 'wallet' as PaymentMethodType, label: t('Wallets'), icon: Wallet, badge: t('Coins/BNPL') },
+        { id: 'wallet' as PaymentMethodType, label: t('Wallets'), icon: Wallet, badge: t('Paytm/Amazon') },
         { id: 'emi' as PaymentMethodType, label: t('EMI'), icon: Receipt, badge: t('0% Cost') },
         { id: 'paypal' as PaymentMethodType, label: t('PayPal'), icon: Globe, badge: t('Global') }
       ];
@@ -1290,30 +1289,20 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
               {/* TAB CONTENT 4: WALLETS & PAY LATER */}
               {activeTab === 'wallet' && (
                 <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1A2A] p-4 sm:p-5 space-y-4 shadow-xs">
-                  {/* TripVerse Coins / Travel Wallet */}
-                  <div className="rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-gradient-to-r from-amber-50 to-orange-50/40 dark:from-amber-950/40 dark:to-orange-950/30 p-4">
-                    <div className="flex items-center justify-between">
+                  {/* TripVerse Wallet Status (Genuine ₹0 Balance — No Fabricated Credits) */}
+                  <div className="rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-800/40 p-3.5">
+                    <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
-                          <Coins className="w-4 h-4 text-white" />
+                        <div className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                          <Coins className="w-4 h-4" />
                         </div>
                         <div>
-                          <span className="text-xs font-bold text-amber-950 dark:text-amber-200 block">TripVerse Travel Cash</span>
-                          <span className="text-[11px] text-amber-700 dark:text-amber-400">₹1,500 promotional coins available</span>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">TripVerse Wallet Balance</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                            {formatCurrency(TRAVEL_COINS_VALUE, currency)} available • Select a live digital wallet below to pay
+                          </span>
                         </div>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={useTravelCoins}
-                          onChange={e => {
-                            triggerHaptic('light');
-                            setUseTravelCoins(e.target.checked);
-                          }}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-700"></div>
-                      </label>
                     </div>
                   </div>
 

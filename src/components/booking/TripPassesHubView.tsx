@@ -7,6 +7,7 @@ import { resolveDestinationImage, handleImageError } from '../../utils/destinati
 import { triggerHaptic, saveOrShareFile } from '../../services/deviceService';
 import { ArrowLeft, Bell, MoreVertical, Plane, Car, Train, Bus, ChevronRight, Sun, CloudSun, CloudRain, CheckCircle2, Circle, Download, Share2, CreditCard } from 'lucide-react';
 import { getBookingForTrip, BookingRecord, generateTicketReceiptText } from '../../services/paymentGatewayService';
+import { resolveTransitContext } from '../../services/transportFeasibilityEngine';
 import { getActiveCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 
@@ -96,16 +97,92 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
     saveTripPacking(trip.id, updated);
   };
 
-  // Derive origin/destination airport or city 3-letter codes
-  const getCityCode = (locationName: string, fallback: string) => {
-    if (!locationName) return fallback;
-    const clean = locationName.trim().toUpperCase().replace(/[^A-Z]/g, '');
-    if (clean.length >= 3) return clean.slice(0, 3);
-    return fallback;
+  // Derive genuine IATA / Indian Railways station hub codes (never fall back to CGK/DPS or naive VAD/NEW truncation)
+  const KNOWN_HUB_CODES: Record<string, string> = {
+    vadodara: 'BDQ',
+    baroda: 'BDQ',
+    mathura: 'MTJ',
+    vrindavan: 'MTJ',
+    agra: 'AGC',
+    ahmedabad: 'AMD',
+    mumbai: 'BOM',
+    bombay: 'BOM',
+    delhi: 'DEL',
+    'new delhi': 'DEL',
+    bengaluru: 'BLR',
+    bangalore: 'BLR',
+    hyderabad: 'HYD',
+    chennai: 'MAA',
+    kolkata: 'CCU',
+    pune: 'PNQ',
+    jaipur: 'JAI',
+    udaipur: 'UDR',
+    goa: 'GOI',
+    kochi: 'COK',
+    surat: 'STV',
+    rajkot: 'HSR',
+    bhopal: 'BHO',
+    indore: 'IDR',
+    chandigarh: 'IXC',
+    lucknow: 'LKO',
+    varanasi: 'VNS',
+    amritsar: 'ATQ',
+    srinagar: 'SXR',
+    leh: 'IXL',
+    manali: 'KUU',
+    shimla: 'SLV',
+    rishikesh: 'DED',
+    haridwar: 'HW',
+    'new jersey': 'EWR',
+    newark: 'EWR',
+    'jersey city': 'EWR',
+    'new york': 'JFK',
+    london: 'LHR',
+    paris: 'CDG',
+    tokyo: 'HND',
+    kyoto: 'KIX',
+    osaka: 'KIX',
+    dubai: 'DXB',
+    'abu dhabi': 'AUH',
+    singapore: 'SIN',
+    bangkok: 'BKK',
+    bali: 'DPS',
+    rome: 'FCO',
+    zurich: 'ZRH',
+    amsterdam: 'AMS',
+    seoul: 'ICN',
+    sydney: 'SYD',
+    toronto: 'YYZ'
   };
 
-  const originCode = getCityCode(trip.origin, 'CGK');
-  const destinationCode = getCityCode(trip.destination, 'DPS');
+  const getCityCode = (locationName: string, fallbackCode?: string) => {
+    const cleanCity = (locationName || '').split(',')[0].trim();
+    const lower = cleanCity.toLowerCase();
+    if (KNOWN_HUB_CODES[lower]) return KNOWN_HUB_CODES[lower];
+    for (const [key, code] of Object.entries(KNOWN_HUB_CODES)) {
+      if (lower.includes(key)) return code;
+    }
+    if (fallbackCode && fallbackCode.length >= 2 && fallbackCode.length <= 4) {
+      return fallbackCode.toUpperCase();
+    }
+    const letters = cleanCity.toUpperCase().replace(/[^A-Z]/g, '');
+    return letters.length >= 3 ? letters.slice(0, 3) : 'HUB';
+  };
+
+  const originTransitCtx = resolveTransitContext(trip.origin || '', trip.routeDetails?.originCoordinates);
+  const destTransitCtx = resolveTransitContext(
+    trip.destination || '',
+    trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates
+  );
+  const isTrainMode = trip.transportMode === 'train';
+  const originCode = getCityCode(
+    trip.origin,
+    isTrainMode ? originTransitCtx.primaryRailwayStation?.code : originTransitCtx.primaryAirport?.code
+  );
+  const destinationCode = getCityCode(
+    trip.destination,
+    isTrainMode ? destTransitCtx.primaryRailwayStation?.code : destTransitCtx.primaryAirport?.code
+  );
 
   // Format dates
   const formatDateHeader = () => {
@@ -128,11 +205,11 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
   const packedCount = packingItems.filter(i => i.isPacked).length;
   const totalPackingCount = packingItems.length || 1;
 
-  // Composite progress percentage
+  // Genuine composite progress percentage (starts truthfully at 0% with no artificial floor)
   const tripProgressPercent = Math.min(
     100,
     Math.max(
-      15,
+      0,
       Math.round(((completedActivities / totalActivities) * 0.5 + (packedCount / totalPackingCount) * 0.5) * 100)
     )
   );
@@ -144,11 +221,14 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
   const weatherHigh = todayWeather ? Math.round(todayWeather.maxTempC) : currentTemp + 4;
   const weatherLow = todayWeather ? Math.round(todayWeather.minTempC) : currentTemp - 3;
 
-  // Hotel accommodation finding
-  const stayActivity = trip.itinerary?.[0]?.activities?.find(a => a.type === 'hotel') || 
+  // Hotel accommodation finding (use real selectedHotel or itinerary hotel — never fabricate a resort name)
+  const stayActivity = trip.itinerary?.[0]?.activities?.find(a => a.type === 'hotel') ||
                       trip.itinerary?.[1]?.activities?.find(a => a.type === 'hotel');
-  const hotelName = stayActivity?.title || `${(trip.destination || 'Destination').split(',')[0]} Eco Sanctuary Resort`;
-  const hotelThumbnail = resolveDestinationImage(hotelName, 'nature');
+  const hotelName = trip.selectedHotel?.name || stayActivity?.title || 'Accommodation Not Selected Yet';
+  const hotelThumbnail = resolveDestinationImage(trip.selectedHotel?.name || trip.destination || 'Destination', 'nature');
+
+  const routeDurationLabel = trip.bestTransportDeal?.route?.duration
+    || (trip.routeDetails?.durationHours ? `~${Math.round(trip.routeDetails.durationHours * 10) / 10}h` : 'Est. Transit');
 
   // SVG circular progress calculation
   const circleRadius = 26;
@@ -252,7 +332,15 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
           </span>
           <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-xs">
             <span>{booking ? 'Verified Ticket' : 'Unbooked Plan'}</span>
-            <Plane className="w-3.5 h-3.5 text-white transform rotate-45" />
+            {trip.transportMode === 'train' ? (
+              <Train className="w-3.5 h-3.5 text-white" />
+            ) : trip.transportMode === 'bus' ? (
+              <Bus className="w-3.5 h-3.5 text-white" />
+            ) : trip.transportMode === 'car' || trip.transportMode === 'bike' ? (
+              <Car className="w-3.5 h-3.5 text-white" />
+            ) : (
+              <Plane className="w-3.5 h-3.5 text-white transform rotate-45" />
+            )}
           </div>
         </div>
 
@@ -269,17 +357,17 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
                 {originCode}
               </span>
               <span className="text-xs font-bold text-[#152A1C] block">
-                {trip.bestTransportDeal?.route?.departureTime || '08:40'}
+                {trip.bestTransportDeal?.route?.departureTime || 'Flexible Dep.'}
               </span>
               <span className="text-[10px] text-[#8EA78D] font-medium block">
                 {trip.startDate ? new Date(trip.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : 'Day 1'}
               </span>
             </div>
 
-            {/* Flight Flight Path & Duration */}
+            {/* Transit Path & Duration */}
             <div className="flex-1 flex flex-col items-center justify-center px-3 min-w-0">
               <span className="text-[11px] font-bold text-[#5A7362] tracking-wide mb-1.5 whitespace-nowrap">
-                {trip.bestTransportDeal?.route?.duration || '2h 10m'}
+                {routeDurationLabel}
               </span>
               <div className="relative w-full h-8 flex items-center justify-center my-0.5">
                 <div className="w-full border-t-2 border-dashed border-[#8EA78D]/40" />
@@ -291,12 +379,12 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
                   ) : trip.transportMode === 'bus' ? (
                     <Bus className="w-4 h-4 text-[#2D5A3D]" />
                   ) : (
-                    <Plane className="w-4 h-4 transform rotate-90 text-[#2D5A3D]" />
+                    <Car className="w-4 h-4 text-[#2D5A3D]" />
                   )}
                 </div>
               </div>
               <span className="text-[10px] font-semibold text-[#8EA78D] mt-1.5 capitalize whitespace-nowrap">
-                {trip.routeType ? `${trip.routeType} transit` : 'Scenic transit'}
+                {trip.routeType ? `${trip.routeType} transit` : `${trip.transportMode || 'planned'} transit`}
               </span>
             </div>
 
@@ -309,7 +397,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
                 {destinationCode}
               </span>
               <span className="text-xs font-bold text-[#152A1C] block">
-                {trip.bestTransportDeal?.route?.arrivalTime || '11:50'}
+                {trip.bestTransportDeal?.route?.arrivalTime || 'Est. Arrival'}
               </span>
               <span className="text-[10px] text-[#8EA78D] font-medium block">
                 {trip.startDate ? new Date(trip.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : 'Day 1'}

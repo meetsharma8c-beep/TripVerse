@@ -406,7 +406,7 @@ export function acceptSuggestionIntoTrip(
 export function subscribeToTripCollaboration(
   tripId: string,
   callback: (session: CollaborationSession) => void,
-  onStatusChange?: (status: 'CONNECTING' | 'LIVE' | 'DISCONNECTED') => void
+  onStatusChange?: (status: 'CONNECTING' | 'LIVE' | 'LOCAL_ONLY' | 'DISCONNECTED') => void
 ): () => void {
   // 1. Local CustomEvent listener
   const handleLocalEvent = (e: Event) => {
@@ -481,7 +481,8 @@ export function subscribeToTripCollaboration(
       onStatusChange?.('DISCONNECTED');
     }
   } else {
-    onStatusChange?.('LIVE');
+    // Honest status: when Supabase Realtime is not configured, sync runs locally across browser tabs only
+    onStatusChange?.('LOCAL_ONLY');
   }
 
   // Return unsubscribe cleaner

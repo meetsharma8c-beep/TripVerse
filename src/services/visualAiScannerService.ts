@@ -6,6 +6,8 @@
  * - Local culinary dish / menu recognition with dietary tags
  */
 
+import { resolveApiUrl } from './deviceService';
+
 export interface ScannedLandmarkResult {
   type: 'landmark';
   name: string;
@@ -19,6 +21,7 @@ export interface ScannedLandmarkResult {
   bestTimeToVisit: string;
   coordinates?: { lat: number; lng: number };
   imageUrl?: string;
+  source?: 'live_vision' | 'prompt_match';
 }
 
 export interface ScannedTicketResult {
@@ -33,6 +36,7 @@ export interface ScannedTicketResult {
   passengerName?: string;
   totalAmount?: string;
   imageUrl?: string;
+  source?: 'live_vision';
 }
 
 export interface ScannedFoodResult {
@@ -45,9 +49,21 @@ export interface ScannedFoodResult {
   averagePrice: string;
   flavorProfile: string;
   imageUrl?: string;
+  source?: 'live_vision' | 'prompt_match';
 }
 
-export type VisualScanResult = ScannedLandmarkResult | ScannedTicketResult | ScannedFoodResult;
+export interface ScannedUnverifiedResult {
+  type: 'unverified';
+  title: string;
+  guidance: string;
+  reason: 'vision_unavailable' | 'unrecognized_image';
+}
+
+export type VisualScanResult =
+  | ScannedLandmarkResult
+  | ScannedTicketResult
+  | ScannedFoodResult
+  | ScannedUnverifiedResult;
 
 // Global landmark knowledge base for visual AI matching
 const KNOWN_LANDMARKS: Array<{
@@ -179,66 +195,158 @@ function extractFilenameCues(filename: string): string[] {
     .filter(token => token.length > 2);
 }
 
+function readFileAsDataUrl(file: File): Promise<{ base64: string; mimeType: string } | null> {
+  if (typeof FileReader === 'undefined') return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      const match = result.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        resolve({ mimeType: match[1], base64: match[2] });
+      } else {
+        resolve(null);
+      }
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function callLiveVisionApi(
+  fileOrBase64: File | string,
+  optionalPrompt?: string
+): Promise<VisualScanResult | null> {
+  if (typeof window === 'undefined' || typeof fetch === 'undefined') return null;
+
+  let base64 = '';
+  let mimeType = 'image/jpeg';
+
+  if (typeof fileOrBase64 === 'string') {
+    const match = fileOrBase64.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match || match[2].length < 64) return null;
+    mimeType = match[1];
+    base64 = match[2];
+  } else {
+    if (fileOrBase64.size < 64) return null;
+    const encoded = await readFileAsDataUrl(fileOrBase64);
+    if (!encoded) return null;
+    base64 = encoded.base64;
+    mimeType = encoded.mimeType;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 14_000);
+  try {
+    const res = await fetch(resolveApiUrl('/api/chat'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'vision',
+        query: optionalPrompt?.trim() || 'Identify this travel photo (landmark, dish, or booking document).',
+        imageBase64: base64,
+        mimeType
+      }),
+      signal: controller.signal
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    if (data?.ok && data.scanResult && typeof data.scanResult.type === 'string') {
+      const scan = data.scanResult;
+      if (scan.type === 'landmark' || scan.type === 'ticket' || scan.type === 'food') {
+        return { ...scan, source: 'live_vision' } as VisualScanResult;
+      }
+      if (scan.type === 'unverified') {
+        return {
+          type: 'unverified',
+          title: scan.title || 'Photo Requires More Context',
+          guidance: scan.guidance || 'Add a short note naming the landmark, dish, or city so I can look it up accurately.',
+          reason: 'unrecognized_image'
+        };
+      }
+    }
+  } catch {
+    // Fall through cleanly when offline or server vision is unconfigured
+  } finally {
+    clearTimeout(timeout);
+  }
+  return null;
+}
+
 /**
- * Analyze an uploaded image using visual heuristics and optical detection
+ * Analyze an uploaded image using live multimodal Vision AI first.
+ * Never fabricates fake PNRs, fake ticket details, or fake landmark identifications when offline.
  */
 export async function scanTravelImage(
   fileOrBase64: File | string,
   optionalPrompt?: string
 ): Promise<VisualScanResult> {
-  const filename = typeof fileOrBase64 !== 'string' ? fileOrBase64.name : '';
-  const cues = extractFilenameCues(filename + ' ' + (optionalPrompt || ''));
+  // 1. Live Multimodal Vision API (Gemini 2.0 Flash / Vision LLM via /api/chat)
+  const liveVisionResult = await callLiveVisionApi(fileOrBase64, optionalPrompt);
+  if (liveVisionResult) {
+    return liveVisionResult;
+  }
 
-  // 1. Check for Ticket / Boarding Pass patterns
+  // 2. Honest local fallback when offline / vision model unconfigured:
+  // Only match explicit landmark or cuisine keywords typed by the user; NEVER fabricate fake ticket PNRs or unknown landmarks!
+  const filename = typeof fileOrBase64 !== 'string' ? fileOrBase64.name : '';
+  const combinedText = `${filename} ${optionalPrompt || ''}`.toLowerCase();
+  const cues = extractFilenameCues(combinedText);
+
+  // Never invent fake boarding pass PNRs, seat numbers, routes, or fares!
   const isTicketPrompt = cues.some(c => ['ticket', 'boarding', 'flight', 'pnr', 'airline', 'booking', 'pass', 'indigo', 'emirates', 'airindia', 'hotel'].includes(c));
   if (isTicketPrompt) {
     return {
-      type: 'ticket',
-      ticketType: cues.includes('hotel') ? 'hotel' : 'flight',
-      carrier: cues.includes('emirates') ? 'Emirates' : cues.includes('indigo') ? 'IndiGo Airlines' : 'Air India',
-      bookingRef: 'TV-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
-      origin: cues.includes('dubai') ? 'DEL (Delhi)' : 'BOM (Mumbai)',
-      destination: cues.includes('dubai') ? 'DXB (Dubai)' : 'GOI (Goa)',
-      departureTime: '10:45 AM, Next Travel Day',
-      seatOrRoom: 'Seat 14A (Window)',
-      passengerName: 'VIP Traveler',
-      totalAmount: '₹6,450'
+      type: 'unverified',
+      title: 'Live Boarding Pass OCR Unavailable',
+      guidance: 'Live optical ticket scanning requires the Vision AI gateway. TripVerse will never fabricate a fake PNR, seat number, or fare — please paste your booking reference or route details directly in chat.',
+      reason: 'vision_unavailable'
     };
   }
 
-  // 2. Check for Food / Cuisine patterns
-  const isFoodPrompt = cues.some(c => ['food', 'dish', 'menu', 'ramen', 'sushi', 'pizza', 'pasta', 'biryani', 'curry', 'dessert'].includes(c));
-  if (isFoodPrompt) {
-    return {
-      type: 'food',
-      dishName: cues.includes('ramen') ? 'Authentic Tonkotsu Ramen' : cues.includes('biryani') ? 'Hyderabadi Dum Biryani' : 'Artisanal Woodfired Neapolitan Pizza',
-      cuisine: cues.includes('ramen') ? 'Japanese' : cues.includes('biryani') ? 'Awadhi / Hyderabadi' : 'Italian',
-      region: cues.includes('ramen') ? 'Fukuoka, Japan' : cues.includes('biryani') ? 'Telangana, India' : 'Naples, Italy',
-      description: 'Rich, slow-simmered broth prepared with traditional culinary techniques and fragrant spices.',
-      dietaryTags: ['Comfort Food', 'Signature Special', 'Local Favorite'],
-      averagePrice: cues.includes('ramen') ? '¥1,100 (~$8)' : cues.includes('biryani') ? '₹380 (~$4.50)' : '€14 (~$15)',
-      flavorProfile: 'Rich, umami-dense, deeply comforting'
-    };
-  }
-
-  // 3. Check for landmark keyword matches
+  // Explicit landmark match from user prompt / descriptive filename
   for (const item of KNOWN_LANDMARKS) {
     if (item.keywords.some(k => cues.includes(k) || (optionalPrompt && optionalPrompt.toLowerCase().includes(k)))) {
-      return item.data;
+      return {
+        ...item.data,
+        source: 'prompt_match'
+      };
     }
   }
 
-  // 4. Smart fallback: Default to iconic architectural discovery
+  // Explicit dish match only if a specific dish keyword was actually mentioned
+  if (cues.includes('ramen')) {
+    return {
+      type: 'food',
+      dishName: 'Tonkotsu Ramen',
+      cuisine: 'Japanese',
+      region: 'Fukuoka, Japan',
+      description: 'Slow-simmered pork or rich broth noodle bowl traditionally served with wheat noodles, scallions, and toppings.',
+      dietaryTags: ['Noodle Soup', 'Regional Classic'],
+      averagePrice: '¥900–¥1,300',
+      flavorProfile: 'Rich, savory, umami-forward',
+      source: 'prompt_match'
+    };
+  }
+  if (cues.includes('biryani')) {
+    return {
+      type: 'food',
+      dishName: 'Hyderabadi / Awadhi Dum Biryani',
+      cuisine: 'Indian',
+      region: 'Hyderabad & Lucknow, India',
+      description: 'Long-grain basmati rice slow-cooked under sealed dum with saffron, caramelized onions, and whole spices.',
+      dietaryTags: ['Spiced Rice', 'Regional Classic'],
+      averagePrice: '₹280–₹480',
+      flavorProfile: 'Aromatic, saffron-infused, layered spice',
+      source: 'prompt_match'
+    };
+  }
+
+  // 3. Honest unverified response (zero fabricated "Discovered Scenic Landmark" with fake 89% confidence)
   return {
-    type: 'landmark',
-    name: 'Discovered Scenic Landmark',
-    city: 'Historic District',
-    country: 'Global Explorer Destination',
-    confidence: 0.89,
-    description: 'Distinctive architectural structure identified from visual geometry, featuring historical cultural significance and high footfall.',
-    architecturalStyle: 'Heritage Regional Architecture',
-    suggestedDuration: '1.5 - 2 hours',
-    entryFee: 'Check local ticketing kiosk',
-    bestTimeToVisit: 'Morning golden hour (8:00 AM - 10:30 AM)'
+    type: 'unverified',
+    title: 'Visual Recognition Needs Live Vision AI or a Hint',
+    guidance: 'Live visual analysis is unavailable for this image right now. Tell me the landmark, dish, or city name in your message and I will pull genuine historical facts, entry info, and add it to your itinerary.',
+    reason: 'vision_unavailable'
   };
 }

@@ -1,8 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { scanTravelImage, ScannedLandmarkResult, ScannedTicketResult, ScannedFoodResult } from '../src/services/visualAiScannerService';
+import {
+  scanTravelImage,
+  ScannedLandmarkResult,
+  ScannedFoodResult,
+  ScannedUnverifiedResult
+} from '../src/services/visualAiScannerService';
 
 describe('Visual AI Scanner Service (visualAiScannerService)', () => {
-  it('correctly identifies Eiffel Tower from photo cues', async () => {
+  it('correctly identifies Eiffel Tower from explicit cues', async () => {
     const fakeFile = new File(['fake-image-bytes'], 'eiffel_tower_paris_sunset.jpg', { type: 'image/jpeg' });
     const result = await scanTravelImage(fakeFile) as ScannedLandmarkResult;
 
@@ -14,7 +19,7 @@ describe('Visual AI Scanner Service (visualAiScannerService)', () => {
     expect(result.entryFee).toContain('€28.30');
   });
 
-  it('correctly identifies Taj Mahal from prompt and cues', async () => {
+  it('correctly identifies Taj Mahal from prompt cues', async () => {
     const result = await scanTravelImage('data:image/jpeg;base64,mock', 'What is this marble wonder in Agra?') as ScannedLandmarkResult;
 
     expect(result.type).toBe('landmark');
@@ -24,18 +29,16 @@ describe('Visual AI Scanner Service (visualAiScannerService)', () => {
     expect(result.architecturalStyle).toContain('Mughal Architecture');
   });
 
-  it('correctly parses flight boarding pass and booking voucher', async () => {
+  it('never fabricates fake boarding pass PNRs or fares when live vision OCR is offline', async () => {
     const fakeFile = new File(['fake-bytes'], 'emirates_boarding_pass_dubai.png', { type: 'image/png' });
-    const result = await scanTravelImage(fakeFile) as ScannedTicketResult;
+    const result = await scanTravelImage(fakeFile) as ScannedUnverifiedResult;
 
-    expect(result.type).toBe('ticket');
-    expect(result.carrier).toBe('Emirates');
-    expect(result.ticketType).toBe('flight');
-    expect(result.destination).toContain('DXB');
-    expect(result.bookingRef).toMatch(/^TV-[A-Z0-9]+/);
+    expect(result.type).toBe('unverified');
+    expect(result.reason).toBe('vision_unavailable');
+    expect(result.guidance.toLowerCase()).toContain('never fabricate');
   });
 
-  it('correctly identifies culinary dish and dietary profile', async () => {
+  it('correctly identifies culinary dish when explicitly named', async () => {
     const result = await scanTravelImage('data:image/png;base64,mock', 'ramen noodle bowl in fukuoka') as ScannedFoodResult;
 
     expect(result.type).toBe('food');
@@ -45,12 +48,11 @@ describe('Visual AI Scanner Service (visualAiScannerService)', () => {
     expect(result.dietaryTags.length).toBeGreaterThan(0);
   });
 
-  it('provides safe architectural fallback for unknown photo uploads', async () => {
+  it('returns honest unverified response for unknown photos instead of inventing fake landmarks', async () => {
     const fakeFile = new File(['fake-bytes'], 'random_pic_981.jpg', { type: 'image/jpeg' });
-    const result = await scanTravelImage(fakeFile) as ScannedLandmarkResult;
+    const result = await scanTravelImage(fakeFile) as ScannedUnverifiedResult;
 
-    expect(result.type).toBe('landmark');
-    expect(result.confidence).toBeGreaterThanOrEqual(0.8);
-    expect(result.name).toBe('Discovered Scenic Landmark');
+    expect(result.type).toBe('unverified');
+    expect(result.reason).toBe('vision_unavailable');
   });
 });

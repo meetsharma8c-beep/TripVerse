@@ -108,6 +108,9 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
   const KNOWN_HUB_CODES: Record<string, string> = {
     vadodara: 'BDQ',
     baroda: 'BDQ',
+    mathura: 'MTJ',
+    vrindavan: 'MTJ',
+    agra: 'AGC',
     ahmedabad: 'AMD',
     mumbai: 'BOM',
     bombay: 'BOM',
@@ -245,7 +248,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
   };
 
   const destinationImg = resolveDestinationImage(trip.destination);
-  const hotelName = trip.selectedHotel?.name || 'Handpicked Boutique Stay';
+  const hotelName = trip.selectedHotel?.name || 'Accommodation Not Selected Yet';
   const packedCount = packingItems.filter(c => c.isPacked).length;
   const progressPercent = Math.round((packedCount / Math.max(1, packingItems.length)) * 100);
   const todayWeather = weather.forecastDays?.[0];

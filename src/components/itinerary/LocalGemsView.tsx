@@ -124,7 +124,13 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
-                <span>{gemsData.isLiveGenerated ? 'Live AI Regional Discovery' : 'Curated Regional Discovery'}</span>
+                <span>
+                  {gemsData.discoverySource === 'live_osm'
+                    ? 'Live OpenStreetMap Discovery'
+                    : gemsData.isLiveGenerated
+                      ? 'Live AI Regional Discovery'
+                      : 'Curated Regional Discovery'}
+                </span>
               </span>
               <button
                 type="button"

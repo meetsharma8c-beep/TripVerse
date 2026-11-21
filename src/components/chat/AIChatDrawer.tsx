@@ -797,11 +797,14 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         if (activeRequestIdRef.current !== reqId) return;
         let summaryText = '';
         if (scanResult.type === 'landmark') {
-          summaryText = `📸 **Visual Landmark Identification: ${scanResult.name}**\n\n📍 **Location:** ${scanResult.city}, ${scanResult.country}\n🏛️ **Architecture:** ${scanResult.architecturalStyle}\n⏱️ **Recommended Duration:** ${scanResult.suggestedDuration}\n🎟️ **Entry Fee:** ${scanResult.entryFee}\n☀️ **Best Time to Visit:** ${scanResult.bestTimeToVisit}\n\n${scanResult.description}`;
+          const sourceNote = scanResult.source === 'prompt_match' ? ' _(Matched from your note)_' : '';
+          summaryText = `📸 **Visual Landmark Identification: ${scanResult.name}**${sourceNote}\n\n📍 **Location:** ${scanResult.city}, ${scanResult.country}\n🏛️ **Architecture:** ${scanResult.architecturalStyle}\n⏱️ **Recommended Duration:** ${scanResult.suggestedDuration}\n🎟️ **Entry Fee:** ${scanResult.entryFee}\n☀️ **Best Time to Visit:** ${scanResult.bestTimeToVisit}\n\n${scanResult.description}`;
         } else if (scanResult.type === 'ticket') {
-          summaryText = `🎫 **Boarding Pass & Booking Verified**\n\n✈️ **Carrier:** ${scanResult.carrier}\n🏷️ **Booking Ref / PNR:** ${scanResult.bookingRef}\n🛫 **Route:** ${scanResult.origin} ➔ ${scanResult.destination}\n⏰ **Departure:** ${scanResult.departureTime}\n💺 **Seat / Room:** ${scanResult.seatOrRoom}`;
-        } else {
+          summaryText = `🎫 **Boarding Pass & Booking Extracted**\n\n✈️ **Carrier:** ${scanResult.carrier}\n🏷️ **Booking Ref / PNR:** ${scanResult.bookingRef}\n🛫 **Route:** ${scanResult.origin} ➔ ${scanResult.destination}\n⏰ **Departure:** ${scanResult.departureTime}\n💺 **Seat / Room:** ${scanResult.seatOrRoom}`;
+        } else if (scanResult.type === 'food') {
           summaryText = `🍽️ **Culinary Identification: ${scanResult.dishName}**\n\n🍜 **Cuisine:** ${scanResult.cuisine} (${scanResult.region})\n😋 **Flavor Profile:** ${scanResult.flavorProfile}\n🏷️ **Dietary:** ${scanResult.dietaryTags.join(', ')}\n💰 **Average Price:** ${scanResult.averagePrice}\n\n${scanResult.description}`;
+        } else {
+          summaryText = `📷 **${scanResult.title}**\n\n${scanResult.guidance}`;
         }
 
         const aiMessage: ChatMessage = {
@@ -810,7 +813,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           text: summaryText,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           engine: 'concode_brain',
-          confidence: 0.98,
+          confidence: scanResult.type === 'unverified' ? undefined : (scanResult.type === 'landmark' ? scanResult.confidence : 0.92),
           visualScanResult: scanResult,
           actionButtons: scanResult.type === 'landmark' ? [
             {

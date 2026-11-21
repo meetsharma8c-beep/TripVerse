@@ -36,7 +36,7 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
     getOrInitializeCollaborationSession(trip, currentUser)
   );
   const [activeTab, setActiveTab] = useState<'invite' | 'votes' | 'suggestions'>('invite');
-  const [liveStatus, setLiveStatus] = useState<'CONNECTING' | 'LIVE' | 'DISCONNECTED'>('LIVE');
+  const [liveStatus, setLiveStatus] = useState<'CONNECTING' | 'LIVE' | 'LOCAL_ONLY' | 'DISCONNECTED'>('CONNECTING');
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -230,10 +230,30 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
                   {session.collaborators.length} {t('Travelers')}
                 </span>
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                  liveStatus === 'LIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                  liveStatus === 'LIVE'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : liveStatus === 'LOCAL_ONLY'
+                      ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                      : liveStatus === 'DISCONNECTED'
+                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                        : 'bg-amber-50 text-amber-700 border border-amber-200'
                 }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${liveStatus === 'LIVE' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
-                  {liveStatus === 'LIVE' ? t('Supabase Live Sync') : t('Connecting...')}
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    liveStatus === 'LIVE'
+                      ? 'bg-emerald-500 animate-pulse'
+                      : liveStatus === 'LOCAL_ONLY'
+                        ? 'bg-slate-400'
+                        : liveStatus === 'DISCONNECTED'
+                          ? 'bg-rose-500'
+                          : 'bg-amber-400'
+                  }`} />
+                  {liveStatus === 'LIVE'
+                    ? t('Cloud Live Sync')
+                    : liveStatus === 'LOCAL_ONLY'
+                      ? t('Local Device Sync')
+                      : liveStatus === 'DISCONNECTED'
+                        ? t('Offline Mode')
+                        : t('Connecting...')}
                 </span>
               </div>
               <p className="text-xs text-slate-500 truncate max-w-sm">

@@ -5,7 +5,116 @@ import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, get
 // The CONCODE key exists only in Vercel environment variables, never in the app bundle.
 
 const MAX_QUERY_LENGTH = 12_000;
+const MAX_VISION_BASE64_LENGTH = 6_000_000; // ~4.5 MB base64 cap
 const UPSTREAM_TIMEOUT_MS = 8_000;
+
+async function callVisionAnalysis(imageBase64, mimeType, promptText) {
+  const cleanBase64 = String(imageBase64 || '').replace(/^data:[^;]+;base64,/, '').trim();
+  if (!cleanBase64 || cleanBase64.length > MAX_VISION_BASE64_LENGTH) return null;
+
+  const safeMime = /^image\/(jpeg|jpg|png|webp|gif)$/i.test(String(mimeType || ''))
+    ? String(mimeType).toLowerCase()
+    : 'image/jpeg';
+
+  const visionInstruction = `You are TripVerse Visual Travel Intelligence. Analyze the provided travel photo truthfully. Never invent ticket PNRs, prices, or landmarks you cannot clearly see.
+User note: ${promptText || 'Identify what is shown in this travel photo.'}
+Respond ONLY with strict JSON matching ONE of these schemas:
+1) Landmark: {"type":"landmark","name":"Exact Name","city":"City","country":"Country","confidence":0.92,"description":"2 concise factual sentences","architecturalStyle":"Style","suggestedDuration":"1.5 - 2 hours","entryFee":"Approximate fee or Free","bestTimeToVisit":"Best time"}
+2) Ticket/Booking (ONLY transcribe visible fields; use "Not visible" for unreadable fields): {"type":"ticket","ticketType":"flight|train|hotel|event","carrier":"Visible carrier","bookingRef":"Visible PNR or Not visible","origin":"Visible origin","destination":"Visible destination","departureTime":"Visible time","seatOrRoom":"Visible seat/room"}
+3) Food/Dish: {"type":"food","dishName":"Dish name","cuisine":"Cuisine","region":"Region","description":"Brief factual description","dietaryTags":["Tag"],"averagePrice":"Estimated local price","flavorProfile":"Flavor notes"}
+4) Unclear/Other: {"type":"unverified","title":"Brief description of what is visible","guidance":"Ask the user for more context"}`;
+
+  const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+  if (geminiKey) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 14_000);
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(geminiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: visionInstruction },
+                { inline_data: { mime_type: safeMime, data: cleanBase64 } }
+              ]
+            }],
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: 700,
+              responseMimeType: 'application/json'
+            }
+          }),
+          signal: controller.signal
+        }
+      );
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const cleaned = rawText.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleaned);
+        if (parsed && typeof parsed.type === 'string') {
+          return { ok: true, source: 'gemini_vision', scanResult: parsed };
+        }
+      }
+    } catch {
+      // fall through
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  const openRouterKey = (process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || '').trim();
+  if (openRouterKey) {
+    const baseUrl = process.env.OPENROUTER_API_KEY
+      ? 'https://openrouter.ai/api/v1'
+      : 'https://api.openai.com/v1';
+    const model = process.env.OPENROUTER_API_KEY
+      ? 'google/gemini-2.0-flash-001'
+      : 'gpt-4o-mini';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 14_000);
+    try {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openRouterKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          max_tokens: 700,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: visionInstruction },
+              { type: 'image_url', image_url: { url: `data:${safeMime};base64,${cleanBase64}` } }
+            ]
+          }]
+        }),
+        signal: controller.signal
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        const rawText = data?.choices?.[0]?.message?.content || '';
+        const cleaned = rawText.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleaned);
+        if (parsed && typeof parsed.type === 'string') {
+          return { ok: true, source: `vision (${model})`, scanResult: parsed };
+        }
+      }
+    } catch {
+      // fall through
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  return null;
+}
 
 // In-memory LRU / TTL Cache for cloud LLM travel responses to conserve free-tier API quotas
 const LLM_CACHE = new Map();
@@ -736,9 +845,21 @@ export default async function handler(req, res) {
   const query = text(req.body?.query, MAX_QUERY_LENGTH);
   if (!query) return res.status(400).json({ ok: false, error: 'INVALID_QUERY' });
 
-  const mode = ['text', 'itinerary', 'budget', 'safety'].includes(req.body?.mode)
+  const mode = ['text', 'itinerary', 'budget', 'safety', 'vision'].includes(req.body?.mode)
     ? req.body.mode
     : 'text';
+
+  if (mode === 'vision' && req.body?.imageBase64) {
+    const visionRes = await callVisionAnalysis(req.body.imageBase64, req.body?.mimeType, query);
+    if (visionRes) {
+      return res.status(200).json(visionRes);
+    }
+    return res.status(200).json({
+      ok: false,
+      error: 'VISION_UNAVAILABLE',
+      message: 'Live multimodal vision analysis is not configured on this server.'
+    });
+  }
   const rawContext = req.body?.tripContext || req.body?.trip_context || {};
   const travelContext = buildTravelContext(rawContext, req.body?.sessionState);
 

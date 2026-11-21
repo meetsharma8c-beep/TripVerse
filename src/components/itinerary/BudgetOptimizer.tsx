@@ -48,73 +48,226 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
   const duration = Math.max(1, trip.durationDays || 3);
   const nights = Math.max(1, duration - 1);
   const rooms = Math.ceil(travelers / 2);
+  const mode = trip.transportMode || 'car';
+  const isFlightMode = mode === 'flight';
+  const isTrainMode = mode === 'train';
+  const isRoadMode = mode === 'car' || mode === 'bike';
 
-  const liveStayCost = trip.selectedHotel?.nightlyRate
+  // Benchmark market figures (6-vertical seasonal model)
+  const marketStayCost = trip.selectedHotel?.nightlyRate
     ? trip.selectedHotel.nightlyRate * nights * rooms
-    : (liveMarketReport?.hotelTotalGroupINR || trip.budgetBreakdown?.accommodation || 9500);
+    : (liveMarketReport?.hotelTotalGroupINR || 9500);
 
-  const liveTransportCost = trip.transportMode === 'flight'
+  const marketTransportCost = isFlightMode
     ? (liveMarketReport.smartHubArbitrage
         ? liveMarketReport.smartHubArbitrage.hubRoundTripPerPerson * travelers + liveMarketReport.smartHubArbitrage.groundTransferToHubCost
         : liveMarketReport.flightTotalGroupINR)
-    : trip.transportMode === 'train'
+    : isTrainMode
     ? liveMarketReport.trainTotalGroupINR
-    : trip.transportMode === 'car' || trip.transportMode === 'bike'
+    : isRoadMode
     ? liveMarketReport.roadTripFuelAndTollsINR
-    : (liveMarketReport.localTransitTotalGroupINR || trip.budgetBreakdown?.transportation || 6500);
+    : (liveMarketReport.localTransitTotalGroupINR || 6500);
 
-  const liveFoodCost = liveMarketReport.diningTotalGroupINR || trip.budgetBreakdown?.food || 4200;
-  const liveActivitiesCost = liveMarketReport.attractionsTotalGroupINR || trip.budgetBreakdown?.activities || 3200;
-  const liveBufferCost = Math.round((liveTransportCost + liveStayCost + liveFoodCost + liveActivitiesCost) * 0.05);
+  const marketFoodCost = liveMarketReport.diningTotalGroupINR || 4200;
+  const marketActivitiesCost = liveMarketReport.attractionsTotalGroupINR || 3200;
+  const marketBufferCost = Math.round((marketTransportCost + marketStayCost + marketFoodCost + marketActivitiesCost) * 0.05);
+
+  // Anchor displayed expenses directly to trip.budgetBreakdown so 1-Click Apply Savings
+  // and hotel/mode edits genuinely update the KPI cards, progress bars, and saved trip state.
+  const hasBreakdown = Boolean(
+    trip.budgetBreakdown &&
+    (trip.budgetBreakdown.transportation > 0 ||
+      trip.budgetBreakdown.accommodation > 0 ||
+      trip.budgetBreakdown.food > 0)
+  );
+
+  const liveStayCost = hasBreakdown ? Math.max(0, trip.budgetBreakdown.accommodation) : marketStayCost;
+  const liveTransportCost = hasBreakdown ? Math.max(0, trip.budgetBreakdown.transportation) : marketTransportCost;
+  const liveFoodCost = hasBreakdown ? Math.max(0, trip.budgetBreakdown.food) : marketFoodCost;
+  const liveActivitiesCost = hasBreakdown ? Math.max(0, trip.budgetBreakdown.activities) : marketActivitiesCost;
+  const liveBufferCost = hasBreakdown ? Math.max(0, trip.budgetBreakdown.miscellaneous) : marketBufferCost;
 
   const liveTotalExpenses = liveTransportCost + liveStayCost + liveFoodCost + liveActivitiesCost + liveBufferCost;
 
   const isOverBudget = liveTotalExpenses > trip.totalBudget;
   const buffer = trip.totalBudget - liveTotalExpenses;
 
-  // AI Savings Suggestions catalog
-  const [appliedTips, setAppliedTips] = useState<Record<string, boolean>>({});
-
-  const suggestions = [
-    ...(trip.transitPassRoi && trip.transitPassRoi.netSavings > 0 ? [{
-      id: 'tip-transit-pass',
-      category: 'transportation' as keyof BudgetBreakdown,
-      savings: trip.transitPassRoi.netSavings,
-      title: `${trip.transitPassRoi.passName} Arbitrage`,
-      desc: `Save ~${formatCurrency(trip.transitPassRoi.netSavings, currency)} vs individual transit taps. Includes ${trip.transitPassRoi.coverageAreas.join(', ')} (${trip.transitPassRoi.validityDuration}). Buy at ${trip.transitPassRoi.purchaseLocation}.`
-    }] : []),
-    ...(trip.taxFreeGuidance && trip.taxFreeGuidance.refundPercentage > 0 ? [{
-      id: 'tip-tax-free',
-      category: 'miscellaneous' as keyof BudgetBreakdown,
-      savings: Math.round(trip.totalBudget * 0.04),
-      title: `${trip.taxFreeGuidance.refundPercentage}% Instant Tax-Free Retail Refund`,
-      desc: `Claim ${trip.taxFreeGuidance.refundPercentage}% instant sales tax exemption at checkout on purchases over ${trip.taxFreeGuidance.currency} ${trip.taxFreeGuidance.minimumThresholdAmount.toLocaleString()} by presenting your physical passport.`
-    }] : []),
-    {
-      id: 'tip-hotel',
-      category: 'accommodation' as keyof BudgetBreakdown,
-      savings: 700,
-      title: 'Compare accommodation options',
-      desc: `Compare properties and confirm availability, facilities, and prices directly. Any displayed savings are estimates, not quotes.`
-    },
-    {
-      id: 'tip-transport',
-      category: 'transportation' as keyof BudgetBreakdown,
-      savings: 300,
-      title: 'Review the estimated driving budget',
-      desc: `Fuel, tolls, and driving costs vary by route and date. Check current route and toll information before travel.`
-    },
-    {
-      id: 'tip-dining',
-      category: 'food' as keyof BudgetBreakdown,
-      savings: 250,
-      title: 'Compare dining options',
-      desc: 'Search current place listings and confirm menus and prices directly with venues before visiting.'
+  // Persist applied optimization tips per trip so re-opening doesn't double-apply
+  const appliedStorageKey = `tripverse_budget_tips_${trip.id}`;
+  const [appliedTips, setAppliedTips] = useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = localStorage.getItem(appliedStorageKey);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
     }
-  ];
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(appliedStorageKey);
+      setAppliedTips(raw ? JSON.parse(raw) : {});
+    } catch {
+      setAppliedTips({});
+    }
+  }, [appliedStorageKey]);
+
+  // Compute genuine, trip-derived savings levers from real hotel options, transport mode, and actual category spend
+  const suggestions = useMemo(() => {
+    const items: Array<{
+      id: string;
+      category: keyof BudgetBreakdown;
+      savings: number;
+      title: string;
+      desc: string;
+    }> = [];
+
+    if (trip.transitPassRoi && trip.transitPassRoi.netSavings > 0) {
+      items.push({
+        id: 'tip-transit-pass',
+        category: 'transportation',
+        savings: Math.min(trip.transitPassRoi.netSavings, Math.max(100, liveTransportCost - 400)),
+        title: `${trip.transitPassRoi.passName} Arbitrage`,
+        desc: `Save ~${formatCurrency(trip.transitPassRoi.netSavings, currency)} vs individual transit taps. Includes ${trip.transitPassRoi.coverageAreas.join(', ')} (${trip.transitPassRoi.validityDuration}). Buy at ${trip.transitPassRoi.purchaseLocation}.`
+      });
+    }
+
+    if (trip.taxFreeGuidance && trip.taxFreeGuidance.refundPercentage > 0) {
+      items.push({
+        id: 'tip-tax-free',
+        category: 'miscellaneous',
+        savings: Math.min(Math.round(trip.totalBudget * 0.04), Math.max(100, liveBufferCost)),
+        title: `${trip.taxFreeGuidance.refundPercentage}% Instant Tax-Free Retail Refund`,
+        desc: `Claim ${trip.taxFreeGuidance.refundPercentage}% instant sales tax exemption at checkout on purchases over ${trip.taxFreeGuidance.currency} ${trip.taxFreeGuidance.minimumThresholdAmount.toLocaleString()} by presenting your physical passport.`
+      });
+    }
+
+    // 1. Accommodation lever: compare real cheaper hotel option if present, else 12% stay optimization
+    if (liveStayCost > 800) {
+      const selectedRate = trip.selectedHotel?.nightlyRate || 0;
+      const cheaperHotel = (trip.hotelOptions || [])
+        .filter(h => h.id !== trip.selectedHotel?.id && h.nightlyRate > 0 && (selectedRate === 0 || h.nightlyRate < selectedRate))
+        .sort((a, b) => a.nightlyRate - b.nightlyRate)[0];
+
+      if (cheaperHotel && selectedRate > cheaperHotel.nightlyRate) {
+        const realHotelSavings = Math.min(
+          Math.round((selectedRate - cheaperHotel.nightlyRate) * nights * rooms),
+          Math.max(300, liveStayCost - 400)
+        );
+        if (realHotelSavings >= 200) {
+          items.push({
+            id: 'tip-hotel',
+            category: 'accommodation',
+            savings: realHotelSavings,
+            title: `Switch Stay to ${cheaperHotel.name}`,
+            desc: `Save ${formatCurrency(selectedRate - cheaperHotel.nightlyRate, currency)}/night across ${nights} night${nights > 1 ? 's' : ''} (${rooms} room${rooms > 1 ? 's' : ''}) vs ${trip.selectedHotel?.name || 'current stay'}. Confirm live room rates before booking.`
+          });
+        }
+      } else {
+        const staySavings = Math.min(Math.max(300, Math.round(liveStayCost * 0.12)), Math.max(200, liveStayCost - 400));
+        items.push({
+          id: 'tip-hotel',
+          category: 'accommodation',
+          savings: staySavings,
+          title: 'Optimize Stay with Direct Property Booking',
+          desc: `Booking directly or choosing a well-rated guesthouse ~12% below your current ${formatCurrency(liveStayCost, currency)} stay allocation reduces lodging spend without cutting nights.`
+        });
+      }
+    }
+
+    // 2. Mode-aware Transport lever (never recommends "driving budget" on Train or Flight trips!)
+    if (liveTransportCost > 600) {
+      if (isFlightMode && liveMarketReport.smartHubArbitrage && liveMarketReport.smartHubArbitrage.totalGroupSavings > 0) {
+        const hubSave = Math.min(liveMarketReport.smartHubArbitrage.totalGroupSavings, Math.max(300, liveTransportCost - 400));
+        items.push({
+          id: 'tip-transport',
+          category: 'transportation',
+          savings: hubSave,
+          title: `Use ${liveMarketReport.smartHubArbitrage.hubCode} Smart Airport Hub`,
+          desc: liveMarketReport.smartHubArbitrage.explanation
+        });
+      } else if (isTrainMode) {
+        const railSave = Math.min(Math.max(200, Math.round(liveTransportCost * 0.12)), Math.max(150, liveTransportCost - 400));
+        items.push({
+          id: 'tip-transport',
+          category: 'transportation',
+          savings: railSave,
+          title: 'Book Advance IRCTC / Rail Coach Tier (Avoid Tatkal)',
+          desc: `Reserving 3AC / Chair Car seats early instead of last-minute dynamic or Tatkal fares typically saves ~12% on your ${formatCurrency(liveTransportCost, currency)} rail budget.`
+        });
+      } else if (isRoadMode) {
+        const roadSave = Math.min(Math.max(200, Math.round(liveTransportCost * 0.12)), Math.max(150, liveTransportCost - 400));
+        items.push({
+          id: 'tip-transport',
+          category: 'transportation',
+          savings: roadSave,
+          title: 'Optimize Highway Fuel, FASTag & Return Route',
+          desc: `Steady highway cruising, pre-loaded FASTag tolls, and efficient route clustering can cut ~12% from your ${formatCurrency(liveTransportCost, currency)} fuel & toll estimate.`
+        });
+      } else if (isFlightMode) {
+        const airSave = Math.min(Math.max(400, Math.round(liveTransportCost * 0.10)), Math.max(200, liveTransportCost - 400));
+        items.push({
+          id: 'tip-transport',
+          category: 'transportation',
+          savings: airSave,
+          title: 'Target Mid-Week / Red-Eye Airfare Windows',
+          desc: `Flexible departure windows and carry-on-only fares typically trim ~10% from your ${formatCurrency(liveTransportCost, currency)} flight allocation.`
+        });
+      } else {
+        const transitSave = Math.min(Math.max(150, Math.round(liveTransportCost * 0.12)), Math.max(150, liveTransportCost - 400));
+        items.push({
+          id: 'tip-transport',
+          category: 'transportation',
+          savings: transitSave,
+          title: 'Use Direct Express & Local Transit Passes',
+          desc: `Combining point-to-point express coaches with day passes trims ~12% off your ${formatCurrency(liveTransportCost, currency)} transit budget.`
+        });
+      }
+    }
+
+    // 3. Dining lever derived from actual trip dining spend
+    if (liveFoodCost > 600) {
+      const diningSave = Math.min(Math.max(150, Math.round(liveFoodCost * 0.15)), Math.max(150, liveFoodCost - 400));
+      items.push({
+        id: 'tip-dining',
+        category: 'food',
+        savings: diningSave,
+        title: 'Swap 1 Hotel Meal/Day for Local Eateries',
+        desc: `Dining at authentic neighborhood eateries or regional thali spots instead of hotel restaurants typically saves ~15% on your ${formatCurrency(liveFoodCost, currency)} food budget.`
+      });
+    }
+
+    return items;
+  }, [
+    trip.transitPassRoi,
+    trip.taxFreeGuidance,
+    trip.totalBudget,
+    trip.selectedHotel,
+    trip.hotelOptions,
+    liveStayCost,
+    liveTransportCost,
+    liveFoodCost,
+    liveBufferCost,
+    nights,
+    rooms,
+    currency,
+    isFlightMode,
+    isTrainMode,
+    isRoadMode,
+    liveMarketReport.smartHubArbitrage
+  ]);
 
   const handleApplyTip = (tip: typeof suggestions[0]) => {
-    setAppliedTips(prev => ({ ...prev, [tip.id]: true }));
+    if (appliedTips[tip.id]) return;
+    const nextApplied = { ...appliedTips, [tip.id]: true };
+    setAppliedTips(nextApplied);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(appliedStorageKey, JSON.stringify(nextApplied));
+      } catch {}
+    }
     onApplySavings(tip.savings, tip.category, tip.title);
   };
 
@@ -157,12 +310,14 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 min-w-0">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">{t('On-Ground Budget')}</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+            {isFlightMode ? t('On-Ground Budget') : t('Target Trip Budget')}
+          </span>
           <div className="text-2xl font-black text-slate-900 mt-1 font-display truncate">
             {formatCurrency(trip.totalBudget, currency)}
           </div>
           <span className="text-[11px] text-slate-500 truncate block">
-            {formatCurrency(Math.round(trip.totalBudget / Math.max(1, trip.travelersCount)), currency)} {t('/person')} (excl. flights)
+            {formatCurrency(Math.round(trip.totalBudget / Math.max(1, trip.travelersCount)), currency)} {t('/person')} {isFlightMode ? '(excl. flights)' : `(${mode} trip)`}
           </span>
         </div>
 
@@ -205,7 +360,13 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
               </h3>
             </div>
             <p className="text-xs text-slate-400">
-              Real-time route pricing for {liveMarketReport.originCity} ({liveMarketReport.originAirportCode}) ↔ {liveMarketReport.gatewayAirportName} ({liveMarketReport.gatewayAirportCode})
+              {isFlightMode
+                ? `Seasonal route pricing for ${liveMarketReport.originCity} (${liveMarketReport.originAirportCode}) ↔ ${liveMarketReport.gatewayAirportName} (${liveMarketReport.gatewayAirportCode})`
+                : isTrainMode
+                ? `Seasonal rail & ground pricing for ${liveMarketReport.originCity} ↔ ${trip.destination.split(',')[0]} (Train Journey)`
+                : isRoadMode
+                ? `Seasonal road & ground pricing for ${liveMarketReport.originCity} ↔ ${trip.destination.split(',')[0]} (${mode === 'bike' ? 'Motorbike' : 'Self-Drive'} Journey)`
+                : `Seasonal transit & ground pricing for ${liveMarketReport.originCity} ↔ ${trip.destination.split(',')[0]}`}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -218,8 +379,8 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
           </div>
         </div>
 
-        {/* Smart Nearby Hub Arbitrage Callout */}
-        {liveMarketReport.smartHubArbitrage && (
+        {/* Smart Nearby Hub Arbitrage Callout (only relevant for flight trips) */}
+        {isFlightMode && liveMarketReport.smartHubArbitrage && (
           <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 space-y-2.5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -322,16 +483,33 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
           <div className="p-3 rounded-2xl bg-slate-800/90 flex items-center justify-between">
             <div>
               <span className="text-[11px] text-slate-400 block font-semibold">
-                All-In Total (with {liveMarketReport.smartHubArbitrage ? `${liveMarketReport.smartHubArbitrage.hubCode} Hub Flights` : `${liveMarketReport.originAirportCode} Flights`})
+                {isFlightMode
+                  ? `All-In Total (with ${liveMarketReport.smartHubArbitrage ? `${liveMarketReport.smartHubArbitrage.hubCode} Hub Flights` : `${liveMarketReport.originAirportCode} Flights`})`
+                  : isTrainMode
+                  ? 'All-In Total (Train + Ground)'
+                  : isRoadMode
+                  ? 'All-In Total (Fuel/Tolls + Ground)'
+                  : 'All-In Total (Transit + Ground)'}
               </span>
               <span className="text-[10px] text-sky-400 font-bold">
-                {liveMarketReport.smartHubArbitrage
-                  ? `Saves ${formatCurrency(liveMarketReport.smartHubArbitrage.totalGroupSavings, currency)} vs ${liveMarketReport.originAirportCode}`
-                  : 'Flights + Full Ground Route'}
+                {isFlightMode
+                  ? (liveMarketReport.smartHubArbitrage
+                      ? `Saves ${formatCurrency(liveMarketReport.smartHubArbitrage.totalGroupSavings, currency)} vs ${liveMarketReport.originAirportCode}`
+                      : 'Flights + Full Ground Route')
+                  : isTrainMode
+                  ? 'Rail Tickets + Stays, Meals & Local Transfers'
+                  : isRoadMode
+                  ? 'Fuel, FASTag Tolls + Full Ground Route'
+                  : 'Intercity Transit + Full Ground Route'}
               </span>
             </div>
             <span className="text-base font-black text-emerald-400">
-              {formatCurrency(liveMarketReport.totalWithSmartHubFlightsINR, currency)}
+              {formatCurrency(
+                isFlightMode
+                  ? liveMarketReport.totalWithSmartHubFlightsINR
+                  : liveMarketReport.recommendedGroundBudgetINR + marketTransportCost,
+                currency
+              )}
             </span>
           </div>
         </div>
