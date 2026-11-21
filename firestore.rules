@@ -1,0 +1,186 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// This security rules file assumes the following data structure
+// for TripVerse (Firebase project: tripverse-56261):
+//
+// Collection: users
+// Document ID: {userId} (Firebase Auth UID == request.auth.uid)
+// Access Pattern:
+//   - Accessed via Firestore REST API (`src/services/supabaseSyncService.ts`)
+//     using single-document GET, PATCH (full merged fields map), and DELETE
+//     (in-app account deletion).
+//   - No collection queries (`list` is explicitly forbidden to prevent
+//     user enumeration).
+//   - Contains private user PII and vault data; strictly owner-only.
+//
+// Fields (ALL fields are string values when present):
+//   - canonicalAccount: string (required, 1..256 chars, immutable once set)
+//       Normalized cross-device account identifier (e.g. "email:..." or "uid:...").
+//   - updatedAt: string (required, 1..64 chars, ISO 8601 UTC/offset timestamp string)
+//       Client ISO 8601 timestamp written via `new Date().toISOString()`.
+//       Note: Regex validates ISO 8601 format, not calendar logic or server clock.
+//   - tripsJson: string (optional, 0..950000 chars)
+//       JSON-serialized array of user Trip objects (itineraries & expenses).
+//   - deletedTripIdsJson: string (optional, 0..65536 chars)
+//       JSON-serialized array of tombstone trip IDs.
+//   - profileJson: string (optional, 0..65536 chars)
+//       JSON-serialized UserProfile object (contains PII).
+//   - savedItemsJson: string (optional, 0..65536 chars)
+//       JSON-serialized array of saved place/bookmark IDs.
+//   - passportJson: string (optional, 0..65536 chars)
+//       JSON-serialized array of visited states/destinations.
+//   - activeTripId: string (optional, 0..256 chars)
+//       Currently selected active trip ID.
+//   - reviewsJson: string (optional, 0..131072 chars)
+//       JSON-serialized map of trip reviews keyed by tripId.
+//   - photosJson: string (optional, 0..950000 chars)
+//       JSON-serialized map of trip photo memories keyed by tripId.
+//   - packingJson: string (optional, 0..131072 chars)
+//       JSON-serialized map of packing lists keyed by tripId.
+//
+// Subcollections: None permitted.
+// Other Collections: None permitted (default deny).
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Check if the request is authenticated via Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the authenticated user owns the target user document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Verify optional uid field (if ever present) matches authenticated caller on create
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == request.auth.uid;
+    }
+
+    // Verify optional uid field (if ever present) cannot be modified on update
+    function uidNotModified() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == resource.data.uid;
+    }
+
+    // Validate that all required fields exist in the resulting document
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // Validate that the document contains strictly allowed schema fields only
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Validate that a required field is a string within [minLen, maxLen]
+    function validStringLength(field, minLen, maxLen) {
+      return field in request.resource.data &&
+        request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    // Validate that an optional field, if present, is a string within [minLen, maxLen]
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+        (request.resource.data[field] is string &&
+         request.resource.data[field].size() >= minLen &&
+         request.resource.data[field].size() <= maxLen);
+    }
+
+    // Validate ISO 8601 date-time string format (e.g. 2026-11-21T00:07:24.123Z)
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.matches('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?(Z|[+-]\\d{2}:\\d{2})$');
+    }
+
+    // Validate that immutable fields are not modified on update
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // Enforce canonicalAccount immutability once set (permits backfill if absent in legacy doc)
+    function isCanonicalAccountImmutable() {
+      return !('canonicalAccount' in resource.data) ||
+        areImmutableFieldsUnchanged(['canonicalAccount']);
+    }
+
+    // ===============================================================
+    // Domain Validators (Used in BOTH create and update)
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields([
+        'canonicalAccount',
+        'updatedAt',
+        'tripsJson',
+        'deletedTripIdsJson',
+        'profileJson',
+        'savedItemsJson',
+        'passportJson',
+        'activeTripId',
+        'reviewsJson',
+        'photosJson',
+        'packingJson'
+      ]) &&
+      hasRequiredFields(['canonicalAccount', 'updatedAt']) &&
+      validStringLength('canonicalAccount', 1, 256) &&
+      validStringLength('updatedAt', 1, 64) &&
+      isValidDateString(data.updatedAt) &&
+      isValidOptionalString('tripsJson', 0, 950000) &&
+      isValidOptionalString('deletedTripIdsJson', 0, 65536) &&
+      isValidOptionalString('profileJson', 0, 65536) &&
+      isValidOptionalString('savedItemsJson', 0, 65536) &&
+      isValidOptionalString('passportJson', 0, 65536) &&
+      isValidOptionalString('activeTripId', 0, 256) &&
+      isValidOptionalString('reviewsJson', 0, 131072) &&
+      isValidOptionalString('photosJson', 0, 950000) &&
+      isValidOptionalString('packingJson', 0, 131072);
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Owner-only single-document reads; collection listing explicitly forbidden
+      allow get: if isOwner(userId);
+      allow list: if false;
+
+      // Owner-only create with strict schema, type, and size validation
+      allow create: if isOwner(userId) &&
+        uidUnchanged() &&
+        isValidUser(request.resource.data);
+
+      // Owner-only update with identical full schema validation + canonicalAccount immutability
+      allow update: if isOwner(userId) &&
+        uidNotModified() &&
+        isCanonicalAccountImmutable() &&
+        isValidUser(request.resource.data);
+
+      // Owner-only delete to support App Store / Play Store in-app account deletion
+      allow delete: if isOwner(userId);
+    }
+
+    // ===============================================================
+    // Default Deny All Other Paths & Subcollections
+    // ===============================================================
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

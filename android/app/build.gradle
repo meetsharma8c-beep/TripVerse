@@ -22,11 +22,16 @@ android {
             enableSplit = false
         }
     }
-    def releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_FILE") ?: 'tripverse-release-key.jks'
+    def localKeystoreProps = new Properties()
+    def localKeystorePropsFile = rootProject.file('keystore.properties.local')
+    if (localKeystorePropsFile.exists()) {
+        localKeystorePropsFile.withInputStream { localKeystoreProps.load(it) }
+    }
+    def releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_FILE") ?: (localKeystoreProps.getProperty('storeFile') ?: 'tripverse-release-key.jks')
     def releaseKeystoreFile = file(releaseKeystorePath)
-    def releaseStorePassword = (System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: (project.findProperty('RELEASE_STORE_PASSWORD') ?: '')).toString().trim()
-    def releaseKeyAlias = (System.getenv("ANDROID_KEY_ALIAS") ?: (project.findProperty('RELEASE_KEY_ALIAS') ?: 'tripverse')).toString().trim()
-    def releaseKeyPassword = (System.getenv("ANDROID_KEY_PASSWORD") ?: (project.findProperty('RELEASE_KEY_PASSWORD') ?: releaseStorePassword)).toString().trim()
+    def releaseStorePassword = (System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: (localKeystoreProps.getProperty('storePassword') ?: (project.findProperty('RELEASE_STORE_PASSWORD') ?: ''))).toString().trim()
+    def releaseKeyAlias = (System.getenv("ANDROID_KEY_ALIAS") ?: (localKeystoreProps.getProperty('keyAlias') ?: (project.findProperty('RELEASE_KEY_ALIAS') ?: 'tripverse'))).toString().trim()
+    def releaseKeyPassword = (System.getenv("ANDROID_KEY_PASSWORD") ?: (localKeystoreProps.getProperty('keyPassword') ?: (project.findProperty('RELEASE_KEY_PASSWORD') ?: releaseStorePassword))).toString().trim()
     def hasReleaseSigning = releaseKeystoreFile.exists() && releaseStorePassword.length() > 0
 
     signingConfigs {

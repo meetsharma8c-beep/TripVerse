@@ -12,7 +12,13 @@ import { getActiveCurrency, formatCurrency } from '../../services/currencyServic
 import { CurrencyCode } from '../../types/trip';
 import { Capacitor } from '@capacitor/core';
 import { triggerHaptic } from '../../services/deviceService';
-import confetti from 'canvas-confetti';
+import {
+  isNativeBillingConfigured,
+  getNativeOfferings,
+  purchaseNativeProPlan,
+  restoreNativePurchases,
+  NativeSubscriptionPackage
+} from '../../services/nativeBillingService';
 import { TripPaymentGatewayModal } from '../payment/TripPaymentGatewayModal';
 import { useLanguage } from '../../services/languageService';
 
@@ -38,13 +44,20 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGatewayOpen, setIsGatewayOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [nativeNotice, setNativeNotice] = useState<string | null>(null);
+  const [nativePackages, setNativePackages] = useState<NativeSubscriptionPackage[]>([]);
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
+  const nativeBillingReady = isNativeBillingConfigured();
 
   useEffect(() => {
     if (isOpen) {
       setCurrency(getActiveCurrency());
+      setNativeNotice(null);
+      if (Capacitor.isNativePlatform() && nativeBillingReady) {
+        getNativeOfferings(currentUser?.uid).then(setNativePackages).catch(() => {});
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, nativeBillingReady, currentUser?.uid]);
 
   useEffect(() => {
     const handleCurrencyEvent = (e: Event) => {
@@ -77,10 +90,54 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
   const formattedAnnualPerMonth = formatCurrency(annualPerMonthINR, currency);
   const formattedSavings = formatCurrency(annualSavingsINR, currency);
 
-  const handleUpgrade = () => {
-    if (isNativeStoreApp) return;
+  const handleUpgrade = async () => {
+    if (isNativeStoreApp) {
+      if (!nativeBillingReady) return;
+      setIsProcessing(true);
+      setNativeNotice(null);
+      triggerHaptic('medium');
+      try {
+        const res = await purchaseNativeProPlan(billingCycle, currentUser?.uid);
+        if (res.entitlementsActive) {
+          await handleGatewaySuccess();
+        } else {
+          setNativeNotice(res.message);
+          setIsProcessing(false);
+        }
+      } catch {
+        setNativeNotice('Unable to reach the store right now. Please try again.');
+        setIsProcessing(false);
+      }
+      return;
+    }
     triggerHaptic('medium');
     setIsGatewayOpen(true);
+  };
+
+  const handleRestorePurchases = async () => {
+    if (!isNativeStoreApp) return;
+    setIsProcessing(true);
+    setNativeNotice(null);
+    triggerHaptic('light');
+    try {
+      const res = await restoreNativePurchases(currentUser?.uid);
+      if (res.entitlementsActive) {
+        await upgradeUserToPro(currentUser, 365);
+        setSuccessMessage(res.message);
+        setTimeout(() => {
+          setIsProcessing(false);
+          setSuccessMessage(null);
+          if (onSubscribed) onSubscribed();
+          onClose();
+        }, 1200);
+      } else {
+        setNativeNotice(res.message);
+        setIsProcessing(false);
+      }
+    } catch {
+      setNativeNotice('Could not restore purchases right now. Please try again.');
+      setIsProcessing(false);
+    }
   };
 
   const handleGatewaySuccess = async () => {
@@ -89,14 +146,16 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
     try {
       await upgradeUserToPro(currentUser, billingCycle === 'annual' ? 365 : 30);
       setSuccessMessage('Welcome to TripVerse Pro! VIP privileges activated.');
-      try {
-        confetti({
-          particleCount: 110,
-          spread: 90,
-          origin: { y: 0.55 },
-          colors: ['#2D5A3D', '#D4AF37', '#10B981', '#E8EFE7', '#F59E0B']
-        });
-      } catch {}
+      import('canvas-confetti')
+        .then(({ default: fireConfetti }) => {
+          fireConfetti({
+            particleCount: 110,
+            spread: 90,
+            origin: { y: 0.55 },
+            colors: ['#2D5A3D', '#D4AF37', '#10B981', '#E8EFE7', '#F59E0B']
+          });
+        })
+        .catch(() => {});
 
       setTimeout(() => {
         setIsProcessing(false);
@@ -397,26 +456,72 @@ export const TripVerseProModal: React.FC<TripVerseProModalProps> = ({
               </div>
             ) : isNativeStoreApp ? (
               <div className="space-y-2.5">
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-[#E2EBE1] dark:border-slate-800 text-center space-y-1.5 shadow-2xs">
-                  <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#2D5A3D] dark:text-emerald-300">
-                    <ShieldCheck className="w-4 h-4 shrink-0" />
-                    <span>
+                {nativeBillingReady && nativePackages.length > 0 ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleUpgrade}
+                      disabled={isProcessing}
+                      className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#1E3B27] via-[#2D5A3D] to-[#234730] hover:brightness-105 text-white font-display font-bold text-sm shadow-[0_8px_24px_rgba(45,90,61,0.28)] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-75"
+                    >
+                      <Crown className="w-4 h-4 text-amber-300 fill-amber-300 shrink-0" />
+                      <span className="truncate">
+                        {isProcessing
+                          ? t('Connecting to Store...')
+                          : `${t('Subscribe via')} ${nativePlatform === 'ios' ? 'App Store' : 'Google Play'}`}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRestorePurchases}
+                      disabled={isProcessing}
+                      className="w-full py-2 rounded-xl border border-[#DCE7DB] dark:border-slate-700 text-xs font-bold text-[#2D5A3D] dark:text-emerald-300 hover:bg-[#F4F6F2] dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      {t('Restore Purchases')}
+                    </button>
+                    <p className="text-[10px] text-center text-[#5A7362] dark:text-slate-400 leading-relaxed">
                       {nativePlatform === 'ios'
-                        ? t('App Store In-App Subscriptions Coming Soon')
-                        : t('Google Play Subscriptions Coming Soon')}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[#5A7362] dark:text-slate-400 leading-relaxed">
-                    {t('Core AI itineraries, interactive route maps, live weather, packing lists, and offline travel guides are included. If you already have an active TripVerse Pro membership, sign in to sync your account automatically.')}
+                        ? t('Payment will be charged to your Apple ID account at confirmation of purchase. Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period in iOS Settings.')
+                        : t('Payment will be charged to your Google Play account. Manage or cancel anytime in Google Play Subscriptions.')}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-[#E2EBE1] dark:border-slate-800 text-center space-y-1.5 shadow-2xs">
+                      <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#2D5A3D] dark:text-emerald-300">
+                        <ShieldCheck className="w-4 h-4 shrink-0" />
+                        <span>
+                          {nativePlatform === 'ios'
+                            ? t('App Store In-App Subscriptions Coming Soon')
+                            : t('Google Play Subscriptions Coming Soon')}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#5A7362] dark:text-slate-400 leading-relaxed">
+                        {t('Core AI itineraries, interactive route maps, live weather, packing lists, and offline travel guides are included. If you already have an active TripVerse Pro membership, sign in to sync your account automatically.')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRestorePurchases}
+                      disabled={isProcessing}
+                      className="w-full py-2 rounded-xl border border-[#DCE7DB] dark:border-slate-700 text-xs font-bold text-[#2D5A3D] dark:text-emerald-300 hover:bg-[#F4F6F2] dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      {t('Restore Purchases')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="w-full py-3 px-6 rounded-2xl bg-gradient-to-r from-[#1E3B27] via-[#2D5A3D] to-[#234730] text-white font-display font-bold text-sm shadow-[0_8px_24px_rgba(45,90,61,0.25)] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
+                    >
+                      <span>{t('Continue Exploring TripVerse')}</span>
+                    </button>
+                  </>
+                )}
+                {nativeNotice && (
+                  <p className="text-[11px] text-center font-semibold text-amber-700 dark:text-amber-300 px-2">
+                    {nativeNotice}
                   </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="w-full py-3 px-6 rounded-2xl bg-gradient-to-r from-[#1E3B27] via-[#2D5A3D] to-[#234730] text-white font-display font-bold text-sm shadow-[0_8px_24px_rgba(45,90,61,0.25)] flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
-                >
-                  <span>{t('Continue Exploring TripVerse')}</span>
-                </button>
+                )}
               </div>
             ) : (
               <div className="space-y-1.5">
