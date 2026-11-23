@@ -1,24 +1,18 @@
 // src/components/argon/ArgonFloatingWidget.tsx
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { ARGON_STATE_THEME, ArgonState, ProactiveHint } from './argon.types';
+import { ArgonAvatar } from './ArgonAvatar';
 
 const ConCode3DAvatar = lazy(() =>
   import('./ConCode3DAvatar').then((m) => ({ default: m.ConCode3DAvatar }))
 );
 
-const AvatarOrbFallback: React.FC<{ ledHex: string; ledGlowRgba: string }> = ({
-  ledHex,
-  ledGlowRgba,
-}) => (
-  <div
-    className="w-12 h-12 sm:w-18 sm:h-18 lg:w-26 lg:h-26 rounded-full flex items-center justify-center bg-gradient-to-br from-emerald-500/90 via-teal-600/90 to-slate-900/95 border border-white/30 shadow-[0_10px_24px_rgba(15,23,42,0.3)]"
-    aria-hidden="true"
-  >
-    <span
-      className="w-4 h-4 sm:w-5 sm:h-5 rounded-full animate-pulse"
-      style={{ backgroundColor: ledHex, boxShadow: `0 0 16px ${ledGlowRgba}` }}
-    />
-  </div>
+const AvatarMascotFallback: React.FC<{ state: ArgonState }> = ({ state }) => (
+  <ArgonAvatar
+    state={state}
+    size="lg"
+    className="w-14 h-14 sm:w-18 sm:h-18 lg:w-26 lg:h-26 drop-shadow-[0_10px_18px_rgba(15,23,42,0.28)] dark:drop-shadow-[0_12px_22px_rgba(0,0,0,0.7)]"
+  />
 );
 
 export interface ArgonFloatingWidgetProps {
@@ -46,23 +40,23 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
   const [isDocked, setIsDocked] = useState(false);
   const [shouldLoad3D, setShouldLoad3D] = useState(false);
 
-  // Defer loading the 533KB Three.js 3D mascot bundle on desktop idle (and skip on mobile/data-saver so scrolling stays 120fps)
+  // Defer loading the 533KB Three.js 3D mascot until idle (after first paint) on both mobile & desktop.
+  // While waiting (or on Data-Saver / 2G / Reduced Motion), renders the crisp blinking ArgonAvatar vector mascot.
   useEffect(() => {
     if (shouldLoad3D || typeof window === 'undefined') return;
-    const isDesktop = window.innerWidth >= 1024;
     const conn = (navigator as any)?.connection;
-    const isDataSaver = Boolean(conn?.saveData || /^(?:slow-2g|2g|3g)$/i.test(conn?.effectiveType || ''));
+    const isDataSaver = Boolean(conn?.saveData || /^(?:slow-2g|2g)$/i.test(conn?.effectiveType || ''));
     const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (!isDesktop || isDataSaver || prefersReducedMotion) return;
+    if (isDataSaver || prefersReducedMotion) return;
 
     if ('requestIdleCallback' in window) {
       const id = (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number })
-        .requestIdleCallback(() => setShouldLoad3D(true), { timeout: 3500 });
+        .requestIdleCallback(() => setShouldLoad3D(true), { timeout: 2200 });
       return () => {
         (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback?.(id);
       };
     }
-    const timer = setTimeout(() => setShouldLoad3D(true), 3000);
+    const timer = setTimeout(() => setShouldLoad3D(true), 1800);
     return () => clearTimeout(timer);
   }, [shouldLoad3D]);
 
@@ -196,7 +190,7 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
   return (
     <div
       onPointerEnter={() => {
-        if (!shouldLoad3D && typeof window !== 'undefined' && window.innerWidth >= 1024) {
+        if (!shouldLoad3D) {
           setShouldLoad3D(true);
         }
       }}
@@ -264,15 +258,15 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
       >
         <div className="relative">
           {shouldLoad3D ? (
-            <Suspense fallback={<AvatarOrbFallback ledHex={activeTheme.ledHex} ledGlowRgba={activeTheme.ledGlowRgba} />}>
+            <Suspense fallback={<AvatarMascotFallback state={argonState} />}>
               <ConCode3DAvatar
                 emotion={argonState}
                 size="lg"
-                className="w-12 h-12 sm:w-18 sm:h-18 lg:w-26 lg:h-26 drop-shadow-[0_10px_18px_rgba(15,23,42,0.28)] dark:drop-shadow-[0_12px_22px_rgba(0,0,0,0.7)]"
+                className="w-14 h-14 sm:w-18 sm:h-18 lg:w-26 lg:h-26 drop-shadow-[0_10px_18px_rgba(15,23,42,0.28)] dark:drop-shadow-[0_12px_22px_rgba(0,0,0,0.7)]"
               />
             </Suspense>
           ) : (
-            <AvatarOrbFallback ledHex={activeTheme.ledHex} ledGlowRgba={activeTheme.ledGlowRgba} />
+            <AvatarMascotFallback state={argonState} />
           )}
 
           {/* Micro Status Beacon Orbiting ConCode */}
