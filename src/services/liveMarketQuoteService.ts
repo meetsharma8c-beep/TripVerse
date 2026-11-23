@@ -32,11 +32,13 @@ export interface LiveHotelOfferQuote {
   currency: string;
   roomCategory: string;
   available: boolean;
+  bookingLink?: string;
+  image?: string;
 }
 
 export interface LiveMarketQuoteResult {
   isLiveMarket: boolean;
-  provider: 'amadeus_live' | 'seasonal_model_fallback';
+  provider: 'google_live_serpapi' | 'amadeus_live' | 'seasonal_model_fallback';
   environment?: 'sandbox' | 'production';
   reason?: string;
   currency: string;
@@ -149,15 +151,16 @@ export async function fetchLiveMarketQuotes(params: {
   const mode = params.transportMode || 'flight';
   const currency = 'INR'; // Internal TripVerse budget math is normalized in INR
 
-  const cacheKey = `${mode}|${originCode}|${destCode}|${departureDate}|${returnDate}|${adults}|${rooms}`;
+  const cleanDestName = (params.destination || '').split(',')[0].trim();
+  const cacheKey = `${mode}|${originCode}|${destCode}|${cleanDestName.toLowerCase()}|${departureDate}|${returnDate}|${adults}|${rooms}`;
   const cached = CLIENT_QUOTE_CACHE.get(cacheKey);
   if (cached) return cached;
 
-  if (!destCode || typeof fetch === 'undefined') {
+  if ((!destCode && !cleanDestName) || typeof fetch === 'undefined') {
     return {
       isLiveMarket: false,
       provider: 'seasonal_model_fallback',
-      reason: 'NO_IATA_GATEWAY',
+      reason: 'NO_DESTINATION',
       currency,
       flights: null,
       hotels: [],
@@ -169,6 +172,7 @@ export async function fetchLiveMarketQuotes(params: {
     action: 'market_quotes',
     originCode,
     destCode,
+    destination: cleanDestName,
     departureDate,
     returnDate,
     adults: String(adults),
@@ -178,7 +182,7 @@ export async function fetchLiveMarketQuotes(params: {
   });
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5_500);
+  const timer = setTimeout(() => controller.abort(), 7_000);
 
   try {
     const res = await fetch(`${resolveApiUrl('/api/transit-schedules')}?${qs.toString()}`, {
@@ -190,7 +194,7 @@ export async function fetchLiveMarketQuotes(params: {
       if (data?.ok) {
         const result: LiveMarketQuoteResult = {
           isLiveMarket: Boolean(data.isLiveMarket),
-          provider: data.isLiveMarket ? 'amadeus_live' : 'seasonal_model_fallback',
+          provider: data.isLiveMarket ? (data.provider || 'google_live_serpapi') : 'seasonal_model_fallback',
           environment: data.environment,
           reason: data.reason,
           currency: data.currency || currency,
@@ -266,17 +270,17 @@ export function applyLiveMarketQuotesToTrip(trip: Trip, quotes: LiveMarketQuoteR
         reviewCount: 0,
         nightlyRate: nightlyINR,
         currency: 'INR',
-        image: fallbackImg,
+        image: h.image || fallbackImg,
         address: `${destCity} City Center`,
         neighborhood: `${destCity} Center`,
         amenities: ['Live Verified Rate', h.roomCategory || 'Standard Room', 'Wi-Fi'],
         roomType: h.roomCategory || 'Standard Room',
-        bookingUrl: links.bookingDotCom,
+        bookingUrl: h.bookingLink || links.bookingDotCom,
         agodaUrl: links.agoda,
         googleHotelsUrl: links.googleHotels,
         bookingPartner: 'Booking.com',
         cancellationPolicy: 'Check live cancellation terms on booking partner',
-        highlights: ['Live Amadeus Inventory', `${h.roomCategory || 'Standard Room'} available`],
+        highlights: ['Live Market Inventory', `${h.roomCategory || 'Standard Room'} available`],
       };
     });
 
@@ -303,6 +307,8 @@ export function applyLiveMarketQuotesToTrip(trip: Trip, quotes: LiveMarketQuoteR
     updatedBreakdown.activities +
     updatedBreakdown.miscellaneous;
 
+  const providerLabel = quotes.provider === 'google_live_serpapi' ? 'Live Google Flights & Hotels' : 'Live Market Feed';
+
   return {
     ...trip,
     selectedHotel: updatedSelectedHotel,
@@ -310,7 +316,7 @@ export function applyLiveMarketQuotesToTrip(trip: Trip, quotes: LiveMarketQuoteR
     budgetBreakdown: updatedBreakdown,
     estimatedTotal: newEstimatedTotal,
     aiRationale: notes.length > 0
-      ? `${trip.aiRationale ? `${trip.aiRationale} ` : ''}Live market calibrated via Amadeus (${notes.join(' + ')}).`
+      ? `${trip.aiRationale ? `${trip.aiRationale} ` : ''}Live market calibrated via ${providerLabel} (${notes.join(' + ')}).`
       : trip.aiRationale,
   };
 }

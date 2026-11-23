@@ -35,10 +35,13 @@ const BASE_TRIP: Trip = {
 };
 
 describe('Live Market Pricing Engine (Amadeus Flights & Hotels)', () => {
+  const prevSerpKey = process.env.SERPAPI_API_KEY;
   const prevClientId = process.env.AMADEUS_CLIENT_ID;
   const prevClientSecret = process.env.AMADEUS_CLIENT_SECRET;
 
   afterEach(() => {
+    if (prevSerpKey === undefined) delete process.env.SERPAPI_API_KEY;
+    else process.env.SERPAPI_API_KEY = prevSerpKey;
     if (prevClientId === undefined) delete process.env.AMADEUS_CLIENT_ID;
     else process.env.AMADEUS_CLIENT_ID = prevClientId;
     if (prevClientSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
@@ -52,7 +55,8 @@ describe('Live Market Pricing Engine (Amadeus Flights & Hotels)', () => {
     expect(resolveIataCodeForCity('Paris, France')).toBe('PAR');
   });
 
-  it('returns honest seasonal_model_fallback when Amadeus credentials are not configured', async () => {
+  it('returns honest seasonal_model_fallback when live market credentials are not configured', async () => {
+    delete process.env.SERPAPI_API_KEY;
     delete process.env.AMADEUS_CLIENT_ID;
     delete process.env.AMADEUS_CLIENT_SECRET;
 
@@ -75,7 +79,7 @@ describe('Live Market Pricing Engine (Amadeus Flights & Hotels)', () => {
     await transitHandler(
       {
         method: 'GET',
-        query: { action: 'market_quotes', originCode: 'BOM', destCode: 'GOI', departureDate: '2026-12-20', returnDate: '2026-12-23', adults: '2', mode: 'flight' },
+        query: { action: 'market_quotes', originCode: 'BOM', destCode: 'GOI', destination: 'Goa', departureDate: '2026-12-20', returnDate: '2026-12-23', adults: '2', mode: 'flight' },
         headers: {},
       },
       res
@@ -85,13 +89,13 @@ describe('Live Market Pricing Engine (Amadeus Flights & Hotels)', () => {
     expect(body.ok).toBe(true);
     expect(body.isLiveMarket).toBe(false);
     expect(body.provider).toBe('seasonal_model_fallback');
-    expect(body.reason).toBe('AMADEUS_CREDENTIALS_NOT_CONFIGURED');
+    expect(body.reason).toBe('LIVE_MARKET_CREDENTIALS_NOT_CONFIGURED');
   });
 
-  it('re-calibrates trip flight cost, hotel selection, and total budget from live Amadeus market quotes', () => {
+  it('re-calibrates trip flight cost, hotel selection, and total budget from live Google Flights & Hotels quotes', () => {
     const liveQuote: LiveMarketQuoteResult = {
       isLiveMarket: true,
-      provider: 'amadeus_live',
+      provider: 'google_live_serpapi',
       environment: 'production',
       currency: 'INR',
       flights: {
@@ -135,11 +139,10 @@ describe('Live Market Pricing Engine (Amadeus Flights & Hotels)', () => {
 
     const calibrated = applyLiveMarketQuotesToTrip(BASE_TRIP, liveQuote);
     expect(calibrated.budgetBreakdown.transportation).toBe(14800);
-    // Target nightly rate is ~3333 INR, so it picks Panjim Boutique Heritage Inn (3600/night * 3 nights * 1 room = 10800)
     expect(calibrated.selectedHotel?.name).toBe('Panjim Boutique Heritage Inn');
     expect(calibrated.budgetBreakdown.accommodation).toBe(10800);
     expect(calibrated.estimatedTotal).toBe(14800 + 10800 + 4000 + 2500 + 1500);
-    expect(calibrated.aiRationale).toContain('Amadeus');
+    expect(calibrated.aiRationale).toContain('Live Google Flights & Hotels');
     expect(calibrated.aiRationale).toContain('IndiGo');
   });
 });

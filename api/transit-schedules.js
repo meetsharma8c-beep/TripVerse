@@ -1,6 +1,7 @@
-// Vercel Serverless Function: Real Transit Schedules (Rail) + Live Amadeus Market Pricing (Flights & Hotels)
-// Keeps AMADEUS_CLIENT_ID / AMADEUS_CLIENT_SECRET / RAPIDAPI_IRCTC_KEY strictly server-side.
-// Never fabricates live quotes: falls back transparently when credentials are not configured.
+// Vercel Serverless Function: Real Transit Schedules (Rail) + Real-Time Live Market Pricing
+// Primary Live Market Engine: SerpApi (Google Flights + Google Hotels — 250 free live searches/mo via SERPAPI_API_KEY)
+// Optional Enterprise Fallback: Amadeus Enterprise API (if AMADEUS_CLIENT_ID / AMADEUS_CLIENT_SECRET are configured)
+// Never fabricates live quotes: falls back transparently to seasonal model when no live key is configured.
 
 import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from './rateLimiter.js';
 
@@ -215,6 +216,142 @@ async function fetchAmadeusHotels(token, params) {
   }
 }
 
+function formatMinutesToDuration(mins) {
+  const m = Number(mins) || 0;
+  if (m <= 0) return '';
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return h > 0 ? `${h}h ${rem}m` : `${rem}m`;
+}
+
+async function fetchSerpApiFlights(apiKey, params) {
+  const { originCode, destCode, departureDate, returnDate, adults, currencyCode } = params;
+  if (!originCode || !destCode || originCode === destCode || !departureDate) return null;
+
+  const qs = new URLSearchParams({
+    engine: 'google_flights',
+    departure_id: originCode,
+    arrival_id: destCode,
+    outbound_date: departureDate,
+    ...(returnDate ? { return_date: returnDate, type: '1' } : { type: '2' }),
+    adults: String(Math.max(1, Math.min(9, adults || 1))),
+    currency: currencyCode || 'INR',
+    hl: 'en',
+    api_key: apiKey,
+  });
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 7_500);
+  try {
+    const res = await fetch(`https://serpapi.com/search.json?${qs.toString()}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    const rawList = [
+      ...(Array.isArray(data?.best_flights) ? data.best_flights : []),
+      ...(Array.isArray(data?.other_flights) ? data.other_flights : []),
+    ];
+    if (rawList.length === 0) return null;
+
+    const pax = Math.max(1, adults || 1);
+    const parsed = rawList
+      .map((item) => {
+        const priceNum = Number(item?.price || 0);
+        if (!priceNum || priceNum <= 0) return null;
+        const legs = Array.isArray(item?.flights) ? item.flights : [];
+        const firstLeg = legs[0] || {};
+        // SerpApi Google Flights returns per-person price for the itinerary; scale cleanly for total group
+        const totalGroupAmount = Math.round(priceNum * pax);
+        return {
+          totalGroupAmount,
+          perPersonAmount: Math.round(priceNum),
+          currency: currencyCode || 'INR',
+          carrierCode: String(firstLeg?.flight_number || '').split(' ')[0] || '',
+          carrierName: String(firstLeg?.airline || 'Airline'),
+          stops: Math.max(0, legs.length - 1),
+          duration: formatMinutesToDuration(item?.total_duration),
+          departureAt: String(firstLeg?.departure_airport?.time || ''),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.totalGroupAmount - b.totalGroupAmount);
+
+    if (parsed.length === 0) return null;
+    return {
+      bestOffer: parsed[0],
+      medianGroupAmount: parsed[Math.floor(parsed.length / 2)].totalGroupAmount,
+      sampleCount: parsed.length,
+      offers: parsed.slice(0, 3),
+    };
+  } catch {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
+async function fetchSerpApiHotels(apiKey, params) {
+  const { destinationName, destCode, checkInDate, checkOutDate, adults, rooms, currencyCode } = params;
+  const queryCity = (destinationName || destCode || '').trim();
+  if (!queryCity || !checkInDate || !checkOutDate) return [];
+
+  const qs = new URLSearchParams({
+    engine: 'google_hotels',
+    q: `Hotels in ${queryCity}`,
+    check_in_date: checkInDate,
+    check_out_date: checkOutDate,
+    adults: String(Math.max(1, Math.min(9, adults || 2))),
+    currency: currencyCode || 'INR',
+    hl: 'en',
+    api_key: apiKey,
+  });
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 7_500);
+  try {
+    const res = await fetch(`https://serpapi.com/search.json?${qs.toString()}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return [];
+    const data = await res.json().catch(() => null);
+    const props = Array.isArray(data?.properties) ? data.properties : [];
+    const checkInMs = Date.parse(checkInDate);
+    const checkOutMs = Date.parse(checkOutDate);
+    const nights = Number.isFinite(checkInMs) && Number.isFinite(checkOutMs)
+      ? Math.max(1, Math.round((checkOutMs - checkInMs) / 86_400_000))
+      : 1;
+    const roomCount = Math.max(1, rooms || 1);
+
+    return props
+      .map((p, idx) => {
+        const nightly = Number(p?.rate_per_night?.extracted_lowest || 0);
+        const totalSingleRoom = Number(p?.total_rate?.extracted_lowest || 0);
+        const effectiveNightly = nightly > 0 ? nightly : (totalSingleRoom > 0 ? Math.round(totalSingleRoom / nights) : 0);
+        if (!effectiveNightly || effectiveNightly <= 0) return null;
+        return {
+          hotelId: String(p?.property_token || `gh-${idx}`).slice(0, 32),
+          name: String(p?.name || 'Verified Hotel'),
+          rating: Number(p?.overall_rating) || 4.3,
+          totalStayAmount: Math.round(effectiveNightly * nights * roomCount),
+          nightlyRatePerRoom: Math.round(effectiveNightly),
+          currency: currencyCode || 'INR',
+          roomCategory: p?.hotel_class ? `${p.hotel_class} Hotel` : String(p?.type || 'Hotel Room'),
+          available: true,
+          bookingLink: typeof p?.link === 'string' ? p.link : undefined,
+          image: p?.images?.[0]?.thumbnail || p?.images?.[0]?.original_image || undefined,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.totalStayAmount - b.totalStayAmount)
+      .slice(0, 6);
+  } catch {
+    clearTimeout(timer);
+    return [];
+  }
+}
+
 async function handleLiveMarketQuotes(req, res) {
   const clientIp = getClientIp(req);
   const rate = await checkDistributedRateLimit(`live-market:${clientIp}`, 30, 60 * 1000);
@@ -225,6 +362,7 @@ async function handleLiveMarketQuotes(req, res) {
 
   const originCode = String(req.query?.originCode || '').trim().toUpperCase();
   const destCode = String(req.query?.destCode || '').trim().toUpperCase();
+  const destinationName = String(req.query?.destination || '').trim();
   const departureDate = String(req.query?.departureDate || '').trim();
   const returnDate = String(req.query?.returnDate || '').trim();
   const adults = Math.max(1, Math.min(9, Number(req.query?.adults) || 2));
@@ -232,27 +370,63 @@ async function handleLiveMarketQuotes(req, res) {
   const currencyCode = String(req.query?.currency || 'INR').trim().toUpperCase();
   const mode = String(req.query?.mode || 'flight').trim().toLowerCase();
 
+  const serpApiKey = (process.env.SERPAPI_API_KEY || '').trim();
   const clientId = (process.env.AMADEUS_CLIENT_ID || '').trim();
   const clientSecret = (process.env.AMADEUS_CLIENT_SECRET || '').trim();
 
-  if (!clientId || !clientSecret) {
+  if (!serpApiKey && (!clientId || !clientSecret)) {
     return res.status(200).json({
       ok: true,
       isLiveMarket: false,
       provider: 'seasonal_model_fallback',
-      reason: 'AMADEUS_CREDENTIALS_NOT_CONFIGURED',
+      reason: 'LIVE_MARKET_CREDENTIALS_NOT_CONFIGURED',
       flights: null,
       hotels: [],
       fetchedAt: new Date().toISOString(),
     });
   }
 
-  const cacheKey = `${mode}|${originCode}|${destCode}|${departureDate}|${returnDate}|${adults}|${rooms}|${currencyCode}`;
+  const cacheKey = `${mode}|${originCode}|${destCode}|${destinationName.toLowerCase()}|${departureDate}|${returnDate}|${adults}|${rooms}|${currencyCode}`;
   const cached = QUOTE_CACHE.get(cacheKey);
   if (cached && Date.now() - cached.ts < QUOTE_CACHE_TTL_MS) {
     return res.status(200).json(cached.payload);
   }
 
+  const shouldQueryFlights = mode === 'flight' && originCode.length === 3 && destCode.length === 3;
+  const shouldQueryHotels = Boolean(destinationName || destCode.length === 3) && Boolean(departureDate) && Boolean(returnDate);
+
+  // 1. Primary Live Market Engine: SerpApi Google Flights + Google Hotels (250 free live searches/mo)
+  if (serpApiKey) {
+    const [flights, hotels] = await Promise.all([
+      shouldQueryFlights
+        ? fetchSerpApiFlights(serpApiKey, { originCode, destCode, departureDate, returnDate, adults, currencyCode })
+        : Promise.resolve(null),
+      shouldQueryHotels
+        ? fetchSerpApiHotels(serpApiKey, { destinationName, destCode, checkInDate: departureDate, checkOutDate: returnDate, adults, rooms, currencyCode })
+        : Promise.resolve([]),
+    ]);
+
+    const isLiveMarket = Boolean(flights || (Array.isArray(hotels) && hotels.length > 0));
+    const payload = {
+      ok: true,
+      isLiveMarket,
+      provider: isLiveMarket ? 'google_live_serpapi' : 'seasonal_model_fallback',
+      environment: 'production',
+      currency: currencyCode,
+      flights,
+      hotels,
+      fetchedAt: new Date().toISOString(),
+    };
+
+    if (QUOTE_CACHE.size >= QUOTE_CACHE_MAX) {
+      const oldest = QUOTE_CACHE.keys().next().value;
+      if (oldest) QUOTE_CACHE.delete(oldest);
+    }
+    QUOTE_CACHE.set(cacheKey, { ts: Date.now(), payload });
+    return res.status(200).json(payload);
+  }
+
+  // 2. Optional Enterprise Fallback: Amadeus Enterprise API
   const token = await getAmadeusAccessToken(clientId, clientSecret);
   if (!token) {
     return res.status(200).json({
@@ -266,14 +440,11 @@ async function handleLiveMarketQuotes(req, res) {
     });
   }
 
-  const shouldQueryFlights = mode === 'flight' && originCode.length === 3 && destCode.length === 3;
-  const shouldQueryHotels = destCode.length === 3 && Boolean(departureDate) && Boolean(returnDate);
-
   const [flights, hotels] = await Promise.all([
     shouldQueryFlights
       ? fetchAmadeusFlights(token, { originCode, destCode, departureDate, returnDate, adults, currencyCode })
       : Promise.resolve(null),
-    shouldQueryHotels
+    shouldQueryHotels && destCode.length === 3
       ? fetchAmadeusHotels(token, { destCode, checkInDate: departureDate, checkOutDate: returnDate, adults, rooms, currencyCode })
       : Promise.resolve([]),
   ]);

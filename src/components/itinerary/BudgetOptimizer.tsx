@@ -387,7 +387,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
               <h3 className="text-sm font-extrabold uppercase tracking-wider text-emerald-400">
                 {liveQuotes?.isLiveMarket
-                  ? 'Live Amadeus Market Feed + 6-Vertical Breakdown'
+                  ? 'Live Google Flights & Hotels Feed + 6-Vertical Breakdown'
                   : 'Estimated Cost Breakdown (6-Vertical Seasonal Model)'}
               </h3>
             </div>
@@ -416,7 +416,9 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
           <div className="p-4 rounded-2xl bg-emerald-950/90 border border-emerald-400/50 space-y-2.5">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="text-xs font-black uppercase tracking-wider text-emerald-300">
-                Live Amadeus Market Inventory ({liveQuotes.environment === 'production' ? 'Production GDS' : 'Live Feed'})
+                {liveQuotes.provider === 'google_live_serpapi'
+                  ? 'Live Google Flights & Hotels Market Inventory'
+                  : `Live Market Inventory (${liveQuotes.environment === 'production' ? 'Production GDS' : 'Live Feed'})`}
               </span>
               <span className="text-[10px] font-mono text-emerald-200/80">
                 Synced {new Date(liveQuotes.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
