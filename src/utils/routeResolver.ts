@@ -88,7 +88,7 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
   }
 
   if (pathname.startsWith('/trip/') || pathname.startsWith('/itinerary/')) {
-    const tripId = safeDecodeURIComponent(pathname.replace('/trip/', '').replace('/itinerary/', '')).trim();
+    const tripId = safeDecodeURIComponent(pathname.replace('/trip/', '').replace('/itinerary/', '')).replace(/\/+$/, '').trim();
     const found = loadedTrips.find(t => t.id.toLowerCase() === tripId.toLowerCase());
     if (found) {
       return { tab: 'trip-detail', dest: null, tripId: found.id, openBooking: false, openPlanner: false };
