@@ -38,6 +38,7 @@ export interface ResolvedRoute {
   tab: string;
   dest: Destination | null;
   tripId: string | null;
+  sharedTripId?: string | null;
   openBooking: boolean;
   openPlanner: boolean;
   openCollab?: boolean;
@@ -85,6 +86,29 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
       };
     }
     return { tab: 'explore', dest: null, tripId: null, openBooking: false, openPlanner: false };
+  }
+
+  if (pathname.startsWith('/share/')) {
+    const rawShareId = (window.location.pathname || '').slice('/share/'.length).replace(/\/+$/, '').trim();
+    const shareId = safeDecodeURIComponent(rawShareId);
+    if (shareId.length >= 8) {
+      return {
+        tab: 'shared-trip',
+        dest: null,
+        tripId: null,
+        sharedTripId: shareId,
+        openBooking: false,
+        openPlanner: false
+      };
+    }
+    return {
+      tab: 'explore',
+      dest: null,
+      tripId: null,
+      openBooking: false,
+      openPlanner: false,
+      routeNotice: 'That shared trip link is invalid. Explore curated destinations below.'
+    };
   }
 
   if (pathname.startsWith('/trip/') || pathname.startsWith('/itinerary/')) {

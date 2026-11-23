@@ -134,7 +134,7 @@ function isVitestEnv(): boolean {
   return Boolean(procEnv && (procEnv.VITEST || procEnv.NODE_ENV === 'test'));
 }
 
-async function getFirestoreVaultSession(
+export async function getFirestoreVaultSession(
   fallbackUserId?: string | null,
   profileMeta?: Partial<UserProfile>
 ): Promise<VaultSession | null> {

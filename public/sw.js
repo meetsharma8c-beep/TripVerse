@@ -1,8 +1,8 @@
-const CACHE_NAME = 'tripverse-cache-v97';
-const TILE_CACHE_NAME = 'tripverse-map-tiles-v1';
+const CACHE_NAME = 'tripverse-cache-v98';
+const TILE_CACHE_NAME = 'tripverse-map-tiles-v2';
+const MAX_CACHED_TILES = 150;
 const PRECACHE_ASSETS = [
   '/',
-  '/index.html',
   '/manifest.json',
   '/tripverse-mark.svg',
   '/tripverse-mark.png',
@@ -62,7 +62,13 @@ self.addEventListener('fetch', (event) => {
           return fetch(event.request)
             .then((networkRes) => {
               if (networkRes && networkRes.status === 200) {
-                cache.put(event.request, networkRes.clone());
+                cache.put(event.request, networkRes.clone()).then(() => {
+                  cache.keys().then((keys) => {
+                    if (keys.length > MAX_CACHED_TILES) {
+                      keys.slice(0, keys.length - MAX_CACHED_TILES).forEach((k) => cache.delete(k));
+                    }
+                  }).catch(() => {});
+                }).catch(() => {});
               }
               return networkRes;
             })

@@ -43,6 +43,39 @@ rules_version = '2';
 //       JSON-serialized map of packing lists keyed by tripId.
 //
 // Subcollections: None permitted.
+//
+// Collection: shared_trips
+// Document ID: {shareId} (unguessable 12..64 char URL-safe token: ^[A-Za-z0-9_-]+$)
+// Access Pattern:
+//   - Accessed via Firestore REST API using single-document GET, PATCH/CREATE,
+//     and DELETE.
+//   - Public read-only single-document GET by unguessable shareId so recipients
+//     opening a WhatsApp link (https://trip-verse.com/share/{shareId}) can view
+//     the itinerary without signing in.
+//   - Collection listing (`list`) is explicitly forbidden to prevent scraping
+//     or enumeration of shared trips.
+//   - Authenticated create with caller as ownerUid; owner-only update & delete.
+//   - Contains ONLY sanitized public itinerary data (zero private PII, expenses,
+//     or payment details).
+//
+// Fields (ALL 7 fields are required string values; strict whitelist):
+//   - ownerUid: string (required, 1..128 chars, == request.auth.uid on create, immutable on update)
+//       Firebase Auth UID of the trip owner who created the share link.
+//   - ownerName: string (required, 1..80 chars)
+//       Public display name of the trip owner (never email or phone).
+//   - tripName: string (required, 1..160 chars)
+//       Public title of the shared trip.
+//   - destination: string (required, 1..160 chars)
+//       Primary destination label of the shared trip.
+//   - tripSnapshotJson: string (required, 2..350000 chars)
+//       Sanitized JSON snapshot of the public itinerary without private PII,
+//       expenses, or payment data.
+//   - createdAt: string (required, 1..64 chars, ISO 8601 date string, immutable on update)
+//       Client ISO 8601 creation timestamp.
+//   - updatedAt: string (required, 1..64 chars, ISO 8601 date string)
+//       Client ISO 8601 last-modified timestamp.
+//
+// Subcollections: None permitted.
 // Other Collections: None permitted (default deny).
 // ===============================================================
 
@@ -118,6 +151,22 @@ service cloud.firestore {
         areImmutableFieldsUnchanged(['canonicalAccount']);
     }
 
+    // Check if the authenticated user owns the target shared trip document
+    function isSharedTripOwner() {
+      return isAuthenticated() &&
+        'ownerUid' in resource.data &&
+        resource.data.ownerUid is string &&
+        resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Validate unguessable URL-safe shareId (12..64 characters)
+    function isValidShareId(shareId) {
+      return shareId is string &&
+        shareId.size() >= 12 &&
+        shareId.size() <= 64 &&
+        shareId.matches('^[A-Za-z0-9_-]+$');
+    }
+
     // ===============================================================
     // Domain Validators (Used in BOTH create and update)
     // ===============================================================
@@ -151,6 +200,49 @@ service cloud.firestore {
       isValidOptionalString('packingJson', 0, 131072);
     }
 
+    function isValidSharedTrip(data) {
+      return hasOnlyAllowedFields([
+        'ownerUid',
+        'ownerName',
+        'tripName',
+        'destination',
+        'tripSnapshotJson',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      hasRequiredFields([
+        'ownerUid',
+        'ownerName',
+        'tripName',
+        'destination',
+        'tripSnapshotJson',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      validStringLength('ownerUid', 1, 128) &&
+      validStringLength('ownerName', 1, 80) &&
+      validStringLength('tripName', 1, 160) &&
+      validStringLength('destination', 1, 160) &&
+      validStringLength('tripSnapshotJson', 2, 350000) &&
+      validStringLength('createdAt', 1, 64) &&
+      isValidDateString(data.createdAt) &&
+      validStringLength('updatedAt', 1, 64) &&
+      isValidDateString(data.updatedAt);
+    }
+
+    function isValidSharedTripCreate(shareId) {
+      return isValidShareId(shareId) &&
+        isValidSharedTrip(request.resource.data) &&
+        request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    function isValidSharedTripUpdate() {
+      return isValidSharedTrip(request.resource.data) &&
+        areImmutableFieldsUnchanged(['ownerUid', 'createdAt']) &&
+        request.resource.data.ownerUid == resource.data.ownerUid &&
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
     // ===============================================================
     // Collection Rules
     // ===============================================================
@@ -173,6 +265,26 @@ service cloud.firestore {
 
       // Owner-only delete to support App Store / Play Store in-app account deletion
       allow delete: if isOwner(userId);
+    }
+
+    match /shared_trips/{shareId} {
+      // Public read-only single-document access by unguessable shareId (12..64 chars)
+      // so recipients opening https://trip-verse.com/share/{shareId} need not sign in
+      allow get: if isValidShareId(shareId);
+
+      // Strictly forbid collection queries to prevent enumeration/scraping of shared trips
+      allow list: if false;
+
+      // Authenticated create only with caller as ownerUid and full strict schema validation
+      allow create: if isAuthenticated() && isValidSharedTripCreate(shareId);
+
+      // Owner-only update with full schema validation and immutable ownerUid/createdAt
+      allow update: if isAuthenticated() &&
+        isSharedTripOwner() &&
+        isValidSharedTripUpdate();
+
+      // Owner-only delete to allow revoking/unsharing a trip link
+      allow delete: if isAuthenticated() && isSharedTripOwner();
     }
 
     // ===============================================================

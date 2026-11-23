@@ -154,6 +154,7 @@ const PrintTravelGuideModal = lazy(() => import('./components/itinerary/PrintTra
 const LiveNavigationHUD = lazy(() => import('./components/navigation/LiveNavigationHUD').then(m => ({ default: m.LiveNavigationHUD })));
 const AIChatDrawer = lazy(() => import('./components/chat/AIChatDrawer').then(m => ({ default: m.AIChatDrawer })));
 const ShareTripModal = lazy(() => import('./components/trips/ShareTripModal').then(m => ({ default: m.ShareTripModal })));
+const SharedTripPublicView = lazy(() => import('./components/trips/SharedTripPublicView').then(m => ({ default: m.SharedTripPublicView })));
 const TripPhotoJournalModal = lazy(() => import('./components/memories/TripPhotoJournalModal').then(m => ({ default: m.TripPhotoJournalModal })));
 const NotificationCenterModal = lazy(() => import('./components/notifications/NotificationCenterModal').then(m => ({ default: m.NotificationCenterModal })));
 const OnboardingModal = lazy(() => import('./components/onboarding/OnboardingModal').then(m => ({ default: m.OnboardingModal })));
@@ -184,6 +185,7 @@ import {
 } from 'lucide-react';
 
 import { resolveRouteFromBrowser } from './utils/routeResolver';
+import { fetchSharedTrip, cloneSharedTripForUser, SharedTripDocument } from './services/sharedTripService';
 import { POPULAR_DESTINATIONS } from './data/destinations';
 import { synthesizeDestination } from './utils/destinationImages';
 
@@ -227,6 +229,9 @@ export function App() {
   const [currentTab, setCurrentTab] = useState<string>(() => initialRoute.tab || 'home');
   const [trips, setTrips] = useState<Trip[]>(initialTrips);
   const [activeTripIdState, setActiveTripIdState] = useState<string>(() => initialRoute.tripId || getActiveTripId());
+  const [sharedTripId, setSharedTripId] = useState<string | null>(() => initialRoute.sharedTripId || null);
+  const [sharedTripDoc, setSharedTripDoc] = useState<SharedTripDocument | null>(null);
+  const [isLoadingSharedTrip, setIsLoadingSharedTrip] = useState<boolean>(() => Boolean(initialRoute.sharedTripId));
   const [userProfile, setUserProfile] = useState<UserProfile>(loadUserProfile());
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(getCurrentUser());
   const [savedItemIds, setSavedItemIds] = useState<string[]>(() => loadSavedItemIds());
@@ -753,6 +758,33 @@ export function App() {
     return () => window.removeEventListener('tripverse_currency_change', handleCurrency);
   }, [currentUser, userProfile]);
 
+  // Fetch public shared trip when navigating to /share/:shareId
+  useEffect(() => {
+    if (currentTab !== 'shared-trip' || !sharedTripId) return;
+    let isMounted = true;
+    setIsLoadingSharedTrip(true);
+    fetchSharedTrip(sharedTripId)
+      .then((doc) => {
+        if (!isMounted) return;
+        if (doc) {
+          setSharedTripDoc(doc);
+        } else {
+          setSharedTripDoc(null);
+          setAppNotice({
+            message: 'This shared itinerary link has expired or could not be found. Explore destinations below.',
+            tone: 'info',
+          });
+          setCurrentTab('explore');
+        }
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingSharedTrip(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [currentTab, sharedTripId]);
+
   // URL Pathname, Dynamic Document Title & SEO Meta Sync for Browser, Crawler & History Navigation
   useEffect(() => {
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
@@ -781,6 +813,14 @@ export function App() {
       targetPath = '/road-trip-planner';
       targetTitle = 'Free Road Trip Planner — Highway Routes, Fuel, EV & Scenic Pitstops | TripVerse';
       targetDesc = 'Plan smarter highway road trips with TripVerse Road Trip Planner. Map real driving routes, EV charging stations, fuel stops, scenic viewpoints, dhabas, weather alerts, and group fuel cost splits.';
+    } else if (currentTab === 'shared-trip' && sharedTripId) {
+      targetPath = `/share/${sharedTripId}`;
+      targetTitle = sharedTripDoc
+        ? `${sharedTripDoc.tripName} — Shared TripVerse Itinerary`
+        : 'Shared Trip Itinerary — TripVerse';
+      targetDesc = sharedTripDoc
+        ? `View and clone ${sharedTripDoc.ownerName}'s ${sharedTripDoc.trip.durationDays}-day ${sharedTripDoc.destination} trip itinerary on TripVerse.`
+        : 'View and clone this shared TripVerse travel itinerary.';
     } else if (currentTab === 'trip-detail') {
       isPrivateRoute = true;
       const active = trips.find(t => t.id === activeTripIdState) || trips[0];
@@ -3227,6 +3267,45 @@ export function App() {
             </div>
           )}
 
+          {/* VIEW 7: PUBLIC SHARED TRIP (/share/:shareId) */}
+          {currentTab === 'shared-trip' && (
+            <div key="shared-trip" className="animate-fade-in">
+              {isLoadingSharedTrip ? (
+                <div className="max-w-3xl mx-auto px-4 py-20 text-center space-y-3">
+                  <div className="w-10 h-10 mx-auto rounded-full border-2 border-[#2D5A3D] border-t-transparent animate-spin" />
+                  <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                    Loading shared TripVerse itinerary...
+                  </p>
+                </div>
+              ) : sharedTripDoc ? (
+                <SharedTripPublicView
+                  sharedDoc={sharedTripDoc}
+                  onCloneTrip={(doc) => {
+                    const cloned = cloneSharedTripForUser(doc, currentUser?.uid);
+                    const updatedTrips = [cloned, ...trips.filter((t) => t.id !== cloned.id)];
+                    saveTrips(updatedTrips, currentUser?.uid);
+                    setTrips(updatedTrips);
+                    setActiveTripIdState(cloned.id);
+                    setActiveTripId(cloned.id, currentUser?.uid);
+                    setSharedTripId(null);
+                    setSharedTripDoc(null);
+                    setCurrentTab('trip-detail');
+                    setAppNotice({
+                      message: `Cloned "${cloned.name}" into your TripVerse portfolio!`,
+                      tone: 'info',
+                    });
+                    scrollPageToTopInstant();
+                  }}
+                  onGoHome={() => {
+                    setSharedTripId(null);
+                    setSharedTripDoc(null);
+                    handleNavigateTab('home');
+                  }}
+                />
+              ) : null}
+            </div>
+          )}
+
           </Suspense>
         </main>
 
@@ -3342,6 +3421,7 @@ export function App() {
         {activeTrip && isShareModalOpen && (
           <ShareTripModal
             trip={activeTrip}
+            currentUser={currentUser}
             isOpen={isShareModalOpen}
             onClose={() => setIsShareModalOpen(false)}
           />

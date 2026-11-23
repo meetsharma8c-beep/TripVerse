@@ -8,6 +8,7 @@ import { generateSmartPackingList } from '../../services/packingService';
 import { resolveTransitContext, getFeasibleTransportModes } from '../../services/transportFeasibilityEngine';
 import { getBookingForTrip } from '../../services/paymentGatewayService';
 import { getTravelReadinessInfo } from '../../services/travelReadinessService';
+import { fetchTransitSchedules, TransitScheduleResponse } from '../../services/liveTransitScheduleService';
 import { useLanguage } from '../../services/languageService';
 import { printOrShareDocument } from '../../services/deviceService';
 
@@ -34,6 +35,8 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
 }) => {
   const { t } = useLanguage();
   const [mode, setMode] = useState<TransportMode>(trip.transportMode || 'car');
+  const [railScheduleData, setRailScheduleData] = useState<TransitScheduleResponse | null>(null);
+  const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
   const [weather, setWeather] = useState<WeatherForecast>(() =>
     getDestinationWeather(trip.destination, trip.durationDays)
   );
@@ -181,6 +184,33 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
   const originTransitCtx = resolveTransitContext(trip.origin || '', originCoords);
   const originCode = resolveHubCode(origin, originTransitCtx.primaryAirport?.code);
   const destCode = resolveHubCode(destination, transitCtx.primaryAirport?.code);
+
+  // Fetch genuine verified Indian Railways / live API train schedules when Trains mode is active
+  useEffect(() => {
+    if (mode !== 'train' || !origin || !destination) {
+      setRailScheduleData(null);
+      return;
+    }
+    let isMounted = true;
+    setIsLoadingSchedules(true);
+    fetchTransitSchedules({
+      origin,
+      destination,
+      mode: 'train',
+      fromCode: originTransitCtx.primaryRailwayStation?.code,
+      toCode: transitCtx.primaryRailwayStation?.code,
+      date: trip.startDate,
+    })
+      .then((res) => {
+        if (isMounted) setRailScheduleData(res);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingSchedules(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [mode, origin, destination, originTransitCtx.primaryRailwayStation?.code, transitCtx.primaryRailwayStation?.code, trip.startDate]);
 
   const isOverseasFlight = feasibility.routeType === 'international_overseas';
   const displayDistanceKm = trip.routeDetails?.distanceKm
@@ -638,6 +668,68 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
             </button>
           ))}
         </div>
+
+        {/* Verified Rail Timetable / Live Train Schedules */}
+        {mode === 'train' && (isLoadingSchedules || (railScheduleData && railScheduleData.schedules.length > 0)) && (
+          <div className="rounded-2xl border border-[#E2EBE1] bg-[#F8FAF7] p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Train className="w-4 h-4 text-[#2D5A3D]" />
+                <span className="text-xs font-extrabold uppercase tracking-wider text-[#152A1C]">
+                  {railScheduleData?.source === 'live_irctc_api'
+                    ? 'Live IRCTC Train Schedules'
+                    : 'Scheduled Trains on This Corridor'}
+                  {railScheduleData?.originCode && railScheduleData?.destCode
+                    ? ` (${railScheduleData.originCode} → ${railScheduleData.destCode})`
+                    : ''}
+                </span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                {railScheduleData?.source === 'live_irctc_api' ? 'Live API' : 'Verified Timetable'}
+              </span>
+            </div>
+
+            {isLoadingSchedules ? (
+              <div className="text-xs text-[#5A7362] py-2">Loading corridor train numbers...</div>
+            ) : (
+              <div className="space-y-2">
+                {railScheduleData?.schedules.map((tr) => (
+                  <div
+                    key={`${tr.number}-${tr.dep}`}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl bg-white border border-[#E2EBE1] p-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-mono font-black px-2 py-0.5 rounded-md bg-[#E8EFE7] text-[#2D5A3D]">
+                          #{tr.number}
+                        </span>
+                        <span className="text-xs sm:text-sm font-bold text-[#152A1C] truncate">
+                          {tr.name}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#5A7362] mt-1">
+                        Dep <strong className="text-[#152A1C]">{tr.dep}</strong> → Arr <strong className="text-[#152A1C]">{tr.arr}</strong> • {tr.duration} • {tr.days}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                      {tr.classes.map((cls) => (
+                        <span
+                          key={cls}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200"
+                        >
+                          {cls}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {railScheduleData?.note && (
+                  <p className="text-[10px] text-[#5A7362] pt-1">{railScheduleData.note}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid gap-3 sm:grid-cols-2">
           {providers[mode].map(provider => (

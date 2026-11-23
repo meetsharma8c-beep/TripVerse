@@ -2,24 +2,33 @@ import { copyTextToClipboard } from '../../services/deviceService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
 import { Trip } from '../../types/trip';
+import { AuthUser } from '../../types/auth';
 import { getStoredCurrency, formatCurrency, Currency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
-import { X, Share2, Copy, Check } from 'lucide-react';
+import { publishSharedTrip, buildPublicShareUrl } from '../../services/sharedTripService';
+import { X, Share2, Copy, Check, Globe, Loader2 } from 'lucide-react';
 
 interface ShareTripModalProps {
   trip: Trip;
+  currentUser?: AuthUser | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
 export const ShareTripModal: React.FC<ShareTripModalProps> = ({
   trip,
+  currentUser,
   isOpen,
   onClose
 }) => {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [currency, setCurrency] = useState<Currency>(getStoredCurrency());
+  const [shareUrl, setShareUrl] = useState<string>(() =>
+    typeof window !== 'undefined' ? `${window.location.origin}/trip/${trip.id}` : `https://trip-verse.com/trip/${trip.id}`
+  );
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [isCloudPublicLink, setIsCloudPublicLink] = useState(false);
 
   useEffect(() => {
     const handleCurrency = () => setCurrency(getStoredCurrency());
@@ -27,12 +36,30 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
     return () => window.removeEventListener('tripverse_currency_change', handleCurrency);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen || !trip?.id) return;
+    let isMounted = true;
+    setIsPublishing(true);
+    publishSharedTrip(trip, {
+      uid: currentUser?.uid,
+      displayName: currentUser?.displayName,
+      email: currentUser?.email,
+    })
+      .then((res) => {
+        if (!isMounted) return;
+        setShareUrl(res.shareUrl || buildPublicShareUrl(res.shareId));
+        setIsCloudPublicLink(res.isCloudSynced);
+      })
+      .finally(() => {
+        if (isMounted) setIsPublishing(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, trip, currentUser?.uid, currentUser?.displayName, currentUser?.email]);
+
   useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
-
-  const shareUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/?tripId=${trip.id}` 
-    : `https://trip-verse.com/?tripId=${trip.id}`;
 
   const handleCopyLink = () => {
     void copyTextToClipboard(shareUrl);
@@ -173,9 +200,32 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
 
           {/* Copyable Link Input */}
           <div>
-            <label className="block text-xs font-bold uppercase text-slate-500 mb-1.5">
-              Direct Web Link
-            </label>
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <label className="block text-xs font-bold uppercase text-slate-500">
+                Public Share Link (Anyone Can View &amp; Clone)
+              </label>
+              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                isPublishing
+                  ? 'bg-slate-100 text-slate-500'
+                  : isCloudPublicLink
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+              }`}>
+                {isPublishing ? (
+                  <>
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                    <span>Publishing...</span>
+                  </>
+                ) : isCloudPublicLink ? (
+                  <>
+                    <Globe className="w-2.5 h-2.5" />
+                    <span>Cloud Public Link</span>
+                  </>
+                ) : (
+                  <span>Device Preview Link</span>
+                )}
+              </span>
+            </div>
             <div className="flex items-center gap-2">
               <input
                 type="text"
