@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import liveMarketHandler from '../api/live-market-quotes.js';
+import transitHandler from '../api/transit-schedules.js';
 import {
   resolveIataCodeForCity,
   applyLiveMarketQuotesToTrip,
@@ -72,10 +72,10 @@ describe('Live Market Pricing Engine (Amadeus Flights & Hotels)', () => {
       },
     };
 
-    await liveMarketHandler(
+    await transitHandler(
       {
         method: 'GET',
-        query: { originCode: 'BOM', destCode: 'GOI', departureDate: '2026-12-20', returnDate: '2026-12-23', adults: '2', mode: 'flight' },
+        query: { action: 'market_quotes', originCode: 'BOM', destCode: 'GOI', departureDate: '2026-12-20', returnDate: '2026-12-23', adults: '2', mode: 'flight' },
         headers: {},
       },
       res

@@ -166,6 +166,7 @@ export async function fetchLiveMarketQuotes(params: {
   }
 
   const qs = new URLSearchParams({
+    action: 'market_quotes',
     originCode,
     destCode,
     departureDate,
@@ -180,7 +181,7 @@ export async function fetchLiveMarketQuotes(params: {
   const timer = setTimeout(() => controller.abort(), 5_500);
 
   try {
-    const res = await fetch(`${resolveApiUrl('/api/live-market-quotes')}?${qs.toString()}`, {
+    const res = await fetch(`${resolveApiUrl('/api/transit-schedules')}?${qs.toString()}`, {
       signal: controller.signal,
     });
     clearTimeout(timer);
