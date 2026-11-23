@@ -665,9 +665,13 @@ html.dark footer [class~="text-slate-600"] {
   color: #CBD5E1 !important;
 }
 
-/* Leaflet Map in Night Mode */
+/* Leaflet Map in Night Mode (styles only tile layer; keeps markers, polylines, and popups true-color) */
 html.dark .leaflet-container {
   background-color: #0E1726 !important;
+}
+
+html.dark .leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%) saturate(85%);
 }
 
 html.dark .leaflet-control,

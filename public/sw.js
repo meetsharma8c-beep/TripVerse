@@ -1,5 +1,5 @@
-const CACHE_NAME = 'tripverse-cache-v98';
-const TILE_CACHE_NAME = 'tripverse-map-tiles-v2';
+const CACHE_NAME = 'tripverse-cache-v99';
+const TILE_CACHE_NAME = 'tripverse-map-tiles-v3';
 const MAX_CACHED_TILES = 150;
 const PRECACHE_ASSETS = [
   '/',
@@ -50,11 +50,8 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Cache OpenStreetMap & Carto map tiles for offline highway/itinerary navigation
-  if (
-    url.hostname.endsWith('tile.openstreetmap.org') ||
-    url.hostname.endsWith('basemaps.cartocdn.com')
-  ) {
+  // Cache OpenStreetMap map tiles for offline highway/itinerary navigation
+  if (url.hostname === 'tile.openstreetmap.org' || url.hostname.endsWith('.tile.openstreetmap.org')) {
     event.respondWith(
       caches.open(TILE_CACHE_NAME).then((cache) =>
         cache.match(event.request).then((cachedTile) => {

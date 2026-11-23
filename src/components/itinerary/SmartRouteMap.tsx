@@ -121,15 +121,13 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    const initialDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-    const tileUrl = initialDark
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    const tileAttr = initialDark
-      ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-      : '&copy; OpenStreetMap contributors';
-
-    const tileLayer = L.tileLayer(tileUrl, { attribution: tileAttr, maxZoom: 19 }).addTo(map);
+    // Use OpenStreetMap's modern HTTP/2 tile CDN directly in both light & night modes
+    // (night mode styles .leaflet-tile-pane via CSS so CARTO API-key watermarks never appear
+    // and theme switching is instant with zero tile reloads).
+    const tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(map);
     tileLayerRef.current = tileLayer;
 
     mapInstanceRef.current = map;
@@ -141,25 +139,6 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
       tileLayerRef.current = null;
     };
   }, []);
-
-  // Dynamically swap map tiles when switching between Dark Mode and Light Mode
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    const tileUrl = isDarkTheme
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    const tileAttr = isDarkTheme
-      ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-      : '&copy; OpenStreetMap contributors';
-
-    if (tileLayerRef.current) {
-      map.removeLayer(tileLayerRef.current);
-    }
-    const nextTile = L.tileLayer(tileUrl, { attribution: tileAttr, maxZoom: 19 }).addTo(map);
-    tileLayerRef.current = nextTile;
-  }, [isDarkTheme]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
