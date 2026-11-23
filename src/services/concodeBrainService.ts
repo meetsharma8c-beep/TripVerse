@@ -419,11 +419,17 @@ function buildCuratedDays(
 // UPSTREAM CONCODE CLIENT (Vercel API Gateway)
 // ═════════════════════════════════════════════════════════════════════════
 
+export interface ConcodeStreamCallbacks {
+  onStep?: (label: string) => void;
+  onToken?: (accumulatedText: string) => void;
+}
+
 async function tryQueryServerlessAPI(
   query: string,
   trip: Trip,
   session: any,
-  mode: 'text' | 'itinerary' | 'budget' | 'safety'
+  mode: 'text' | 'itinerary' | 'budget' | 'safety',
+  streamCallbacks?: ConcodeStreamCallbacks
 ): Promise<ConcodeBrainResponse | null> {
   if (typeof window === 'undefined') return null;
 
@@ -464,9 +470,10 @@ async function tryQueryServerlessAPI(
   if (customConfig?.url) {
     candidates.push({ url: `${customConfig.url}/api/v1/travel`, isCustom: true, timeoutMs: 3_500 });
   }
-  candidates.push({ url: resolveApiUrl('/api/chat'), isCustom: false, timeoutMs: 25_000 });
+  candidates.push({ url: resolveApiUrl('/api/chat'), isCustom: false, timeoutMs: 28_000 });
 
   for (const candidate of candidates) {
+    const wantStream = Boolean(streamCallbacks && !candidate.isCustom && mode !== 'itinerary');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), candidate.timeoutMs);
     try {
@@ -492,7 +499,8 @@ async function tryQueryServerlessAPI(
             query,
             tripContext: tripContextPayload,
             sessionState: session,
-            mode
+            mode,
+            ...(wantStream ? { stream: true } : {})
           });
 
       const res = await fetch(candidate.url, {
@@ -504,6 +512,60 @@ async function tryQueryServerlessAPI(
 
       clearTimeout(timeoutId);
       if (!res.ok) continue;
+
+      const contentType = res.headers?.get?.('content-type') || '';
+      if (wantStream && contentType.includes('text/event-stream') && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let sseBuf = '';
+        let accumulated = '';
+        let donePayload: any = null;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          sseBuf += decoder.decode(value, { stream: true });
+          const frames = sseBuf.split('\n\n');
+          sseBuf = frames.pop() || '';
+          for (const frame of frames) {
+            const evMatch = frame.match(/^event:\s*(.+)$/m);
+            const dataMatch = frame.match(/^data:\s*(.+)$/m);
+            if (!evMatch || !dataMatch) continue;
+            const evName = evMatch[1].trim();
+            try {
+              const payload = JSON.parse(dataMatch[1]);
+              if (evName === 'step' && payload?.label) {
+                streamCallbacks?.onStep?.(String(payload.label));
+              } else if (evName === 'token' && typeof payload?.delta === 'string') {
+                accumulated += payload.delta;
+                streamCallbacks?.onToken?.(accumulated);
+              } else if (evName === 'done') {
+                donePayload = payload;
+              }
+            } catch {}
+          }
+        }
+
+        const finalText = (typeof donePayload?.reply === 'string' && donePayload.reply.trim())
+          ? donePayload.reply.trim()
+          : accumulated.trim();
+
+        if (finalText) {
+          return {
+            guild: donePayload?.guild || (mode === 'budget' ? 'database' : mode === 'safety' ? 'security' : 'ai_ml'),
+            guildIcon: donePayload?.guildIcon || '',
+            confidence: donePayload?.criticScore ? Math.min(0.99, donePayload.criticScore / 100) : 0.96,
+            response: finalText,
+            structuredItinerary: donePayload?.structuredItinerary,
+            budgetBreakdown: donePayload?.budgetBreakdown,
+            actionButtons: donePayload?.actionButtons,
+            modificationBadge: donePayload?.modificationBadge,
+            appAction: donePayload?.appAction,
+            updatedTrip: donePayload?.updatedTrip
+          };
+        }
+        continue;
+      }
 
       const data = await res.json();
       const rawReply = typeof data?.reply === 'string' ? data.reply : (typeof data?.response === 'string' ? data.response : '');
@@ -556,7 +618,8 @@ async function tryQueryServerlessAPI(
 export async function queryConcodeBrain(
   query: string,
   tripContext: Trip,
-  mode: 'text' | 'itinerary' | 'budget' | 'safety' = 'text'
+  mode: 'text' | 'itinerary' | 'budget' | 'safety' = 'text',
+  streamCallbacks?: ConcodeStreamCallbacks
 ): Promise<ConcodeBrainResponse> {
   const norm = query.toLowerCase().trim();
   const rawDest = (tripContext.destination && tripContext.destination !== 'Custom Spot') ? tripContext.destination : '';
@@ -635,7 +698,7 @@ export async function queryConcodeBrain(
         effectiveMode = 'safety';
       }
     }
-    const cloudResult = await tryQueryServerlessAPI(query, tripContext, session, effectiveMode);
+    const cloudResult = await tryQueryServerlessAPI(query, tripContext, session, effectiveMode, streamCallbacks);
     if (cloudResult) return cloudResult;
   }
 

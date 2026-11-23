@@ -839,7 +839,35 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         consumeAssistantMinute(1);
       } else {
         const preparedQuery = preparePromptForConCode(query);
-        const response = await processTravelCoPilotQuery(preparedQuery, trip);
+        const streamMsgId = `stream-${Date.now()}`;
+        let hasStreamedBubble = false;
+        let lastStreamUpdate = 0;
+
+        const upsertStreamBubble = (text: string) => {
+          if (activeRequestIdRef.current !== reqId) return;
+          const now = Date.now();
+          if (hasStreamedBubble && now - lastStreamUpdate < 45) return;
+          lastStreamUpdate = now;
+          const liveMsg: ChatMessage = {
+            id: streamMsgId,
+            sender: 'ai',
+            text,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            engine: 'concode_brain'
+          };
+          if (!hasStreamedBubble) {
+            hasStreamedBubble = true;
+            setMessages(prev => [...prev, liveMsg]);
+          } else {
+            setMessages(prev => prev.map(m => (m.id === streamMsgId ? liveMsg : m)));
+          }
+        };
+
+        const response = await processTravelCoPilotQuery(preparedQuery, trip, {
+          onToken: (accumulated) => {
+            if (accumulated.trim()) upsertStreamBubble(accumulated);
+          }
+        });
         if (activeRequestIdRef.current !== reqId) return;
 
         const safeAiMsg: ChatMessage = response?.message?.text
@@ -852,7 +880,11 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
               engine: 'concode_brain'
             };
 
-        setMessages(prev => [...prev, safeAiMsg]);
+        if (hasStreamedBubble) {
+          setMessages(prev => prev.map(m => (m.id === streamMsgId ? safeAiMsg : m)));
+        } else {
+          setMessages(prev => [...prev, safeAiMsg]);
+        }
         consumeAssistantMinute(1);
 
         if (response.updatedTrip) {

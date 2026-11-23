@@ -1,5 +1,5 @@
 import { Trip, ChatMessage, DayPlan, BreakStop, ExpenseItem, ExpenseCategory, PackingItem, ItineraryActivity } from '../types/trip';
-import { queryConcodeBrain } from './concodeBrainService';
+import { queryConcodeBrain, ConcodeStreamCallbacks } from './concodeBrainService';
 import { generateAITrip } from './plannerEngine';
 import { generateTransportDeals } from './dealService';
 import { evaluateTransportFeasibility } from './transportFeasibilityEngine';
@@ -1586,12 +1586,13 @@ export function processUserChatQuery(query: string, currentTrip: Trip): Assistan
 
 export async function processTravelCoPilotQuery(
   query: string,
-  currentTrip: Trip
+  currentTrip: Trip,
+  streamCallbacks?: ConcodeStreamCallbacks
 ): Promise<AssistantResponse> {
   const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   try {
-    const brainRes = await queryConcodeBrain(query, currentTrip);
+    const brainRes = await queryConcodeBrain(query, currentTrip, 'text', streamCallbacks);
     const actionButtons = (brainRes.actionButtons && brainRes.actionButtons.length > 0)
       ? brainRes.actionButtons
       : [

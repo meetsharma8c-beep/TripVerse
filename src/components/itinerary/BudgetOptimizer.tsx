@@ -4,7 +4,13 @@ import { getActiveCurrency, formatCurrency, syncLiveExchangeRates } from '../../
 import { useLanguage } from '../../services/languageService';
 import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
 import { fetchLiveMarketQuotes, LiveMarketQuoteResult } from '../../services/liveMarketQuoteService';
-import { TrendingDown, Sparkles, Check, Car, Bed, Utensils, Ticket, Shield, Plane, Zap, ExternalLink, AlertTriangle } from 'lucide-react';
+import {
+  computeTripBudgetFloors,
+  FormalBudgetVerification,
+  verifyTripBudgetLocally,
+  verifyTripBudgetWithApex
+} from '../../services/budgetFormalVerifier';
+import { TrendingDown, Sparkles, Check, Car, Bed, Utensils, Ticket, Shield, Plane, Zap, ExternalLink, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 interface BudgetOptimizerProps {
   trip: Trip;
@@ -121,6 +127,42 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
 
   const isOverBudget = liveTotalExpenses > trip.totalBudget;
   const buffer = trip.totalBudget - liveTotalExpenses;
+
+  const activeBreakdownForProof: BudgetBreakdown = useMemo(() => ({
+    transportation: liveTransportCost,
+    accommodation: liveStayCost,
+    food: liveFoodCost,
+    activities: liveActivitiesCost,
+    miscellaneous: liveBufferCost
+  }), [liveTransportCost, liveStayCost, liveFoodCost, liveActivitiesCost, liveBufferCost]);
+
+  const localProof = useMemo(
+    () => verifyTripBudgetLocally(trip.totalBudget, activeBreakdownForProof, computeTripBudgetFloors(trip, liveQuotes)),
+    [trip, activeBreakdownForProof, liveQuotes]
+  );
+  const [formalProof, setFormalProof] = useState<FormalBudgetVerification>(localProof);
+
+  useEffect(() => {
+    setFormalProof(localProof);
+    let active = true;
+    verifyTripBudgetWithApex({ ...trip, budgetBreakdown: activeBreakdownForProof }, liveQuotes).then((verified) => {
+      if (active) setFormalProof(verified);
+    });
+    return () => { active = false; };
+  }, [localProof, trip, activeBreakdownForProof, liveQuotes]);
+
+  const handleApplyProvenRebalance = () => {
+    if (!formalProof.isSatisfiable || formalProof.status !== 'REBALANCE_AVAILABLE') return;
+    const keys: Array<keyof BudgetBreakdown> = ['transportation', 'accommodation', 'food', 'activities', 'miscellaneous'];
+    keys.forEach((key) => {
+      const currentVal = activeBreakdownForProof[key];
+      const targetVal = formalProof.witness[key];
+      const reduction = Math.max(0, Math.round(currentVal - targetVal));
+      if (reduction > 0) {
+        onApplySavings(reduction, key, 'CONCODE APEX Formal Budget Rebalance');
+      }
+    });
+  };
 
   // Persist applied optimization tips per trip so re-opening doesn't double-apply
   const appliedStorageKey = `tripverse_budget_tips_${trip.id}`;
@@ -325,7 +367,24 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            title={formalProof.remediationGuidance}
+            className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-full border ${
+              formalProof.status === 'PROVEN_SAT'
+                ? 'bg-teal-50 text-teal-800 border-teal-200/80'
+                : formalProof.status === 'REBALANCE_AVAILABLE'
+                  ? 'bg-amber-50 text-amber-800 border-amber-200/80'
+                  : 'bg-rose-50 text-rose-700 border-rose-200'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            {formalProof.status === 'PROVEN_SAT'
+              ? (formalProof.solverEngine === 'concode_apex_z3_smt' ? 'Math-Verified · Z3 SMT' : 'Math-Verified Budget')
+              : formalProof.status === 'REBALANCE_AVAILABLE'
+                ? 'Rebalance Proven'
+                : 'Budget Floor Conflict'}
+          </span>
           <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${
             isOverBudget 
               ? 'bg-rose-50 text-rose-700 border-rose-200' 
@@ -335,6 +394,37 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Formal Budget Proof / Rebalance Notice */}
+      {formalProof.status !== 'PROVEN_SAT' && (
+        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border ${
+          formalProof.status === 'REBALANCE_AVAILABLE'
+            ? 'bg-amber-50/70 border-amber-200/80 text-amber-950'
+            : 'bg-rose-50/70 border-rose-200 text-rose-950'
+        }`}>
+          <div className="flex items-start gap-2.5 text-xs leading-relaxed">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+            <div>
+              <div className="font-bold">
+                {formalProof.solverEngine === 'concode_apex_z3_smt'
+                  ? 'CONCODE v4.0 APEX Z3 SMT Proof'
+                  : 'Exact Budget Constraint Solver'}
+              </div>
+              <p className="opacity-90 mt-0.5">{formalProof.remediationGuidance}</p>
+            </div>
+          </div>
+          {formalProof.status === 'REBALANCE_AVAILABLE' && (
+            <button
+              type="button"
+              onClick={handleApplyProvenRebalance}
+              className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#2D5A3D] text-white hover:bg-[#1f422b] transition-colors cursor-pointer"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Apply Proven Rebalance
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Primary KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -75,6 +75,51 @@ function concodeApiDevPlugin(targetUrl?: string, apiKey?: string): Plugin {
               return res.end(JSON.stringify({ ok: ping.ok, status: ping.ok ? 'online' : 'error', details: data }));
             }
 
+            if (body.action === 'verify_budget') {
+              const totalBudget = Math.max(0, Math.round(Number(body.totalBudget) || 0));
+              const b = body.breakdown || {};
+              const floors = body.floors || {};
+              const cats: Array<[string, number, number]> = [
+                ['transport', Math.max(0, Math.round(Number(b.transport) || 0)), Math.max(0, Math.round(Number(floors.transport) || 0))],
+                ['accommodation', Math.max(0, Math.round(Number(b.accommodation) || 0)), Math.max(0, Math.round(Number(floors.accommodation) || 0))],
+                ['food', Math.max(0, Math.round(Number(b.food) || 0)), Math.max(0, Math.round(Number(floors.food) || 0))],
+                ['activities', Math.max(0, Math.round(Number(b.activities) || 0)), Math.max(0, Math.round(Number(floors.activities) || 0))],
+                ['buffer', Math.max(0, Math.round(Number(b.buffer) || 0)), Math.max(0, Math.round(Number(floors.buffer) || 0))]
+              ];
+              const currentSum = cats.reduce((s, x) => s + x[1], 0);
+              const verifyRes = await fetch(`${activeUrl}/api/v1/verify`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(apiKey ? { 'X-API-Key': apiKey, 'Authorization': `Bearer ${apiKey}` } : {})
+                },
+                body: JSON.stringify({
+                  response_text: `TripVerse budget breakdown sum ${currentSum} against ceiling ${totalBudget}.`,
+                  formal_constraints: {
+                    total_ceiling: totalBudget,
+                    exact_sum: false,
+                    allocations: cats.map(([name, curr, lo]) => [name, lo, Math.max(curr, lo, totalBudget)])
+                  },
+                  require_reasoning_contract: false
+                })
+              });
+              const apexData: any = await verifyRes.json().catch(() => null);
+              const smt = Array.isArray(apexData?.formal_proofs) ? apexData.formal_proofs[0] : null;
+              res.statusCode = 200;
+              return res.end(JSON.stringify({
+                ok: Boolean(smt),
+                isSatisfiable: Boolean(smt?.is_satisfiable),
+                status: !smt?.is_satisfiable ? 'UNSAT_CONFLICT' : (currentSum <= totalBudget ? 'PROVEN_SAT' : 'REBALANCE_AVAILABLE'),
+                solverEngine: smt?.solver_engine === 'z3_smt' ? 'concode_apex_z3_smt' : 'exact_linear_solver',
+                currentSum,
+                ceiling: totalBudget,
+                delta: totalBudget - currentSum,
+                unsatCore: smt?.unsat_core || [],
+                witness: smt?.witness || {},
+                remediationGuidance: smt?.remediation_guidance || ''
+              }));
+            }
+
             const upstream = await fetch(`${activeUrl}/api/v1/travel`, {
               method: 'POST',
               headers: {
