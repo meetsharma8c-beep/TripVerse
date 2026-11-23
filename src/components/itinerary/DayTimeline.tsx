@@ -31,7 +31,7 @@ interface DayTimelineProps {
 const DayThumbnailImage: React.FC<{
   day: DayPlan;
   destination?: string;
-}> = ({ day, destination = '' }) => {
+}> = React.memo(({ day, destination = '' }) => {
   const primaryActivity = day.activities?.find(a => a.type === 'attraction' || a.type === 'viewpoint') || day.activities?.[0];
   
   const initialUrl = 
@@ -46,28 +46,31 @@ const DayThumbnailImage: React.FC<{
     let isMounted = true;
     const targetQuery = primaryActivity?.title || day.title || day.theme || destination;
     
-    // If not already a custom photo or if it is currently a fallback, fetch original photo live
-    if (!day.image || imgSrc === DEFAULT_TRAVEL_FALLBACK_IMAGE) {
+    // Fetch original photo live once per day/destination when no custom day image is set
+    if (!day.image) {
       fetchOriginalPhoto(targetQuery, destination).then(photo => {
-        if (isMounted && photo) {
+        if (isMounted && photo && photo !== DEFAULT_TRAVEL_FALLBACK_IMAGE) {
           setImgSrc(photo);
         }
       });
     }
     return () => { isMounted = false; };
-  }, [day, primaryActivity, destination, imgSrc]);
+  }, [day.image, day.title, day.theme, primaryActivity?.title, destination]);
 
   return (
     <div className="w-20 h-18 sm:w-24 sm:h-20 rounded-2xl overflow-hidden shadow-xs border border-[#E2EBE1] bg-[#E8EFE7]">
       <img
         src={imgSrc}
         alt={day.title}
+        loading="lazy"
+        decoding="async"
         onError={(e) => handleImageError(e, resolveDestinationImage(destination))}
         className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
       />
     </div>
   );
-};
+});
+DayThumbnailImage.displayName = 'DayThumbnailImage';
 
 export const DayTimeline: React.FC<DayTimelineProps> = ({
   itinerary,
@@ -271,7 +274,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
           const topActivities = activeDay.activities.slice(0, 4);
 
           return (
-            <div key={day.dayNumber} className="relative z-10 flex items-start gap-3 sm:gap-4 group">
+            <div key={day.dayNumber} className="relative z-10 flex items-start gap-3 sm:gap-4 group tv-cv-card">
               
               {/* Screen 2: Green Circular Day Badge */}
               <button

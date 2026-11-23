@@ -23,7 +23,7 @@ const VARIANT_CLASSES: Record<LiquidVariant, string> = {
  * using `.liquid-concentric-inner` compute exact concentric curvature (`outerRadius - padding`).
  * Uses cached pointer-enter bounding rects + rAF throttling so mouse hover never thrashes layout.
  */
-export const LiquidCard: React.FC<LiquidCardProps> = ({
+export const LiquidCard: React.FC<LiquidCardProps> = React.memo(({
   as: Component = 'article',
   variant = 'frosted',
   hoverLift = true,
@@ -111,4 +111,5 @@ export const LiquidCard: React.FC<LiquidCardProps> = ({
       {children}
     </Component>
   );
-};
+});
+LiquidCard.displayName = 'LiquidCard';

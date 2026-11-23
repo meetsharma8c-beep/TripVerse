@@ -317,17 +317,39 @@ export const ConCode3DAvatar: React.FC<ConCode3DAvatarProps> = ({
       };
     };
 
+    // Yield GPU during active page scrolling so mobile & laptop scrolling stays locked at 60-120fps
+    let isScrolling = false;
+    let scrollResumeTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleScrollYield = () => {
+      invalidateRect();
+      isScrolling = true;
+      if (scrollResumeTimer) clearTimeout(scrollResumeTimer);
+      scrollResumeTimer = setTimeout(() => {
+        isScrolling = false;
+        clock.getDelta();
+      }, 140);
+    };
+
     if (enablePointerTracking && hasFinePointer) {
       window.addEventListener('mousemove', handlePointerMove, { passive: true });
-      window.addEventListener('scroll', invalidateRect, { passive: true });
     }
+    window.addEventListener('scroll', handleScrollYield, { passive: true });
 
-    const animate = () => {
+    const isCoarsePointerDevice = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+    const minFrameMs = isCoarsePointerDevice ? 32 : 0; // ~30fps on mobile touch GPUs prevents thermal throttle & scroll jank
+    let lastRenderTimestamp = 0;
+
+    const animate = (timestamp = 0) => {
       if (!isPageVisible || !isInViewport) {
         animationFrameId = null;
         return;
       }
       animationFrameId = requestAnimationFrame(animate);
+      if (isScrolling) return;
+      if (minFrameMs > 0 && timestamp > 0 && timestamp - lastRenderTimestamp < minFrameMs) {
+        return;
+      }
+      lastRenderTimestamp = timestamp;
       const dt = Math.min(clock.getDelta(), 0.05);
       const elapsed = clock.getElapsedTime();
       const { emotion: currentEmotion, isSpeaking: speaking } = stateRef.current;
@@ -541,8 +563,9 @@ export const ConCode3DAvatar: React.FC<ConCode3DAvatarProps> = ({
     return () => {
       if (enablePointerTracking && hasFinePointer) {
         window.removeEventListener('mousemove', handlePointerMove);
-        window.removeEventListener('scroll', invalidateRect);
       }
+      window.removeEventListener('scroll', handleScrollYield);
+      if (scrollResumeTimer) clearTimeout(scrollResumeTimer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       visibilityObserver?.disconnect();
       resizeObserver.disconnect();

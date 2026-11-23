@@ -71,6 +71,43 @@ export function isStandalone(): boolean {
 
 export type OperatingSystem = 'ios' | 'android' | 'macos' | 'windows' | 'linux' | 'chromeos' | 'unknown';
 export type DeviceType = 'mobile' | 'tablet' | 'desktop';
+export type PerformanceTier = 'high' | 'balanced' | 'lite';
+
+/**
+ * Classifies the current device's GPU/CPU/RAM/network capability so visual effects
+ * (Liquid Glass blur passes, 3D WebGL mascot, decorative pulses) automatically adapt
+ * to deliver locked 60-120fps smoothness from budget Android phones to 120Hz flagships.
+ */
+export function detectPerformanceTier(): PerformanceTier {
+  if (typeof navigator === 'undefined') return 'balanced';
+  const nav = navigator as Navigator & {
+    deviceMemory?: number;
+    connection?: { saveData?: boolean; effectiveType?: string };
+  };
+
+  const hasWindow = typeof window !== 'undefined';
+  const prefersReducedMotion = hasWindow ? (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false) : false;
+  const saveData = Boolean(nav.connection?.saveData);
+  const slowNet = /^(?:slow-2g|2g)$/i.test(nav.connection?.effectiveType || '');
+  if (prefersReducedMotion || saveData || slowNet) return 'lite';
+
+  const cores = typeof nav.hardwareConcurrency === 'number' ? nav.hardwareConcurrency : 6;
+  const memory = typeof nav.deviceMemory === 'number' ? nav.deviceMemory : undefined;
+  const isTouchDevice = (hasWindow ? window.matchMedia?.('(pointer: coarse)').matches : false) || (nav.maxTouchPoints || 0) > 0;
+  const isAndroid = /Android/i.test(nav.userAgent || '');
+
+  // Budget Android phones / low-RAM tablets / dual-or-quad-core CPUs
+  if ((memory !== undefined && memory <= 4) || cores <= 4) {
+    return 'lite';
+  }
+
+  // Mid-range mobile & tablets (6GB RAM or Android touch devices): balanced GPU budget
+  if (isTouchDevice && (isAndroid || (memory !== undefined && memory <= 6))) {
+    return 'balanced';
+  }
+
+  return isTouchDevice ? 'balanced' : 'high';
+}
 
 export interface DeviceInfo {
   platform: 'ios' | 'android' | 'web';
@@ -180,9 +217,16 @@ export function getDeviceInfo(): DeviceInfo {
   };
 }
 
+let lastAppliedDeviceSignature = '';
+
 export function applyDeviceClassesToDom(): void {
   if (typeof document === 'undefined' || !document.documentElement) return;
   const info = getDeviceInfo();
+  const perfTier = detectPerformanceTier();
+  const signature = `${info.os}|${info.deviceType}|${info.isTouch}|${info.hasFinePointer}|${info.isStandalone}|${info.isRetina}|${info.hasNotch}|${perfTier}`;
+  if (signature === lastAppliedDeviceSignature) return;
+  lastAppliedDeviceSignature = signature;
+
   const root = document.documentElement;
 
   // OS Classes
@@ -192,6 +236,10 @@ export function applyDeviceClassesToDom(): void {
   // Device Form Factor Classes
   root.classList.remove('device-mobile', 'device-tablet', 'device-desktop');
   root.classList.add(`device-${info.deviceType}`);
+
+  // Adaptive Hardware Performance Tier Classes (perf-high / perf-balanced / perf-lite)
+  root.classList.remove('perf-high', 'perf-balanced', 'perf-lite');
+  root.classList.add(`perf-${perfTier}`);
 
   // Touch vs Mouse
   root.classList.toggle('touch-device', info.isTouch);
@@ -255,7 +303,12 @@ export function initDeviceServices(onBackPress?: () => boolean) {
   syncThemeStatusBar();
 
   if (typeof window !== 'undefined') {
-    window.addEventListener('resize', applyDeviceClassesToDom, { passive: true });
+    let resizeDebounce: ReturnType<typeof setTimeout> | null = null;
+    const onResizeDebounced = () => {
+      if (resizeDebounce) clearTimeout(resizeDebounce);
+      resizeDebounce = setTimeout(applyDeviceClassesToDom, 180);
+    };
+    window.addEventListener('resize', onResizeDebounced, { passive: true });
     window.addEventListener('orientationchange', applyDeviceClassesToDom, { passive: true });
 
     // Observe dark mode class changes on <html> to keep native StatusBar and meta theme-color in sync

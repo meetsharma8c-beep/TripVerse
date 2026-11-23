@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, useDeferredValue } from 'react';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
 import { Destination } from '../../types/trip';
 import { Star, ArrowRight, Sparkles, Compass, Bookmark, Calendar, Clock } from 'lucide-react';
@@ -70,9 +70,14 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
     { id: 'spiritual', label: t('cat.spiritual') }
   ];
 
-  const filtered = activeCategory === 'all'
-    ? POPULAR_DESTINATIONS
-    : POPULAR_DESTINATIONS.filter(d => d.category === activeCategory);
+  const deferredCategory = useDeferredValue(activeCategory);
+  const filtered = useMemo(
+    () =>
+      deferredCategory === 'all'
+        ? POPULAR_DESTINATIONS
+        : POPULAR_DESTINATIONS.filter(d => d.category === deferredCategory),
+    [deferredCategory]
+  );
 
   const filterMaskStyle =
     scrollFadeEdge === 'right'
@@ -139,7 +144,7 @@ export const PopularDestinations: React.FC<PopularDestinationsProps> = ({
           role="group"
           aria-label="Destination categories"
           style={filterMaskStyle}
-          className="flex items-center gap-2 overflow-x-auto scrollbar-none py-0.5"
+          className="flex items-center gap-2 overflow-x-auto scrollbar-none tv-scroll-strip py-0.5"
         >
           {categories.map((cat) => {
             const isSelected = activeCategory === cat.id;

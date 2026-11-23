@@ -160,11 +160,18 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 .tv-cv-card {
   content-visibility: auto;
   contain-intrinsic-size: auto 360px;
+  contain: layout style;
 }
 
 .tv-cv-section {
   content-visibility: auto;
   contain-intrinsic-size: auto 640px;
+  contain: layout style;
+}
+
+.tv-scroll-strip {
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 body {

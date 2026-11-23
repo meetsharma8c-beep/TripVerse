@@ -877,6 +877,70 @@ html.dark .liquid-chat-composer:focus-within {
   }
 }
 
+/* ==========================================================================
+   ADAPTIVE CROSS-DEVICE PERFORMANCE TIERS (perf-balanced & perf-lite)
+   Guarantees buttery 60fps scrolling on budget Android, older iPhones, & low-RAM tablets
+   while preserving full optical Liquid Glass on high-tier devices.
+   ========================================================================== */
+html.perf-balanced .tv-cv-card .glass-frosted,
+html.perf-balanced .tv-cv-card .liquid-glass,
+html.perf-balanced .tv-cv-card.glass-frosted,
+html.perf-balanced .tv-cv-card.liquid-glass {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.94) 0%, rgba(244, 246, 242, 0.90) 100%);
+}
+
+html.dark.perf-balanced .tv-cv-card .glass-frosted,
+html.dark.perf-balanced .tv-cv-card .liquid-glass,
+html.dark.perf-balanced .tv-cv-card.glass-frosted,
+html.dark.perf-balanced .tv-cv-card.liquid-glass {
+  background: linear-gradient(145deg, rgba(16, 28, 44, 0.94) 0%, rgba(13, 25, 34, 0.90) 100%);
+}
+
+html.perf-balanced .tv-cv-card .liquid-rim::after,
+html.perf-balanced .tv-cv-card.liquid-rim::after,
+html.perf-lite .liquid-rim::after {
+  display: none;
+}
+
+/* Lite tier (<=4GB RAM / <=4 cores / Save-Data / Reduced-Motion): zero blur fill-rate stalls */
+html.perf-lite .glass-frosted,
+html.perf-lite .liquid-glass,
+html.perf-lite .glass-clear,
+html.perf-lite .glass-clear-dark,
+html.perf-lite .liquid-chat-shell,
+html.perf-lite .liquid-chat-backdrop {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html.perf-lite .glass-frosted,
+html.perf-lite .liquid-glass {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 14px -4px rgba(21, 42, 28, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+html.dark.perf-lite .glass-frosted,
+html.dark.perf-lite .liquid-glass {
+  background: rgba(15, 24, 38, 0.95);
+  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+html.perf-lite .glass-elevated {
+  backdrop-filter: blur(8px) saturate(135%);
+  -webkit-backdrop-filter: blur(8px) saturate(135%);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+html.dark.perf-lite .glass-elevated {
+  background: rgba(12, 21, 35, 0.94);
+}
+
+html.perf-lite .animate-pulse {
+  animation: none !important;
+}
+
 /* Eliminate expensive nested backdrop-filter GPU passes inside glass cards & bars */
 .glass-frosted .glass-clear,
 .glass-elevated .glass-clear,

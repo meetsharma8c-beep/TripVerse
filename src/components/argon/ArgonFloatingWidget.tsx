@@ -2,6 +2,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { ARGON_STATE_THEME, ArgonState, ProactiveHint } from './argon.types';
 import { ArgonAvatar } from './ArgonAvatar';
+import { detectPerformanceTier } from '../../services/deviceService';
 
 const ConCode3DAvatar = lazy(() =>
   import('./ConCode3DAvatar').then((m) => ({ default: m.ConCode3DAvatar }))
@@ -40,14 +41,11 @@ export const ArgonFloatingWidget: React.FC<ArgonFloatingWidgetProps> = ({
   const [isDocked, setIsDocked] = useState(false);
   const [shouldLoad3D, setShouldLoad3D] = useState(false);
 
-  // Defer loading the 533KB Three.js 3D mascot until idle (after first paint) on both mobile & desktop.
-  // While waiting (or on Data-Saver / 2G / Reduced Motion), renders the crisp blinking ArgonAvatar vector mascot.
+  // Defer loading the 533KB Three.js 3D mascot until idle (after first paint) on balanced & high devices.
+  // Budget/low-RAM/save-data devices (perf-lite) stay on the zero-WebGL blinking ArgonAvatar vector mascot for locked 60fps.
   useEffect(() => {
     if (shouldLoad3D || typeof window === 'undefined') return;
-    const conn = (navigator as any)?.connection;
-    const isDataSaver = Boolean(conn?.saveData || /^(?:slow-2g|2g)$/i.test(conn?.effectiveType || ''));
-    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (isDataSaver || prefersReducedMotion) return;
+    if (detectPerformanceTier() === 'lite') return;
 
     if ('requestIdleCallback' in window) {
       const id = (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number })
