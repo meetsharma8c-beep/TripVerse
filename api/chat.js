@@ -740,7 +740,7 @@ export default async function handler(req, res) {
   const clientIp = getClientIp(req);
 
   const concodeUrl = configuredConcodeUrl();
-  const apiKey = (process.env.CONCODE_API_KEY || 'REDACTED_CONCODE_API_KEY').trim();
+  const apiKey = (process.env.CONCODE_API_KEY || '').trim();
 
   // Health probe support (GET /api/chat or POST { action: 'health' })
   if (req.method === 'GET' || req.body?.action === 'health') {
