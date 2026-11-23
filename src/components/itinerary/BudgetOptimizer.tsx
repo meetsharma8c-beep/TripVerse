@@ -3,6 +3,7 @@ import { Trip, BudgetBreakdown, CurrencyCode } from '../../types/trip';
 import { getActiveCurrency, formatCurrency, syncLiveExchangeRates } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
+import { fetchLiveMarketQuotes, LiveMarketQuoteResult } from '../../services/liveMarketQuoteService';
 import { TrendingDown, Sparkles, Check, Car, Bed, Utensils, Ticket, Shield, Plane, Zap, ExternalLink, AlertTriangle } from 'lucide-react';
 
 interface BudgetOptimizerProps {
@@ -16,6 +17,35 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
 }) => {
   const { t } = useLanguage();
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
+  const [liveQuotes, setLiveQuotes] = useState<LiveMarketQuoteResult | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchLiveMarketQuotes({
+      origin: trip.origin || '',
+      destination: trip.destination || '',
+      startDate: trip.startDate,
+      durationDays: trip.durationDays || 3,
+      travelersCount: trip.travelersCount || 2,
+      transportMode: trip.transportMode,
+      originCoords: trip.routeDetails?.originCoordinates,
+      destCoords: trip.destinationDetails?.coordinates,
+    }).then((res) => {
+      if (isMounted) setLiveQuotes(res);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    trip.origin,
+    trip.destination,
+    trip.startDate,
+    trip.durationDays,
+    trip.travelersCount,
+    trip.transportMode,
+    trip.routeDetails?.originCoordinates,
+    trip.destinationDetails?.coordinates,
+  ]);
 
   useEffect(() => {
     const handleCurrencyEvent = (e: Event) => {
@@ -356,7 +386,9 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
               <h3 className="text-sm font-extrabold uppercase tracking-wider text-emerald-400">
-                Estimated Cost Breakdown (6-Vertical Seasonal Model)
+                {liveQuotes?.isLiveMarket
+                  ? 'Live Amadeus Market Feed + 6-Vertical Breakdown'
+                  : 'Estimated Cost Breakdown (6-Vertical Seasonal Model)'}
               </h3>
             </div>
             <p className="text-xs text-slate-400">
@@ -378,6 +410,44 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Real-Time Amadeus Live Flight & Hotel Quotes Callout (Rendered Only When Live API Returns Real Quotes) */}
+        {liveQuotes?.isLiveMarket && (
+          <div className="p-4 rounded-2xl bg-emerald-950/90 border border-emerald-400/50 space-y-2.5">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-300">
+                Live Amadeus Market Inventory ({liveQuotes.environment === 'production' ? 'Production GDS' : 'Live Feed'})
+              </span>
+              <span className="text-[10px] font-mono text-emerald-200/80">
+                Synced {new Date(liveQuotes.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+              {liveQuotes.flights?.bestOffer && (
+                <div className="p-3 rounded-xl bg-black/30 border border-white/10">
+                  <span className="text-[10px] uppercase font-bold text-slate-300 block">Lowest Live Round-Trip Fare</span>
+                  <div className="text-base font-black text-emerald-300 mt-0.5">
+                    {formatCurrency(liveQuotes.flights.bestOffer.totalGroupAmount, currency)}
+                  </div>
+                  <span className="text-[11px] text-slate-300">
+                    {liveQuotes.flights.bestOffer.carrierName} • {liveQuotes.flights.bestOffer.stops === 0 ? 'Nonstop' : `${liveQuotes.flights.bestOffer.stops} stop`} {liveQuotes.flights.bestOffer.duration ? `• ${liveQuotes.flights.bestOffer.duration}` : ''}
+                  </span>
+                </div>
+              )}
+              {liveQuotes.hotels[0] && (
+                <div className="p-3 rounded-xl bg-black/30 border border-white/10">
+                  <span className="text-[10px] uppercase font-bold text-slate-300 block">Lowest Live Available Hotel</span>
+                  <div className="text-base font-black text-emerald-300 mt-0.5">
+                    {formatCurrency(liveQuotes.hotels[0].nightlyRatePerRoom, currency)}/night
+                  </div>
+                  <span className="text-[11px] text-slate-300 truncate block">
+                    {liveQuotes.hotels[0].name} ({liveQuotes.hotels[0].roomCategory})
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Smart Nearby Hub Arbitrage Callout (only relevant for flight trips) */}
         {isFlightMode && liveMarketReport.smartHubArbitrage && (

@@ -6,6 +6,7 @@ import { CONCODE_MASTER_PROMPT } from './concodeMasterPrompt';
 import { getActiveCurrency, CURRENCIES } from './currencyService';
 import { getActiveLanguage, LANGUAGES } from './languageService';
 import { enrichTripWithOriginalPhotos } from './originalPhotoService';
+import { fetchLiveMarketQuotes, applyLiveMarketQuotesToTrip } from './liveMarketQuoteService';
 import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
 import { getDestinationHighlights, isLandmarkRemoteFromDestination } from './landmarkAtlasService';
 import { resolveGlobalDestination, ResolvedGlobalLocation } from './globalLocationResolver';
@@ -435,10 +436,28 @@ export async function generatePersonalizedTrip(input: PlannerInput): Promise<Tri
     // Enrich with 7-pillar smart intelligence (Circadian, TSP, Cultural, Weather Mirrors, Border Sentinel, PPP)
     const smartTrip = enrichTripWithSmartIntelligence(rawTrip);
 
-    // Enrich the trip with genuine, original photography during the loading state
+    // Enrich with original photography AND real-time Amadeus live market quotes in parallel (zero extra latency)
     let finalTrip = smartTrip;
     try {
-        finalTrip = await enrichTripWithOriginalPhotos(smartTrip, effectiveInput.destination || effectiveInput.destinationName);
+        const [photoResult, liveQuoteResult] = await Promise.allSettled([
+            enrichTripWithOriginalPhotos(smartTrip, effectiveInput.destination || effectiveInput.destinationName),
+            fetchLiveMarketQuotes({
+                origin: smartTrip.origin || effectiveInput.origin || '',
+                destination: smartTrip.destination || effectiveInput.destination || '',
+                startDate: smartTrip.startDate,
+                durationDays: smartTrip.durationDays,
+                travelersCount: smartTrip.travelersCount,
+                transportMode: smartTrip.transportMode,
+                originCoords: smartTrip.routeDetails?.originCoordinates,
+                destCoords: smartTrip.destinationDetails?.coordinates,
+            }),
+        ]);
+        if (photoResult.status === 'fulfilled' && photoResult.value) {
+            finalTrip = photoResult.value;
+        }
+        if (liveQuoteResult.status === 'fulfilled' && liveQuoteResult.value?.isLiveMarket) {
+            finalTrip = applyLiveMarketQuotesToTrip(finalTrip, liveQuoteResult.value);
+        }
     } catch {
         finalTrip = smartTrip;
     }
