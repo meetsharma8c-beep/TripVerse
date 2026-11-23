@@ -215,11 +215,11 @@ function smsApiDevPlugin(): Plugin {
 }
 
 function emailOtpDevPlugin(resendKey?: string): Plugin {
-  const activeKey = resendKey || process.env.RESEND_API_KEY || 'REDACTED_RESEND_API_KEY';
-  const hmacSecret = 'REDACTED_DEV_HMAC_SALT';
+  const crypto = require('crypto');
+  const activeKey = (resendKey || process.env.RESEND_API_KEY || '').trim();
+  const hmacSecret = (process.env.AUTH_SECRET || '').trim() || crypto.randomBytes(32).toString('hex');
 
   function signOtp(email: string, code: string, expiresAt: number) {
-    const crypto = require('crypto');
     return crypto.createHmac('sha256', hmacSecret)
       .update(`${email.trim().toLowerCase()}:${code}:${expiresAt}`)
       .digest('hex');
@@ -296,6 +296,14 @@ function emailOtpDevPlugin(resendKey?: string): Plugin {
                   <p style="color:#94a3b8;font-size:12px;">Valid for 10 minutes. Never share this code with anyone.</p>
                 </div>
               `;
+
+              if (!activeKey) {
+                res.statusCode = 503;
+                return res.end(JSON.stringify({
+                  success: false,
+                  message: 'RESEND_API_KEY is not configured in local .env'
+                }));
+              }
 
               try {
                 const resendRes = await fetch('https://api.resend.com/emails', {
