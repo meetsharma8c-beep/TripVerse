@@ -6,7 +6,7 @@ import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, get
 
 const MAX_QUERY_LENGTH = 12_000;
 const MAX_VISION_BASE64_LENGTH = 6_000_000; // ~4.5 MB base64 cap
-const UPSTREAM_TIMEOUT_MS = 8_000;
+const UPSTREAM_TIMEOUT_MS = 2_500;
 
 async function callVisionAnalysis(imageBase64, mimeType, promptText) {
   const cleanBase64 = String(imageBase64 || '').replace(/^data:[^;]+;base64,/, '').trim();

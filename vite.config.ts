@@ -138,8 +138,19 @@ function concodeApiDevPlugin(targetUrl?: string, apiKey?: string): Plugin {
               modificationBadge: data.modification_badge || data.modificationBadge
             }));
           } catch (err: any) {
-            res.statusCode = 502;
-            return res.end(JSON.stringify({ ok: false, error: 'CONCODE_UPSTREAM_ERROR', message: err?.message }));
+            try {
+              const cloudRes = await fetch('https://trip-verse.com/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: bodyRaw || '{}'
+              });
+              const cloudText = await cloudRes.text();
+              res.statusCode = cloudRes.status;
+              return res.end(cloudText);
+            } catch {
+              res.statusCode = 502;
+              return res.end(JSON.stringify({ ok: false, error: 'CONCODE_UPSTREAM_ERROR', message: err?.message }));
+            }
           }
         });
       });

@@ -428,113 +428,124 @@ async function tryQueryServerlessAPI(
   if (typeof window === 'undefined') return null;
 
   const customConfig = getStoredConcodeConfig();
-  const targetUrl = customConfig?.url ? `${customConfig.url}/api/v1/travel` : resolveApiUrl('/api/chat');
+  const destCoords = trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates;
+  const transitContext = resolveTransitContext(trip.destination, destCoords);
+  const memoryRing = getTravelerMemoryRing();
 
-  try {
+  const tripContextPayload = {
+    destination: trip.destination,
+    durationDays: trip.durationDays,
+    totalBudget: trip.totalBudget,
+    origin: trip.origin,
+    travelersCount: trip.travelersCount,
+    travelerType: trip.travelerType,
+    preferences: Array.from(new Set([...(trip.preferences?.length ? trip.preferences : (session.preferences || [])), ...(memoryRing.interests || [])])),
+    transportMode: trip.transportMode,
+    accommodationType: trip.accommodationType,
+    foodPreference: trip.foodPreference || memoryRing.dietaryPreference || 'all',
+    pacing: trip.pacing || memoryRing.travelPace || 'moderate',
+    priorities: trip.priorities,
+    travelerMemory: memoryRing,
+    knownDestinationHighlights: trip.destinationDetails?.highlights || [],
+    transportDeals: trip.transportDeals || [],
+    transitHubs: {
+      hasDirectAirport: transitContext.hasDirectAirport,
+      primaryAirport: transitContext.primaryAirport?.name,
+      hasDirectTrain: transitContext.hasDirectTrain,
+      primaryStation: transitContext.primaryRailwayStation?.name,
+      roadConnectivity: transitContext.roadConnectivity.status,
+      requiresMultiModal: transitContext.requiresMultiModal,
+      guidance: transitContext.multiModalGuidance
+    }
+  };
+
+  // Try custom ConCode endpoint first (short timeout) and ALWAYS fall back to /api/chat serverless cloud LLM
+  const candidates: Array<{ url: string; isCustom: boolean; timeoutMs: number }> = [];
+  if (customConfig?.url) {
+    candidates.push({ url: `${customConfig.url}/api/v1/travel`, isCustom: true, timeoutMs: 3_500 });
+  }
+  candidates.push({ url: resolveApiUrl('/api/chat'), isCustom: false, timeoutMs: 25_000 });
+
+  for (const candidate of candidates) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60_000);
+    const timeoutId = setTimeout(() => controller.abort(), candidate.timeoutMs);
+    try {
+      const headers: Record<string, string> = candidate.isCustom
+        ? {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+            ...(customConfig?.apiKey ? { 'X-API-Key': customConfig.apiKey, 'Authorization': `Bearer ${customConfig.apiKey}` } : {})
+          }
+        : {
+            'Content-Type': 'application/json'
+          };
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'ngrok-skip-browser-warning': 'true',
-      'User-Agent': 'TripVerse-Client/1.0',
-      ...(customConfig?.apiKey ? { 'X-API-Key': customConfig.apiKey, 'Authorization': `Bearer ${customConfig.apiKey}` } : {})
-    };
+      const bodyPayload = candidate.isCustom
+        ? JSON.stringify({
+            query,
+            trip_context: tripContextPayload,
+            session_id: session.sessionId,
+            mode,
+            system_prompt: `${CONCODE_BRAIN_MASTER_PROMPT}\n\n${CONCODE_MASTER_PROMPT}`
+          })
+        : JSON.stringify({
+            query,
+            tripContext: tripContextPayload,
+            sessionState: session,
+            mode
+          });
 
-    const destCoords = trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates;
-    const transitContext = resolveTransitContext(trip.destination, destCoords);
-    const memoryRing = getTravelerMemoryRing();
+      const res = await fetch(candidate.url, {
+        method: 'POST',
+        headers,
+        body: bodyPayload,
+        signal: controller.signal
+      });
 
-    const tripContextPayload = {
-      destination: trip.destination,
-      durationDays: trip.durationDays,
-      totalBudget: trip.totalBudget,
-      origin: trip.origin,
-      travelersCount: trip.travelersCount,
-      travelerType: trip.travelerType,
-      preferences: Array.from(new Set([...(trip.preferences?.length ? trip.preferences : (session.preferences || [])), ...(memoryRing.interests || [])])),
-      transportMode: trip.transportMode,
-      accommodationType: trip.accommodationType,
-      foodPreference: trip.foodPreference || memoryRing.dietaryPreference || 'all',
-      pacing: trip.pacing || memoryRing.travelPace || 'moderate',
-      priorities: trip.priorities,
-      travelerMemory: memoryRing,
-      knownDestinationHighlights: trip.destinationDetails?.highlights || [],
-      transportDeals: trip.transportDeals || [],
-      transitHubs: {
-        hasDirectAirport: transitContext.hasDirectAirport,
-        primaryAirport: transitContext.primaryAirport?.name,
-        hasDirectTrain: transitContext.hasDirectTrain,
-        primaryStation: transitContext.primaryRailwayStation?.name,
-        roadConnectivity: transitContext.roadConnectivity.status,
-        requiresMultiModal: transitContext.requiresMultiModal,
-        guidance: transitContext.multiModalGuidance
-      }
-    };
+      clearTimeout(timeoutId);
+      if (!res.ok) continue;
 
-    const bodyPayload = customConfig?.url
-      ? JSON.stringify({
-          query,
-          trip_context: tripContextPayload,
-          session_id: session.sessionId,
-          mode,
-          system_prompt: `${CONCODE_BRAIN_MASTER_PROMPT}\n\n${CONCODE_MASTER_PROMPT}`
-        })
-      : JSON.stringify({
-          query,
-          tripContext: tripContextPayload,
-          sessionState: session,
-          mode
-        });
+      const data = await res.json();
+      const rawReply = typeof data?.reply === 'string' ? data.reply : (typeof data?.response === 'string' ? data.response : '');
 
-    const res = await fetch(targetUrl, {
-      method: 'POST',
-      headers,
-      body: bodyPayload,
-      signal: controller.signal
-    });
+      if (data && (rawReply || data.itinerary || data.structuredItinerary || data.structured_itinerary)) {
+        if (typeof data.sessionId === 'string' || typeof data.session_id === 'string') {
+          updateConcodeSession({ sessionId: data.sessionId || data.session_id });
+        }
 
-    clearTimeout(timeoutId);
-    if (!res.ok) return null;
+        let structuredItinerary = data.structuredItinerary || data.structured_itinerary;
+        if (!structuredItinerary && Array.isArray(data.itinerary)) {
+          structuredItinerary = {
+            destination: trip.destination,
+            durationDays: trip.durationDays,
+            days: data.itinerary
+          };
+        }
 
-    const data = await res.json();
-    const rawReply = typeof data?.reply === 'string' ? data.reply : (typeof data?.response === 'string' ? data.response : '');
+        const isRawJsonReply = rawReply.trim().startsWith('{') && Boolean(structuredItinerary);
+        const displayResponse = isRawJsonReply
+          ? `**ConCode Brain v3.0 — ${structuredItinerary?.durationDays || trip.durationDays || 3}-Day ${structuredItinerary?.destination || trip.destination || 'Trip'} Itinerary**\n\nYour Critic-verified schedule and exact budget allocation are ready below.`
+          : (rawReply || 'Here is your travel blueprint generated by ConCode AI:');
 
-    if (data && (rawReply || data.itinerary || data.structuredItinerary || data.structured_itinerary)) {
-      if (typeof data.sessionId === 'string' || typeof data.session_id === 'string') {
-        updateConcodeSession({ sessionId: data.sessionId || data.session_id });
-      }
-
-      let structuredItinerary = data.structuredItinerary || data.structured_itinerary;
-      if (!structuredItinerary && Array.isArray(data.itinerary)) {
-        structuredItinerary = {
-          destination: trip.destination,
-          durationDays: trip.durationDays,
-          days: data.itinerary
+        return {
+          guild: data.guild || (mode === 'budget' ? 'database' : mode === 'safety' ? 'security' : 'ai_ml'),
+          guildIcon: data.guildIcon || (data.guild && GUILD_LABELS[data.guild]?.icon) || '',
+          confidence: data.confidence || 0.98,
+          response: displayResponse,
+          structuredItinerary,
+          budgetBreakdown: data.budgetBreakdown || data.budget_breakdown,
+          actionButtons: data.actionButtons || data.action_buttons,
+          modificationBadge: data.modificationBadge || data.modification_badge,
+          appAction: data.appAction,
+          updatedTrip: data.updatedTrip
         };
       }
-
-      const isRawJsonReply = rawReply.trim().startsWith('{') && Boolean(structuredItinerary);
-      const displayResponse = isRawJsonReply
-        ? `**ConCode Brain v3.0 — ${structuredItinerary?.durationDays || trip.durationDays || 3}-Day ${structuredItinerary?.destination || trip.destination || 'Trip'} Itinerary**\n\nYour Critic-verified schedule and exact budget allocation are ready below.`
-        : (rawReply || 'Here is your travel blueprint generated by ConCode AI:');
-
-      return {
-        guild: data.guild || (mode === 'budget' ? 'database' : mode === 'safety' ? 'security' : 'ai_ml'),
-        guildIcon: data.guildIcon || (data.guild && GUILD_LABELS[data.guild]?.icon) || '',
-        confidence: data.confidence || 0.98,
-        response: displayResponse,
-        structuredItinerary,
-        budgetBreakdown: data.budgetBreakdown || data.budget_breakdown,
-        actionButtons: data.actionButtons || data.action_buttons,
-        modificationBadge: data.modificationBadge || data.modification_badge,
-        appAction: data.appAction,
-        updatedTrip: data.updatedTrip
-      };
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.warn(`[TripVerse] Upstream query error (${candidate.isCustom ? 'custom' : '/api/chat'}):`, err);
     }
-  } catch (err) {
-    console.warn('[TripVerse] Upstream query error:', err);
   }
+
   return null;
 }
 
@@ -1804,19 +1815,40 @@ export async function queryConcodeBrain(
   }
 
   // =========================================================================
-  // DEFAULT / GENERAL CONVERSATIONAL RESPONSE
-  // Responds organically and contextually to the user's specific query
+  // OFFLINE / UNREACHABLE FALLBACK RESPONSE
+  // Only reached when both ConCode Brain and /api/chat cloud LLM are unreachable
   // =========================================================================
-  const opener = getDynamicOpener('explaining');
+  if (
+    norm.includes('real time') ||
+    norm.includes('real-time') ||
+    norm.includes('realtime') ||
+    norm.includes('live market') ||
+    norm.includes('live price') ||
+    norm.includes('live pricing')
+  ) {
+    return {
+      guild: 'ai_ml',
+      guildIcon: '',
+      confidence: 0.96,
+      response: `[STATE:excited] **Yes — TripVerse plans trips with real-time live market data.**\n\n` +
+        `• **Live Flights & Hotels:** Pulls real-time Google Flights fares and Google Hotels nightly rates to ground your itinerary budget.\n` +
+        `• **Live Rail & Weather:** Checks live Indian Rail train schedules and real-time Open-Meteo forecasts for your dates.\n` +
+        `• **Live Local Discovery:** Discovers real nearby gems via OpenStreetMap and hands off to official booking portals when you are ready to book.\n\n` +
+        `*(Note: My live cloud AI connection briefly couldn't be reached for this message — tap any quick action below or retry once online.)*`,
+      actionButtons: [
+        { label: `Trip Cost Breakdown`, action: 'CHECK_BUDGET', primary: true },
+        { label: `Top Sights to Visit`, action: 'VIEW_ITINERARY' },
+        { label: `Best Food in ${activeDest}`, action: 'EXPLORE_FOOD' }
+      ]
+    };
+  }
+
   return {
     guild: 'fullstack',
     guildIcon: '',
-    confidence: 0.94,
-    response: `${opener}\n\n` +
-      `Regarding your inquiry about **"${query}"** for your journey to **${activeDest}**:\n\n` +
-      `Your current plan is a **${activeDays}-day draft** with a budget target of ~₹${activeBudget.toLocaleString('en-IN')}. ` +
-      `I can help review suggested activities, route planning, and estimated expenses. Changes update the TripVerse draft; they do not change external bookings.\n\n` +
-      `Here are several helpful actions you can take right now:`,
+    confidence: 0.72,
+    response: `[STATE:warning] I couldn't reach the live ConCode AI cloud server for that question right now, so I'm responding in **offline assistant mode**.\n\n` +
+      `While offline, I can still directly edit your **${activeDays}-day ${activeDest}** draft (budget ~₹${activeBudget.toLocaleString('en-IN')}) — try asking me to **"Make Day 3 cheaper"**, **"Trip cost breakdown"**, **"Best food in ${activeDest}"**, or **"Export PDF guide"**, or retry in a moment when connected.`,
     actionButtons: [
       { label: `Best Food in ${activeDest}`, action: 'EXPLORE_FOOD', primary: true },
       { label: `Top Sights to Visit`, action: 'VIEW_ITINERARY' },
