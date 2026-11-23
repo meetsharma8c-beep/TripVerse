@@ -136,6 +136,101 @@ function encodePolyline(points) {
   return encoded;
 }
 
+function normalizeManeuverType(rawType, instructionText) {
+  const s = `${rawType || ''} ${instructionText || ''}`.toLowerCase();
+  if (s.includes('destination') || s.includes('arrive')) return 'arrive';
+  if (s.includes('depart') || s.includes('start')) return 'depart';
+  if (s.includes('roundabout') || s.includes('rotary')) return 'roundabout';
+  if (s.includes('u-turn') || s.includes('uturn') || s.includes('make a u')) return 'uturn';
+  if (s.includes('sharp left')) return 'sharp_left';
+  if (s.includes('sharp right')) return 'sharp_right';
+  if (s.includes('slight left') || s.includes('keep left') || s.includes('bear left')) return 'slight_left';
+  if (s.includes('slight right') || s.includes('keep right') || s.includes('bear right')) return 'slight_right';
+  if (s.includes('left')) return 'left';
+  if (s.includes('right')) return 'right';
+  if (s.includes('merge')) return 'merge';
+  if (s.includes('exit') || s.includes('ramp')) return 'exit';
+  return 'straight';
+}
+
+function extractNavigationSteps(routeFeature, routePoints) {
+  const legs = routeFeature?.properties?.legs;
+  if (!Array.isArray(legs) || legs.length === 0) return [];
+  const rawSteps = legs.flatMap(leg => Array.isArray(leg?.steps) ? leg.steps : []);
+  return rawSteps
+    .map((step, index) => {
+      const fromIdx = Math.max(0, Math.min(routePoints.length - 1, Number(step?.from_index) || 0));
+      const toIdx = Math.max(fromIdx, Math.min(routePoints.length - 1, Number(step?.to_index) || fromIdx));
+      const pt = routePoints[fromIdx] || routePoints[0];
+      const instruction =
+        step?.instruction?.text ||
+        step?.instruction?.post_transition_instruction ||
+        step?.instruction?.pre_transition_instruction ||
+        (step?.name ? `Continue on ${step.name}` : 'Continue straight');
+      return {
+        index,
+        instruction: String(instruction).trim(),
+        type: normalizeManeuverType(step?.instruction?.type, instruction),
+        streetName: typeof step?.name === 'string' && step.name.trim() ? step.name.trim() : undefined,
+        distanceMeters: Math.max(0, Math.round(Number(step?.distance) || 0)),
+        durationSeconds: Math.max(0, Math.round(Number(step?.time) || 0)),
+        coordinates: pt ? { lat: pt.lat, lng: pt.lon } : { lat: 0, lng: 0 },
+        fromIndex: fromIdx,
+        toIndex: toIdx
+      };
+    })
+    .filter(s => s.instruction.length > 0);
+}
+
+async function fetchOsrmNavigationFallback(routeOrigin, routeDestination, mode) {
+  const profile = mode === 'walk' ? 'foot' : mode === 'bicycle' ? 'bike' : 'driving';
+  const url = `https://router.project-osrm.org/route/v1/${profile}/${routeOrigin.lon},${routeOrigin.lat};${routeDestination.lon},${routeDestination.lat}?overview=full&geometries=geojson&steps=true`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7000);
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': 'TripVerse-Nav/1.0' }, signal: controller.signal });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const route = data?.routes?.[0];
+    const coords = route?.geometry?.coordinates;
+    if (!route || !Array.isArray(coords) || coords.length < 2) return null;
+    const routePoints = coords.map(([lon, lat]) => ({ lat, lon }));
+    const osrmSteps = (route.legs || []).flatMap(l => l.steps || []);
+    const steps = osrmSteps.map((st, index) => {
+      const m = st.maneuver || {};
+      const mType = `${m.type || ''} ${m.modifier || ''}`.trim();
+      const street = typeof st.name === 'string' && st.name.trim() ? st.name.trim() : '';
+      const instruction = m.type === 'arrive'
+        ? 'You have arrived at your destination'
+        : m.type === 'depart'
+          ? (street ? `Head out on ${street}` : 'Start driving on the highlighted route')
+          : `${(m.modifier || m.type || 'Continue').replace(/^./, c => c.toUpperCase())}${street ? ` onto ${street}` : ''}`;
+      const loc = Array.isArray(m.location) ? { lat: m.location[1], lng: m.location[0] } : { lat: routePoints[0].lat, lng: routePoints[0].lon };
+      return {
+        index,
+        instruction,
+        type: normalizeManeuverType(mType, instruction),
+        streetName: street || undefined,
+        distanceMeters: Math.max(0, Math.round(Number(st.distance) || 0)),
+        durationSeconds: Math.max(0, Math.round(Number(st.duration) || 0)),
+        coordinates: loc,
+        fromIndex: 0,
+        toIndex: 0
+      };
+    });
+    return {
+      distanceMeters: Math.round(Number(route.distance) || 0),
+      durationSeconds: Math.round(Number(route.duration) || 0),
+      routePoints,
+      steps
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function getRoutePoints(geometry) {
   const coordinates = geometry?.type === 'LineString'
     ? geometry.coordinates
@@ -333,7 +428,8 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
   if (isRateLimited(req)) return res.status(429).json({ error: 'RATE_LIMITED' });
 
-  const { origin, destination, destinationCoordinates } = req.body || {};
+  const { origin, destination, destinationCoordinates, navigationOnly, mode } = req.body || {};
+  const routingMode = ['drive', 'motorcycle', 'walk', 'bicycle'].includes(mode) ? mode : 'drive';
   const explicitDestCoords = asCoordinates(destinationCoordinates);
   if ((!asCoordinates(origin) && (typeof origin !== 'string' || !origin.trim() || origin.length > 200)) ||
       (!explicitDestCoords && (typeof destination !== 'string' || !destination.trim() || destination.length > 200))) {
@@ -341,11 +437,13 @@ export default async function handler(req, res) {
   }
 
   const apiKey = process.env.GEOAPIFY_API_KEY;
-  if (!apiKey) return res.status(503).json({ error: 'GEOAPIFY_API_KEY_NOT_CONFIGURED' });
+  if (!apiKey && !(navigationOnly && asCoordinates(origin) && explicitDestCoords)) {
+    return res.status(503).json({ error: 'GEOAPIFY_API_KEY_NOT_CONFIGURED' });
+  }
 
   try {
     const [routeOrigin, initialRouteDestination] = await Promise.all([
-      resolveLocation(origin, apiKey),
+      asCoordinates(origin) ? Promise.resolve(asCoordinates(origin)) : resolveLocation(origin, apiKey),
       explicitDestCoords ? Promise.resolve(explicitDestCoords) : resolveLocation(destination, apiKey)
     ]);
     if (!routeOrigin || !initialRouteDestination) {
@@ -353,7 +451,7 @@ export default async function handler(req, res) {
     }
 
     const destinationCandidates = [initialRouteDestination];
-    if (typeof destination === 'string') {
+    if (typeof destination === 'string' && apiKey) {
       const normalizedDestination = destination.replace(/\s*\(([^)]+)\)/g, ', $1').trim();
       const simplifiedDestination = destination.replace(/\s*\([^)]+\)/g, '').trim();
       for (const candidate of [normalizedDestination, simplifiedDestination]) {
@@ -365,71 +463,115 @@ export default async function handler(req, res) {
     let routeFeature;
     let routePoints = [];
     let lastRouteError;
-    for (const [index, candidate] of destinationCandidates.entries()) {
-      if (index > 0) {
-        try {
-          routeDestination = await resolveLocation(candidate, apiKey);
-        } catch (error) {
-          lastRouteError = error;
-          continue;
+    if (apiKey) {
+      for (const [index, candidate] of destinationCandidates.entries()) {
+        if (index > 0) {
+          try {
+            routeDestination = await resolveLocation(candidate, apiKey);
+          } catch (error) {
+            lastRouteError = error;
+            continue;
+          }
+          if (!routeDestination ||
+              (routeDestination.lat === initialRouteDestination.lat &&
+               routeDestination.lon === initialRouteDestination.lon)) continue;
         }
-        if (!routeDestination ||
-            (routeDestination.lat === initialRouteDestination.lat &&
-             routeDestination.lon === initialRouteDestination.lon)) continue;
-      }
 
-      const routeCacheKey = `${routeOrigin.lat.toFixed(4)},${routeOrigin.lon.toFixed(4)}|${routeDestination.lat.toFixed(4)},${routeDestination.lon.toFixed(4)}`;
-      const cachedRoute = getCached(routeFeatureCache, routeCacheKey, ROUTE_TTL_MS);
-      if (cachedRoute) {
-        routeFeature = cachedRoute.feature;
-        routePoints = cachedRoute.points;
-        break;
-      }
-
-      const routingUrl = new URL(ROUTING_URL);
-      routingUrl.searchParams.set('waypoints',
-        `${routeOrigin.lat},${routeOrigin.lon}|${routeDestination.lat},${routeDestination.lon}`);
-      routingUrl.searchParams.set('mode', 'drive');
-      routingUrl.searchParams.set('type', 'balanced');
-      routingUrl.searchParams.set('format', 'geojson');
-      routingUrl.searchParams.set('apiKey', apiKey);
-      try {
-        const routeResponse = await fetch(routingUrl);
-        if (!routeResponse.ok) {
-          throw await providerError(routeResponse, 'GEOAPIFY_ROUTING_UNAVAILABLE');
-        }
-        const routeData = await routeResponse.json();
-        routeFeature = routeData.features?.[0];
-        routePoints = getRoutePoints(routeFeature?.geometry);
-        if (routeFeature && routePoints.length >= 2) {
-          setCached(routeFeatureCache, routeCacheKey, { feature: routeFeature, points: routePoints }, 300);
+        const routeCacheKey = `${routingMode}|${routeOrigin.lat.toFixed(4)},${routeOrigin.lon.toFixed(4)}|${routeDestination.lat.toFixed(4)},${routeDestination.lon.toFixed(4)}`;
+        const cachedRoute = getCached(routeFeatureCache, routeCacheKey, ROUTE_TTL_MS);
+        if (cachedRoute) {
+          routeFeature = cachedRoute.feature;
+          routePoints = cachedRoute.points;
           break;
         }
-        lastRouteError = Object.assign(new Error('GEOAPIFY_ROUTE_NOT_FOUND'), {
-          code: 'GEOAPIFY_ROUTE_NOT_FOUND'
+
+        const routingUrl = new URL(ROUTING_URL);
+        routingUrl.searchParams.set('waypoints',
+          `${routeOrigin.lat},${routeOrigin.lon}|${routeDestination.lat},${routeDestination.lon}`);
+        routingUrl.searchParams.set('mode', routingMode);
+        routingUrl.searchParams.set('type', 'balanced');
+        routingUrl.searchParams.set('details', 'instruction_details');
+        routingUrl.searchParams.set('format', 'geojson');
+        routingUrl.searchParams.set('apiKey', apiKey);
+        try {
+          const routeResponse = await fetch(routingUrl);
+          if (!routeResponse.ok) {
+            throw await providerError(routeResponse, 'GEOAPIFY_ROUTING_UNAVAILABLE');
+          }
+          const routeData = await routeResponse.json();
+          routeFeature = routeData.features?.[0];
+          routePoints = getRoutePoints(routeFeature?.geometry);
+          if (routeFeature && routePoints.length >= 2) {
+            setCached(routeFeatureCache, routeCacheKey, { feature: routeFeature, points: routePoints }, 300);
+            break;
+          }
+          lastRouteError = Object.assign(new Error('GEOAPIFY_ROUTE_NOT_FOUND'), {
+            code: 'GEOAPIFY_ROUTE_NOT_FOUND'
+          });
+        } catch (error) {
+          lastRouteError = error;
+        }
+      }
+    }
+
+    if ((!routeFeature || routePoints.length < 2) && navigationOnly) {
+      const osrm = await fetchOsrmNavigationFallback(routeOrigin, routeDestination, routingMode);
+      if (osrm) {
+        return res.status(200).json({
+          route: {
+            distanceKm: Math.round(osrm.distanceMeters / 100) / 10,
+            distanceMeters: osrm.distanceMeters,
+            durationHours: Math.round((osrm.durationSeconds / 3600) * 10) / 10,
+            durationSeconds: osrm.durationSeconds,
+            encodedPolyline: encodePolyline(osrm.routePoints),
+            originCoordinates: { lat: routeOrigin.lat, lng: routeOrigin.lon },
+            destinationCoordinates: { lat: routeDestination.lat, lng: routeDestination.lon },
+            steps: osrm.steps,
+            provider: 'osrm_fallback'
+          }
         });
-      } catch (error) {
-        lastRouteError = error;
       }
     }
     if (!routeFeature || routePoints.length < 2) throw lastRouteError;
+
+    const properties = routeFeature.properties || {};
+    if (!Number.isFinite(properties.distance) || !Number.isFinite(properties.time)) {
+      return res.status(502).json({ error: 'GEOAPIFY_ROUTE_DATA_INVALID' });
+    }
+    const steps = extractNavigationSteps(routeFeature, routePoints);
+
+    if (navigationOnly) {
+      return res.status(200).json({
+        route: {
+          distanceKm: Math.round(properties.distance / 100) / 10,
+          distanceMeters: Math.round(properties.distance),
+          durationHours: Math.round((properties.time / 3600) * 10) / 10,
+          durationSeconds: Math.round(properties.time),
+          encodedPolyline: encodePolyline(routePoints),
+          originCoordinates: { lat: routeOrigin.lat, lng: routeOrigin.lon },
+          destinationCoordinates: { lat: routeDestination.lat, lng: routeDestination.lon },
+          steps,
+          provider: 'geoapify_routing'
+        }
+      });
+    }
 
     const [routeSearch, destinationPlaces] = await Promise.all([
       searchPlacesAlongRoute(apiKey, routePoints),
       searchDestinationPlaces(apiKey, routeDestination)
     ]);
-    const properties = routeFeature.properties || {};
-    if (!Number.isFinite(properties.distance) || !Number.isFinite(properties.time)) {
-      return res.status(502).json({ error: 'GEOAPIFY_ROUTE_DATA_INVALID' });
-    }
 
     return res.status(200).json({
       route: {
         distanceKm: Math.round(properties.distance / 100) / 10,
+        distanceMeters: Math.round(properties.distance),
         durationHours: Math.round((properties.time / 3600) * 10) / 10,
+        durationSeconds: Math.round(properties.time),
         encodedPolyline: encodePolyline(routePoints),
         originCoordinates: { lat: routeOrigin.lat, lng: routeOrigin.lon },
-        destinationCoordinates: { lat: routeDestination.lat, lng: routeDestination.lon }
+        destinationCoordinates: { lat: routeDestination.lat, lng: routeDestination.lon },
+        steps,
+        provider: 'geoapify_routing'
       },
       places: routeSearch.places,
       placeSearchWarnings: routeSearch.placeSearchWarnings,
