@@ -504,6 +504,37 @@ export function triggerHaptic(type: 'light' | 'medium' | 'heavy' | 'success' | '
 }
 
 /**
+ * Universal cross-browser clipboard helper (works in Chrome, Safari, Firefox, Edge,
+ * Samsung Internet, and non-HTTPS/WebView fallbacks without unhandled Promise rejections).
+ */
+export async function copyTextToClipboard(text: string): Promise<boolean> {
+  if (typeof window === 'undefined' || !text) return false;
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall through to execCommand fallback for Firefox/Safari restricted contexts
+  }
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Cross-platform file export that works identically on Desktop Web, iOS WKWebView, and Android WebView.
  * Native WebViews ignore `<a download="blob:...">`, so native platforms invoke the OS Share Sheet
  * (Save to Files, Add to Calendar, AirDrop, Nearby Share) with safe clipboard fallback.

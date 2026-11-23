@@ -3,7 +3,7 @@ import { Trip, PackingItem, PackingCategory, WeatherDay, WeatherForecast } from 
 import { getDestinationWeather, fetchLiveDestinationWeather } from '../../services/weatherService';
 import { generateSmartPackingList } from '../../services/packingService';
 import { loadTripPacking, saveTripPacking } from '../../services/storageService';
-import { openExternalUrl, triggerHaptic } from '../../services/deviceService';
+import { openExternalUrl, triggerHaptic, copyTextToClipboard } from '../../services/deviceService';
 import { calculateBaggageWeight, AIRLINE_POLICIES } from '../../services/baggageWeightService';
 import confetti from 'canvas-confetti';
 import { Sun, CloudRain, Wind, Droplets, CheckCircle2, Circle, Plus, Trash2, RotateCcw, Sparkles, Thermometer, Share2, Check, Luggage, Compass, Umbrella, Shirt } from 'lucide-react';
@@ -238,7 +238,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
     const fullText = `${header}${progress}${itemsText}\n\n_Planned via TripVerse AI_`;
 
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(fullText);
+      void copyTextToClipboard(fullText);
       setCopiedShare(true);
       setTimeout(() => setCopiedShare(false), 2500);
       triggerHaptic('light');

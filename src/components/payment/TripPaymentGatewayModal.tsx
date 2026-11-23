@@ -30,7 +30,7 @@ import confetti from 'canvas-confetti';
 import { Trip, CurrencyCode } from '../../types/trip';
 import { formatCurrency, CURRENCIES, convertFromINR } from '../../services/currencyService';
 import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
-import { triggerHaptic, saveOrShareFile } from '../../services/deviceService';
+import { triggerHaptic, saveOrShareFile, copyTextToClipboard } from '../../services/deviceService';
 import { getCurrentUser } from '../../services/authService';
 import { 
   BookingRecord, 
@@ -373,7 +373,7 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
 
   // Copy UPI string
   const handleCopyUpiLink = () => {
-    navigator.clipboard.writeText(upiPaymentUri);
+    void copyTextToClipboard(upiPaymentUri);
     setCopiedUpi(true);
     triggerHaptic('light');
     setTimeout(() => setCopiedUpi(false), 2000);

@@ -15,7 +15,7 @@ import {
   calculateFuelAndTolls,
   VEHICLE_CONFIGS 
 } from '../../services/expenseService';
-import { triggerHaptic } from '../../services/deviceService';
+import { triggerHaptic, copyTextToClipboard } from '../../services/deviceService';
 import confetti from 'canvas-confetti';
 import { 
   Wallet, 
@@ -223,7 +223,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
 
   const handleCopyWhatsApp = () => {
     const text = generateWhatsAppSettlementSummary(trip.name, summary, expenses);
-    navigator.clipboard.writeText(text);
+    void copyTextToClipboard(text);
     setCopiedWhatsApp(true);
     triggerHaptic('success');
     setTimeout(() => setCopiedWhatsApp(false), 2500);

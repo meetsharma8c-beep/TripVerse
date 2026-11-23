@@ -84,7 +84,8 @@ export async function fetchLiveLandmarkNarration(
       const data = await res.json().catch(() => null);
       const extract = typeof data?.extract === 'string' ? data.extract.trim() : '';
       if (extract.length >= 60 && data?.type !== 'disambiguation') {
-        const sentences = extract.split(/(?<=[.!?])\s+/).slice(0, 3).join(' ');
+        const matched = extract.match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g);
+        const sentences = (matched ? matched.slice(0, 3).map((s: string) => s.trim()).join(' ') : extract).trim();
         return `Welcome to ${landmarkName}${destination ? ` in ${destination}` : ''}. ${sentences}`;
       }
     } catch {

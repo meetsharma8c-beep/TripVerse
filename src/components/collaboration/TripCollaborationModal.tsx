@@ -4,7 +4,7 @@ import { X, Users, Copy, Check, Share2, ThumbsUp, ThumbsDown, Plus, Sparkles, Cr
 import confetti from 'canvas-confetti';
 import { Trip, CollaborationSession, TripCollaborator, GroupSuggestion } from '../../types/trip';
 import { AuthUser } from '../../types/auth';
-import { openExternalUrl, triggerHaptic } from '../../services/deviceService';
+import { openExternalUrl, triggerHaptic, copyTextToClipboard } from '../../services/deviceService';
 import { getTripPolls, createTripPoll, voteOnPoll, closePoll, GroupPoll } from '../../services/groupPollService';
 import { useLanguage } from '../../services/languageService';
 import { 
@@ -111,13 +111,13 @@ export const TripCollaborationModal: React.FC<TripCollaborationModalProps> = ({
     : `https://trip-verse.com/?collab=${session.inviteCode}`;
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(session.inviteCode);
+    void copyTextToClipboard(session.inviteCode);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(inviteUrl);
+    void copyTextToClipboard(inviteUrl);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };

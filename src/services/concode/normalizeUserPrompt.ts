@@ -5,33 +5,34 @@
  * detailed budget, pacing, or transport requirements.
  */
 
-const SLANG_DICTIONARY: Record<string, string> = {
-  '\\brn\\b': 'right now',
-  '\\bwknd\\b': 'weekend',
-  '\\bngl\\b': 'honestly',
-  '\\btbh\\b': 'to be honest',
-  '(?<=\\s|^)b/w(?=\\s|$)': 'between',
-  '(?<=\\s|^)w/(?=\\s|$)': 'with',
-  '(?<=\\s|^)w/o(?=\\s|$)': 'without',
-  '\\bppl\\b': 'people',
-  '\\bpax\\b': 'travelers',
-  '\\bbcz\\b': 'because',
-  '\\bcuz\\b': 'because',
-  '\\bidk\\b': 'I do not know',
-  '\\bpls\\b': 'please',
-  '\\bplz\\b': 'please',
-  '\\bhv\\b': 'have',
-  '\\bacc\\b': 'according',
-  '(\\d+)k\\b': '₹$1,000', // Converts "15k" -> "₹15,000" automatically
-};
+const SLANG_RULES: Array<[RegExp, string]> = [
+  [/\brn\b/gi, 'right now'],
+  [/\bwknd\b/gi, 'weekend'],
+  [/\bngl\b/gi, 'honestly'],
+  [/\btbh\b/gi, 'to be honest'],
+  // Safari 14-16.3 safe (no regex lookbehind): preserve leading whitespace/start anchor
+  [/(^|\s)b\/w(?=\s|$)/gi, '$1between'],
+  [/(^|\s)w\/(?=\s|$)/gi, '$1with'],
+  [/(^|\s)w\/o(?=\s|$)/gi, '$1without'],
+  [/\bppl\b/gi, 'people'],
+  [/\bpax\b/gi, 'travelers'],
+  [/\bbcz\b/gi, 'because'],
+  [/\bcuz\b/gi, 'because'],
+  [/\bidk\b/gi, 'I do not know'],
+  [/\bpls\b/gi, 'please'],
+  [/\bplz\b/gi, 'please'],
+  [/\bhv\b/gi, 'have'],
+  [/\bacc\b/gi, 'according'],
+  [/(\d+)k\b/gi, '₹$1,000'], // Converts "15k" -> "₹15,000" automatically
+];
 
 export function preparePromptForConCode(rawUserText: string): string {
   if (!rawUserText || typeof rawUserText !== 'string') return '';
   let normalized = rawUserText.trim();
 
   // 1. Expand abbreviations & currency shorthand
-  for (const [pattern, replacement] of Object.entries(SLANG_DICTIONARY)) {
-    normalized = normalized.replace(new RegExp(pattern, 'gi'), replacement);
+  for (const [regex, replacement] of SLANG_RULES) {
+    normalized = normalized.replace(regex, replacement);
   }
 
   // 2. Detect long/complex multi-part queries and inject a constraint-lock reminder

@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { ArrowRight, X, Clock, RefreshCw, Copy, Check, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatCurrency, SupportedCurrency } from '../../services/currencyService';
-import { triggerHaptic, openExternalUrl } from '../../services/deviceService';
+import { triggerHaptic, openExternalUrl, copyTextToClipboard } from '../../services/deviceService';
 import { buildUpiPaymentUri, getUpiQrCodeUrl } from '../../services/paymentGatewayService';
 import { useLanguage } from '../../services/languageService';
 
@@ -110,7 +110,7 @@ export const UpiPaymentModal: React.FC<UpiPaymentModalProps> = ({
   };
 
   const handleCopyVpa = () => {
-    navigator.clipboard.writeText(recipientVpa);
+    void copyTextToClipboard(recipientVpa);
     setCopiedVpa(true);
     triggerHaptic('light');
     setTimeout(() => setCopiedVpa(false), 2000);

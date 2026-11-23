@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Award, Sparkles, Check, Compass, Lock, Globe, Share2, Mountain, Waves, Landmark, Snowflake, Trees, Sun, Coffee, Train, Route, Leaf, MapPin } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { openExternalUrl, triggerHaptic } from '../../services/deviceService';
+import { openExternalUrl, triggerHaptic, copyTextToClipboard } from '../../services/deviceService';
 import { loadUserVisitedStates, saveUserVisitedStates } from '../../services/storageService';
 import { useLanguage } from '../../services/languageService';
 
@@ -309,7 +309,7 @@ export const DigitalPassport: React.FC = () => {
       : `TripVerse India Travel Passport:\n• ${visitedStates.length}/${TOTAL_STATES_AND_UTS} States & UTs Explored (${percentUnlocked}% of India Unlocked)\n• ~${estimatedKm.toLocaleString()} km Logged\n• ${indiaBadges.filter(b => b.unlocked).length} Achievement Badges Earned\n\nTrack your journeys with TripVerse AI`;
 
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(text);
+      void copyTextToClipboard(text);
       setCopiedShare(true);
       setTimeout(() => setCopiedShare(false), 2500);
       triggerHaptic('light');

@@ -1,3 +1,4 @@
+import { copyTextToClipboard } from '../../services/deviceService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import React, { useState, useEffect } from 'react';
 import { Trip } from '../../types/trip';
@@ -34,7 +35,7 @@ export const ShareTripModal: React.FC<ShareTripModalProps> = ({
     : `https://trip-verse.com/?tripId=${trip.id}`;
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
+    void copyTextToClipboard(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };

@@ -26,7 +26,8 @@
     radial-gradient(ellipse 70% 45% at 88% 12%, rgba(45, 90, 61, 0.11), transparent 55%),
     radial-gradient(ellipse 65% 55% at 50% 62%, rgba(234, 240, 233, 0.72), transparent 70%),
     radial-gradient(ellipse 60% 45% at 82% 90%, rgba(142, 167, 141, 0.18), transparent 60%);
-  background-attachment: fixed;
+  /* Use scroll attachment across all browsers (Firefox/Safari repaint-storm fix) */
+  background-attachment: scroll;
 }
 
 html.dark .liquid-canvas-mesh {
@@ -35,15 +36,7 @@ html.dark .liquid-canvas-mesh {
     radial-gradient(ellipse 75% 50% at 15% 6%, rgba(45, 90, 61, 0.28), transparent 58%),
     radial-gradient(ellipse 65% 45% at 86% 18%, rgba(16, 185, 129, 0.12), transparent 55%),
     radial-gradient(ellipse 70% 50% at 45% 75%, rgba(21, 42, 28, 0.34), transparent 68%);
-  background-attachment: fixed;
-}
-
-/* Android Chrome & iOS Safari: avoid background-attachment: fixed repaint storms & gradient stretch */
-@media (max-width: 1024px) {
-  .liquid-canvas-mesh,
-  html.dark .liquid-canvas-mesh {
-    background-attachment: scroll;
-  }
+  background-attachment: scroll;
 }
 
 /* ==========================================================================
