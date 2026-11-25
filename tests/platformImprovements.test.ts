@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkDistributedRateLimit, applyRateLimitHeaders } from '../api/rateLimiter.js';
+import { checkDistributedRateLimit, applyRateLimitHeaders } from '../server/rateLimiter.js';
 import {
   saveTripsToOfflineDb,
   loadTripsFromOfflineDb,

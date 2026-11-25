@@ -398,6 +398,8 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
       : Math.max(1, convertFromINR(finalPayableINR, targetOrderCurrency));
 
     // Attempt Live Gateway Checkout via Razorpay Serverless API
+    const activePayer = getCurrentUser();
+    const inferredCycle = (customTitle || '').toLowerCase().includes('month') ? 'monthly' : 'annual';
     try {
       const orderRes = await createRazorpayOrder({
         amount: targetOrderAmount,
@@ -408,6 +410,9 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
           displayCurrency: currency,
           displayAmount: String(targetOrderAmount),
           packageType,
+          billingCycle: packageType === 'pro_subscription' ? inferredCycle : 'one_time',
+          userId: activePayer?.uid || '',
+          userEmail: activePayer?.email || '',
           paymentMethod: methodName
         }
       });
@@ -469,7 +474,10 @@ export const TripPaymentGatewayModal: React.FC<TripPaymentGatewayModalProps> = (
               const verifyRes = await verifyRazorpayPayment({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature
+                razorpay_signature: response.razorpay_signature,
+                userEmail: user?.email || '',
+                packageType,
+                billingCycle: packageType === 'pro_subscription' ? inferredCycle : 'one_time'
               });
               if (verifyRes?.verified) {
                 finalizeSuccessfulBooking(methodName, response.razorpay_payment_id);

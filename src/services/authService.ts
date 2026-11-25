@@ -29,7 +29,8 @@ import {
 } from './firebase';
 import { 
   saveProfileToSupabase, 
-  loadProfileFromSupabase 
+  loadProfileFromSupabase,
+  deleteCloudVaultForAccount
 } from './supabaseSyncService';
 import { resolveApiUrl } from './deviceService';
 
@@ -2232,6 +2233,13 @@ export function switchAccount(userId: string): AuthUser {
  */
 export function deleteAccount(userId: string): void {
   const accounts = loadAccounts();
+  const targetAccount = accounts.find(a => a.user.uid === userId);
+  const current = getCurrentUser();
+  const targetEmail = targetAccount?.user.email || (current?.uid === userId ? current.email : undefined);
+
+  // Purge cloud Firestore vault + shadow Auth record asynchronously (Apple Guideline 5.1.1(v))
+  deleteCloudVaultForAccount(userId, targetEmail).catch(() => {});
+
   const filtered = accounts.filter(a => a.user.uid !== userId);
   saveAccounts(filtered);
 
@@ -2261,7 +2269,6 @@ export function deleteAccount(userId: string): void {
     // Ignore restricted storage environments
   }
 
-  const current = getCurrentUser();
   if (current?.uid === userId) {
     signOut();
   }

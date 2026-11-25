@@ -1,7 +1,7 @@
 // Vercel Serverless Function: Real-Time Auth Activity Automation & Persistent Cloud Monitor
 import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { applyCorsHeaders, checkRateLimit, escapeHtml, getClientIp } from './rateLimiter.js';
+import { applyCorsHeaders, checkRateLimit, escapeHtml, getClientIp } from '../server/rateLimiter.js';
 
 const MAX_ACTIVITIES = 100;
 const activityLog = [];
@@ -17,6 +17,7 @@ const FOUNDER_EMAILS = new Set([
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const FIREBASE_API_KEY = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
+const VAULT_HMAC_SECRET = (process.env.VAULT_HMAC_SECRET || process.env.CONCODE_API_KEY || '').trim();
 
 function isAutomatedTestAccount(email = '', name = '') {
   const lowerEmail = String(email || '').toLowerCase().trim();
@@ -75,21 +76,21 @@ function isAuthorizedFounderEmail(raw = '') {
   return false;
 }
 
-async function verifyFounderIdentityToken(rawToken, sb) {
+async function verifyUserIdentityEmail(rawToken, sb) {
   const token = String(rawToken || '').replace(/^Bearer\s+/i, '').trim();
-  if (!token || token.startsWith('session-')) return false;
+  if (!token || token.startsWith('session-')) return null;
 
-  // 1. Verify Supabase JWT if applicable
+  // 1. Verify Supabase JWT
   if (sb) {
     try {
       const { data, error } = await sb.auth.getUser(token);
-      if (!error && data?.user?.email && isAuthorizedFounderEmail(data.user.email)) {
-        return true;
+      if (!error && data?.user?.email && !data.user.email.endsWith('@vault.tripverse.app')) {
+        return canonicalEmail(data.user.email);
       }
     } catch {}
   }
 
-  // 2. Verify Firebase ID token via IdentityToolkit lookup
+  // 2. Verify Firebase ID token via IdentityToolkit lookup (rejecting shadow @vault.tripverse.app tokens)
   if (FIREBASE_API_KEY) {
     try {
       const fbRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`, {
@@ -104,9 +105,9 @@ async function verifyFounderIdentityToken(rawToken, sb) {
           const candidateEmails = [
             fbUser.email,
             ...(Array.isArray(fbUser.providerUserInfo) ? fbUser.providerUserInfo.map(p => p.email) : [])
-          ].filter(Boolean);
-          if (candidateEmails.some(em => isAuthorizedFounderEmail(em))) {
-            return true;
+          ].filter(em => em && !String(em).toLowerCase().endsWith('@vault.tripverse.app'));
+          if (candidateEmails.length > 0) {
+            return canonicalEmail(candidateEmails[0]);
           }
         }
       }
@@ -118,17 +119,18 @@ async function verifyFounderIdentityToken(rawToken, sb) {
     const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
     if (gRes.ok) {
       const gJson = await gRes.json();
-      if (
-        gJson?.email &&
-        String(gJson.email_verified) === 'true' &&
-        isAuthorizedFounderEmail(gJson.email)
-      ) {
-        return true;
+      if (gJson?.email && String(gJson.email_verified) === 'true' && !String(gJson.email).toLowerCase().endsWith('@vault.tripverse.app')) {
+        return canonicalEmail(gJson.email);
       }
     }
   } catch {}
 
-  return false;
+  return null;
+}
+
+async function verifyFounderIdentityToken(rawToken, sb) {
+  const verifiedEmail = await verifyUserIdentityEmail(rawToken, sb);
+  return Boolean(verifiedEmail && isAuthorizedFounderEmail(verifiedEmail));
 }
 
 // Debounce identical user alerts within a 2-minute window per container
@@ -309,6 +311,74 @@ export default async function handler(req, res) {
     }
 
     const { event, provider, user, targetEmail, subscriptionTier, expiresAt } = req.body || {};
+
+    // ── Server-HMAC Firestore Vault Session Minter (Eliminates client-side password derivation) ──
+    if (event === 'mint_vault_session') {
+      if (!FIREBASE_API_KEY || !VAULT_HMAC_SECRET) {
+        return res.status(503).json({ success: false, error: 'VAULT_UNCONFIGURED' });
+      }
+      const sb = SUPABASE_URL && SUPABASE_ANON_KEY
+        ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
+        : null;
+      const authHeader = req.headers.authorization || req.body?.authToken || '';
+      const verifiedEmail = await verifyUserIdentityEmail(authHeader, sb);
+      if (!verifiedEmail) {
+        return res.status(401).json({
+          success: false,
+          error: 'UNAUTHORIZED',
+          message: 'Valid verified identity token required to mint cloud vault session.'
+        });
+      }
+
+      const canonicalKey = `email:${verifiedEmail}`;
+      const acctHash = crypto
+        .createHmac('sha256', VAULT_HMAC_SECRET)
+        .update(`tv_vault_v2_acct:${canonicalKey}`)
+        .digest('hex')
+        .slice(0, 32);
+      const pwdHash = crypto
+        .createHmac('sha256', VAULT_HMAC_SECRET)
+        .update(`tv_vault_v2_secret:${canonicalKey}`)
+        .digest('hex')
+        .slice(0, 40);
+
+      const vaultEmail = `tvs_${acctHash}@vault.tripverse.app`;
+      const vaultPassword = `TvSec#${pwdHash}!`;
+
+      let fbRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: vaultEmail, password: vaultPassword, returnSecureToken: true })
+        }
+      );
+
+      if (!fbRes.ok) {
+        fbRes = await fetch(
+          `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: vaultEmail, password: vaultPassword, returnSecureToken: true })
+          }
+        );
+      }
+
+      if (!fbRes.ok) {
+        return res.status(502).json({ success: false, error: 'VAULT_AUTH_FAILED' });
+      }
+
+      const fbData = await fbRes.json();
+      const expiresInSec = Number(fbData.expiresIn) || 3600;
+      return res.status(200).json({
+        success: true,
+        canonicalKey,
+        localId: fbData.localId,
+        idToken: fbData.idToken,
+        expiresAt: Date.now() + expiresInSec * 1000
+      });
+    }
 
     // ── Special Founder Action: Cloud Pro Grant / Revoke ──
     if (event === 'admin_pro_override') {

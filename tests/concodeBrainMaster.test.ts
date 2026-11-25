@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { CONCODE_BRAIN_MASTER_PROMPT } from '../src/services/concode/concodeBrainMasterPrompt';
 import { preparePromptForConCode } from '../src/services/concode/normalizeUserPrompt';
-import { CONCODE_COMPACT_PROMPT } from '../api/concodePrompt.js';
+import { CONCODE_COMPACT_PROMPT } from '../server/concodePrompt.js';
 
 describe('ConCode AI Brain Master Architecture & Training Suite', () => {
   it('verifies that CONCODE_BRAIN_MASTER_PROMPT contains all 4 core layers', () => {

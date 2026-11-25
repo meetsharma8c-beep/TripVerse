@@ -1,9 +1,10 @@
 // Vercel Serverless Function: Export Genuine Users to Excel / CSV format
 import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from './rateLimiter.js';
+import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from '../server/rateLimiter.js';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const CONCODE_API_KEY = process.env.CONCODE_API_KEY;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
@@ -59,6 +60,9 @@ export default async function handler(req, res) {
   const expectedKey = RESEND_API_KEY
     ? crypto.createHmac('sha256', RESEND_API_KEY).update('tripverse-admin-read').digest('hex')
     : '';
+  const expectedConcodeKey = CONCODE_API_KEY
+    ? crypto.createHmac('sha256', CONCODE_API_KEY).update('tripverse-admin-read').digest('hex')
+    : '';
   const adminExportSecret = (process.env.ADMIN_EXPORT_SECRET || '').trim();
 
   const matchesSecret = (candidate, expected) => {
@@ -68,7 +72,10 @@ export default async function handler(req, res) {
     return candBuf.length === expBuf.length && crypto.timingSafeEqual(candBuf, expBuf);
   };
 
-  const isAuthorized = matchesSecret(providedKey, expectedKey) || matchesSecret(providedKey, adminExportSecret);
+  const isAuthorized =
+    matchesSecret(providedKey, expectedKey) ||
+    matchesSecret(providedKey, expectedConcodeKey) ||
+    matchesSecret(providedKey, adminExportSecret);
 
   if (!isAuthorized) {
     return res.status(401).json({

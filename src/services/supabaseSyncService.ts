@@ -1,6 +1,7 @@
 import { getSupabaseClient, getStoredSupabaseConfig } from './supabase';
 import { getStoredFirebaseConfig } from './firebase';
-import { getCurrentUser } from './authService';
+import { getActiveSession, getCurrentUser } from './authService';
+import { resolveApiUrl } from './deviceService';
 import { Trip, UserProfile, ExpenseItem, TripReview, TripPhotoMemory, PackingItem } from '../types/trip';
 import { getActiveCurrency } from './currencyService';
 import { DisruptionAlert, RefundGuidance } from '../types/replanning';
@@ -20,7 +21,7 @@ import { toDeterministicUuid } from '../utils/uuid';
  * Firebase Google / Email OTP on iPhone/Android) or when Supabase is paused.
  */
 
-const VAULT_SESSION_CACHE_KEY = 'tripverse_cloud_vault_session_v1';
+const VAULT_SESSION_CACHE_KEY = 'tripverse_cloud_vault_session_v2';
 const DELETED_TRIPS_LOCAL_PREFIX = 'tripverse_deleted_trip_ids_u_';
 
 interface VaultSession {
@@ -134,6 +135,106 @@ function isVitestEnv(): boolean {
   return Boolean(procEnv && (procEnv.VITEST || procEnv.NODE_ENV === 'test'));
 }
 
+async function resolveCallerIdentityJwt(): Promise<string | null> {
+  try {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.access_token) {
+        return data.session.access_token;
+      }
+    }
+  } catch {}
+
+  const active = getActiveSession();
+  if (active?.token && !active.token.startsWith('session-')) {
+    return active.token;
+  }
+  return null;
+}
+
+/**
+ * One-time seamless migration from legacy client-derived v1 vault to hardened server-HMAC v2 vault.
+ * Copies existing Firestore fields to the hardened vault, then permanently deletes the v1 doc & account.
+ */
+async function migrateAndPurgeLegacyV1Vault(
+  canonicalKey: string,
+  newSession: VaultSession,
+  fbConfig: { apiKey: string; projectId: string }
+): Promise<void> {
+  const migKey = `tripverse_vault_v2_migrated_${canonicalKey}`;
+  if (typeof localStorage !== 'undefined' && localStorage.getItem(migKey) === '1') {
+    return;
+  }
+
+  try {
+    // Check if new v2 vault already has a document
+    const newDocUrl = `https://firestore.googleapis.com/v1/projects/${fbConfig.projectId}/databases/(default)/documents/users/${newSession.localId}`;
+    const checkRes = await fetch(newDocUrl, {
+      headers: { Authorization: `Bearer ${newSession.idToken}` }
+    });
+    const newDocExists = checkRes.ok;
+
+    // Authenticate one final time to legacy v1 vault if it exists
+    const emailHash = toDeterministicUuid(`tv_vault_acct:${canonicalKey}`).replace(/-/g, '');
+    const pwdHash = toDeterministicUuid(`tv_vault_secret:${canonicalKey}`).replace(/-/g, '');
+    const legacyEmail = `tv_${emailHash}@vault.tripverse.app`;
+    const legacyPassword = `TvVault#${pwdHash}!`;
+
+    const legacyAuthRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${fbConfig.apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: legacyEmail, password: legacyPassword, returnSecureToken: true })
+      }
+    );
+
+    if (legacyAuthRes.ok) {
+      const legacyAuth = await legacyAuthRes.json();
+      if (legacyAuth?.idToken && legacyAuth?.localId && legacyAuth.localId !== newSession.localId) {
+        const legacyDocUrl = `https://firestore.googleapis.com/v1/projects/${fbConfig.projectId}/databases/(default)/documents/users/${legacyAuth.localId}`;
+        const legacyDocRes = await fetch(legacyDocUrl, {
+          headers: { Authorization: `Bearer ${legacyAuth.idToken}` }
+        });
+
+        if (legacyDocRes.ok) {
+          const legacyDoc = await legacyDocRes.json();
+          if (!newDocExists && legacyDoc?.fields) {
+            await fetch(newDocUrl, {
+              method: 'PATCH',
+              headers: {
+                Authorization: `Bearer ${newSession.idToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ fields: legacyDoc.fields })
+            });
+          }
+          // Permanently delete legacy v1 Firestore document
+          await fetch(legacyDocUrl, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${legacyAuth.idToken}` }
+          }).catch(() => {});
+        }
+
+        // Permanently delete legacy v1 shadow Firebase Auth account
+        await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${fbConfig.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken: legacyAuth.idToken })
+        }).catch(() => {});
+      }
+    }
+
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(migKey, '1');
+      localStorage.removeItem('tripverse_cloud_vault_session_v1');
+    }
+  } catch {
+    // Non-fatal migration check
+  }
+}
+
 export async function getFirestoreVaultSession(
   fallbackUserId?: string | null,
   profileMeta?: Partial<UserProfile>
@@ -180,50 +281,31 @@ export async function getFirestoreVaultSession(
 
   const authPromise = (async (): Promise<VaultSession | null> => {
     try {
-      const emailHash = toDeterministicUuid(`tv_vault_acct:${canonicalKey}`).replace(/-/g, '');
-      const pwdHash = toDeterministicUuid(`tv_vault_secret:${canonicalKey}`).replace(/-/g, '');
-      const vaultEmail = `tv_${emailHash}@vault.tripverse.app`;
-      const vaultPassword = `TvVault#${pwdHash}!`;
+      const callerJwt = await resolveCallerIdentityJwt();
+      if (!callerJwt) return null;
 
-      let res = await fetch(
-        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${fbConfig.apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: vaultEmail,
-            password: vaultPassword,
-            returnSecureToken: true,
-          }),
-        }
-      );
+      const mintRes = await fetch(resolveApiUrl('/api/auth-activity'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${callerJwt}`
+        },
+        body: JSON.stringify({ event: 'mint_vault_session' })
+      });
 
-      if (!res.ok) {
-        res = await fetch(
-          `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${fbConfig.apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: vaultEmail,
-              password: vaultPassword,
-              returnSecureToken: true,
-            }),
-          }
-        );
-      }
+      if (!mintRes.ok) return null;
+      const minted = await mintRes.json();
+      if (!minted?.success || !minted?.idToken || !minted?.localId) return null;
 
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (!data?.idToken || !data?.localId) return null;
-
-      const expiresInSec = Number(data.expiresIn) || 3600;
       const session: VaultSession = {
-        canonicalKey,
-        localId: data.localId,
-        idToken: data.idToken,
-        expiresAt: Date.now() + expiresInSec * 1000,
+        canonicalKey: minted.canonicalKey || canonicalKey,
+        localId: minted.localId,
+        idToken: minted.idToken,
+        expiresAt: Number(minted.expiresAt) || Date.now() + 3600 * 1000
       };
+
+      await migrateAndPurgeLegacyV1Vault(session.canonicalKey, session, fbConfig);
+
       memoryVaultSession = session;
       if (typeof localStorage !== 'undefined') {
         try {
@@ -242,6 +324,41 @@ export async function getFirestoreVaultSession(
 
   inflightVaultAuth.set(canonicalKey, authPromise);
   return authPromise;
+}
+
+/**
+ * Permanently deletes a user's Firestore cloud vault document and shadow Auth record
+ * (Apple App Store Guideline 5.1.1(v) & Google Play Data Deletion compliance).
+ */
+export async function deleteCloudVaultForAccount(
+  userId?: string | null,
+  email?: string | null
+): Promise<void> {
+  if (isVitestEnv()) return;
+  const fbConfig = getStoredFirebaseConfig();
+  if (!fbConfig?.apiKey || !fbConfig?.projectId) return;
+
+  try {
+    const session = await getFirestoreVaultSession(userId, email ? { email } : undefined);
+    if (session) {
+      const docUrl = `https://firestore.googleapis.com/v1/projects/${fbConfig.projectId}/databases/(default)/documents/users/${session.localId}`;
+      await fetch(docUrl, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session.idToken}` }
+      }).catch(() => {});
+
+      await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${fbConfig.apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: session.idToken })
+      }).catch(() => {});
+    }
+  } catch {} finally {
+    memoryVaultSession = null;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(VAULT_SESSION_CACHE_KEY);
+    }
+  }
 }
 
 function safeJsonParse<T>(raw: string | undefined | null, fallback: T): T {

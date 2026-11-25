@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["TEAMID.ai.tripverse.app"],
+        "components": [
+          {
+            "/": "/share/*",
+            "comment": "Open shared TripVerse itineraries directly in native iOS app"
+          },
+          {
+            "/": "/destination/*",
+            "comment": "Open destination guides in native iOS app"
+          }
+        ]
+      }
+    ]
+  }
+}

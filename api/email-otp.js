@@ -1,6 +1,6 @@
 // Vercel Serverless Function: Multi-Provider Transactional Email Gateway (OTP + Itinerary Summaries)
 import crypto from 'crypto';
-import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, escapeHtml, getClientIp } from './rateLimiter.js';
+import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, escapeHtml, getClientIp } from '../server/rateLimiter.js';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const BREVO_API_KEY = process.env.BREVO_API_KEY;

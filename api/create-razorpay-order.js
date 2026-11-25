@@ -1,5 +1,5 @@
 // Vercel Serverless Function: Create Razorpay Order
-import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from './rateLimiter.js';
+import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from '../server/rateLimiter.js';
 
 export default async function handler(req, res) {
   applyCorsHeaders(req, res, 'POST, OPTIONS');

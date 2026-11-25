@@ -3,7 +3,7 @@
 // Optional Enterprise Fallback: Amadeus Enterprise API (if AMADEUS_CLIENT_ID / AMADEUS_CLIENT_SECRET are configured)
 // Never fabricates live quotes: falls back transparently to seasonal model when no live key is configured.
 
-import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from './rateLimiter.js';
+import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from '../server/rateLimiter.js';
 
 const CARRIER_NAMES = {
   '6E': 'IndiGo',

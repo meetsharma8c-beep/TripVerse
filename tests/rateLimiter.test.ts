@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { checkRateLimit, getClientIp } from '../api/rateLimiter.js';
-import { CONCODE_MASTER_PROMPT, CONCODE_COMPACT_PROMPT, CONCODE_ITINERARY_PROMPT } from '../api/concodePrompt.js';
+import { checkRateLimit, getClientIp } from '../server/rateLimiter.js';
+import { CONCODE_MASTER_PROMPT, CONCODE_COMPACT_PROMPT, CONCODE_ITINERARY_PROMPT } from '../server/concodePrompt.js';
 
 describe('Serverless Rate Limiter Unit Tests', () => {
   it('allows requests within limit', () => {

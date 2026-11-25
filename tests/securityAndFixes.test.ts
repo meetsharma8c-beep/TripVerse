@@ -75,7 +75,7 @@ describe('Security, API & UX Fixes Verification', () => {
   });
 
   it('api/rateLimiter sets Vary: Origin header for safe CORS caching', async () => {
-    const { applyCorsHeaders } = await import('../api/rateLimiter.js');
+    const { applyCorsHeaders } = await import('../server/rateLimiter.js');
     const { req, res, getResult } = createMockReqRes({
       headers: { origin: 'https://trip-verse.com' },
     });
@@ -152,7 +152,7 @@ describe('Security, API & UX Fixes Verification', () => {
   });
 
   it('api/rateLimiter allows Capacitor iOS and Android WebView origins in CORS headers', async () => {
-    const { applyCorsHeaders } = await import('../api/rateLimiter.js');
+    const { applyCorsHeaders } = await import('../server/rateLimiter.js');
     for (const nativeOrigin of ['https://localhost', 'capacitor://localhost', 'ionic://localhost']) {
       const { req, res, getResult } = createMockReqRes({
         method: 'OPTIONS',

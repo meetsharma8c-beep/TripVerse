@@ -1,5 +1,5 @@
-import { CONCODE_MASTER_PROMPT, CONCODE_COMPACT_PROMPT, CONCODE_ITINERARY_PROMPT, CONCODE_BRAIN_MASTER_PROMPT } from './concodePrompt.js';
-import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from './rateLimiter.js';
+import { CONCODE_MASTER_PROMPT, CONCODE_COMPACT_PROMPT, CONCODE_ITINERARY_PROMPT, CONCODE_BRAIN_MASTER_PROMPT } from '../server/concodePrompt.js';
+import { applyCorsHeaders, applyRateLimitHeaders, checkDistributedRateLimit, getClientIp } from '../server/rateLimiter.js';
 
 // Vercel Serverless Function: private TripVerse-to-CONCODE travel proxy.
 // The CONCODE key exists only in Vercel environment variables, never in the app bundle.

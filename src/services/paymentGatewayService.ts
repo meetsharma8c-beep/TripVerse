@@ -462,7 +462,10 @@ export async function verifyRazorpayPayment(params: {
   razorpay_order_id: string;
   razorpay_payment_id: string;
   razorpay_signature: string;
-}): Promise<{ ok: boolean; verified: boolean; error?: string }> {
+  userEmail?: string;
+  packageType?: string;
+  billingCycle?: string;
+}): Promise<{ ok: boolean; verified: boolean; cloudProPersisted?: boolean; error?: string }> {
   try {
     const res = await fetch(resolveApiUrl('/api/verify-razorpay-payment'), {
       method: 'POST',
