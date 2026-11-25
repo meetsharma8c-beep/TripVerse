@@ -525,6 +525,17 @@ export default defineConfig(({ mode }) => {
     build: {
       target: ['es2020', 'edge88', 'firefox78', 'chrome80', 'safari14'],
       cssTarget: ['chrome80', 'safari14'],
+      modulePreload: {
+        resolveDependencies(_filename, deps) {
+          return deps.filter(
+            dep =>
+              !dep.includes('vendor-three') &&
+              !dep.includes('vendor-leaflet') &&
+              !dep.includes('vendor-confetti') &&
+              !dep.includes('landmarkAtlasService')
+          );
+        }
+      },
       rollupOptions: {
         output: {
           manualChunks(id) {

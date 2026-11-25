@@ -10,7 +10,14 @@ import {
   verifyTripBudgetLocally,
   verifyTripBudgetWithApex
 } from '../../services/budgetFormalVerifier';
-import { TrendingDown, Sparkles, Check, Car, Bed, Utensils, Ticket, Shield, Plane, Zap, ExternalLink, AlertTriangle, ShieldCheck, TrainFront, Wallet } from 'lucide-react';
+import {
+  buildDirectCheckoutLinks,
+  disableTripPriceWatch,
+  enableTripPriceWatch,
+  evaluatePriceWatch
+} from '../../services/priceWatchService';
+import { openExternalUrl } from '../../services/deviceService';
+import { TrendingDown, Sparkles, Check, Car, Bed, Utensils, Ticket, Shield, Plane, Zap, ExternalLink, AlertTriangle, ShieldCheck, TrainFront, Wallet, Bell, BellRing } from 'lucide-react';
 
 interface BudgetOptimizerProps {
   trip: Trip;
@@ -26,6 +33,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
   const { t } = useLanguage();
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
   const [liveQuotes, setLiveQuotes] = useState<LiveMarketQuoteResult | null>(null);
+  const [priceWatchTick, setPriceWatchTick] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -608,6 +616,120 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
             </div>
           </div>
         )}
+
+        {/* Live Flight & Hotel Price Drop Watch + 1-Click Direct Checkout Deep Links */}
+        {(() => {
+          void priceWatchTick;
+          const fallbackFlight = liveMarketReport.flightTotalGroupINR || trip.budgetBreakdown.transportation;
+          const fallbackHotelNightly = Math.max(
+            1200,
+            Math.round((liveMarketReport.hotelTotalGroupINR || trip.budgetBreakdown.accommodation) / Math.max(1, nights * rooms))
+          );
+          const watchState = evaluatePriceWatch(trip, liveQuotes, fallbackFlight, fallbackHotelNightly);
+          const checkoutLinks = buildDirectCheckoutLinks(
+            trip,
+            liveMarketReport.originAirportCode,
+            liveMarketReport.gatewayAirportCode
+          );
+          const dropped = watchState.totalTripDeltaInr < -100;
+          const surged = watchState.totalTripDeltaInr > 100;
+
+          return (
+            <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex items-start gap-2.5">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                    watchState.isWatching ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-700 text-slate-300'
+                  }`}>
+                    {watchState.isWatching ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <div className="text-xs font-extrabold uppercase tracking-wider text-white flex items-center gap-2 flex-wrap">
+                      <span>Live Fare &amp; Hotel Price Watch</span>
+                      {watchState.isWatching && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-400/30">
+                          Tracking Baseline
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      {!watchState.isWatching
+                        ? 'Lock today’s live flight & hotel baseline to track fare drops before you book.'
+                        : dropped
+                        ? `Price Drop Detected! Total trip is ${formatCurrency(Math.abs(watchState.totalTripDeltaInr), currency)} cheaper than your baseline — great time to book.`
+                        : surged
+                        ? `Fares moved up ${formatCurrency(watchState.totalTripDeltaInr, currency)} since your baseline (${new Date(watchState.baseline!.createdAt).toLocaleDateString()}).`
+                        : `Rates are steady against your ${formatCurrency(watchState.currentFlightGroupInr, currency)} transit & ${formatCurrency(watchState.currentHotelNightlyInr, currency)}/night hotel baseline.`}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (watchState.isWatching) {
+                      disableTripPriceWatch(trip.id);
+                    } else {
+                      enableTripPriceWatch(trip, watchState.currentFlightGroupInr, watchState.currentHotelNightlyInr);
+                    }
+                    setPriceWatchTick(v => v + 1);
+                  }}
+                  className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    watchState.isWatching
+                      ? 'bg-amber-500 text-slate-950 hover:bg-amber-400'
+                      : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+                  }`}
+                >
+                  {watchState.isWatching ? <BellRing className="w-3.5 h-3.5" /> : <Bell className="w-3.5 h-3.5" />}
+                  <span>{watchState.isWatching ? 'Watching Prices' : 'Watch Live Prices'}</span>
+                </button>
+              </div>
+
+              {/* Pre-filled Direct Booking Links */}
+              <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-700/80">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mr-1">
+                  Book Live Rates:
+                </span>
+                {isFlightMode && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => openExternalUrl(checkoutLinks.googleFlightsUrl)}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-950 border border-slate-600 text-[11px] font-semibold text-emerald-300 flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Google Flights</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openExternalUrl(checkoutLinks.skyscannerUrl)}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-950 border border-slate-600 text-[11px] font-semibold text-sky-300 flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Skyscanner</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => openExternalUrl(liveQuotes?.hotels?.[0]?.bookingLink || checkoutLinks.bookingHotelsUrl)}
+                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-950 border border-slate-600 text-[11px] font-semibold text-amber-300 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Booking.com Stays</span>
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openExternalUrl(checkoutLinks.makeMyTripRailsOrFlightsUrl)}
+                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-950 border border-slate-600 text-[11px] font-semibold text-slate-200 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>{isTrainMode ? 'MakeMyTrip Trains' : 'MakeMyTrip'}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Smart Nearby Hub Arbitrage Callout (only relevant for flight trips) */}
         {isFlightMode && liveMarketReport.smartHubArbitrage && (

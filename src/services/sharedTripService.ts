@@ -10,6 +10,7 @@
 import { Trip } from '../types/trip';
 import { getStoredFirebaseConfig } from './firebase';
 import { getFirestoreVaultSession } from './supabaseSyncService';
+import { evaluateLiveMarketPrices } from './liveMarketPricingService';
 
 export interface SharedTripDocument {
   shareId: string;
@@ -253,21 +254,85 @@ export async function fetchSharedTrip(shareId: string): Promise<SharedTripDocume
   return null;
 }
 
+export interface CloneTripCustomizations {
+  customOrigin?: string;
+  customTravelers?: number;
+}
+
 /**
- * Clones a shared public trip into a fresh owned Trip ready to save in the visitor's portfolio.
+ * Clones a shared public trip into a fresh owned Trip ready to save in the visitor's portfolio,
+ * optionally re-originating & live-repricing transit, stay, dining, and sights from the visitor's city.
  */
-export function cloneSharedTripForUser(shared: SharedTripDocument, userId?: string): Trip {
+export function cloneSharedTripForUser(
+  shared: SharedTripDocument,
+  userId?: string,
+  customizations?: CloneTripCustomizations
+): Trip {
   const now = new Date().toISOString();
   const base = shared.trip;
+  const cleanOrigin = (customizations?.customOrigin || base.origin || 'Mumbai').trim();
+  const cleanTravelers = Math.max(1, Math.round(customizations?.customTravelers || base.travelersCount || 1));
+
+  const originChanged = cleanOrigin.toLowerCase() !== (base.origin || '').trim().toLowerCase();
+  const paxChanged = cleanTravelers !== (base.travelersCount || 1);
+
+  let budgetBreakdown = { ...base.budgetBreakdown };
+  let estimatedTotal = base.estimatedTotal || base.totalBudget;
+  let totalBudget = base.totalBudget;
+
+  if (originChanged || paxChanged) {
+    const repriced = evaluateLiveMarketPrices({
+      origin: cleanOrigin,
+      destination: base.destination,
+      durationDays: base.durationDays || 3,
+      travelersCount: cleanTravelers,
+      startDate: base.startDate,
+      accommodationType: base.accommodationType,
+      transportMode: base.transportMode
+    });
+
+    const transitInr =
+      base.transportMode === 'flight'
+        ? repriced.flightTotalGroupINR
+        : base.transportMode === 'train'
+        ? repriced.trainTotalGroupINR
+        : base.transportMode === 'car' || base.transportMode === 'bike'
+        ? repriced.roadTripFuelAndTollsINR
+        : repriced.localTransitTotalGroupINR;
+
+    const stayInr = Math.max(0, (base.durationDays || 3) - 1) === 0 ? 0 : repriced.hotelTotalGroupINR;
+    const foodInr = repriced.diningTotalGroupINR;
+    const actInr = repriced.attractionsTotalGroupINR;
+    const miscInr = Math.round((transitInr + stayInr + foodInr + actInr) * 0.06);
+
+    budgetBreakdown = {
+      transportation: transitInr,
+      accommodation: stayInr,
+      food: foodInr,
+      activities: actInr,
+      miscellaneous: miscInr
+    };
+    estimatedTotal = transitInr + stayInr + foodInr + actInr + miscInr;
+    totalBudget = Math.max(estimatedTotal, Math.round(estimatedTotal * 1.05));
+  }
+
   return {
     ...base,
     id: `trip-${Date.now()}`,
+    origin: cleanOrigin,
+    travelersCount: cleanTravelers,
+    budgetBreakdown,
+    estimatedTotal,
+    totalBudget,
     userId: userId || undefined,
     status: 'draft',
     createdAt: now,
     expenses: [],
     photos: [],
     review: undefined,
-    aiRationale: `Cloned from ${shared.ownerName}'s shared TripVerse itinerary (${shared.shareId}).`,
+    aiRationale:
+      originChanged || paxChanged
+        ? `Cloned from ${shared.ownerName}'s shared itinerary and live-repriced from ${cleanOrigin} for ${cleanTravelers} traveler(s).`
+        : `Cloned from ${shared.ownerName}'s shared TripVerse itinerary (${shared.shareId}).`,
   };
 }

@@ -3360,8 +3360,8 @@ export function App() {
               ) : sharedTripDoc ? (
                 <SharedTripPublicView
                   sharedDoc={sharedTripDoc}
-                  onCloneTrip={(doc) => {
-                    const cloned = cloneSharedTripForUser(doc, currentUser?.uid);
+                  onCloneTrip={(doc, customizations) => {
+                    const cloned = cloneSharedTripForUser(doc, currentUser?.uid, customizations);
                     const updatedTrips = [cloned, ...trips.filter((t) => t.id !== cloned.id)];
                     saveTrips(updatedTrips, currentUser?.uid);
                     setTrips(updatedTrips);
@@ -3371,7 +3371,7 @@ export function App() {
                     setSharedTripDoc(null);
                     setCurrentTab('trip-detail');
                     setAppNotice({
-                      message: `Cloned "${cloned.name}" into your TripVerse portfolio!`,
+                      message: `Cloned "${cloned.name}" (${cloned.origin} → ${cloned.destination}) into your TripVerse portfolio!`,
                       tone: 'info',
                     });
                     scrollPageToTopInstant();

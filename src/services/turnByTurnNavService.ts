@@ -1,5 +1,6 @@
 import { Coordinates } from '../types/trip';
 import { resolveApiUrl } from './deviceService';
+import { loadOfflineKv, saveOfflineKv } from './offlineDbService';
 
 export type NavMode = 'drive' | 'motorcycle' | 'walk' | 'bicycle';
 
@@ -290,41 +291,58 @@ export async function fetchTurnByTurnRoute(params: {
   destinationCoordinates?: Coordinates;
   mode?: NavMode;
 }): Promise<TurnByTurnRoute> {
-  const res = await fetch(resolveApiUrl('/api/route'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      origin: params.origin,
-      destination: params.destination,
-      destinationCoordinates: params.destinationCoordinates,
-      navigationOnly: true,
-      mode: params.mode || 'drive'
-    })
-  });
+  const modeKey = params.mode || 'drive';
+  const offlineKey = `offline_nav_route:${String(params.destination || '').toLowerCase().trim()}:${modeKey}`;
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error || `ROUTE_HTTP_${res.status}`);
+  try {
+    const res = await fetch(resolveApiUrl('/api/route'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin: params.origin,
+        destination: params.destination,
+        destinationCoordinates: params.destinationCoordinates,
+        navigationOnly: true,
+        mode: modeKey
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error || `ROUTE_HTTP_${res.status}`);
+    }
+
+    const data = await res.json();
+    const route = data?.route;
+    if (!route || !route.encodedPolyline) {
+      throw new Error('NO_ROUTE_GEOMETRY');
+    }
+
+    const polylinePoints = decodeEncodedPolyline(route.encodedPolyline);
+    const steps: TurnStep[] = Array.isArray(route.steps) ? route.steps : [];
+
+    const result: TurnByTurnRoute = {
+      distanceMeters: Number.isFinite(route.distanceMeters) ? route.distanceMeters : Math.round((route.distanceKm || 0) * 1000),
+      distanceKm: Number(route.distanceKm || 0),
+      durationSeconds: Number.isFinite(route.durationSeconds) ? route.durationSeconds : Math.round((route.durationHours || 0) * 3600),
+      durationHours: Number(route.durationHours || 0),
+      originCoordinates: route.originCoordinates,
+      destinationCoordinates: route.destinationCoordinates,
+      polylinePoints,
+      steps,
+      provider: route.provider || 'geoapify_routing'
+    };
+
+    saveOfflineKv(offlineKey, result).catch(() => {});
+    return result;
+  } catch (netErr) {
+    // Offline / Airplane-Mode fallback: serve pre-cached corridor route from IndexedDB
+    try {
+      const cached = await loadOfflineKv<TurnByTurnRoute>(offlineKey);
+      if (cached && Array.isArray(cached.polylinePoints) && cached.polylinePoints.length > 0) {
+        return { ...cached, provider: `${cached.provider} (offline_pack)` };
+      }
+    } catch {}
+    throw netErr;
   }
-
-  const data = await res.json();
-  const route = data?.route;
-  if (!route || !route.encodedPolyline) {
-    throw new Error('NO_ROUTE_GEOMETRY');
-  }
-
-  const polylinePoints = decodeEncodedPolyline(route.encodedPolyline);
-  const steps: TurnStep[] = Array.isArray(route.steps) ? route.steps : [];
-
-  return {
-    distanceMeters: Number.isFinite(route.distanceMeters) ? route.distanceMeters : Math.round((route.distanceKm || 0) * 1000),
-    distanceKm: Number(route.distanceKm || 0),
-    durationSeconds: Number.isFinite(route.durationSeconds) ? route.durationSeconds : Math.round((route.durationHours || 0) * 3600),
-    durationHours: Number(route.durationHours || 0),
-    originCoordinates: route.originCoordinates,
-    destinationCoordinates: route.destinationCoordinates,
-    polylinePoints,
-    steps,
-    provider: route.provider || 'geoapify_routing'
-  };
 }

@@ -4,11 +4,15 @@ import { getActiveCurrency, formatCurrency } from '../../services/currencyServic
 import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError } from '../../utils/destinationImages';
 import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
-import { downloadTripCalendarIcs, generateTripIcs } from '../../services/calendarExportService';
-import { saveOfflineKv, loadOfflineKv } from '../../services/offlineDbService';
-import { getTravelReadinessInfo } from '../../services/travelReadinessService';
-import { getEmergencyNumbersForCountry, resolveEmergencyCountryCode } from '../../services/emergencySosService';
-import { Users, Wallet, Sparkles, Share2, Download, Calendar, WifiOff, AlertTriangle, CheckCircle2, MessageSquareQuote, TrendingDown, Navigation, RotateCcw, Camera, Star, Leaf, ChevronRight, Edit3, Bed, Clock, Ticket, ShieldCheck } from 'lucide-react';
+import { downloadTripCalendarIcs } from '../../services/calendarExportService';
+import {
+  downloadOfflineTripPack,
+  getOfflineTripPackStatus,
+  dispatchTripItineraryEmail,
+  OfflineTripPackMetadata
+} from '../../services/offlineTripPackService';
+import { getCurrentUser } from '../../services/authService';
+import { Users, Wallet, Sparkles, Share2, Download, Calendar, WifiOff, AlertTriangle, CheckCircle2, MessageSquareQuote, TrendingDown, Navigation, RotateCcw, Camera, Star, Leaf, ChevronRight, Edit3, Bed, Clock, Ticket, ShieldCheck, Mail } from 'lucide-react';
 
 interface TripHeaderProps {
   trip: Trip;
@@ -46,12 +50,19 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
   const { t } = useLanguage();
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
   const [isOfflineReady, setIsOfflineReady] = useState(false);
+  const [offlineMeta, setOfflineMeta] = useState<OfflineTripPackMetadata | null>(null);
+  const [offlineProgress, setOfflineProgress] = useState<number | null>(null);
+  const [emailStatusMsg, setEmailStatusMsg] = useState<string | null>(null);
+  const [isEmailSending, setIsEmailSending] = useState(false);
 
   useEffect(() => {
     let active = true;
-    loadOfflineKv<{ savedAt: number }>(`offline_bundle:${trip.id}`)
-      .then((bundle) => {
-        if (active) setIsOfflineReady(Boolean(bundle?.savedAt));
+    getOfflineTripPackStatus(trip.id)
+      .then((meta) => {
+        if (active) {
+          setOfflineMeta(meta);
+          setIsOfflineReady(Boolean(meta?.savedAt));
+        }
       })
       .catch(() => {});
     return () => {
@@ -60,15 +71,32 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
   }, [trip.id]);
 
   const handleSaveTripOffline = async () => {
-    const countryCode = resolveEmergencyCountryCode(trip.destination);
-    await saveOfflineKv(`offline_bundle:${trip.id}`, {
-      savedAt: Date.now(),
-      trip,
-      ics: generateTripIcs(trip),
-      emergency: getEmergencyNumbersForCountry(countryCode),
-      readiness: getTravelReadinessInfo(trip.destination)
-    });
-    setIsOfflineReady(true);
+    if (offlineProgress !== null) return;
+    setOfflineProgress(5);
+    try {
+      const meta = await downloadOfflineTripPack(trip, (pct) => {
+        setOfflineProgress(pct);
+      });
+      setOfflineMeta(meta);
+      setIsOfflineReady(true);
+    } finally {
+      setTimeout(() => setOfflineProgress(null), 600);
+    }
+  };
+
+  const handleEmailItinerary = async () => {
+    if (isEmailSending) return;
+    const activeUser = getCurrentUser();
+    const targetEmail = activeUser?.email || (typeof window !== 'undefined' ? window.prompt('Enter email address to send your TripVerse itinerary:', '') || '' : '');
+    if (!targetEmail && typeof window === 'undefined') return;
+    setIsEmailSending(true);
+    try {
+      const res = await dispatchTripItineraryEmail(trip, targetEmail, activeUser?.displayName);
+      setEmailStatusMsg(res.message);
+      setTimeout(() => setEmailStatusMsg(null), 4000);
+    } finally {
+      setIsEmailSending(false);
+    }
   };
 
   useEffect(() => {
@@ -472,6 +500,17 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
 
           <button
             type="button"
+            onClick={handleEmailItinerary}
+            disabled={isEmailSending}
+            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs border border-[#E2EBE1] transition-colors cursor-pointer disabled:opacity-60"
+            title="Email formatted HTML itinerary summary to your inbox"
+          >
+            <Mail className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{isEmailSending ? 'Sending...' : 'Email Summary'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => downloadTripCalendarIcs(trip)}
             className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs border border-[#E2EBE1] transition-colors cursor-pointer"
             title="Export itinerary to Apple, Google, or Outlook Calendar (.ics)"
@@ -483,26 +522,41 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           <button
             type="button"
             onClick={handleSaveTripOffline}
+            disabled={offlineProgress !== null}
             className={`spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium text-xs border transition-colors cursor-pointer ${
               isOfflineReady
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                 : 'bg-white hover:bg-[#F4F6F2] text-slate-700 border-[#E2EBE1]'
             }`}
-            title="Cache full itinerary, emergency numbers & calendar into offline device storage for Airplane Mode"
+            title="Download corridor map tiles, turn-by-turn GPS route, passes & SOS contacts for Airplane Mode"
           >
-            {isOfflineReady ? (
+            {offlineProgress !== null ? (
+              <>
+                <WifiOff className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                <span>Caching {offlineProgress}%...</span>
+              </>
+            ) : isOfflineReady ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Offline Ready</span>
+                <span>
+                  Offline Pack Ready
+                  {offlineMeta && offlineMeta.cachedTiles > 0 ? ` (${offlineMeta.cachedTiles} tiles)` : ''}
+                </span>
               </>
             ) : (
               <>
                 <WifiOff className="w-3.5 h-3.5 text-slate-500" />
-                <span>Save Offline</span>
+                <span>Airplane Pack</span>
               </>
             )}
           </button>
         </div>
+        {emailStatusMsg && (
+          <div className="mt-2.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>{emailStatusMsg}</span>
+          </div>
+        )}
       </div>
 
       {/* Budget Card */}

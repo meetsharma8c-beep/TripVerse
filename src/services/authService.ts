@@ -1235,14 +1235,18 @@ export async function sendPasswordResetCode(email: string): Promise<{
     }
   }
 
-  // 2. Dispatch Firebase password reset email in parallel if Firebase is configured
+  // 2. Dispatch Firebase password reset email in parallel if Firebase is configured (Google-managed SMTP!)
+  let firebaseDispatched = false;
   if (isFirebaseConfigured()) {
     try {
-      sendFirebasePasswordReset(emailNorm).catch(() => {});
-    } catch {}
+      await sendFirebasePasswordReset(emailNorm);
+      firebaseDispatched = true;
+    } catch {
+      // User may only exist in Supabase; non-fatal
+    }
   }
 
-  // 3. Dispatch authentic 6-digit OTP code via Resend
+  // 3. Dispatch authentic 6-digit OTP code via multi-provider email gateway
   let otpDispatched = false;
   let otpData: any = null;
   try {
@@ -1263,10 +1267,10 @@ export async function sendPasswordResetCode(email: string): Promise<{
       }
     }
   } catch (err) {
-    console.warn('[Resend] Password reset OTP notice:', err);
+    console.warn('[Email Gateway] Password reset OTP notice:', err);
   }
 
-  if (!supabaseDispatched && !otpDispatched) {
+  if (!supabaseDispatched && !firebaseDispatched && !otpDispatched) {
     if (supabaseError && (supabaseError.toLowerCase().includes('rate limit') || supabaseError.includes('over_email_send_rate_limit'))) {
       throw new Error('Email dispatch rate limit reached. Please wait a few moments before requesting another reset code.');
     }

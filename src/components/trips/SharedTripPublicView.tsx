@@ -15,13 +15,14 @@ import {
   Share2,
   Compass,
 } from 'lucide-react';
-import { SharedTripDocument } from '../../services/sharedTripService';
+import { SharedTripDocument, CloneTripCustomizations } from '../../services/sharedTripService';
+import { evaluateLiveMarketPrices } from '../../services/liveMarketPricingService';
 import { formatCurrency, getActiveCurrency } from '../../services/currencyService';
 import { copyTextToClipboard, triggerHaptic } from '../../services/deviceService';
 
 interface SharedTripPublicViewProps {
   sharedDoc: SharedTripDocument;
-  onCloneTrip: (sharedDoc: SharedTripDocument) => void;
+  onCloneTrip: (sharedDoc: SharedTripDocument, customizations?: CloneTripCustomizations) => void;
   onGoHome: () => void;
 }
 
@@ -34,6 +35,35 @@ export const SharedTripPublicView: React.FC<SharedTripPublicViewProps> = ({
   const currency = getActiveCurrency();
   const [copied, setCopied] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
+  const [customOrigin, setCustomOrigin] = useState(trip.origin || 'Mumbai');
+  const [customTravelers, setCustomTravelers] = useState(Math.max(1, trip.travelersCount || 2));
+
+  const isCustomized =
+    customOrigin.trim().toLowerCase() !== (trip.origin || '').trim().toLowerCase() ||
+    customTravelers !== (trip.travelersCount || 2);
+
+  const previewBudgetInr = React.useMemo(() => {
+    if (!isCustomized) return trip.estimatedTotal || trip.totalBudget;
+    const m = evaluateLiveMarketPrices({
+      origin: customOrigin.trim() || trip.origin || 'Mumbai',
+      destination: trip.destination,
+      durationDays: trip.durationDays || 3,
+      travelersCount: customTravelers,
+      startDate: trip.startDate,
+      accommodationType: trip.accommodationType,
+      transportMode: trip.transportMode
+    });
+    const tCost =
+      trip.transportMode === 'flight'
+        ? m.flightTotalGroupINR
+        : trip.transportMode === 'train'
+        ? m.trainTotalGroupINR
+        : trip.transportMode === 'car' || trip.transportMode === 'bike'
+        ? m.roadTripFuelAndTollsINR
+        : m.localTransitTotalGroupINR;
+    const sCost = Math.max(0, (trip.durationDays || 3) - 1) === 0 ? 0 : m.hotelTotalGroupINR;
+    return Math.round((tCost + sCost + m.diningTotalGroupINR + m.attractionsTotalGroupINR) * 1.06);
+  }, [isCustomized, customOrigin, customTravelers, trip]);
 
   const ModeIcon =
     trip.transportMode === 'train'
@@ -55,7 +85,10 @@ export const SharedTripPublicView: React.FC<SharedTripPublicViewProps> = ({
   const handleClone = () => {
     setIsCloning(true);
     triggerHaptic('success');
-    onCloneTrip(sharedDoc);
+    onCloneTrip(sharedDoc, {
+      customOrigin: customOrigin.trim() || trip.origin,
+      customTravelers
+    });
   };
 
   return (
@@ -115,13 +148,55 @@ export const SharedTripPublicView: React.FC<SharedTripPublicViewProps> = ({
             <span className="text-[10px] uppercase tracking-wider text-slate-300 font-semibold flex items-center gap-1">
               <Users className="w-3 h-3" /> Travelers
             </span>
-            <p className="text-base sm:text-lg font-black font-display mt-0.5">{trip.travelersCount} Pax</p>
+            <p className="text-base sm:text-lg font-black font-display mt-0.5">{customTravelers} Pax</p>
           </div>
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-slate-300 font-semibold">Est. Budget</span>
+            <span className="text-[10px] uppercase tracking-wider text-slate-300 font-semibold">
+              {isCustomized ? 'Re-Priced Est.' : 'Est. Budget'}
+            </span>
             <p className="text-base sm:text-lg font-black font-display text-emerald-300 mt-0.5 truncate">
-              {formatCurrency(trip.estimatedTotal || trip.totalBudget, currency)}
+              {formatCurrency(previewBudgetInr, currency)}
             </p>
+          </div>
+        </div>
+
+        {/* Customize Origin & Group Size Before Cloning */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/20 rounded-2xl p-3.5 border border-white/10">
+          <div>
+            <label className="text-[10px] uppercase tracking-wider font-bold text-emerald-200 block mb-1">
+              Departing From (Your City)
+            </label>
+            <input
+              type="text"
+              value={customOrigin}
+              onChange={(e) => setCustomOrigin(e.target.value)}
+              placeholder="e.g. Delhi, Bengaluru, Mumbai"
+              className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-xs font-semibold text-white placeholder:text-white/50 focus:outline-none focus:border-emerald-300"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider font-bold text-emerald-200 block mb-1">
+              Your Group Size
+            </label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCustomTravelers(c => Math.max(1, c - 1))}
+                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm cursor-pointer"
+              >
+                −
+              </button>
+              <span className="flex-1 text-center text-xs font-bold text-white">
+                {customTravelers} {customTravelers === 1 ? 'Traveler' : 'Travelers'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCustomTravelers(c => Math.min(20, c + 1))}
+                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm cursor-pointer"
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
 
@@ -134,7 +209,13 @@ export const SharedTripPublicView: React.FC<SharedTripPublicViewProps> = ({
             className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-emerald-400 hover:bg-emerald-300 text-[#0B2518] font-display font-black text-sm sm:text-base shadow-lg transition-all cursor-pointer active:scale-[0.98] disabled:opacity-60"
           >
             <Copy className="w-4 h-4" />
-            <span>{isCloning ? 'Cloning into TripVerse...' : 'Clone This Trip Into My TripVerse'}</span>
+            <span>
+              {isCloning
+                ? 'Cloning & Re-Pricing...'
+                : isCustomized
+                ? `Clone & Re-Price From ${customOrigin.trim() || trip.origin}`
+                : 'Clone & Customize This Trip Free'}
+            </span>
           </button>
         </div>
       </div>

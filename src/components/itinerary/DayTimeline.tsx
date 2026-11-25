@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { DayPlan, ItineraryActivity, TransportDeal, CurrencyCode, Coordinates } from '../../types/trip';
+import { DayPlan, ItineraryActivity, TransportDeal, CurrencyCode, Coordinates, WeatherDay } from '../../types/trip';
 import { getActiveCurrency, formatCurrency } from '../../services/currencyService';
 import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError, DEFAULT_TRAVEL_FALLBACK_IMAGE } from '../../utils/destinationImages';
 import { fetchOriginalPhoto, getInstantPhoto } from '../../services/originalPhotoService';
 import { getDestinationHighlights, calculateTransitBetween, resolveLandmarkCoordinates } from '../../services/landmarkAtlasService';
 import { getLocalGems } from '../../services/localGemsService';
+import { fetchLiveDestinationWeather } from '../../services/weatherService';
+import { evaluateDayWeatherClash, WeatherClashRecommendation } from '../../services/weatherSmartRescheduler';
 import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, ShieldCheck, Zap, Activity, Building2, Moon, RotateCcw, CalendarPlus } from 'lucide-react';
 import { triggerHaptic, openExternalUrl } from '../../services/deviceService';
 import { buildGoogleMapsDayRouteUrl } from '../../utils/routeResolver';
@@ -117,6 +119,56 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [swapOpenActId, setSwapOpenActId] = useState<string | null>(null);
+  const [forecastByDay, setForecastByDay] = useState<Record<number, WeatherDay>>({});
+  const [dismissedWeatherDays, setDismissedWeatherDays] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    let active = true;
+    if (!destination) return;
+    fetchLiveDestinationWeather(destination, Math.max(3, itinerary?.length || 3))
+      .then((wf) => {
+        if (!active || !Array.isArray(wf?.forecastDays)) return;
+        const map: Record<number, WeatherDay> = {};
+        wf.forecastDays.forEach((fd, idx) => {
+          map[fd.dayNumber || idx + 1] = fd;
+        });
+        setForecastByDay(map);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [destination, itinerary?.length]);
+
+  const handleApplyWeatherReschedule = (rec: WeatherClashRecommendation, day: DayPlan) => {
+    triggerHaptic('success');
+    if (rec.actionType === 'indoor_mirror') {
+      handleToggleWeatherMode(day.dayNumber);
+      setDismissedWeatherDays(prev => ({ ...prev, [day.dayNumber]: true }));
+      return;
+    }
+    if ((rec.actionType === 'move_earlier' || rec.actionType === 'move_later') && onMoveActivity) {
+      onMoveActivity(
+        day.dayNumber,
+        rec.affectedActivityId,
+        rec.actionType === 'move_earlier' ? 'up' : 'down'
+      );
+      setDismissedWeatherDays(prev => ({ ...prev, [day.dayNumber]: true }));
+      return;
+    }
+    if (rec.actionType === 'swap_indoor' && onSwapActivity && rec.indoorFallbackTitle) {
+      const targetAct = day.activities.find(a => a.id === rec.affectedActivityId);
+      const destLabel = (destination || 'Destination').split(',')[0].trim();
+      onSwapActivity(day.dayNumber, rec.affectedActivityId, {
+        title: rec.indoorFallbackTitle,
+        location: `${rec.indoorFallbackTitle}, ${destLabel}`,
+        description: rec.indoorFallbackDescription || `Indoor sheltered alternative in ${destLabel}.`,
+        estimatedCost: targetAct?.estimatedCost || 0,
+        coordinates: targetAct?.coordinates
+      });
+      setDismissedWeatherDays(prev => ({ ...prev, [day.dayNumber]: true }));
+    }
+  };
 
   const localGemsPool = useMemo(() => getLocalGems(destination || 'Goa'), [destination]);
   const scheduledTitlesLower = useMemo(() => {
@@ -467,6 +519,54 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                 {isExpanded && (
                   <div className="border-t border-[#E2EBE1] bg-[#F8FAF7]/50 p-4 sm:p-5 space-y-4 animate-fade-in">
                     
+                    {/* Live Weather-Triggered Rain / Extreme Heat Smart Reschedule Banner */}
+                    {(() => {
+                      if (dismissedWeatherDays[day.dayNumber] || isRainActive) return null;
+                      const weatherRec = evaluateDayWeatherClash(activeDay, forecastByDay[day.dayNumber], destination);
+                      if (!weatherRec) return null;
+                      const isRain = weatherRec.severity === 'rain';
+                      return (
+                        <div className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs ${
+                          isRain
+                            ? 'bg-sky-50 border-sky-200 text-sky-950'
+                            : 'bg-orange-50 border-orange-200 text-orange-950'
+                        }`}>
+                          <div className="flex items-start gap-2.5 flex-1">
+                            {isRain ? (
+                              <CloudRain className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                            ) : (
+                              <Sun className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                            )}
+                            <div className="space-y-0.5">
+                              <div className="font-bold flex items-center gap-1.5 flex-wrap">
+                                <span>{weatherRec.headline}</span>
+                                <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                                  isRain ? 'bg-sky-200/80 text-sky-900' : 'bg-orange-200/80 text-orange-900'
+                                }`}>
+                                  Live Weather Guard
+                                </span>
+                              </div>
+                              <p className="text-[11px] opacity-90 leading-relaxed">{weatherRec.detail}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApplyWeatherReschedule(weatherRec, activeDay);
+                              }}
+                              className={`spring-tap px-3 py-1.5 rounded-xl font-bold text-xs text-white cursor-pointer shadow-xs ${
+                                isRain ? 'bg-sky-600 hover:bg-sky-700' : 'bg-orange-600 hover:bg-orange-700'
+                              }`}
+                            >
+                              1-Tap Smart Reschedule
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Circadian Jet-Lag Protection Banner */}
                     {day.dayNumber === 1 && day.circadianAdvice && day.circadianAdvice.isSignificantShift && (
                       <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/90 flex items-start gap-2.5 text-xs text-amber-950 shadow-2xs">
