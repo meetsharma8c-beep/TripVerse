@@ -10,16 +10,18 @@ import {
   verifyTripBudgetLocally,
   verifyTripBudgetWithApex
 } from '../../services/budgetFormalVerifier';
-import { TrendingDown, Sparkles, Check, Car, Bed, Utensils, Ticket, Shield, Plane, Zap, ExternalLink, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { TrendingDown, Sparkles, Check, Car, Bed, Utensils, Ticket, Shield, Plane, Zap, ExternalLink, AlertTriangle, ShieldCheck, TrainFront, Wallet } from 'lucide-react';
 
 interface BudgetOptimizerProps {
   trip: Trip;
   onApplySavings: (savingsAmount: number, category: keyof BudgetBreakdown, reason: string) => void;
+  onSwitchTransportMode?: (newMode: 'train' | 'bus', newTransportCost: number, savings: number) => void;
 }
 
 export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
   trip,
-  onApplySavings
+  onApplySavings,
+  onSwitchTransportMode
 }) => {
   const { t } = useLanguage();
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
@@ -468,6 +470,72 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
         </div>
 
       </div>
+
+      {/* Daily On-Ground Purchasing Power + 1-Click Mode Recovery */}
+      {(() => {
+        const onGroundPoolINR = Math.max(0, trip.totalBudget - liveTransportCost - liveStayCost);
+        const dailyPerPersonGroundINR = Math.round(onGroundPoolINR / (duration * travelers));
+        const railAltCost = liveMarketReport.trainTotalGroupINR || Math.round(liveTransportCost * 0.25);
+        const railSavings = Math.max(0, liveTransportCost - railAltCost);
+        const airfareSharePct = trip.totalBudget > 0 ? Math.round((liveTransportCost / trip.totalBudget) * 100) : 0;
+        const showRailRecovery = isFlightMode && airfareSharePct >= 52 && railSavings >= 3000;
+
+        return (
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/80">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-[#2D5A3D]/10 text-[#2D5A3D] flex items-center justify-center shrink-0">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">
+                    {t('Daily On-Ground Spend Power')}
+                  </div>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    {formatCurrency(onGroundPoolINR, currency)} {t('left for meals, sights & local rides after')} {liveQuotes?.isLiveMarket ? t('live transit & stay') : t('transit & stay')}
+                  </p>
+                </div>
+              </div>
+              <div className="sm:text-right shrink-0">
+                <span className="text-lg sm:text-xl font-black text-[#0B2545] tabular-nums">
+                  {formatCurrency(dailyPerPersonGroundINR, currency)}
+                </span>
+                <span className="text-xs font-semibold text-slate-500"> / {t('person')} / {t('day')}</span>
+              </div>
+            </div>
+
+            {showRailRecovery && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-sky-50/80 border border-sky-200 text-sky-950">
+                <div className="flex items-start gap-3 text-xs leading-relaxed">
+                  <TrainFront className="w-5 h-5 text-sky-700 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-sm">
+                      Airfare uses {airfareSharePct}% of your budget — Switch to Rail &amp; unlock {formatCurrency(railSavings, currency)}
+                    </div>
+                    <p className="text-sky-900/80 mt-0.5">
+                      Switching from flight ({formatCurrency(liveTransportCost, currency)}) to train ({formatCurrency(railAltCost, currency)}) frees {formatCurrency(railSavings, currency)} for better hotels and dining.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSwitchTransportMode) {
+                      onSwitchTransportMode('train', railAltCost, railSavings);
+                    } else {
+                      onApplySavings(railSavings, 'transportation', 'Switched from Flight to Rail');
+                    }
+                  }}
+                  className="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-sky-700 hover:bg-sky-800 text-white transition-colors cursor-pointer"
+                >
+                  <TrainFront className="w-3.5 h-3.5" />
+                  Switch to Train &amp; Save {formatCurrency(railSavings, currency)}
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 6-VERTICAL REAL-TIME MARKET PRICE INTELLIGENCE */}
       <div className="p-4 sm:p-6 rounded-3xl bg-slate-900 text-white border border-slate-800 space-y-4 shadow-xl">

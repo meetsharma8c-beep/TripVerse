@@ -337,7 +337,9 @@ async function fetchSerpApiHotels(apiKey, params) {
           totalStayAmount: Math.round(effectiveNightly * nights * roomCount),
           nightlyRatePerRoom: Math.round(effectiveNightly),
           currency: currencyCode || 'INR',
-          roomCategory: p?.hotel_class ? `${p.hotel_class} Hotel` : String(p?.type || 'Hotel Room'),
+          roomCategory: p?.hotel_class
+            ? (/hotel/i.test(String(p.hotel_class)) ? String(p.hotel_class) : `${p.hotel_class} Hotel`)
+            : String(p?.type || 'Hotel Room'),
           available: true,
           bookingLink: typeof p?.link === 'string' ? p.link : undefined,
           image: p?.images?.[0]?.thumbnail || p?.images?.[0]?.original_image || undefined,
@@ -389,6 +391,9 @@ async function handleLiveMarketQuotes(req, res) {
   const cacheKey = `${mode}|${originCode}|${destCode}|${destinationName.toLowerCase()}|${departureDate}|${returnDate}|${adults}|${rooms}|${currencyCode}`;
   const cached = QUOTE_CACHE.get(cacheKey);
   if (cached && Date.now() - cached.ts < QUOTE_CACHE_TTL_MS) {
+    if (cached.payload?.isLiveMarket) {
+      res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=43200');
+    }
     return res.status(200).json(cached.payload);
   }
 
@@ -423,6 +428,9 @@ async function handleLiveMarketQuotes(req, res) {
       if (oldest) QUOTE_CACHE.delete(oldest);
     }
     QUOTE_CACHE.set(cacheKey, { ts: Date.now(), payload });
+    if (isLiveMarket) {
+      res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=43200');
+    }
     return res.status(200).json(payload);
   }
 

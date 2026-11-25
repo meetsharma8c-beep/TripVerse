@@ -706,8 +706,9 @@ async function callRemoteCloudLLM(query, ctx, mode) {
       try {
         const cleaned = content.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
         const parsed = JSON.parse(cleaned);
-        const days = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.itinerary) ? parsed.itinerary : parsed.days);
-        if (Array.isArray(days) && days.length > 0) {
+        const rawDays = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.itinerary) ? parsed.itinerary : parsed.days);
+        if (Array.isArray(rawDays) && rawDays.length > 0) {
+          const days = normalizeAndClampChatItinerary(rawDays, ctx);
           parsedItinerary = days;
           structuredItinerary = { days };
           replyText = JSON.stringify({ itinerary: days });
@@ -739,9 +740,76 @@ async function callRemoteCloudLLM(query, ctx, mode) {
   }
 }
 
-/**
- * Deterministic exact integer linear budget constraint verifier + optional CONCODE v4.0 APEX Z3 SMT bridge.
- */
+function parseHour24(timeStr) {
+  const s = String(timeStr || '').trim();
+  const m12 = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (m12) {
+    let h = Number(m12[1]);
+    const ampm = m12[3].toUpperCase();
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return h + Number(m12[2]) / 60;
+  }
+  const m24 = s.match(/^(\d{1,2}):(\d{2})/);
+  if (m24) return Number(m24[1]) + Number(m24[2]) / 60;
+  return null;
+}
+
+function normalizeAndClampChatItinerary(rawDays, ctx) {
+  if (!Array.isArray(rawDays) || rawDays.length === 0) return rawDays;
+  const totalDays = rawDays.length;
+  const day1Slots = ['2:00 PM', '4:15 PM', '6:30 PM', '8:15 PM', '9:30 PM'];
+  const lastDaySlots = ['8:45 AM', '10:45 AM', '1:00 PM', '2:30 PM', '3:45 PM'];
+
+  const days = rawDays.map((d, dIdx) => {
+    const acts = Array.isArray(d?.activities) ? d.activities.map(a => ({ ...a })) : [];
+    if (totalDays > 1 && dIdx === 0 && acts.length > 0) {
+      const firstH = parseHour24(acts[0].time);
+      if (firstH !== null && firstH < 13.5) {
+        // Trim excess pre-arrival morning stops to max 4 afternoon/evening stops and align timestamps
+        const trimmed = acts.slice(-Math.min(4, acts.length));
+        trimmed.forEach((a, i) => {
+          a.time = day1Slots[Math.min(i, day1Slots.length - 1)];
+        });
+        return { ...d, dayNumber: d.dayNumber || dIdx + 1, activities: trimmed };
+      }
+    }
+    if (totalDays > 1 && dIdx === totalDays - 1 && acts.length > 0) {
+      const lastH = parseHour24(acts[acts.length - 1].time);
+      if (lastH !== null && lastH > 16.5) {
+        const trimmed = acts.slice(0, Math.min(4, acts.length));
+        trimmed.forEach((a, i) => {
+          a.time = lastDaySlots[Math.min(i, lastDaySlots.length - 1)];
+        });
+        return { ...d, dayNumber: d.dayNumber || dIdx + 1, activities: trimmed };
+      }
+    }
+    return { ...d, dayNumber: d.dayNumber || dIdx + 1, activities: acts };
+  });
+
+  const groundCap = Number(ctx?.ground_budget?.totalGroundBudgetINR) ||
+    (Number(ctx?.total_budget) > 0 ? Math.round(Number(ctx.total_budget) * 0.36) : 0);
+
+  if (groundCap > 0) {
+    let rawSum = 0;
+    for (const d of days) {
+      for (const a of d.activities || []) {
+        a.estimatedCost = Math.max(0, Math.round(Number(a.estimatedCost) || 0));
+        rawSum += a.estimatedCost;
+      }
+    }
+    if (rawSum > groundCap) {
+      const ratio = groundCap / rawSum;
+      for (const d of days) {
+        for (const a of d.activities || []) {
+          a.estimatedCost = Math.floor(a.estimatedCost * ratio);
+        }
+      }
+    }
+  }
+
+  return days;
+}
 function solveExactLinearBudget(totalCeiling, allocations) {
   const ceiling = Math.max(0, Math.round(Number(totalCeiling) || 0));
   const items = allocations.map(([name, lo, hi, current]) => ({

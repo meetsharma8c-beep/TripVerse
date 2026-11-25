@@ -3107,6 +3107,25 @@ export function App() {
                 <BudgetOptimizer
                   trip={activeTrip}
                   onApplySavings={handleApplyBudgetSavings}
+                  onSwitchTransportMode={(newMode, newTransportCost, savings) => {
+                    const nextBreakdown = {
+                      ...activeTrip.budgetBreakdown,
+                      transportation: Math.max(400, Math.round(newTransportCost))
+                    };
+                    const nextTotal =
+                      nextBreakdown.transportation +
+                      nextBreakdown.accommodation +
+                      nextBreakdown.food +
+                      nextBreakdown.activities +
+                      nextBreakdown.miscellaneous;
+                    handleUpdateTrip({
+                      ...activeTrip,
+                      transportMode: newMode,
+                      budgetBreakdown: nextBreakdown,
+                      estimatedTotal: nextTotal,
+                      aiRationale: `Switched transit mode from Flight to ${newMode === 'train' ? 'Rail' : 'Coach'} to unlock ${formatCurrency(savings)} in on-ground budget.`
+                    });
+                  }}
                 />
               )}
 

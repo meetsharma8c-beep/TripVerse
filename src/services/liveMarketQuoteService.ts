@@ -100,7 +100,49 @@ const CITY_IATA_MAP: Record<string, string> = {
   toronto: 'YTO',
 };
 
-const CLIENT_QUOTE_CACHE = new Map<string, LiveMarketQuoteResult>();
+const QUOTE_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const QUOTE_STORAGE_KEY = 'tv_live_market_quotes_v1';
+const CLIENT_QUOTE_CACHE = new Map<string, { ts: number; data: LiveMarketQuoteResult }>();
+const IN_FLIGHT_QUOTES = new Map<string, Promise<LiveMarketQuoteResult>>();
+
+function readStoredQuote(key: string): LiveMarketQuoteResult | null {
+  const mem = CLIENT_QUOTE_CACHE.get(key);
+  if (mem) {
+    if (Date.now() - mem.ts < QUOTE_CACHE_TTL_MS) return mem.data;
+    CLIENT_QUOTE_CACHE.delete(key);
+  }
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(QUOTE_STORAGE_KEY);
+    if (!raw) return null;
+    const store = JSON.parse(raw) as Record<string, { ts: number; data: LiveMarketQuoteResult }>;
+    const hit = store?.[key];
+    if (hit && Date.now() - hit.ts < QUOTE_CACHE_TTL_MS) {
+      CLIENT_QUOTE_CACHE.set(key, hit);
+      return hit.data;
+    }
+  } catch {}
+  return null;
+}
+
+function writeStoredQuote(key: string, data: LiveMarketQuoteResult): void {
+  const entry = { ts: Date.now(), data };
+  CLIENT_QUOTE_CACHE.set(key, entry);
+  if (!data.isLiveMarket || typeof window === 'undefined') return;
+  try {
+    const raw = window.localStorage.getItem(QUOTE_STORAGE_KEY);
+    const store: Record<string, { ts: number; data: LiveMarketQuoteResult }> = raw ? JSON.parse(raw) : {};
+    store[key] = entry;
+    const keys = Object.keys(store);
+    if (keys.length > 35) {
+      keys
+        .sort((a, b) => (store[a]?.ts || 0) - (store[b]?.ts || 0))
+        .slice(0, keys.length - 35)
+        .forEach((oldKey) => delete store[oldKey]);
+    }
+    window.localStorage.setItem(QUOTE_STORAGE_KEY, JSON.stringify(store));
+  } catch {}
+}
 
 export function resolveIataCodeForCity(cityName: string, fallbackAirportCode?: string): string {
   const clean = (cityName || '').split(',')[0].trim().toLowerCase();
@@ -153,7 +195,7 @@ export async function fetchLiveMarketQuotes(params: {
 
   const cleanDestName = (params.destination || '').split(',')[0].trim();
   const cacheKey = `${mode}|${originCode}|${destCode}|${cleanDestName.toLowerCase()}|${departureDate}|${returnDate}|${adults}|${rooms}`;
-  const cached = CLIENT_QUOTE_CACHE.get(cacheKey);
+  const cached = readStoredQuote(cacheKey);
   if (cached) return cached;
 
   if ((!destCode && !cleanDestName) || typeof fetch === 'undefined') {
@@ -168,6 +210,9 @@ export async function fetchLiveMarketQuotes(params: {
     };
   }
 
+  const pending = IN_FLIGHT_QUOTES.get(cacheKey);
+  if (pending) return pending;
+
   const qs = new URLSearchParams({
     action: 'market_quotes',
     originCode,
@@ -181,44 +226,53 @@ export async function fetchLiveMarketQuotes(params: {
     mode,
   });
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 7_000);
+  const requestPromise = (async (): Promise<LiveMarketQuoteResult> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 7_000);
 
-  try {
-    const res = await fetch(`${resolveApiUrl('/api/transit-schedules')}?${qs.toString()}`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (res.ok) {
-      const data = await res.json().catch(() => null);
-      if (data?.ok) {
-        const result: LiveMarketQuoteResult = {
-          isLiveMarket: Boolean(data.isLiveMarket),
-          provider: data.isLiveMarket ? (data.provider || 'google_live_serpapi') : 'seasonal_model_fallback',
-          environment: data.environment,
-          reason: data.reason,
-          currency: data.currency || currency,
-          flights: data.flights || null,
-          hotels: Array.isArray(data.hotels) ? data.hotels : [],
-          fetchedAt: data.fetchedAt || new Date().toISOString(),
-        };
-        CLIENT_QUOTE_CACHE.set(cacheKey, result);
-        return result;
+    try {
+      const res = await fetch(`${resolveApiUrl('/api/transit-schedules')}?${qs.toString()}`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.ok) {
+          const result: LiveMarketQuoteResult = {
+            isLiveMarket: Boolean(data.isLiveMarket),
+            provider: data.isLiveMarket ? (data.provider || 'google_live_serpapi') : 'seasonal_model_fallback',
+            environment: data.environment,
+            reason: data.reason,
+            currency: data.currency || currency,
+            flights: data.flights || null,
+            hotels: Array.isArray(data.hotels) ? data.hotels : [],
+            fetchedAt: data.fetchedAt || new Date().toISOString(),
+          };
+          writeStoredQuote(cacheKey, result);
+          return result;
+        }
       }
+    } catch {
+      clearTimeout(timer);
     }
-  } catch {
-    clearTimeout(timer);
-  }
 
-  return {
-    isLiveMarket: false,
-    provider: 'seasonal_model_fallback',
-    reason: 'NETWORK_UNAVAILABLE',
-    currency,
-    flights: null,
-    hotels: [],
-    fetchedAt: new Date().toISOString(),
-  };
+    return {
+      isLiveMarket: false,
+      provider: 'seasonal_model_fallback',
+      reason: 'NETWORK_UNAVAILABLE',
+      currency,
+      flights: null,
+      hotels: [],
+      fetchedAt: new Date().toISOString(),
+    };
+  })();
+
+  IN_FLIGHT_QUOTES.set(cacheKey, requestPromise);
+  try {
+    return await requestPromise;
+  } finally {
+    IN_FLIGHT_QUOTES.delete(cacheKey);
+  }
 }
 
 function normalizeToINR(amount: number, currency: string): number {
