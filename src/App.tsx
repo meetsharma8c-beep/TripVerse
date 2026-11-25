@@ -110,7 +110,8 @@ import {
   upgradeUserToPro,
   isFounderVipUser,
   signOut as authSignOut,
-  checkAndProcessFirebaseRedirectResult
+  checkAndProcessFirebaseRedirectResult,
+  syncActiveUserToFounderDirectory
 } from './services/authService';
 const TripVerseProModal = lazyWithRetry(() => import('./components/subscription/TripVerseProModal').then(m => ({ default: m.TripVerseProModal })));
 const FounderDashboardModal = lazyWithRetry(() => import('./components/modals/FounderDashboardModal').then(m => ({ default: m.FounderDashboardModal })));
@@ -477,6 +478,12 @@ export function App() {
   };
 
   useEffect(() => {
+    // Ensure any already-signed-in 30-day session (Google GIS, Firebase, Email) is backfilled to Founder Roster
+    const initialUser = getCurrentUser();
+    if (initialUser && !isGuestUser(initialUser)) {
+      syncActiveUserToFounderDirectory(initialUser).catch(() => {});
+    }
+
     // Process pending redirect authentication (e.g. returning from Google Sign-In redirect on mobile/Safari)
     checkAndProcessFirebaseRedirectResult()
       .then(user => {
@@ -484,6 +491,7 @@ export function App() {
           setCurrentUser(user);
           setUserProfile(toUserProfile(user));
           setIsAuthModalOpen(false);
+          syncActiveUserToFounderDirectory(user).catch(() => {});
         }
       })
       .catch(err => {
@@ -493,6 +501,9 @@ export function App() {
     const unsub = onAuthStateChanged(async (user) => {
       setCurrentUser(user);
       if (user) {
+        if (!isGuestUser(user)) {
+          syncActiveUserToFounderDirectory(user).catch(() => {});
+        }
         setIsAuthModalOpen(false);
         if (!isGuestUser(user)) {
           setIsGuestPlannerRestrictedOpen(false);

@@ -7,9 +7,115 @@ const MAX_ACTIVITIES = 100;
 const activityLog = [];
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'meet.sharma8c@gmail.com';
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'meet.sharma8c@gmail.com').toLowerCase().trim();
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const FIREBASE_API_KEY = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
+
+function isAutomatedTestAccount(email = '', name = '') {
+  const lowerEmail = String(email || '').toLowerCase().trim();
+  const lowerName = String(name || '').toLowerCase().trim();
+  if (lowerName.includes('e2e launch tester') || lowerName.includes('audit test') || lowerName.includes('hdhdhdhd')) {
+    return true;
+  }
+  if (!lowerEmail) return true;
+  return (
+    lowerEmail.startsWith('ci_') ||
+    lowerEmail.startsWith('test_') ||
+    lowerEmail.startsWith('e2e_') ||
+    lowerEmail.startsWith('valid_test') ||
+    lowerEmail.startsWith('toggle_test') ||
+    lowerEmail.startsWith('finalized_') ||
+    lowerEmail.startsWith('freemium_') ||
+    lowerEmail.startsWith('existing_') ||
+    lowerEmail.startsWith('test-') ||
+    lowerEmail.startsWith('testuser') ||
+    lowerEmail.startsWith('verify_') ||
+    lowerEmail.includes('example.com') ||
+    lowerEmail.includes('testmail.com') ||
+    lowerEmail.includes('tripversetest.io') ||
+    lowerEmail.includes('test.com') ||
+    lowerEmail.includes('domain.com') ||
+    lowerEmail.endsWith('@tripverse.app') ||
+    lowerEmail.endsWith('@invalid') ||
+    lowerEmail.endsWith('.test')
+  );
+}
+
+function normalizeProvider(rawProvider = '') {
+  const p = String(rawProvider || '').toLowerCase().trim();
+  if (p.includes('google')) return 'google';
+  if (p.includes('phone') || p.includes('sms')) return 'phone';
+  if (p.includes('guest') || p.includes('anon')) return 'guest';
+  return 'email';
+}
+
+function canonicalEmail(raw = '') {
+  const clean = String(raw || '').toLowerCase().trim();
+  if (!clean || !clean.includes('@')) return clean;
+  const [localPart, domain] = clean.split('@');
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    return `${localPart.split('+')[0].replace(/\./g, '')}@gmail.com`;
+  }
+  return `${localPart}@${domain}`;
+}
+
+async function verifyFounderIdentityToken(rawToken, sb) {
+  const token = String(rawToken || '').replace(/^Bearer\s+/i, '').trim();
+  if (!token || token.startsWith('session-')) return false;
+  const founderCanonical = canonicalEmail(ADMIN_EMAIL);
+
+  // 1. Verify Supabase JWT if applicable
+  if (sb) {
+    try {
+      const { data, error } = await sb.auth.getUser(token);
+      if (!error && data?.user?.email && canonicalEmail(data.user.email) === founderCanonical) {
+        return true;
+      }
+    } catch {}
+  }
+
+  // 2. Verify Firebase ID token via IdentityToolkit lookup
+  if (FIREBASE_API_KEY) {
+    try {
+      const fbRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: token })
+      });
+      if (fbRes.ok) {
+        const fbJson = await fbRes.json();
+        const fbUser = Array.isArray(fbJson?.users) ? fbJson.users[0] : null;
+        if (fbUser) {
+          const candidateEmails = [
+            fbUser.email,
+            ...(Array.isArray(fbUser.providerUserInfo) ? fbUser.providerUserInfo.map(p => p.email) : [])
+          ].filter(Boolean);
+          if (candidateEmails.some(em => canonicalEmail(em) === founderCanonical)) {
+            return true;
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Verify Google GIS OIDC ID token via Google tokeninfo
+  try {
+    const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
+    if (gRes.ok) {
+      const gJson = await gRes.json();
+      if (
+        gJson?.email &&
+        String(gJson.email_verified) === 'true' &&
+        canonicalEmail(gJson.email) === founderCanonical
+      ) {
+        return true;
+      }
+    }
+  } catch {}
+
+  return false;
+}
 
 // Debounce identical user alerts within a 2-minute window per container
 const recentlyAlerted = new Map();
@@ -188,21 +294,74 @@ export default async function handler(req, res) {
       return res.status(429).json({ success: false, message: 'Too many requests' });
     }
 
-    const { event, provider, user } = req.body || {};
+    const { event, provider, user, targetEmail, subscriptionTier, expiresAt } = req.body || {};
+
+    // ── Special Founder Action: Cloud Pro Grant / Revoke ──
+    if (event === 'admin_pro_override') {
+      const cleanTarget = String(targetEmail || '').toLowerCase().trim();
+      if (!cleanTarget || !cleanTarget.includes('@')) {
+        return res.status(400).json({ success: false, message: 'Valid targetEmail required' });
+      }
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        return res.status(503).json({ success: false, message: 'Supabase cloud backend unavailable' });
+      }
+      const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false }
+      });
+      const authHeader = req.headers.authorization || req.body?.founderToken || '';
+      const verified = await verifyFounderIdentityToken(authHeader, sb);
+      if (!verified) {
+        return res.status(403).json({
+          success: false,
+          error: 'FORBIDDEN',
+          message: 'Cryptographic VIP Founder token required for cloud tier updates.'
+        });
+      }
+
+      const tierValue = subscriptionTier === 'pro' ? 'pro' : 'free';
+      const nowIso = new Date().toISOString();
+      const { data: overrideRow, error: overrideErr } = await sb.auth.signInAnonymously({
+        options: {
+          data: {
+            record_type: 'admin_pro_override',
+            target_email: cleanTarget,
+            subscription_tier: tierValue,
+            expires_at: tierValue === 'pro' ? (expiresAt || new Date(Date.now() + 365 * 86400 * 1000).toISOString()) : nowIso,
+            updated_at: nowIso
+          }
+        }
+      });
+
+      if (overrideErr) {
+        return res.status(500).json({ success: false, message: overrideErr.message });
+      }
+
+      return res.status(200).json({
+        success: true,
+        cloudPersisted: true,
+        targetEmail: cleanTarget,
+        subscriptionTier: tierValue,
+        overrideId: overrideRow?.user?.id || null
+      });
+    }
+
     if (!user || !user.uid) {
       return res.status(400).json({ success: false, message: 'User payload required' });
     }
 
+    const cleanEmail = String(user.email || '').toLowerCase().trim();
+    const normalizedProvider = normalizeProvider(provider || user.provider);
+
     const activityRecord = {
       id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       event: event || 'signin',
-      provider: provider || user.provider || 'verified',
+      provider: normalizedProvider,
       uid: user.uid,
-      email: user.email || '',
-      displayName: user.displayName || user.name || 'Traveler Explorer',
-      travelStyleTag: user.travelStyleTag || `${String(provider || user.provider || 'Verified').toUpperCase()} Auth`,
+      email: cleanEmail,
+      displayName: user.displayName || user.name || (cleanEmail ? cleanEmail.split('@')[0] : 'Traveler Explorer'),
+      travelStyleTag: user.travelStyleTag || `${normalizedProvider.toUpperCase()} Auth`,
       ip: clientIp,
-      location: locationStr,
+      location: user.location || locationStr,
       timestamp: new Date().toISOString()
     };
 
@@ -212,37 +371,57 @@ export default async function handler(req, res) {
     }
 
     let supabaseProfileId = null;
+    const isTestEmail = isAutomatedTestAccount(cleanEmail, activityRecord.displayName);
 
-    // 1. Server-side guarantee: ensure user sign-in is also recorded in Supabase public.profiles & auth.users
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    // 1. Server-side deduplicated guarantee: ensure every genuine Google / Firebase / Email user
+    //    is permanently indexed in Supabase `get_all_registered_users` WITHOUT creating duplicates.
+    if (SUPABASE_URL && SUPABASE_ANON_KEY && cleanEmail && !isTestEmail) {
       try {
         const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
           auth: { persistSession: false, autoRefreshToken: false }
         });
-        const { data: anonData } = await sb.auth.signInAnonymously({
-          options: {
-            data: {
-              full_name: activityRecord.displayName,
-              user_email: activityRecord.email || null,
-              auth_provider: activityRecord.provider,
-              external_uid: activityRecord.uid,
-              location: locationStr,
-              ip: clientIp,
-              last_sign_in_at: activityRecord.timestamp
+
+        const { data: existingUsers } = await sb.rpc('get_all_registered_users');
+        const targetCanon = canonicalEmail(cleanEmail);
+        const existingRow = Array.isArray(existingUsers)
+          ? existingUsers.find(r => {
+              if (r?.metadata?.record_type === 'admin_pro_override') return false;
+              const rowEmail = String(r?.email || r?.metadata?.user_email || r?.metadata?.email || '').toLowerCase().trim();
+              return rowEmail && canonicalEmail(rowEmail) === targetCanon;
+            })
+          : null;
+
+        if (existingRow) {
+          supabaseProfileId = existingRow.id;
+        } else {
+          const { data: anonData } = await sb.auth.signInAnonymously({
+            options: {
+              data: {
+                record_type: 'external_user_sync',
+                full_name: activityRecord.displayName,
+                name: activityRecord.displayName,
+                user_email: cleanEmail,
+                email: cleanEmail,
+                auth_provider: normalizedProvider,
+                external_uid: activityRecord.uid,
+                location: activityRecord.location || locationStr,
+                original_created_at: user.createdAt || activityRecord.timestamp,
+                last_sign_in_at: activityRecord.timestamp
+              }
             }
-          }
-        });
-        if (anonData?.user?.id) {
-          supabaseProfileId = anonData.user.id;
-          await sb.from('profiles').upsert({
-            id: anonData.user.id,
-            email: activityRecord.email || null,
-            display_name: activityRecord.displayName,
-            traveler_style: user.travelerStyle || 'Smart Roadtripper',
-            travel_style_tag: `${activityRecord.travelStyleTag} • ${String(activityRecord.provider).toUpperCase()}`,
-            location: locationStr,
-            updated_at: activityRecord.timestamp
           });
+          if (anonData?.user?.id) {
+            supabaseProfileId = anonData.user.id;
+            await sb.from('profiles').upsert({
+              id: anonData.user.id,
+              email: cleanEmail,
+              display_name: activityRecord.displayName,
+              traveler_style: user.travelerStyle || 'Smart Roadtripper',
+              travel_style_tag: `${activityRecord.travelStyleTag} • ${normalizedProvider.toUpperCase()}`,
+              location: activityRecord.location || locationStr,
+              updated_at: activityRecord.timestamp
+            });
+          }
         }
       } catch (sbErr) {
         console.warn('[Auth Activity Supabase Sync Notice]', sbErr);
@@ -254,16 +433,6 @@ export default async function handler(req, res) {
     // CRITICAL: Prevent wasting Resend quota! Sign-in activity emails are strictly disabled
     // unless explicitly requested via ENABLE_AUTH_ACTIVITY_EMAILS='true'.
     // This preserves 100% of the Resend email quota for user-facing 2FA & OTP verification.
-    const isTestEmail = 
-      activityRecord.email?.startsWith('ci_') ||
-      activityRecord.email?.startsWith('test_') ||
-      activityRecord.email?.startsWith('e2e_') ||
-      activityRecord.email?.endsWith('@tripverse.app') ||
-      activityRecord.email?.endsWith('@example.com') ||
-      activityRecord.email?.endsWith('@test.com') ||
-      activityRecord.email?.endsWith('@invalid') ||
-      activityRecord.email?.endsWith('.test');
-
     const shouldDispatchEmail = process.env.ENABLE_AUTH_ACTIVITY_EMAILS === 'true' && !isTestEmail && Boolean(RESEND_API_KEY) && (Date.now() - lastAlertTime > 2 * 60 * 1000);
 
     let emailDispatchId = null;

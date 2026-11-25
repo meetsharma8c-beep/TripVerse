@@ -10,10 +10,7 @@ import {
   ShieldCheck, 
   Activity, 
   Zap, 
-  ArrowUpRight, 
   RefreshCw,
-  KeyRound,
-  Check,
   UserCheck
 } from 'lucide-react';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
@@ -22,7 +19,8 @@ import {
   AdminUserRecord, 
   AdminMetrics, 
   adminGrantPro, 
-  adminRevokePro 
+  adminRevokePro,
+  buildFounderRosterCsv
 } from '../../services/adminService';
 import { triggerHaptic } from '../../services/deviceService';
 
@@ -31,15 +29,18 @@ interface FounderDashboardModalProps {
   onClose: () => void;
 }
 
+type RosterFilter = 'all' | 'genuine' | 'google' | 'pro' | 'free' | 'guests';
+
 export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ isOpen, onClose }) => {
   useModalBehavior(isOpen, onClose);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
+  const [guests, setGuests] = useState<AdminUserRecord[]>([]);
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterTier, setFilterTier] = useState<'all' | 'vip_founder' | 'pro' | 'free' | 'genuine'>('all');
+  const [filterTier, setFilterTier] = useState<RosterFilter>('all');
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const loadData = async (isRefresh = false) => {
@@ -49,6 +50,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
     try {
       const data = await fetchFounderUserRoster();
       setUsers(data.users);
+      setGuests(data.guests || []);
       setMetrics(data.metrics);
     } catch (err: any) {
       console.error('[FounderDashboard] Load failed:', err);
@@ -70,7 +72,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
     triggerHaptic();
     const ok = await adminGrantPro(email, 365);
     if (ok) {
-      setActionNotice(`Granted 1-Year Pro membership to ${email}`);
+      setActionNotice(`Granted 1-Year Pro membership to ${email} (synced to cloud)`);
       setTimeout(() => setActionNotice(null), 4000);
       loadData(true);
     }
@@ -86,14 +88,38 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
     }
   };
 
-  const filteredUsers = users.filter(u => {
-    const matchesSearch = 
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      u.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
+  const handleExportCsv = () => {
+    triggerHaptic();
+    const sourceRecords = filterTier === 'guests' ? guests : users;
+    const csv = buildFounderRosterCsv(sourceRecords);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tripverse_users_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setActionNotice(`Exported ${sourceRecords.length} records to CSV`);
+    setTimeout(() => setActionNotice(null), 3500);
+  };
+
+  const sourcePool = filterTier === 'guests' ? guests : users;
+
+  const filteredUsers = sourcePool.filter(u => {
+    const q = searchTerm.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      u.email.toLowerCase().includes(q) ||
+      u.name.toLowerCase().includes(q) ||
+      (u.location || '').toLowerCase().includes(q) ||
+      u.provider.toLowerCase().includes(q);
+
     if (!matchesSearch) return false;
-    if (filterTier === 'all') return true;
+    if (filterTier === 'all' || filterTier === 'guests') return true;
     if (filterTier === 'genuine') return u.isGenuine;
+    if (filterTier === 'google') return u.provider === 'google';
     return u.tier === filterTier;
   });
 
@@ -121,12 +147,22 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
                 </span>
               </div>
               <p className="text-xs text-amber-200/70">
-                meet.sharma8c@gmail.com • Real-time user roster & subscription telemetrics
+                meet.sharma8c@gmail.com • Unified Email + Google OAuth + Guest cloud roster
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCsv}
+              disabled={loading}
+              className="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              title="Export CSV"
+              aria-label="Export CSV"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Export CSV</span>
+            </button>
             <button
               onClick={() => loadData(true)}
               disabled={refreshing}
@@ -167,7 +203,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
               <span className="text-2xl font-bold text-white mt-1">
                 {metrics ? metrics.totalRegistered : '...'}
               </span>
-              <span className="text-[10px] text-slate-500 mt-0.5">PostgreSQL Database</span>
+              <span className="text-[10px] text-slate-500 mt-0.5">Email + Google OAuth</span>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-850/80 border border-slate-700/60 flex flex-col">
@@ -178,7 +214,9 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
               <span className="text-2xl font-bold text-blue-300 mt-1">
                 {metrics ? metrics.activeSignedUsers : '...'}
               </span>
-              <span className="text-[10px] text-slate-500 mt-0.5">≥1 authenticated session</span>
+              <span className="text-[10px] text-slate-500 mt-0.5">
+                {metrics ? `${metrics.googleUsers} Google • ${metrics.guestSessions} Guests` : '≥1 authenticated session'}
+              </span>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-850/80 border border-amber-500/20 bg-amber-950/10 flex flex-col">
@@ -200,7 +238,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
               <span className="text-2xl font-bold text-emerald-300 mt-1">
                 {metrics ? metrics.proSubscribers : '...'}
               </span>
-              <span className="text-[10px] text-slate-500 mt-0.5">Active paid quotas</span>
+              <span className="text-[10px] text-slate-500 mt-0.5">Active paid/granted</span>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-850/80 border border-amber-500/30 bg-amber-950/20 flex flex-col">
@@ -209,7 +247,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
                 VIP Founder
               </span>
               <span className="text-2xl font-bold text-amber-300 mt-1">
-                1
+                {metrics ? metrics.vipFounders : 1}
               </span>
               <span className="text-[10px] text-amber-400/60 mt-0.5">Permanent unrestricted</span>
             </div>
@@ -222,7 +260,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
               <span className="text-2xl font-bold text-emerald-400 mt-1">
                 Online
               </span>
-              <span className="text-[10px] text-emerald-500/80 mt-0.5">Groq 120B ~80ms</span>
+              <span className="text-[10px] text-emerald-500/80 mt-0.5">Groq 120B + SerpApi</span>
             </div>
           </div>
 
@@ -235,7 +273,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search registered travelers by email or name..."
+                placeholder="Search travelers by email, name, provider, or city..."
                 className="w-full pl-10 pr-4 py-2 bg-slate-800/90 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-amber-400/60 transition-all"
               />
             </div>
@@ -243,14 +281,16 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
             {/* Filter Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
               {[
-                { id: 'all', label: 'All Users' },
-                { id: 'genuine', label: 'Genuine (17)' },
-                { id: 'pro', label: 'Pro Members' },
-                { id: 'free', label: 'Free Tier' }
+                { id: 'all', label: `All Registered (${metrics?.totalRegistered ?? 0})` },
+                { id: 'genuine', label: `Genuine (${metrics?.genuineTravelers ?? 0})` },
+                { id: 'google', label: `Google (${metrics?.googleUsers ?? 0})` },
+                { id: 'pro', label: `Pro (${metrics?.proSubscribers ?? 0})` },
+                { id: 'free', label: `Free (${metrics?.freeAccounts ?? 0})` },
+                { id: 'guests', label: `Guests (${metrics?.guestSessions ?? 0})` }
               ].map(f => (
                 <button
                   key={f.id}
-                  onClick={() => setFilterTier(f.id as any)}
+                  onClick={() => setFilterTier(f.id as RosterFilter)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                     filterTier === f.id
                       ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
@@ -272,7 +312,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
                     <th className="px-4 py-3">Traveler</th>
                     <th className="px-4 py-3">Status / Tier</th>
                     <th className="px-4 py-3">Auth Provider</th>
-                    <th className="px-4 py-3">Created Date</th>
+                    <th className="px-4 py-3">Created / Last Active</th>
                     <th className="px-4 py-3 text-right">Admin Actions</th>
                   </tr>
                 </thead>
@@ -291,7 +331,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.slice(0, 50).map((u) => {
+                    filteredUsers.map((u) => {
                       const isFounder = u.tier === 'vip_founder';
                       const isPro = u.tier === 'pro';
 
@@ -306,7 +346,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
                                   ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                                   : 'bg-slate-750 text-slate-300'
                               }`}>
-                                {isFounder ? '👑' : u.name.charAt(0).toUpperCase()}
+                                {isFounder ? '👑' : (u.name.charAt(0) || 'T').toUpperCase()}
                               </div>
                               <div className="min-w-0">
                                 <div className="font-semibold text-slate-100 truncate flex items-center gap-1.5">
@@ -314,8 +354,13 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
                                   {u.isGenuine && (
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Verified Genuine Traveler" />
                                   )}
+                                  {u.location && (
+                                    <span className="text-[10px] text-slate-500 font-normal">• {u.location}</span>
+                                  )}
                                 </div>
-                                <div className="text-[11px] text-slate-400 font-mono truncate">{u.email}</div>
+                                <div className="text-[11px] text-slate-400 font-mono truncate">
+                                  {u.isGuest ? `Guest ID: ${u.id.slice(0, 8)}` : u.email}
+                                </div>
                               </div>
                             </div>
                           </td>
@@ -331,6 +376,10 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
                                 <Zap className="w-3 h-3" />
                                 Pro Member
                               </span>
+                            ) : u.isGuest ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800/80 text-slate-400 border border-slate-700/70">
+                                Guest Session
+                              </span>
                             ) : (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">
                                 Free Tier
@@ -343,16 +392,25 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
                           </td>
 
                           <td className="px-4 py-3 text-slate-400 text-[11px]">
-                            {new Date(u.createdAt).toLocaleDateString(undefined, {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
+                            <div>
+                              {new Date(u.createdAt).toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </div>
+                            {u.lastSignInAt && (
+                              <div className="text-[10px] text-slate-500">
+                                Active {new Date(u.lastSignInAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              </div>
+                            )}
                           </td>
 
                           <td className="px-4 py-3 text-right">
                             {isFounder ? (
                               <span className="text-[10px] text-amber-300 font-semibold italic">Permanent Founder</span>
+                            ) : u.isGuest ? (
+                              <span className="text-[10px] text-slate-500">Anonymous</span>
                             ) : isPro ? (
                               <button
                                 onClick={() => handleRevoke(u.email)}
@@ -377,11 +435,10 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
               </table>
             </div>
 
-            {filteredUsers.length > 50 && (
-              <div className="px-4 py-3 bg-slate-900 border-t border-slate-800 text-[11px] text-slate-400 text-center">
-                Showing top 50 travelers of {filteredUsers.length} total matched records.
-              </div>
-            )}
+            <div className="px-4 py-2.5 bg-slate-900/80 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+              <span>Showing all {filteredUsers.length} matched records (zero row cap)</span>
+              <span>Synced across Supabase Auth + Firebase OAuth + Google GIS</span>
+            </div>
           </div>
         </div>
 
@@ -389,7 +446,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
         <div className="px-6 py-4 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 shrink-0">
           <div className="flex items-center gap-2 text-[11px]">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Encrypted Supabase connection • Auto-synced to Desktop Excel</span>
+            <span>Encrypted cloud roster • Deduplicated by canonical account identity</span>
           </div>
 
           <div className="flex items-center gap-2">

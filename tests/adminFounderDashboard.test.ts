@@ -30,7 +30,9 @@ import {
   fetchFounderUserRoster, 
   adminGrantPro, 
   adminRevokePro, 
-  isTestEmail 
+  isTestEmail,
+  parseRpcRosterRows,
+  buildFounderRosterCsv
 } from '../src/services/adminService';
 import { getCurrentUser, signOut } from '../src/services/authService';
 
@@ -123,5 +125,100 @@ describe('Founder Command Center & Admin Service Unit Tests', () => {
     const revokeOk = await adminRevokePro(targetEmail);
     expect(revokeOk).toBe(true);
     expect(localStorage.getItem(`tripverse_admin_pro_${targetEmail}`)).toBeNull();
+  });
+
+  it('merges Email, Google OAuth synced accounts, Cloud Pro overrides, and separates Guests cleanly', () => {
+    const rpcSample = [
+      {
+        id: 'sb-email-1',
+        email: 'rohan.kapoor@gmail.com',
+        name: 'Rohan Kapoor',
+        provider: 'email',
+        location: 'Mumbai, IN',
+        created_at: '2026-10-15T10:00:00Z',
+        last_sign_in_at: '2026-10-16T10:00:00Z',
+        metadata: { full_name: 'Rohan Kapoor' }
+      },
+      // Same user later signed in with Google (dot-free Gmail alias) -> should merge & upgrade provider to 'google'
+      {
+        id: 'sb-google-sync-1',
+        email: null,
+        name: 'Rohan K. Explorer',
+        provider: 'EMAIL',
+        location: 'Delhi, IN',
+        created_at: '2026-11-20T12:00:00Z',
+        last_sign_in_at: '2026-11-20T12:00:00Z',
+        metadata: {
+          record_type: 'external_user_sync',
+          user_email: 'rohankapoor@gmail.com',
+          auth_provider: 'google',
+          full_name: 'Rohan K. Explorer',
+          last_sign_in_at: '2026-11-20T12:00:00Z'
+        }
+      },
+      // Pure Google OAuth user (no top-level email in Supabase anon sync)
+      {
+        id: 'sb-google-only-2',
+        email: null,
+        name: 'Priya Menon',
+        provider: 'EMAIL',
+        location: 'Bengaluru, IN',
+        created_at: '2026-11-22T08:30:00Z',
+        last_sign_in_at: '2026-11-22T08:30:00Z',
+        metadata: {
+          record_type: 'external_user_sync',
+          user_email: 'priya.menon@gmail.com',
+          auth_provider: 'google',
+          full_name: 'Priya Menon',
+          original_created_at: '2026-11-01T09:00:00Z'
+        }
+      },
+      // Cloud Pro override granted to Priya
+      {
+        id: 'sb-override-1',
+        email: null,
+        created_at: '2026-11-24T09:00:00Z',
+        metadata: {
+          record_type: 'admin_pro_override',
+          target_email: 'priya.menon@gmail.com',
+          subscription_tier: 'pro',
+          expires_at: '2027-11-24T09:00:00Z',
+          updated_at: '2026-11-24T09:00:00Z'
+        }
+      },
+      // Anonymous Guest Explorer session (`signInAsGuest`)
+      {
+        id: 'sb-guest-1',
+        email: null,
+        name: 'Explorer',
+        provider: 'EMAIL',
+        location: 'India',
+        created_at: '2026-11-23T05:00:00Z',
+        metadata: { name: 'Explorer', traveler_style: 'Budget explorer' }
+      }
+    ];
+
+    const { registeredByCanon, guestList } = parseRpcRosterRows(rpcSample);
+
+    expect(registeredByCanon.size).toBe(2);
+    expect(guestList.length).toBe(1);
+    expect(guestList[0].isGuest).toBe(true);
+
+    const rohan = registeredByCanon.get('rohankapoor@gmail.com');
+    expect(rohan).toBeDefined();
+    expect(rohan?.provider).toBe('google');
+    expect(rohan?.name).toBe('Rohan K. Explorer');
+    expect(rohan?.createdAt).toBe('2026-10-15T10:00:00Z');
+
+    const priya = registeredByCanon.get('priyamenon@gmail.com');
+    expect(priya).toBeDefined();
+    expect(priya?.provider).toBe('google');
+    expect(priya?.tier).toBe('pro');
+    expect(priya?.createdAt).toBe('2026-11-01T09:00:00Z');
+
+    const csv = buildFounderRosterCsv(Array.from(registeredByCanon.values()));
+    expect(csv).toContain('Priya Menon');
+    expect(csv).toContain('GOOGLE');
+    expect(csv).toContain('"pro"');
   });
 });

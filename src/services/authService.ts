@@ -350,29 +350,50 @@ export function syncAccountToLocal(user: AuthUser, passwordHash?: string): void 
 
   saveAccounts(accounts);
 
+  const prevSession = loadSession();
+  const reusableJwt =
+    latestVerifiedAuthToken ||
+    (prevSession?.user?.email?.toLowerCase() === user.email?.toLowerCase() &&
+    prevSession?.token &&
+    !prevSession.token.startsWith('session-')
+      ? prevSession.token
+      : null);
+
   const session: AuthSession = {
-    token: `session-${user.uid}-${Date.now()}`,
+    token: reusableJwt || `session-${user.uid}-${Date.now()}`,
     user,
     expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
   };
   saveSession(session);
 }
 
+let latestVerifiedAuthToken: string | null = null;
+
 /**
  * Dispatch real-time automated auth activity event to serverless monitor
+ * and ensure external OAuth / Firebase accounts are durably indexed in the Founder Roster.
  */
-export async function notifyAuthActivity(user: AuthUser, event: 'signin' | 'signup' = 'signin'): Promise<void> {
+export async function notifyAuthActivity(
+  user: AuthUser,
+  event: 'signin' | 'signup' | 'session_sync' = 'signin'
+): Promise<void> {
   try {
+    const procEnv = (globalThis as any).process?.env;
+    if (procEnv && (procEnv.VITEST || procEnv.NODE_ENV === 'test')) return;
+    if (!user?.uid || !user?.email || user.isAnonymous) return;
+
     const payload = {
       event,
-      provider: user.provider || 'unknown',
+      provider: user.provider || 'email',
       user: {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
         travelStyleTag: user.travelStyleTag,
         location: user.location,
-        travelerStyle: user.travelerStyle
+        travelerStyle: user.travelerStyle,
+        createdAt: user.createdAt,
+        subscriptionTier: user.subscriptionTier
       }
     };
     await fetch(resolveApiUrl('/api/auth-activity'), {
@@ -380,6 +401,67 @@ export async function notifyAuthActivity(user: AuthUser, event: 'signin' | 'sign
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).catch(() => {});
+
+    if (typeof localStorage !== 'undefined' && user.email) {
+      localStorage.setItem(`tripverse_roster_synced_v2_${user.email.toLowerCase().trim()}`, String(Date.now()));
+    }
+  } catch {}
+}
+
+/**
+ * Ensures any active signed-in user (including returning 30-day sessions from Google GIS or Firebase)
+ * is backfilled into the Founder Command Center roster AND receives any cloud Pro tier grants.
+ */
+export async function syncActiveUserToFounderDirectory(user?: AuthUser | null): Promise<void> {
+  try {
+    const procEnv = (globalThis as any).process?.env;
+    if (procEnv && (procEnv.VITEST || procEnv.NODE_ENV === 'test')) return;
+    const target = user || getCurrentUser();
+    if (!target || !target.email || target.isAnonymous) return;
+
+    const cleanEmail = target.email.toLowerCase().trim();
+    const syncKey = `tripverse_roster_synced_v2_${cleanEmail}`;
+    const lastSynced = typeof localStorage !== 'undefined' ? Number(localStorage.getItem(syncKey) || '0') : 0;
+
+    if (!lastSynced || Date.now() - lastSynced > 24 * 60 * 60 * 1000) {
+      notifyAuthActivity(target, 'session_sync').catch(() => {});
+    }
+
+    // Apply cloud Pro grant/revoke if updated by VIP Founder
+    if (!isFounderVipUser(target)) {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        const { data: rows, error } = await supabase.rpc('get_all_registered_users');
+        if (!error && Array.isArray(rows)) {
+          const overrides = rows
+            .filter((r: any) =>
+              r?.metadata?.record_type === 'admin_pro_override' &&
+              String(r?.metadata?.target_email || '').toLowerCase().trim() === cleanEmail
+            )
+            .sort((a: any, b: any) =>
+              new Date(b.metadata?.updated_at || b.created_at || 0).getTime() -
+              new Date(a.metadata?.updated_at || a.created_at || 0).getTime()
+            );
+
+          if (overrides.length > 0) {
+            const latest = overrides[0].metadata || {};
+            const expTime = latest.expires_at ? new Date(latest.expires_at).getTime() : 0;
+            const shouldBePro = latest.subscription_tier === 'pro' && (!expTime || expTime > Date.now());
+            const desiredTier: 'pro' | 'free' = shouldBePro ? 'pro' : 'free';
+
+            if (target.subscriptionTier !== desiredTier) {
+              const updatedUser: AuthUser = {
+                ...target,
+                subscriptionTier: desiredTier,
+                freeTripsRemaining: shouldBePro ? Math.max(target.freeTripsRemaining ?? 3, 999) : Math.min(target.freeTripsRemaining ?? 3, 3),
+                subscriptionExpiresAt: shouldBePro ? latest.expires_at : undefined
+              };
+              syncAccountToLocal(updatedUser);
+            }
+          }
+        }
+      }
+    }
   } catch {}
 }
 
@@ -543,6 +625,7 @@ export function parseGoogleUserFromCredential(credential: string): AuthUser {
   if (!payload.email) {
     throw new Error('Google credential does not contain a verified email address.');
   }
+  latestVerifiedAuthToken = credential;
 
   const emailNorm = payload.email.toLowerCase().trim();
   const uid = toDeterministicUuid('google:' + (payload.sub || emailNorm));
@@ -663,18 +746,20 @@ export async function signInWithGoogleCredential(credential: string): Promise<Au
   }
 
   saveAccounts(accounts);
+  latestVerifiedAuthToken = credential;
   const session: AuthSession = {
-    token: `session-google-${account.user.uid}-${Date.now()}`,
+    token: credential,
     user: account.user,
     expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
   };
   saveSession(session);
 
-  // Sync profile to Supabase PostgreSQL database
+  // Sync profile & Founder Roster in cloud
   const supabaseClient = getSupabaseClient();
   if (supabaseClient) {
     saveProfileToSupabase(uid, toUserProfile(account.user)).catch(() => {});
   }
+  notifyAuthActivity(account.user, 'signin').catch(() => {});
 
   window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY, { detail: account.user }));
   return account.user;
@@ -904,6 +989,9 @@ export async function handleFirebaseUserCredential(cred: any): Promise<AuthUser>
 
   saveAccounts(accounts);
   const idToken = await fbUser.getIdToken().catch(() => `session-google-${account.user.uid}-${Date.now()}`);
+  if (idToken && !idToken.startsWith('session-')) {
+    latestVerifiedAuthToken = idToken;
+  }
   const session: AuthSession = {
     token: idToken,
     user: account.user,
@@ -911,11 +999,12 @@ export async function handleFirebaseUserCredential(cred: any): Promise<AuthUser>
   };
   saveSession(session);
 
-  // Sync profile to Supabase PostgreSQL database if configured
+  // Sync profile & Founder Roster in cloud
   const supabase = getSupabaseClient();
   if (supabase) {
     saveProfileToSupabase(uid, toUserProfile(account.user)).catch(() => {});
   }
+  notifyAuthActivity(account.user, 'signin').catch(() => {});
 
   window.dispatchEvent(new CustomEvent(AUTH_EVENT_KEY, { detail: account.user }));
   return account.user;
@@ -1473,6 +1562,7 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
           };
           syncAccountToLocal(authUser, pwdHash);
           saveProfileToSupabase(authUser.uid, toUserProfile(authUser)).catch(() => {});
+          notifyAuthActivity(authUser, 'signup').catch(() => {});
           return authUser;
         }
       }
@@ -1498,6 +1588,7 @@ export async function createAccountWithSupabase(data: SignUpData): Promise<AuthU
     };
     syncAccountToLocal(fallbackAuthUser, pwdHash);
     saveProfileToSupabase(fallbackAuthUser.uid, toUserProfile(fallbackAuthUser)).catch(() => {});
+    notifyAuthActivity(fallbackAuthUser, 'signup').catch(() => {});
     return fallbackAuthUser;
   }
 
@@ -2062,6 +2153,7 @@ export async function verifyEmailCredentialsOnly(data: LoginData): Promise<{ use
  */
 export function finalizeTwoFactorLogin(user: AuthUser, passwordHash?: string): AuthUser {
   syncAccountToLocal(user, passwordHash);
+  notifyAuthActivity(user, 'signin').catch(() => {});
   return user;
 }
 
@@ -2084,6 +2176,7 @@ export function clearActiveSession(): void {
 export async function signInWithEmail(data: LoginData): Promise<AuthUser & { emailConfirmationPending?: boolean }> {
   const { user, passwordHash } = await verifyEmailCredentialsOnly(data);
   syncAccountToLocal(user, passwordHash);
+  notifyAuthActivity(user, 'signin').catch(() => {});
   return user;
 }
 
