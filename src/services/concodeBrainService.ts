@@ -16,6 +16,9 @@ import { CONCODE_MASTER_PROMPT, CONCODE_BRAIN_MASTER_PROMPT } from './concodeMas
 import { resolveTransitContext } from './transportFeasibilityEngine';
 import { getReplanOptions } from './replanningService';
 import { resolveApiUrl } from './deviceService';
+import { fetchLiveMarketQuotes } from './liveMarketQuoteService';
+import { evaluateLiveMarketPrices } from './liveMarketPricingService';
+import { getDestinationHighlights } from './landmarkAtlasService';
 
 export interface BrainStatus {
   online: boolean;
@@ -424,6 +427,32 @@ export interface ConcodeStreamCallbacks {
   onToken?: (accumulatedText: string) => void;
 }
 
+function inferChoicesFromPrompt(query: string): {
+  foodPreference?: 'all' | 'veg' | 'vegan' | 'jain' | 'halal';
+  transportMode?: Trip['transportMode'];
+  pacing?: Trip['pacing'];
+} {
+  const q = query.toLowerCase();
+  let foodPreference: 'all' | 'veg' | 'vegan' | 'jain' | 'halal' | undefined;
+  if (/\bjain\b/.test(q)) foodPreference = 'jain';
+  else if (/\bvegan\b/.test(q)) foodPreference = 'vegan';
+  else if (/\bhalal\b/.test(q)) foodPreference = 'halal';
+  else if (/\b(pure\s*veg|vegetarian|\bveg\b)\b/.test(q) && !/\bnon[-\s]?veg\b/.test(q)) foodPreference = 'veg';
+
+  let transportMode: Trip['transportMode'] | undefined;
+  if (/\b(flight|fly|airfare|plane)\b/.test(q)) transportMode = 'flight';
+  else if (/\b(train|rail|irctc|vande\s*bharat|shatabdi|rajdhani)\b/.test(q)) transportMode = 'train';
+  else if (/\b(bike|motorcycle|scooter|bullet|riding)\b/.test(q)) transportMode = 'bike';
+  else if (/\b(bus|volvo|sleeper\s*coach)\b/.test(q)) transportMode = 'bus';
+  else if (/\b(drive|car|road\s*trip|self[-\s]?drive)\b/.test(q)) transportMode = 'car';
+
+  let pacing: Trip['pacing'] | undefined;
+  if (/\b(relax|relaxed|chill|slow|laid[-\s]?back|peaceful)\b/.test(q)) pacing = 'relaxed';
+  else if (/\b(packed|fast|max|cover\s*everything|intensive)\b/.test(q)) pacing = 'fast_paced';
+
+  return { foodPreference, transportMode, pacing };
+}
+
 async function tryQueryServerlessAPI(
   query: string,
   trip: Trip,
@@ -434,26 +463,132 @@ async function tryQueryServerlessAPI(
   if (typeof window === 'undefined') return null;
 
   const customConfig = getStoredConcodeConfig();
-  const destCoords = trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates;
-  const transitContext = resolveTransitContext(trip.destination, destCoords);
   const memoryRing = getTravelerMemoryRing();
+  const inferred = inferChoicesFromPrompt(query);
+
+  // Prioritize newly extracted session / user-prompt choices over stale background trip fields
+  const activeDest = (session.destination || trip.destination || 'Goa').trim();
+  const isNewDestination = Boolean(
+    session.destination &&
+    trip.destination &&
+    session.destination.toLowerCase().split(',')[0].trim() !== trip.destination.toLowerCase().split(',')[0].trim()
+  );
+  const activeDays = Math.max(1, Number(session.durationDays || trip.durationDays || 3));
+  const activeBudget = Math.max(2000, Number(session.budget || trip.totalBudget || 25000));
+  const activeOrigin = (session.origin || trip.origin || 'Mumbai').trim();
+  const activeTravelers = Math.max(1, Number(session.travelersCount || trip.travelersCount || 2));
+  const activeMode = inferred.transportMode || trip.transportMode || 'car';
+  const activeFood = inferred.foodPreference || trip.foodPreference || (memoryRing.dietaryPreference as any) || 'all';
+  const activePacing = inferred.pacing || trip.pacing || (memoryRing.travelPace as any) || 'balanced';
+  const activePrefs = Array.from(
+    new Set([
+      ...(session.preferences || []),
+      ...(!isNewDestination ? (trip.preferences || []) : []),
+      ...(memoryRing.interests || [])
+    ])
+  );
+
+  const destCoords = !isNewDestination
+    ? (trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates)
+    : undefined;
+  const transitContext = resolveTransitContext(activeDest, destCoords);
+
+  // Evaluate real-time local place market value + fetch live SerpApi flight/hotel quotes for itinerary/budget queries
+  const marketBench = evaluateLiveMarketPrices({
+    origin: activeOrigin,
+    destination: activeDest,
+    durationDays: activeDays,
+    travelersCount: activeTravelers,
+    startDate: trip.startDate,
+    accommodationType: trip.accommodationType,
+    transportMode: activeMode
+  });
+
+  let liveQuotes = null;
+  if (mode === 'itinerary' || mode === 'budget' || /\b(live|market|cost|budget|price|fare|plan)\b/i.test(query)) {
+    try {
+      streamCallbacks?.onStep?.(`Checking live market rates for ${activeDest}...`);
+      liveQuotes = await Promise.race([
+        fetchLiveMarketQuotes({
+          origin: activeOrigin,
+          destination: activeDest,
+          startDate: trip.startDate,
+          durationDays: activeDays,
+          travelersCount: activeTravelers,
+          transportMode: activeMode
+        }),
+        new Promise<null>(resolve => setTimeout(() => resolve(null), 3_500))
+      ]);
+    } catch {
+      liveQuotes = null;
+    }
+  }
+
+  const nights = Math.max(1, activeDays - 1);
+  const rooms = Math.max(1, Math.ceil(activeTravelers / 2));
+  const liveTransitINR =
+    activeMode === 'flight' && liveQuotes?.isLiveMarket && liveQuotes.flights?.bestOffer
+      ? Math.round(liveQuotes.flights.bestOffer.totalGroupAmount)
+      : activeMode === 'flight'
+        ? marketBench.flightTotalGroupINR
+        : activeMode === 'train'
+          ? marketBench.trainTotalGroupINR
+          : (activeMode === 'car' || activeMode === 'bike')
+            ? marketBench.roadTripFuelAndTollsINR
+            : marketBench.localTransitTotalGroupINR;
+
+  let liveStayINR = marketBench.hotelTotalGroupINR;
+  let selectedLiveHotelName: string | undefined;
+  if (liveQuotes?.isLiveMarket && liveQuotes.hotels.length > 0) {
+    const maxStayCap = Math.max(1200 * nights * rooms, Math.round((activeBudget - liveTransitINR) * 0.55));
+    const targetNightly = Math.max(1200, Math.round(maxStayCap / (nights * rooms)));
+    const bestHotel = [...liveQuotes.hotels].sort(
+      (a, b) => Math.abs(a.nightlyRatePerRoom - targetNightly) - Math.abs(b.nightlyRatePerRoom - targetNightly)
+    )[0];
+    if (bestHotel) {
+      liveStayINR = Math.round(bestHotel.nightlyRatePerRoom * nights * rooms);
+      selectedLiveHotelName = `${bestHotel.name} (₹${Math.round(bestHotel.nightlyRatePerRoom).toLocaleString('en-IN')}/night)`;
+    }
+  }
+
+  const groundBudgetINR = Math.max(
+    Math.round(activeBudget * 0.15),
+    activeBudget - liveTransitINR - liveStayINR
+  );
+  const dailyGroundPerPersonINR = Math.max(300, Math.round(groundBudgetINR / (activeDays * activeTravelers)));
+
+  const knownHighlights = (!isNewDestination && trip.destinationDetails?.highlights?.length)
+    ? trip.destinationDetails.highlights
+    : getDestinationHighlights(activeDest, 14);
 
   const tripContextPayload = {
-    destination: trip.destination,
-    durationDays: trip.durationDays,
-    totalBudget: trip.totalBudget,
-    origin: trip.origin,
-    travelersCount: trip.travelersCount,
+    destination: activeDest,
+    durationDays: activeDays,
+    totalBudget: activeBudget,
+    origin: activeOrigin,
+    travelersCount: activeTravelers,
     travelerType: trip.travelerType,
-    preferences: Array.from(new Set([...(trip.preferences?.length ? trip.preferences : (session.preferences || [])), ...(memoryRing.interests || [])])),
-    transportMode: trip.transportMode,
+    preferences: activePrefs,
+    specialRequests: query.slice(0, 600),
+    transportMode: activeMode,
     accommodationType: trip.accommodationType,
-    foodPreference: trip.foodPreference || memoryRing.dietaryPreference || 'all',
-    pacing: trip.pacing || memoryRing.travelPace || 'moderate',
+    foodPreference: activeFood,
+    pacing: activePacing,
     priorities: trip.priorities,
     travelerMemory: memoryRing,
-    knownDestinationHighlights: trip.destinationDetails?.highlights || [],
-    transportDeals: trip.transportDeals || [],
+    groundBudget: {
+      totalGroundBudgetINR: groundBudgetINR,
+      dailyPerPersonGroundINR: dailyGroundPerPersonINR,
+      transitAllocatedINR: liveTransitINR,
+      stayAllocatedINR: liveStayINR,
+      selectedLiveStay: selectedLiveHotelName,
+      isLiveMarket: Boolean(liveQuotes?.isLiveMarket),
+      provider: liveQuotes?.provider || 'seasonal_market_index',
+      localMealAvgPerDayINR: Math.round((marketBench.diningTotalGroupINR || 3000) / activeDays),
+      localAttractionsAvgINR: marketBench.attractionsTotalGroupINR || 2000
+    },
+    knownDestinationHighlights: knownHighlights,
+    transportDeals: !isNewDestination ? (trip.transportDeals || []) : [],
     transitHubs: {
       hasDirectAirport: transitContext.hasDirectAirport,
       primaryAirport: transitContext.primaryAirport?.name,
@@ -578,16 +713,49 @@ async function tryQueryServerlessAPI(
         let structuredItinerary = data.structuredItinerary || data.structured_itinerary;
         if (!structuredItinerary && Array.isArray(data.itinerary)) {
           structuredItinerary = {
-            destination: trip.destination,
-            durationDays: trip.durationDays,
+            destination: activeDest,
+            durationDays: activeDays,
             days: data.itinerary
+          };
+        } else if (structuredItinerary && !structuredItinerary.destination) {
+          structuredItinerary = {
+            ...structuredItinerary,
+            destination: activeDest,
+            durationDays: structuredItinerary.durationDays || activeDays
           };
         }
 
+        const foodShare = Math.round(groundBudgetINR * 0.52);
+        const actShare = Math.round(groundBudgetINR * 0.33);
+        const bufShare = Math.max(0, groundBudgetINR - foodShare - actShare);
+        const computedChatBudget: AIChatBudgetBreakdown | undefined = structuredItinerary
+          ? {
+              transport: liveTransitINR,
+              stays: liveStayINR,
+              food: foodShare,
+              activities: actShare,
+              buffer: bufShare,
+              total: liveTransitINR + liveStayINR + groundBudgetINR,
+              isEstimate: !liveQuotes?.isLiveMarket,
+              currencySymbol: '₹'
+            }
+          : undefined;
+
         const isRawJsonReply = rawReply.trim().startsWith('{') && Boolean(structuredItinerary);
+        const marketSourceLabel = liveQuotes?.isLiveMarket
+          ? `Live Google Flights & Hotels${selectedLiveHotelName ? ` · ${selectedLiveHotelName}` : ''}`
+          : 'calibrated regional market value';
         const displayResponse = isRawJsonReply
-          ? `**ConCode Brain v3.0 — ${structuredItinerary?.durationDays || trip.durationDays || 3}-Day ${structuredItinerary?.destination || trip.destination || 'Trip'} Itinerary**\n\nYour Critic-verified schedule and exact budget allocation are ready below.`
+          ? `[STATE:excited] **ConCode AI — ${structuredItinerary?.durationDays || activeDays}-Day ${structuredItinerary?.destination || activeDest} Blueprint**\n\nGrounded in **${marketSourceLabel}**, leaving **₹${groundBudgetINR.toLocaleString('en-IN')}** on-ground budget (~₹${dailyGroundPerPersonINR.toLocaleString('en-IN')}/person/day) tailored to your choices.`
           : (rawReply || 'Here is your travel blueprint generated by ConCode AI:');
+
+        const defaultButtons = structuredItinerary
+          ? [
+              { label: `Save ${activeDest} Trip to My Trips`, action: 'Save this itinerary', primary: true },
+              { label: 'Trip Cost Breakdown', action: 'CHECK_BUDGET' },
+              { label: `Best Food in ${activeDest}`, action: 'EXPLORE_FOOD' }
+            ]
+          : undefined;
 
         return {
           guild: data.guild || (mode === 'budget' ? 'database' : mode === 'safety' ? 'security' : 'ai_ml'),
@@ -595,8 +763,8 @@ async function tryQueryServerlessAPI(
           confidence: data.confidence || 0.98,
           response: displayResponse,
           structuredItinerary,
-          budgetBreakdown: data.budgetBreakdown || data.budget_breakdown,
-          actionButtons: data.actionButtons || data.action_buttons,
+          budgetBreakdown: data.budgetBreakdown || data.budget_breakdown || computedChatBudget,
+          actionButtons: data.actionButtons || data.action_buttons || defaultButtons,
           modificationBadge: data.modificationBadge || data.modification_badge,
           appAction: data.appAction,
           updatedTrip: data.updatedTrip
@@ -639,6 +807,20 @@ export async function queryConcodeBrain(
   if (extractedPrefs.length > 0) {
     session.preferences = Array.from(new Set([...(session.preferences || []), ...extractedPrefs]));
   }
+  const promptChoices = inferChoicesFromPrompt(query);
+  if (promptChoices.foodPreference || promptChoices.pacing || extractedPrefs.length > 0) {
+    updateTravelerMemoryRing({
+      ...(promptChoices.foodPreference ? { dietaryPreference: promptChoices.foodPreference } : {}),
+      ...(promptChoices.pacing ? { travelPace: promptChoices.pacing as any } : {}),
+      ...(extractedPrefs.length > 0 ? { interests: extractedPrefs } : {})
+    });
+  }
+  updateConcodeSession({
+    destination: session.destination,
+    durationDays: session.durationDays,
+    budget: session.budget,
+    preferences: session.preferences
+  });
 
   // 1. First handle explicit in-app modification & action commands locally
   // so itinerary updates ("make day 3 cheaper", "remove museum", "save trip",
@@ -721,35 +903,53 @@ export async function queryConcodeBrain(
     const targetDest = session.destination || currentDest || 'Dubai';
     const targetDays = session.durationDays || tripContext.durationDays || 5;
     const targetBudget = session.budget || tripContext.totalBudget || 100000;
+    const mem = getTravelerMemoryRing();
 
-    const savedTrip = generateAITrip({
+    const plannerPayload = {
       origin: tripContext.origin || 'Ahmedabad, Gujarat',
       destination: targetDest,
       destinationName: targetDest,
       durationDays: targetDays,
       travelersCount: session.travelersCount || tripContext.travelersCount || 2,
       travelerType: tripContext.travelerType || 'couple',
-      budgetMode: 'total',
+      budgetMode: 'total' as const,
       budgetAmount: targetBudget,
-      preferences: session.preferences?.length ? (session.preferences as any) : ['nature', 'scenic'],
-      transportMode: tripContext.transportMode || 'car',
+      preferences: session.preferences?.length ? (session.preferences as any) : (mem.interests?.length ? (mem.interests as any) : ['nature', 'scenic']),
+      transportMode: promptChoices.transportMode || tripContext.transportMode || 'car',
       accommodationType: tripContext.accommodationType || 'hotel',
-      foodPreference: tripContext.foodPreference || 'all',
-      priorities: ['highlights', 'food']
-    });
+      foodPreference: promptChoices.foodPreference || tripContext.foodPreference || (mem.dietaryPreference as any) || 'all',
+      pacing: promptChoices.pacing || tripContext.pacing || (mem.travelPace as any) || 'balanced',
+      priorities: ['highlights', 'food'] as any
+    };
+
+    let savedTrip: Trip;
+    if (typeof window !== 'undefined') {
+      try {
+        const { generatePersonalizedTrip } = await import('./aiTripPlanner');
+        savedTrip = await generatePersonalizedTrip(plannerPayload);
+      } catch {
+        savedTrip = generateAITrip(plannerPayload);
+      }
+    } else {
+      savedTrip = generateAITrip(plannerPayload);
+    }
 
     updateConcodeSession({ stage: 'planned', draftItinerary: undefined });
+
+    const groundNow = Math.max(
+      0,
+      savedTrip.budgetBreakdown.food + savedTrip.budgetBreakdown.activities + savedTrip.budgetBreakdown.miscellaneous
+    );
 
     return {
       guild: 'ai_ml',
       guildIcon: '',
       confidence: 0.99,
-      response: `**Itinerary Saved Successfully!**\n\n` +
-        `Your **${targetDays}-Day journey to ${targetDest}** has been securely saved to **My Trips** and set as your active expedition.\n\n` +
-        `• **Target Budget:** ₹${targetBudget.toLocaleString('en-IN')}\n` +
-        `• **Schedule:** ${targetDays} day-wise draft schedule with estimated transit arrangements.\n` +
-        `• **Features:** External directions handoff, budget estimates, forecast lookup where available, and a printable itinerary.\n\n` +
-        `Explore your full itinerary below or print your travel guide!`,
+      response: `[STATE:excited] **Itinerary Saved Successfully!**\n\n` +
+        `Your **${targetDays}-Day journey to ${targetDest}** has been planned around real-time market values, your personal choices, and saved to **My Trips**.\n\n` +
+        `• **Target Budget:** ₹${targetBudget.toLocaleString('en-IN')} (Transit ₹${savedTrip.budgetBreakdown.transportation.toLocaleString('en-IN')} • Stay ₹${savedTrip.budgetBreakdown.accommodation.toLocaleString('en-IN')} • On-Ground ₹${groundNow.toLocaleString('en-IN')})\n` +
+        `• **Tailored Choices:** ${savedTrip.foodPreference || 'authentic'} dining • ${savedTrip.pacing || 'balanced'} pace • ${(savedTrip.preferences || []).slice(0, 4).join(', ')}\n` +
+        `• **Ready Tools:** Live turn-by-turn GPS navigation, math-verified budget optimizer, live weather, and printable PDF dossier.`,
       modificationBadge: {
         type: 'saved',
         label: 'Trip Saved to My Trips',

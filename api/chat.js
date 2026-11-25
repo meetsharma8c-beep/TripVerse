@@ -203,6 +203,9 @@ function buildTravelContext(tripContext = {}, sessionState = {}) {
     food_preference: text(tripContext.food_preference || tripContext.foodPreference || '', 80),
     priorities: stringList(tripContext.priorities, 12),
     known_destination_highlights: stringList(tripContext.known_destination_highlights || tripContext.knownDestinationHighlights, 30),
+    ground_budget: (tripContext.ground_budget || tripContext.groundBudget) && typeof (tripContext.ground_budget || tripContext.groundBudget) === 'object'
+      ? (tripContext.ground_budget || tripContext.groundBudget)
+      : undefined,
     transit_hubs: (tripContext.transit_hubs || tripContext.transitHubs) && typeof (tripContext.transit_hubs || tripContext.transitHubs) === 'object' ? (tripContext.transit_hubs || tripContext.transitHubs) : undefined,
     transport_options: transportOptions(tripContext.transport_options || tripContext.transportDeals)
   };
@@ -630,25 +633,29 @@ async function callRemoteCloudLLM(query, ctx, mode) {
   }
 
   // 2. Token-Optimized System Prompts: Saves ~3,500 input tokens per call
+  const groundCap = ctx.ground_budget?.totalGroundBudgetINR;
   const systemPrompt = mode === 'itinerary'
-    ? `${CONCODE_ITINERARY_PROMPT} Duration: exactly ${ctx.duration_days || 3} days for ${ctx.destination || 'the destination'}. Group size: ${ctx.travelers_count || 1}. Currency: ${ctx.currency || 'INR'}.`
+    ? `${CONCODE_ITINERARY_PROMPT} Duration: exactly ${ctx.duration_days || 3} days for ${ctx.destination || 'the destination'}. Group size: ${ctx.travelers_count || 1}. Currency: ${ctx.currency || 'INR'}.${groundCap ? ` Keep sum of all estimatedCost across all days <= ${groundCap} INR (on-ground budget after live transit & stay).` : ''} Strictly honor food_preference="${ctx.food_preference || 'all'}", pacing="${ctx.pacing || 'balanced'}", and user preferences.`
     : mode === 'budget'
-      ? `${CONCODE_COMPACT_PROMPT} You are TripVerse AI Budget Specialist. Provide a realistic categorized budget breakdown with contingency buffer and clear assumptions in ${ctx.currency || 'INR'}. Keep it concise and practical.`
+      ? `${CONCODE_COMPACT_PROMPT} You are TripVerse AI Budget Specialist. Provide a realistic categorized budget breakdown (transit, stay, on-ground food/activities, buffer) grounded in live market values in ${ctx.currency || 'INR'}.`
       : mode === 'safety'
         ? `${CONCODE_COMPACT_PROMPT} You are TripVerse AI Safety Advisor. Provide local safety precautions, emergency contacts, and seasonal travel advice for ${ctx.destination || 'the destination'}. Keep it concise and actionable.`
-        : `${CONCODE_COMPACT_PROMPT} Assist the traveler directly with concise, practical advice and genuine local insights.`;
+        : `${CONCODE_COMPACT_PROMPT} Assist the traveler directly with concise, practical advice tailored to their ground budget, real-time place market values, and personal preferences.`;
 
-  // 3. Compact Context: Strip unnecessary bulky deal arrays to save ~1,000 input tokens
+  // 3. Compact Context: Preserve ground budget, live market values, and full user choices
   const compactContext = {
     destination: ctx.destination,
     origin: ctx.origin || undefined,
     duration_days: ctx.duration_days || undefined,
     budget: ctx.total_budget ? `${ctx.currency || 'INR'} ${ctx.total_budget}` : undefined,
+    ground_budget: ctx.ground_budget || undefined,
     travelers: ctx.travelers_count || 1,
+    transport_mode: ctx.transport_mode || undefined,
+    pacing: ctx.pacing || undefined,
     food_preference: ctx.food_preference || undefined,
-    preferences: Array.isArray(ctx.preferences) && ctx.preferences.length > 0 ? ctx.preferences.slice(0, 4) : undefined,
+    preferences: Array.isArray(ctx.preferences) && ctx.preferences.length > 0 ? ctx.preferences.slice(0, 8) : undefined,
     ...(mode === 'itinerary' && Array.isArray(ctx.known_destination_highlights) && ctx.known_destination_highlights.length > 0
-      ? { highlights: ctx.known_destination_highlights.slice(0, 6) }
+      ? { highlights: ctx.known_destination_highlights.slice(0, 8) }
       : {})
   };
 
@@ -980,19 +987,22 @@ async function streamCloudOrApexChat(req, res, query, travelContext, mode, conco
     }
 
     const systemPrompt = mode === 'budget'
-      ? `${CONCODE_COMPACT_PROMPT} You are TripVerse AI Budget Specialist. Provide a realistic categorized budget breakdown in ${travelContext.currency || 'INR'}.`
+      ? `${CONCODE_COMPACT_PROMPT} You are TripVerse AI Budget Specialist. Provide a realistic categorized budget breakdown (transit, stay, on-ground food/activities, buffer) grounded in live market values in ${travelContext.currency || 'INR'}.`
       : mode === 'safety'
         ? `${CONCODE_COMPACT_PROMPT} You are TripVerse AI Safety Advisor. Provide local safety precautions and emergency advice for ${travelContext.destination || 'the destination'}.`
-        : `${CONCODE_COMPACT_PROMPT} Assist the traveler directly with concise, practical advice and genuine local insights.`;
+        : `${CONCODE_COMPACT_PROMPT} Assist the traveler directly with concise, practical advice tailored to their ground budget, real-time place market values, and personal preferences.`;
 
     const compactContext = {
       destination: travelContext.destination,
       origin: travelContext.origin || undefined,
       duration_days: travelContext.duration_days || undefined,
       budget: travelContext.total_budget ? `${travelContext.currency || 'INR'} ${travelContext.total_budget}` : undefined,
+      ground_budget: travelContext.ground_budget || undefined,
       travelers: travelContext.travelers_count || 1,
+      transport_mode: travelContext.transport_mode || undefined,
+      pacing: travelContext.pacing || undefined,
       food_preference: travelContext.food_preference || undefined,
-      preferences: Array.isArray(travelContext.preferences) && travelContext.preferences.length > 0 ? travelContext.preferences.slice(0, 4) : undefined
+      preferences: Array.isArray(travelContext.preferences) && travelContext.preferences.length > 0 ? travelContext.preferences.slice(0, 8) : undefined
     };
 
     sendEvent('step', { phase: 'streaming', label: `Streaming via ${model}...` });
