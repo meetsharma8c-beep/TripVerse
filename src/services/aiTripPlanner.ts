@@ -3,10 +3,10 @@ import { PlannerInput, generateAITrip } from './plannerEngine';
 import { resolveTransitContext } from './transportFeasibilityEngine';
 import { getStoredConcodeConfig } from './concodeBrainService';
 import { CONCODE_MASTER_PROMPT } from './concodeMasterPrompt';
-import { getActiveCurrency, CURRENCIES } from './currencyService';
+import { getActiveCurrency, CURRENCIES, syncLiveExchangeRates } from './currencyService';
 import { getActiveLanguage, LANGUAGES } from './languageService';
 import { enrichTripWithOriginalPhotos } from './originalPhotoService';
-import { fetchLiveMarketQuotes, applyLiveMarketQuotesToTrip } from './liveMarketQuoteService';
+import { fetchLiveMarketQuotes, applyLiveMarketQuotesToTrip, LiveMarketQuoteResult } from './liveMarketQuoteService';
 import { enrichTripWithSmartIntelligence } from './smartTravelEngine';
 import { getDestinationHighlights, isLandmarkRemoteFromDestination } from './landmarkAtlasService';
 import { resolveGlobalDestination, ResolvedGlobalLocation } from './globalLocationResolver';
@@ -15,13 +15,29 @@ import { resolveApiUrl } from './deviceService';
 
 const ACTIVITY_TYPES = new Set(['food', 'attraction', 'viewpoint', 'nightlife', 'rest']);
 
-export function buildPrompt(input: PlannerInput, baseline: Trip): string {
+export function buildPrompt(
+    input: PlannerInput,
+    baseline: Trip,
+    liveQuotes?: LiveMarketQuoteResult | null
+): string {
     const destCoords = baseline.destinationDetails?.coordinates || baseline.routeDetails?.destinationCoordinates;
     const transitContext = resolveTransitContext(baseline.destination, destCoords);
     const activeCurrency = baseline.currency || input.currency || getActiveCurrency();
     const currencyConfig = CURRENCIES[activeCurrency] || CURRENCIES.USD;
     const activeLanguage = getActiveLanguage();
     const languageConfig = LANGUAGES[activeLanguage] || LANGUAGES.en;
+
+    const fixedTransitAndStay = (baseline.budgetBreakdown?.transportation || 0) + (baseline.budgetBreakdown?.accommodation || 0);
+    const remainingFoodAndActivitiesINR = Math.max(
+        0,
+        (baseline.budgetBreakdown?.food || 0) + (baseline.budgetBreakdown?.activities || 0)
+    );
+    const marketPurchasingPowerTier =
+        baseline.totalBudget > 0 && fixedTransitAndStay > baseline.totalBudget * 0.72
+            ? 'tight_value'
+            : baseline.totalBudget > 0 && fixedTransitAndStay < baseline.totalBudget * 0.45
+                ? 'high_headroom'
+                : 'balanced_market';
 
     const travelerContext = {
         origin: baseline.origin,
@@ -46,6 +62,15 @@ export function buildPrompt(input: PlannerInput, baseline: Trip): string {
         selectedStay: baseline.selectedHotel?.name,
         foodPreference: baseline.foodPreference,
         priorities: baseline.priorities,
+        liveMarketValuation: {
+            isLiveMarket: Boolean(liveQuotes?.isLiveMarket),
+            provider: liveQuotes?.provider || 'seasonal_benchmark',
+            liveTransitCostINR: baseline.budgetBreakdown?.transportation || 0,
+            liveStayCostINR: baseline.budgetBreakdown?.accommodation || 0,
+            selectedStayNightlyINR: baseline.selectedHotel?.nightlyRate || undefined,
+            remainingFoodAndActivitiesINR,
+            marketPurchasingPowerTier
+        },
         knownDestinationHighlights: (baseline.destinationDetails?.highlights && baseline.destinationDetails.highlights.length >= 8)
             ? baseline.destinationDetails.highlights
             : getDestinationHighlights(baseline.destination, 20),
@@ -64,6 +89,7 @@ export function buildPrompt(input: PlannerInput, baseline: Trip): string {
 CONCODE Principles:
 - DESTINATION ≠ STATION/AIRPORT: Never assume mountain/hill towns or island destinations have direct rail terminals or airports unless verified.
 - NEVER INVENT AVAILABILITY: Do not invent opening hours, exact ticket prices, or confirmed bookings. Clearly label cost figures as estimates.
+- REAL-TIME MARKET VALUE ALIGNMENT: Transit (₹${travelerContext.liveMarketValuation.liveTransitCostINR}) and stay (₹${travelerContext.liveMarketValuation.liveStayCostINR}) have already been priced from ${travelerContext.liveMarketValuation.isLiveMarket ? 'live market quotes' : 'market benchmarks'}, leaving ₹${remainingFoodAndActivitiesINR} (${marketPurchasingPowerTier}) for ALL meals and activities across the entire group. If marketPurchasingPowerTier="tight_value", prioritize free/low-fee iconic sights, beaches, shrines, heritage walks, and authentic local eateries; if "high_headroom", include curated dining and guided experiences.
 - LOCAL FEASIBILITY & CHRONOLOGY: Ensure activities within each day are geographically coherent and never repeat the same attraction across different days.
 - TIME WINDOWS: Day 1 local activities must be scheduled from 2:00 PM onwards (after arrival/check-in), middle days from 9:00 AM to 9:00 PM, and the final day (Day ${baseline.durationDays}) between 8:30 AM and 2:00 PM (before return departure).
 - DIETARY STRICTNESS: Strictly honor foodPreference="${baseline.foodPreference}".
@@ -75,7 +101,7 @@ ${JSON.stringify(travelerContext, null, 2)}
 
 Return only a JSON object shaped as {"itinerary":[{"dayNumber":1,"title":"...","theme":"...","activities":[{"time":"2:30 PM","title":"...","type":"food|attraction|viewpoint|nightlife|rest","location":"...","description":"...","estimatedCost":0,"preferenceMatch":"one selected interest","durationMin":60}]}]}.
 
-Create exactly ${baseline.durationDays} days with 3 or 4 activities per day. Schedule a realistic "${travelerContext.pacing}" pace for ${baseline.travelersCount} ${baseline.travelerType} traveler(s). Keep total meal/activity cost estimates for the whole group of ${baseline.travelersCount} within the food+activities share of the ${currencyConfig.symbol}${baseline.totalBudget} ${activeCurrency} total budget. Prefer the known destination highlights. Do not include long-distance transit to or from the destination; that is handled separately.`;
+Create exactly ${baseline.durationDays} days with 3 or 4 activities per day. Schedule a realistic "${travelerContext.pacing}" pace for ${baseline.travelersCount} ${baseline.travelerType} traveler(s). Keep total meal/activity cost estimates for the whole group of ${baseline.travelersCount} within ₹${remainingFoodAndActivitiesINR} (${currencyConfig.symbol}${baseline.totalBudget} ${activeCurrency} total trip budget). Prefer the known destination highlights. Do not include long-distance transit to or from the destination; that is handled separately.`;
 }
 
 export function parseItinerary(text: string): any[] | null {
@@ -357,11 +383,13 @@ export function applyItinerary(days: any[], input: PlannerInput, trip: Trip): Tr
 
     const modeLabel = trip.transportMode === 'flight' ? 'flight' : trip.transportMode === 'train' ? 'rail' : trip.transportMode === 'bus' ? 'bus' : 'road';
     const currSym = (CURRENCIES[trip.currency || 'INR'] || CURRENCIES.INR).symbol;
+    const liveMarketNoteMatch = (trip.aiRationale || '').match(/(Live market calibrated via .+)$/);
+    const liveMarketSuffix = liveMarketNoteMatch ? ` ${liveMarketNoteMatch[1]}` : '';
 
     return {
         ...trip,
         itinerary: plannedDays,
-        aiRationale: `Genuinely planned by ConCode AI Brain. Customized for ${trip.travelersCount} ${trip.travelerType || 'traveler(s)'} based on your choices: ${trip.preferences.join(', ') || 'scenic highlights'}, ${trip.foodPreference || 'authentic'} dining, and ${modeLabel} transit with a target budget of ${currSym}${trip.totalBudget.toLocaleString('en-IN')}${input.specialRequests?.trim() ? ` (Request: “${input.specialRequests.trim().slice(0, 150)}”)` : ''}.`
+        aiRationale: `Genuinely planned by ConCode AI Brain. Customized for ${trip.travelersCount} ${trip.travelerType || 'traveler(s)'} based on your choices: ${trip.preferences.join(', ') || 'scenic highlights'}, ${trip.foodPreference || 'authentic'} dining, and ${modeLabel} transit with a target budget of ${currSym}${trip.totalBudget.toLocaleString('en-IN')}${input.specialRequests?.trim() ? ` (Request: “${input.specialRequests.trim().slice(0, 150)}”)` : ''}.${liveMarketSuffix}`
     };
 }
 
@@ -400,14 +428,15 @@ export async function generatePersonalizedTrip(input: PlannerInput): Promise<Tri
         } : input.preciseLocation
     };
 
-    // Sub-second AI Semantic Cache Check
-    const cacheSignature = buildItinerarySignature(
+    // Date- & mode-aware AI Semantic Cache Check so peak-market dates never reuse off-peak plans
+    const baseSig = buildItinerarySignature(
         effectiveInput.destination || effectiveInput.destinationName || '',
         effectiveInput.durationDays || 3,
         effectiveInput.travelerType || 'solo',
         effectiveInput.pacing || 'balanced',
         effectiveInput.budgetAmount || 0
     );
+    const cacheSignature = `${baseSig}:${effectiveInput.startDate || 'flex'}:${effectiveInput.transportMode || 'auto'}`;
 
     if (!effectiveInput.specialRequests) {
         try {
@@ -427,36 +456,74 @@ export async function generatePersonalizedTrip(input: PlannerInput): Promise<Tri
     }
 
     const fallback = generateAITrip(effectiveInput);
-    const itinerary = await requestPersonalizedItinerary(buildPrompt(effectiveInput, fallback), fallback, effectiveInput);
-    const rawTrip: Trip = (itinerary ? applyItinerary(itinerary, effectiveInput, fallback) : null) || {
-        ...fallback,
-        aiRationale: fallback.aiRationale
+
+    // MARKET-FIRST PIPELINE: Sync live FX rates and fetch live Google Flights & Hotels market values
+    // BEFORE asking AI to design the itinerary so daily spend, stay tier, and activities adapt to real market value.
+    let preflightQuotes: LiveMarketQuoteResult | null = null;
+    try {
+        const [, quoteRes] = await Promise.allSettled([
+            syncLiveExchangeRates(),
+            Promise.race<LiveMarketQuoteResult | null>([
+                fetchLiveMarketQuotes({
+                    origin: fallback.origin || effectiveInput.origin || '',
+                    destination: fallback.destination || effectiveInput.destination || '',
+                    startDate: fallback.startDate,
+                    durationDays: fallback.durationDays,
+                    travelersCount: fallback.travelersCount,
+                    transportMode: fallback.transportMode,
+                    originCoords: fallback.routeDetails?.originCoordinates,
+                    destCoords: fallback.destinationDetails?.coordinates
+                }),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 4_500))
+            ])
+        ]);
+        if (quoteRes.status === 'fulfilled' && quoteRes.value) {
+            preflightQuotes = quoteRes.value;
+        }
+    } catch {
+        preflightQuotes = null;
+    }
+
+    const marketBaseline: Trip = preflightQuotes?.isLiveMarket
+        ? applyLiveMarketQuotesToTrip(fallback, preflightQuotes)
+        : fallback;
+
+    const itinerary = await requestPersonalizedItinerary(
+        buildPrompt(effectiveInput, marketBaseline, preflightQuotes),
+        marketBaseline,
+        effectiveInput
+    );
+    const rawTrip: Trip = (itinerary ? applyItinerary(itinerary, effectiveInput, marketBaseline) : null) || {
+        ...marketBaseline,
+        aiRationale: marketBaseline.aiRationale
     };
 
     // Enrich with 7-pillar smart intelligence (Circadian, TSP, Cultural, Weather Mirrors, Border Sentinel, PPP)
     const smartTrip = enrichTripWithSmartIntelligence(rawTrip);
 
-    // Enrich with original photography AND real-time Amadeus live market quotes in parallel (zero extra latency)
+    // Enrich with original photography (and catch up live quotes only if preflight timed out)
     let finalTrip = smartTrip;
     try {
-        const [photoResult, liveQuoteResult] = await Promise.allSettled([
+        const [photoResult, lateQuoteResult] = await Promise.allSettled([
             enrichTripWithOriginalPhotos(smartTrip, effectiveInput.destination || effectiveInput.destinationName),
-            fetchLiveMarketQuotes({
-                origin: smartTrip.origin || effectiveInput.origin || '',
-                destination: smartTrip.destination || effectiveInput.destination || '',
-                startDate: smartTrip.startDate,
-                durationDays: smartTrip.durationDays,
-                travelersCount: smartTrip.travelersCount,
-                transportMode: smartTrip.transportMode,
-                originCoords: smartTrip.routeDetails?.originCoordinates,
-                destCoords: smartTrip.destinationDetails?.coordinates,
-            }),
+            preflightQuotes
+                ? Promise.resolve(preflightQuotes)
+                : fetchLiveMarketQuotes({
+                    origin: smartTrip.origin || effectiveInput.origin || '',
+                    destination: smartTrip.destination || effectiveInput.destination || '',
+                    startDate: smartTrip.startDate,
+                    durationDays: smartTrip.durationDays,
+                    travelersCount: smartTrip.travelersCount,
+                    transportMode: smartTrip.transportMode,
+                    originCoords: smartTrip.routeDetails?.originCoordinates,
+                    destCoords: smartTrip.destinationDetails?.coordinates
+                })
         ]);
         if (photoResult.status === 'fulfilled' && photoResult.value) {
             finalTrip = photoResult.value;
         }
-        if (liveQuoteResult.status === 'fulfilled' && liveQuoteResult.value?.isLiveMarket) {
-            finalTrip = applyLiveMarketQuotesToTrip(finalTrip, liveQuoteResult.value);
+        if (!preflightQuotes?.isLiveMarket && lateQuoteResult.status === 'fulfilled' && lateQuoteResult.value?.isLiveMarket) {
+            finalTrip = applyLiveMarketQuotesToTrip(finalTrip, lateQuoteResult.value);
         }
     } catch {
         finalTrip = smartTrip;

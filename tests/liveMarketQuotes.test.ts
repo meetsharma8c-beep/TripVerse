@@ -5,6 +5,7 @@ import {
   applyLiveMarketQuotesToTrip,
   LiveMarketQuoteResult,
 } from '../src/services/liveMarketQuoteService';
+import { buildPrompt } from '../src/services/aiTripPlanner';
 import { Trip } from '../src/types/trip';
 
 const BASE_TRIP: Trip = {
@@ -144,5 +145,78 @@ describe('Live Market Pricing Engine (Amadeus Flights & Hotels)', () => {
     expect(calibrated.estimatedTotal).toBe(14800 + 10800 + 4000 + 2500 + 1500);
     expect(calibrated.aiRationale).toContain('Live Google Flights & Hotels');
     expect(calibrated.aiRationale).toContain('IndiGo');
+  });
+
+  it('pivots hotel tier, scales on-ground spend, and injects liveMarketValuation into AI prompt when peak market prices surge', () => {
+    const surgeQuote: LiveMarketQuoteResult = {
+      isLiveMarket: true,
+      provider: 'google_live_serpapi',
+      environment: 'production',
+      currency: 'INR',
+      flights: {
+        bestOffer: {
+          totalGroupAmount: 24500,
+          perPersonAmount: 12250,
+          currency: 'INR',
+          carrierCode: '6E',
+          carrierName: 'IndiGo',
+          stops: 0,
+          duration: '1h 15m',
+        },
+        medianGroupAmount: 26000,
+        sampleCount: 6,
+        offers: [],
+      },
+      hotels: [
+        {
+          hotelId: 'HTLGOI_MID',
+          name: 'Panjim Boutique Heritage Inn',
+          rating: 4.5,
+          totalStayAmount: 10800,
+          nightlyRatePerRoom: 3600,
+          currency: 'INR',
+          roomCategory: 'Deluxe Room',
+          available: true,
+        },
+        {
+          hotelId: 'HTLGOI_VAL',
+          name: 'Moustache Goa Value Stay',
+          rating: 4.4,
+          totalStayAmount: 5400,
+          nightlyRatePerRoom: 1800,
+          currency: 'INR',
+          roomCategory: 'Standard Room',
+          available: true,
+        },
+      ],
+      fetchedAt: '2026-11-25T08:30:00.000Z',
+    };
+
+    const calibrated = applyLiveMarketQuotesToTrip(BASE_TRIP, surgeQuote);
+    // Automatically picks ₹1,800/night value stay instead of ₹3,600/night because ₹24,500 flight squeezed headroom
+    expect(calibrated.selectedHotel?.name).toBe('Moustache Goa Value Stay');
+    expect(calibrated.budgetBreakdown.accommodation).toBe(5400);
+    // Scales down food + activities + buffer from 8000 -> ~5100 so total stays anchored to ₹35,000 budget
+    expect(calibrated.estimatedTotal).toBeLessThanOrEqual(36500);
+    expect(calibrated.aiRationale).toContain('live airfare consumes 70% of budget');
+
+    const prompt = buildPrompt(
+      {
+        origin: 'Mumbai',
+        destination: 'Goa',
+        durationDays: 4,
+        travelersCount: 2,
+        travelerType: 'couple',
+        budgetMode: 'total',
+        budgetAmount: 35000,
+        preferences: ['beach', 'food'],
+        transportMode: 'flight',
+      },
+      calibrated,
+      surgeQuote
+    );
+    expect(prompt).toContain('"isLiveMarket": true');
+    expect(prompt).toContain('"marketPurchasingPowerTier": "tight_value"');
+    expect(prompt).toContain('REAL-TIME MARKET VALUE ALIGNMENT');
   });
 });

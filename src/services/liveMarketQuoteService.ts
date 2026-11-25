@@ -284,10 +284,20 @@ export function applyLiveMarketQuotesToTrip(trip: Trip, quotes: LiveMarketQuoteR
       };
     });
 
-    // Pick the live hotel closest to the user's accommodation budget slice
+    // Pick the live hotel anchored to real remaining purchasing power after live transit fares
     const nights = Math.max(1, (trip.durationDays || 3) - 1);
     const rooms = Math.max(1, Math.ceil((trip.travelersCount || 2) / 2));
-    const targetNightly = Math.max(1500, Math.round((trip.budgetBreakdown.accommodation || 6000) / (nights * rooms)));
+    const plannedOnGround = updatedBreakdown.food + updatedBreakdown.activities + updatedBreakdown.miscellaneous;
+    const remainingForStay = Math.max(
+      0,
+      (trip.totalBudget || 0) - updatedBreakdown.transportation - Math.round(plannedOnGround * 0.65)
+    );
+    const effectiveStayBudget =
+      trip.totalBudget > 0 && updatedBreakdown.transportation + (trip.budgetBreakdown.accommodation || 6000) + plannedOnGround > trip.totalBudget
+        ? Math.min(trip.budgetBreakdown.accommodation || 6000, remainingForStay)
+        : (trip.budgetBreakdown.accommodation || 6000);
+
+    const targetNightly = Math.max(1200, Math.round(effectiveStayBudget / (nights * rooms)));
     const bestMatch = [...mappedHotels].sort(
       (a, b) => Math.abs(a.nightlyRate - targetNightly) - Math.abs(b.nightlyRate - targetNightly)
     )[0];
@@ -297,6 +307,47 @@ export function applyLiveMarketQuotesToTrip(trip: Trip, quotes: LiveMarketQuoteR
       updatedHotelOptions = mappedHotels;
       updatedBreakdown.accommodation = Math.round(bestMatch.nightlyRate * nights * rooms);
       notes.push(`Live stay rate at ${bestMatch.name}`);
+    }
+  }
+
+  // 3. Rebalance on-ground spend (food, activities, buffer) if live market transit + stay surged above totalBudget
+  const rawTotalBeforeRebalance =
+    updatedBreakdown.transportation +
+    updatedBreakdown.accommodation +
+    updatedBreakdown.food +
+    updatedBreakdown.activities +
+    updatedBreakdown.miscellaneous;
+
+  if (trip.totalBudget > 0 && rawTotalBeforeRebalance > trip.totalBudget) {
+    const days = Math.max(1, trip.durationDays || 1);
+    const pax = Math.max(1, trip.travelersCount || 1);
+    const minFood = Math.min(updatedBreakdown.food, 400 * days * pax);
+    const minAct = Math.min(updatedBreakdown.activities, 200 * days * pax);
+    const minMisc = Math.min(updatedBreakdown.miscellaneous, Math.round(trip.totalBudget * 0.03));
+    const fixedTransitAndStay = updatedBreakdown.transportation + updatedBreakdown.accommodation;
+    const targetOnGround = Math.max(minFood + minAct + minMisc, trip.totalBudget - fixedTransitAndStay);
+    const currentOnGround = updatedBreakdown.food + updatedBreakdown.activities + updatedBreakdown.miscellaneous;
+
+    if (currentOnGround > 0 && targetOnGround < currentOnGround) {
+      const slackAvail = Math.max(0, targetOnGround - (minFood + minAct + minMisc));
+      const slackCurr = Math.max(
+        1,
+        (updatedBreakdown.food - minFood) +
+          (updatedBreakdown.activities - minAct) +
+          (updatedBreakdown.miscellaneous - minMisc)
+      );
+      updatedBreakdown.food = Math.round(minFood + ((updatedBreakdown.food - minFood) / slackCurr) * slackAvail);
+      updatedBreakdown.activities = Math.round(minAct + ((updatedBreakdown.activities - minAct) / slackCurr) * slackAvail);
+      updatedBreakdown.miscellaneous = Math.max(
+        minMisc,
+        targetOnGround - updatedBreakdown.food - updatedBreakdown.activities
+      );
+      notes.push('on-ground spend scaled to live market headroom');
+    }
+
+    if (trip.transportMode === 'flight' && updatedBreakdown.transportation > trip.totalBudget * 0.65) {
+      const pct = Math.round((updatedBreakdown.transportation / trip.totalBudget) * 100);
+      notes.push(`live airfare consumes ${pct}% of budget — consider rail/coach to free stay & dining headroom`);
     }
   }
 
