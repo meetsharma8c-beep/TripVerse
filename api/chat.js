@@ -659,17 +659,17 @@ async function callRemoteCloudLLM(query, ctx, mode) {
       : {})
   };
 
-  // 4. Dynamic max_tokens: scale output token reservation based on query mode
+  // 4. Dynamic max_tokens: account for reasoning tokens on gpt-oss-120b so JSON itineraries never truncate
   const maxTokens = mode === 'itinerary'
-    ? Math.min(2500, Math.max(1200, (ctx.duration_days || 3) * 500))
+    ? Math.min(6000, Math.max(3500, (ctx.duration_days || 3) * 900))
     : mode === 'budget'
-      ? 1200
+      ? 2000
       : mode === 'safety'
-        ? 1000
-        : 1200;
+        ? 1800
+        : 2000;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 22000);
 
   try {
     const res = await fetch(`${baseUrl}/chat/completions`, {
@@ -687,6 +687,7 @@ async function callRemoteCloudLLM(query, ctx, mode) {
         ],
         temperature: 0.3,
         max_tokens: maxTokens,
+        ...(model.includes('gpt-oss') ? { reasoning_effort: 'low' } : {}),
         ...(mode === 'itinerary' && !baseUrl.includes('openrouter') ? { response_format: { type: 'json_object' } } : {})
       }),
       signal: controller.signal
@@ -1021,7 +1022,8 @@ async function streamCloudOrApexChat(req, res, query, travelContext, mode, conco
           model,
           stream: true,
           temperature: 0.3,
-          max_tokens: 1400,
+          max_tokens: 2000,
+          ...(model.includes('gpt-oss') ? { reasoning_effort: 'low' } : {}),
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `Request: ${query}\nContext: ${JSON.stringify(compactContext)}` }
