@@ -76,6 +76,47 @@ rules_version = '2';
 //       Client ISO 8601 last-modified timestamp.
 //
 // Subcollections: None permitted.
+//
+// Collection: collab_rooms
+// Document ID: {roomId} (unguessable 12..64 char URL-safe token: ^[A-Za-z0-9_-]+$)
+// Access Pattern:
+//   - Real-time multiplayer trip collaboration (votes, group suggestions, live presence)
+//     and shared group expense splitting.
+//   - Single-document GET allowed for any authenticated user (`request.auth != null`)
+//     who possesses the unguessable `{roomId}` so invitees opening a collaboration link
+//     can load room metadata prior to self-joining.
+//   - Collection listing (`list`) is strictly forbidden to prevent room scraping
+//     or inviteCode enumeration.
+//   - Authenticated CREATE with caller as `ownerUid` and `ownerUid` in `memberUids`.
+//   - Authenticated UPDATE with full 8-field schema validation and immutable
+//     `['ownerUid', 'tripId', 'inviteCode', 'createdAt']`, permitted only when:
+//       (a) Caller is `ownerUid` (may manage `memberUids` while keeping `ownerUid` present),
+//       (b) Caller is an existing member in `resource.data.memberUids` (membership set
+//           must remain unchanged — cannot remove members or inject third-party UIDs), or
+//       (c) Caller is self-joining via unguessable `{roomId}` (appends strictly
+//           `request.auth.uid` without removing any existing member).
+//   - Strictly owner-only DELETE (`resource.data.ownerUid == request.auth.uid`).
+//
+// Fields (Strict 8-field whitelist):
+//   - ownerUid: string (required, 1..128 chars, == request.auth.uid on create, immutable on update)
+//       Firebase Auth UID of the trip owner who created the collaboration room.
+//   - tripId: string (required, 1..128 chars, immutable on update)
+//       Associated Trip ID for this collaboration room.
+//   - inviteCode: string (required, 4..32 chars, immutable on update)
+//       Human-friendly room invite code (e.g. "TRIP-8492").
+//   - memberUids: list<string> (required, 1..20 unique UID strings of 1..128 chars each)
+//       Authorized collaborator Firebase Auth UIDs; must always include `ownerUid`
+//       and `request.auth.uid`. Only `ownerUid` may remove members.
+//   - sessionJson: string (required, 2..300000 chars)
+//       JSON-serialized CollaborationSession (collaborators, activity votes, suggestions).
+//   - expensesJson: string (required, 2..200000 chars)
+//       JSON-serialized array/state of shared group trip expenses and splits.
+//   - createdAt: string (required, 1..64 chars, ISO 8601 date string, immutable on update)
+//       Client ISO 8601 room creation timestamp.
+//   - updatedAt: string (required, 1..64 chars, ISO 8601 date string)
+//       Client ISO 8601 last-modified timestamp.
+//
+// Subcollections: None permitted.
 // Other Collections: None permitted (default deny).
 // ===============================================================
 
@@ -167,6 +208,64 @@ service cloud.firestore {
         shareId.matches('^[A-Za-z0-9_-]+$');
     }
 
+    // Validate unguessable URL-safe collab roomId (12..64 characters)
+    function isValidRoomId(roomId) {
+      return roomId is string &&
+        roomId.size() >= 12 &&
+        roomId.size() <= 64 &&
+        roomId.matches('^[A-Za-z0-9_-]+$');
+    }
+
+    // Check if the authenticated user owns the target collaboration room
+    function isCollabRoomOwner() {
+      return isAuthenticated() &&
+        'ownerUid' in resource.data &&
+        resource.data.ownerUid is string &&
+        resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Check if the authenticated user is already in the collaboration room's memberUids
+    function isCollabRoomMember() {
+      return isAuthenticated() &&
+        'memberUids' in resource.data &&
+        resource.data.memberUids is list &&
+        request.auth.uid in resource.data.memberUids;
+    }
+
+    // Validate a single index of memberUids (bounded 0..19 without CEL loops)
+    function isValidMemberUidAt(uids, idx) {
+      return idx >= uids.size() ? true :
+        (uids[idx] is string && uids[idx].size() >= 1 && uids[idx].size() <= 128);
+    }
+
+    // Validate memberUids is a duplicate-free list of 1..20 non-empty UID strings (1..128 chars)
+    function isValidMemberUidsList(uids) {
+      return uids is list &&
+        uids.size() >= 1 &&
+        uids.size() <= 20 &&
+        uids.toSet().size() == uids.size() &&
+        isValidMemberUidAt(uids, 0) &&
+        isValidMemberUidAt(uids, 1) &&
+        isValidMemberUidAt(uids, 2) &&
+        isValidMemberUidAt(uids, 3) &&
+        isValidMemberUidAt(uids, 4) &&
+        isValidMemberUidAt(uids, 5) &&
+        isValidMemberUidAt(uids, 6) &&
+        isValidMemberUidAt(uids, 7) &&
+        isValidMemberUidAt(uids, 8) &&
+        isValidMemberUidAt(uids, 9) &&
+        isValidMemberUidAt(uids, 10) &&
+        isValidMemberUidAt(uids, 11) &&
+        isValidMemberUidAt(uids, 12) &&
+        isValidMemberUidAt(uids, 13) &&
+        isValidMemberUidAt(uids, 14) &&
+        isValidMemberUidAt(uids, 15) &&
+        isValidMemberUidAt(uids, 16) &&
+        isValidMemberUidAt(uids, 17) &&
+        isValidMemberUidAt(uids, 18) &&
+        isValidMemberUidAt(uids, 19);
+    }
+
     // ===============================================================
     // Domain Validators (Used in BOTH create and update)
     // ===============================================================
@@ -243,6 +342,77 @@ service cloud.firestore {
         request.resource.data.createdAt == resource.data.createdAt;
     }
 
+    function isValidCollabRoom(data) {
+      return hasOnlyAllowedFields([
+        'ownerUid',
+        'tripId',
+        'inviteCode',
+        'memberUids',
+        'sessionJson',
+        'expensesJson',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      hasRequiredFields([
+        'ownerUid',
+        'tripId',
+        'inviteCode',
+        'memberUids',
+        'sessionJson',
+        'expensesJson',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      validStringLength('ownerUid', 1, 128) &&
+      validStringLength('tripId', 1, 128) &&
+      validStringLength('inviteCode', 4, 32) &&
+      isValidMemberUidsList(data.memberUids) &&
+      data.ownerUid in data.memberUids &&
+      request.auth.uid in data.memberUids &&
+      validStringLength('sessionJson', 2, 300000) &&
+      validStringLength('expensesJson', 2, 200000) &&
+      validStringLength('createdAt', 1, 64) &&
+      isValidDateString(data.createdAt) &&
+      validStringLength('updatedAt', 1, 64) &&
+      isValidDateString(data.updatedAt);
+    }
+
+    function isValidCollabRoomCreate(roomId) {
+      return isValidRoomId(roomId) &&
+        isValidCollabRoom(request.resource.data) &&
+        request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    function isAuthorizedCollabRoomUpdate() {
+      return
+        // (a) Room owner: may update room state and add/remove members (while keeping ownerUid in memberUids)
+        isCollabRoomOwner() ||
+        // (b) Existing non-owner member: may update sessionJson/expensesJson/updatedAt, but cannot add/remove members
+        (isCollabRoomMember() &&
+         request.resource.data.memberUids.hasAll(resource.data.memberUids) &&
+         request.resource.data.memberUids.hasOnly(resource.data.memberUids) &&
+         request.resource.data.memberUids.size() == resource.data.memberUids.size()) ||
+        // (c) Self-join by unguessable roomId: appends strictly request.auth.uid without removing existing members
+        ('memberUids' in resource.data &&
+         resource.data.memberUids is list &&
+         !(request.auth.uid in resource.data.memberUids) &&
+         request.auth.uid in request.resource.data.memberUids &&
+         request.resource.data.memberUids.hasAll(resource.data.memberUids) &&
+         request.resource.data.memberUids.hasOnly(resource.data.memberUids.concat([request.auth.uid])) &&
+         request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1);
+    }
+
+    function isValidCollabRoomUpdate(roomId) {
+      return isValidRoomId(roomId) &&
+        isValidCollabRoom(request.resource.data) &&
+        areImmutableFieldsUnchanged(['ownerUid', 'tripId', 'inviteCode', 'createdAt']) &&
+        request.resource.data.ownerUid == resource.data.ownerUid &&
+        request.resource.data.tripId == resource.data.tripId &&
+        request.resource.data.inviteCode == resource.data.inviteCode &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        isAuthorizedCollabRoomUpdate();
+    }
+
     // ===============================================================
     // Collection Rules
     // ===============================================================
@@ -285,6 +455,25 @@ service cloud.firestore {
 
       // Owner-only delete to allow revoking/unsharing a trip link
       allow delete: if isAuthenticated() && isSharedTripOwner();
+    }
+
+    match /collab_rooms/{roomId} {
+      // Authenticated single-document read by unguessable roomId (12..64 chars)
+      // so invitees possessing the collaboration link can load and join the room
+      allow get: if isAuthenticated() && isValidRoomId(roomId);
+
+      // Strictly forbid collection queries to prevent room scraping or inviteCode enumeration
+      allow list: if false;
+
+      // Authenticated create only with caller as ownerUid and full 8-field schema validation
+      allow create: if isAuthenticated() && isValidCollabRoomCreate(roomId);
+
+      // Authenticated update for owner, existing member, or self-joining invitee with
+      // full 8-field schema validation and immutable ownerUid/tripId/inviteCode/createdAt
+      allow update: if isAuthenticated() && isValidCollabRoomUpdate(roomId);
+
+      // Strictly owner-only delete to close/revoke a collaboration room
+      allow delete: if isAuthenticated() && isCollabRoomOwner();
     }
 
     // ===============================================================

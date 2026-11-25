@@ -2032,13 +2032,60 @@ export function App() {
         if (idx < 0) return day;
         const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
         if (targetIdx < 0 || targetIdx >= day.activities.length) return day;
+        const moving = day.activities[idx];
+        const neighbor = day.activities[targetIdx];
+        // Keep fixed outbound/return departure & arrival logistics anchored at the day boundaries
+        const fixedTypes = new Set(['departure', 'arrival']);
+        if (fixedTypes.has(moving.type) || fixedTypes.has(neighbor.type)) return day;
+
         const updated = [...day.activities];
-        const temp = updated[idx];
-        updated[idx] = updated[targetIdx];
-        updated[targetIdx] = temp;
+        // Preserve chronological time slots when swapping two stops
+        const slotTimeIdx = moving.time;
+        const slotTimeTarget = neighbor.time;
+        updated[idx] = { ...neighbor, time: slotTimeIdx };
+        updated[targetIdx] = { ...moving, time: slotTimeTarget };
         return { ...day, activities: updated };
       }
       return day;
+    });
+    handleUpdateTrip({ ...activeTrip, itinerary: updatedDays });
+  };
+
+  const handleSwapActivity = (
+    dayNumber: number,
+    activityId: string,
+    replacement: {
+      title: string;
+      location: string;
+      description: string;
+      estimatedCost: number;
+      coordinates?: { lat: number; lng: number };
+      image?: string;
+    }
+  ) => {
+    if (!activeTrip) return;
+    const updatedDays = activeTrip.itinerary.map(day => {
+      if (day.dayNumber !== dayNumber) return day;
+      const nextActivities = day.activities.map(act =>
+        act.id === activityId
+          ? {
+              ...act,
+              title: replacement.title,
+              location: replacement.location,
+              description: replacement.description,
+              estimatedCost: Math.max(0, Math.round(replacement.estimatedCost)),
+              coordinates: replacement.coordinates || act.coordinates,
+              image: replacement.image || undefined,
+              mapUrl: undefined,
+              tag: 'Smart Swapped'
+            }
+          : act
+      );
+      return {
+        ...day,
+        activities: nextActivities,
+        dayEstimatedCost: nextActivities.reduce((s, a) => s + (a.estimatedCost || 0), 0)
+      };
     });
     handleUpdateTrip({ ...activeTrip, itinerary: updatedDays });
   };
@@ -2900,6 +2947,9 @@ export function App() {
                       }}
                       onDeleteActivity={handleDeleteActivity}
                       onMoveActivity={handleMoveActivity}
+                      onSwapActivity={handleSwapActivity}
+                      foodPreference={activeTrip.foodPreference}
+                      travelersCount={activeTrip.travelersCount}
                       onToggleComplete={handleToggleActivityComplete}
                       onOptimizeWithAI={() => handleSelectTripSubTab('hub', { forceScroll: true })}
                       onClearDay={handleClearDay}

@@ -5,21 +5,34 @@ import { useLanguage } from '../../services/languageService';
 import { resolveDestinationImage, handleImageError, DEFAULT_TRAVEL_FALLBACK_IMAGE } from '../../utils/destinationImages';
 import { fetchOriginalPhoto, getInstantPhoto } from '../../services/originalPhotoService';
 import { getDestinationHighlights, calculateTransitBetween, resolveLandmarkCoordinates } from '../../services/landmarkAtlasService';
+import { getLocalGems } from '../../services/localGemsService';
 import { Clock, MapPin, Car, CheckCircle2, Circle, Utensils, Bed, Camera, Sun, Sparkles, Coffee, Navigation, ChevronDown, Tag, Plus, Edit2, Trash2, ArrowUp, ArrowDown, ExternalLink, SlidersHorizontal, Compass, CloudRain, Sunrise, Users, ShieldCheck, Zap, Activity, Building2, Moon, RotateCcw, CalendarPlus } from 'lucide-react';
 import { triggerHaptic, openExternalUrl } from '../../services/deviceService';
 import { buildGoogleMapsDayRouteUrl } from '../../utils/routeResolver';
 const Landmark3DViewer = lazy(() => import('../common/Landmark3DViewer').then(m => ({ default: m.Landmark3DViewer })));
 import { toggleDayWeatherMode } from '../../services/smartTravelEngine';
 
+export interface SmartSwapReplacement {
+  title: string;
+  location: string;
+  description: string;
+  estimatedCost: number;
+  coordinates?: Coordinates;
+  image?: string;
+}
+
 interface DayTimelineProps {
   itinerary: DayPlan[];
   destination?: string;
   bestDeal?: TransportDeal;
+  foodPreference?: string;
+  travelersCount?: number;
   onOpenDeals?: () => void;
   onAddActivity?: (dayNumber: number) => void;
   onEditActivity?: (dayNumber: number, activity: ItineraryActivity) => void;
   onDeleteActivity?: (dayNumber: number, activityId: string) => void;
   onMoveActivity?: (dayNumber: number, activityId: string, direction: 'up' | 'down') => void;
+  onSwapActivity?: (dayNumber: number, activityId: string, replacement: SmartSwapReplacement) => void;
   onToggleComplete?: (dayNumber: number, activityId: string) => void;
   onOptimizeWithAI?: () => void;
   onClearDay?: (dayNumber: number) => void;
@@ -76,11 +89,14 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
   itinerary,
   destination,
   bestDeal,
+  foodPreference,
+  travelersCount = 2,
   onOpenDeals,
   onAddActivity,
   onEditActivity,
   onDeleteActivity,
   onMoveActivity,
+  onSwapActivity,
   onToggleComplete,
   onOptimizeWithAI,
   onClearDay,
@@ -100,6 +116,72 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
   const [userCoords, setUserCoords] = useState<Coordinates | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [swapOpenActId, setSwapOpenActId] = useState<string | null>(null);
+
+  const localGemsPool = useMemo(() => getLocalGems(destination || 'Goa'), [destination]);
+  const scheduledTitlesLower = useMemo(() => {
+    const s = new Set<string>();
+    for (const d of itinerary || []) {
+      for (const a of d.activities || []) {
+        if (a.title) s.add(a.title.toLowerCase().trim());
+      }
+    }
+    return s;
+  }, [itinerary]);
+
+  const getSwapOptionsForActivity = (act: ItineraryActivity): SmartSwapReplacement[] => {
+    const destLabel = (destination || 'Destination').split(',')[0].trim();
+    const isVegStrict = ['veg', 'jain', 'vegan'].includes((foodPreference || '').toLowerCase());
+    const pax = Math.max(1, travelersCount || 2);
+
+    if (act.type === 'food') {
+      const foods = localGemsPool.foodGems.filter(f => {
+        if (isVegStrict && !f.isVegetarian) return false;
+        const n = f.name.toLowerCase();
+        return !Array.from(scheduledTitlesLower).some(existing => existing.includes(n) || n.includes(existing));
+      });
+      return foods.slice(0, 3).map(f => ({
+        title: `${f.name} (${f.dish})`,
+        location: f.location || destLabel,
+        description: `${f.whySpecial} Must try: ${f.mustTry}.`,
+        estimatedCost: Math.max(150, Math.round((f.pricePerPerson || 350) * pax)),
+        coordinates: f.coordinates || (act.coordinates ? resolveLandmarkCoordinates(f.name, act.coordinates) : undefined),
+        image: f.image
+      }));
+    }
+
+    const candidates: SmartSwapReplacement[] = [];
+    for (const gem of localGemsPool.hiddenGems) {
+      const gLower = gem.title.toLowerCase();
+      if (Array.from(scheduledTitlesLower).some(ex => ex.includes(gLower) || gLower.includes(ex))) continue;
+      candidates.push({
+        title: gem.title,
+        location: gem.location || destLabel,
+        description: `${gem.description} Tip: ${gem.insiderTip}`,
+        estimatedCost: act.estimatedCost > 0 ? Math.round(act.estimatedCost * 0.85) : 0,
+        coordinates: gem.coordinates || (act.coordinates ? resolveLandmarkCoordinates(gem.title, act.coordinates) : undefined),
+        image: gem.image
+      });
+      if (candidates.length >= 2) break;
+    }
+
+    const highlights = getDestinationHighlights(destination || destLabel, 24);
+    for (const hl of highlights) {
+      if (candidates.length >= 3) break;
+      const hlLower = hl.toLowerCase();
+      if (Array.from(scheduledTitlesLower).some(ex => ex.includes(hlLower) || hlLower.includes(ex))) continue;
+      if (candidates.some(c => c.title.toLowerCase() === hlLower)) continue;
+      candidates.push({
+        title: hl,
+        location: `${hl}, ${destLabel}`,
+        description: `Iconic ${destLabel} highlight selected to match your itinerary pace and budget.`,
+        estimatedCost: act.estimatedCost || 0,
+        coordinates: act.coordinates ? resolveLandmarkCoordinates(hl, act.coordinates) : undefined
+      });
+    }
+
+    return candidates.slice(0, 3);
+  };
 
   const requestLiveLocation = () => {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
@@ -846,6 +928,25 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                                   <span>3D View</span>
                                 </button>
 
+                                {onSwapActivity && !['departure', 'arrival', 'hotel', 'breakstop'].includes(act.type) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      triggerHaptic('light');
+                                      setSwapOpenActId(prev => (prev === act.id ? null : act.id));
+                                    }}
+                                    className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
+                                      swapOpenActId === act.id
+                                        ? 'bg-[#2D5A3D] text-white border-[#2D5A3D]'
+                                        : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200/80'
+                                    }`}
+                                    title="Swap this stop with a verified local alternative"
+                                  >
+                                    <RotateCcw className="w-3 h-3" />
+                                    <span>{t('Swap Stop')}</span>
+                                  </button>
+                                )}
+
                                 {(act.type === 'food' || act.tag?.toLowerCase().includes('food')) && (
                                   <a
                                     href={`https://www.zomato.com/search?q=${encodeURIComponent(act.title + ' ' + act.location)}`}
@@ -877,6 +978,50 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                                 {act.source === 'geoapify_places' ? 'OpenStreetMap verified' : 'AI curated suggestion'}
                               </span>
                             </div>
+
+                            {onSwapActivity && swapOpenActId === act.id && (() => {
+                              const swapOptions = getSwapOptionsForActivity(act);
+                              return (
+                                <div className="mt-2.5 p-3 rounded-xl bg-amber-50/60 border border-amber-200/80 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-amber-950">
+                                      {t('Swap with a verified local alternative (1-tap):')}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSwapOpenActId(null)}
+                                      className="text-[10px] font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                                    >
+                                      {t('Cancel')}
+                                    </button>
+                                  </div>
+                                  {swapOptions.length === 0 ? (
+                                    <p className="text-xs text-slate-500">All curated local highlights are already in your itinerary.</p>
+                                  ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                      {swapOptions.map((opt) => (
+                                        <button
+                                          key={opt.title}
+                                          type="button"
+                                          onClick={() => {
+                                            triggerHaptic('success');
+                                            onSwapActivity(day.dayNumber, act.id, opt);
+                                            setSwapOpenActId(null);
+                                          }}
+                                          className="text-left p-2.5 rounded-xl bg-white hover:bg-emerald-50/70 border border-amber-200/70 hover:border-emerald-300 transition-colors cursor-pointer space-y-1 shadow-2xs"
+                                        >
+                                          <div className="text-xs font-bold text-slate-900 line-clamp-1">{opt.title}</div>
+                                          <p className="text-[11px] text-slate-600 line-clamp-2 leading-snug">{opt.description}</p>
+                                          <div className="text-[10px] font-bold text-[#2D5A3D]">
+                                            {opt.estimatedCost > 0 ? formatCurrency(opt.estimatedCost, currency) : t('Free / Local')}
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
 
                             </div>
                           </div>

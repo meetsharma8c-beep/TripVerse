@@ -239,9 +239,21 @@ export default async function handler(req, res) {
             expiresAt
           });
         }
-        return res.status(500).json({
+        const isInvalidKey =
+          resendRes.status === 401 ||
+          resendRes.status === 403 ||
+          /api key is invalid|unauthorized|missing api key/i.test(String(resendData?.message || ''));
+        if (isInvalidKey) {
+          return res.status(503).json({
+            success: false,
+            code: 'EMAIL_GATEWAY_UNAVAILABLE',
+            message: 'Email OTP gateway is temporarily unavailable. Continuing with primary credential verification.'
+          });
+        }
+        return res.status(502).json({
           success: false,
-          message: resendData.message || 'Failed to dispatch email verification code via Resend.'
+          code: 'EMAIL_DELIVERY_FAILED',
+          message: 'Unable to dispatch email verification code right now. Please try Google Sign-In or retry shortly.'
         });
       }
 

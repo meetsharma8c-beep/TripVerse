@@ -16,6 +16,7 @@ import {
   VEHICLE_CONFIGS 
 } from '../../services/expenseService';
 import { triggerHaptic, copyTextToClipboard } from '../../services/deviceService';
+import { pushCollabRoomToFirestore, subscribeToFirestoreCollabRoom } from '../../services/firestoreCollabService';
 import confetti from 'canvas-confetti';
 import { 
   Wallet, 
@@ -117,7 +118,15 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
   });
   const [customMileage, setCustomMileage] = useState<number>(VEHICLE_CONFIGS.petrol_hatchback.defaultMileage);
 
-  // Load expenses strictly from stored real data and stay synced with AI Assistant additions
+  const [liveSyncStatus, setLiveSyncStatus] = useState<'CONNECTING' | 'LIVE' | 'LOCAL_ONLY' | 'DISCONNECTED'>('CONNECTING');
+
+  const persistAndSyncExpenses = (nextExpenses: ExpenseItem[]) => {
+    setExpenses(nextExpenses);
+    saveTripExpenses(trip.id, nextExpenses);
+    pushCollabRoomToFirestore({ tripId: trip.id, expenses: nextExpenses }).catch(() => {});
+  };
+
+  // Load expenses strictly from stored real data and stay synced with AI Assistant + Firestore multiplayer room
   useEffect(() => {
     const refreshExpenses = () => {
       const saved = loadTripExpenses(trip.id);
@@ -125,7 +134,21 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
     };
     refreshExpenses();
     window.addEventListener('tripverse_expenses_updated', refreshExpenses);
-    return () => window.removeEventListener('tripverse_expenses_updated', refreshExpenses);
+
+    const unsubFirestore = subscribeToFirestoreCollabRoom(trip.id, {
+      onExpenses: (remoteExpenses) => {
+        if (Array.isArray(remoteExpenses) && remoteExpenses.length > 0) {
+          setExpenses(remoteExpenses);
+          saveTripExpenses(trip.id, remoteExpenses);
+        }
+      },
+      onStatus: (status) => setLiveSyncStatus(status)
+    });
+
+    return () => {
+      window.removeEventListener('tripverse_expenses_updated', refreshExpenses);
+      unsubFirestore();
+    };
   }, [trip.id]);
 
   // Compute split summary
@@ -187,8 +210,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
     };
 
     const updated = [newExpense, ...expenses];
-    setExpenses(updated);
-    saveTripExpenses(trip.id, updated);
+    persistAndSyncExpenses(updated);
 
     setTitle('');
     setAmount('');
@@ -198,8 +220,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
 
   const handleDeleteExpense = (id: string) => {
     const updated = expenses.filter(e => e.id !== id);
-    setExpenses(updated);
-    saveTripExpenses(trip.id, updated);
+    persistAndSyncExpenses(updated);
     triggerHaptic('light');
   };
 
@@ -216,8 +237,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     const updated = [newExpense, ...expenses];
-    setExpenses(updated);
-    saveTripExpenses(trip.id, updated);
+    persistAndSyncExpenses(updated);
     setUpiModalData(null);
   };
 
@@ -259,6 +279,28 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between gap-2 flex-wrap px-1">
+        <div className="flex items-center gap-2 text-xs text-[#5A7362]">
+          <Users className="w-4 h-4 text-[#2D5A3D]" />
+          <span className="font-semibold">{travelers.length} {t('Group Members')}</span>
+        </div>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+          liveSyncStatus === 'LIVE'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : liveSyncStatus === 'CONNECTING'
+              ? 'bg-amber-50 text-amber-800 border-amber-200'
+              : 'bg-slate-100 text-slate-600 border-slate-200'
+        }`}>
+          <span className={`w-2 h-2 rounded-full ${
+            liveSyncStatus === 'LIVE' ? 'bg-emerald-500 animate-pulse' : liveSyncStatus === 'CONNECTING' ? 'bg-amber-500 animate-pulse' : 'bg-slate-400'
+          }`} />
+          {liveSyncStatus === 'LIVE'
+            ? t('Firestore Live Group Sync')
+            : liveSyncStatus === 'CONNECTING'
+              ? t('Connecting Room Sync...')
+              : t('Local Device Sync')}
+        </span>
+      </div>
       
       {/* Overview Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

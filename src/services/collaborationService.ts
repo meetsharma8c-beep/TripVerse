@@ -19,6 +19,11 @@ import {
   saveCollaborationSessionToSupabase, 
   loadCollaborationSessionFromSupabase 
 } from './supabaseSyncService';
+import {
+  pullCollabRoomFromFirestore,
+  pushCollabRoomToFirestore,
+  subscribeToFirestoreCollabRoom
+} from './firestoreCollabService';
 
 const COLLAB_STORAGE_KEY_PREFIX = 'tripverse_collab_v1_';
 const COLLAB_EVENT_KEY = 'tripverse_collaboration_update';
@@ -136,9 +141,15 @@ function saveLocalSession(tripId: string, session: CollaborationSession): void {
 }
 
 /**
- * Sync session to Supabase if configured
+ * Sync session to Firestore collab_rooms (primary) and Supabase (if configured)
  */
 async function syncToCloud(session: CollaborationSession): Promise<void> {
+  pushCollabRoomToFirestore({
+    tripId: session.tripId,
+    session,
+    inviteCode: session.inviteCode
+  }).catch(() => {});
+
   const supabase = getSupabaseClient();
   if (!supabase) return;
 
@@ -166,7 +177,13 @@ export async function joinTripCollaboration(
 ): Promise<CollaborationSession> {
   let session = loadLocalSession(tripId);
 
-  // Try fetching from Supabase if missing locally
+  // Try fetching from Firestore collab_rooms first, then Supabase if missing locally
+  if (!session) {
+    try {
+      const fsSnap = await pullCollabRoomFromFirestore(tripId);
+      if (fsSnap?.session) session = fsSnap.session;
+    } catch {}
+  }
   if (!session) {
     try {
       session = await loadCollaborationSessionFromSupabase(tripId);
@@ -433,6 +450,7 @@ export function subscribeToTripCollaboration(
   }
 
   // 3. Supabase Realtime WebSocket listener (Broadcast + Postgres Changes CDC)
+  let firestoreLiveActive = false;
   let supabaseChannel: any = null;
   const supabase = getSupabaseClient();
   if (supabase) {
@@ -473,20 +491,37 @@ export function subscribeToTripCollaboration(
             console.log(`[Realtime] Connected to live multiplayer room for trip ${tripId}`);
             onStatusChange?.('LIVE');
           } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            onStatusChange?.('DISCONNECTED');
+            if (!firestoreLiveActive) onStatusChange?.('DISCONNECTED');
           }
         });
     } catch (e) {
       console.warn('[Supabase] Realtime collaboration subscription notice:', e);
-      onStatusChange?.('DISCONNECTED');
+      if (!firestoreLiveActive) onStatusChange?.('DISCONNECTED');
     }
-  } else {
-    // Honest status: when Supabase Realtime is not configured, sync runs locally across browser tabs only
-    onStatusChange?.('LOCAL_ONLY');
   }
+
+  // 4. Primary Cloud Multiplayer Sync via Firestore collab_rooms (/collab_rooms/{roomId})
+  const unsubFirestore = subscribeToFirestoreCollabRoom(tripId, {
+    onSession: (remoteSession) => {
+      const local = loadLocalSession(tripId);
+      if (!local || (remoteSession.updatedAt && remoteSession.updatedAt > (local.updatedAt || ''))) {
+        saveLocalSession(tripId, remoteSession);
+        callback(remoteSession);
+      }
+    },
+    onStatus: (fsStatus) => {
+      if (fsStatus === 'LIVE') {
+        firestoreLiveActive = true;
+        onStatusChange?.('LIVE');
+      } else if (!supabase) {
+        onStatusChange?.(fsStatus);
+      }
+    }
+  });
 
   // Return unsubscribe cleaner
   return () => {
+    unsubFirestore();
     if (typeof window !== 'undefined') {
       window.removeEventListener(COLLAB_EVENT_KEY, handleLocalEvent);
       window.removeEventListener('storage', handleStorage);
