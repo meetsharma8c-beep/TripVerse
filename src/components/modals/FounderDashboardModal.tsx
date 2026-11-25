@@ -22,6 +22,7 @@ import {
   adminRevokePro,
   buildFounderRosterCsv
 } from '../../services/adminService';
+import { getCurrentUser } from '../../services/authService';
 import { triggerHaptic } from '../../services/deviceService';
 
 interface FounderDashboardModalProps {
@@ -147,7 +148,7 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
                 </span>
               </div>
               <p className="text-xs text-amber-200/70">
-                meet.sharma8c@gmail.com • Unified Email + Google OAuth + Guest cloud roster
+                {getCurrentUser()?.email || 'VIP Founder'} • Unified Email + Google OAuth + Guest cloud roster
               </p>
             </div>
           </div>

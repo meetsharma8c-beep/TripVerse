@@ -1,5 +1,5 @@
 import { getSupabaseClient } from './supabase';
-import { getActiveSession, getCurrentUser, isFounderVipUser } from './authService';
+import { getActiveSession, getCurrentUser, isFounderEmail, isFounderVipUser } from './authService';
 import { canonicalizeAccountEmail } from './supabaseSyncService';
 import { resolveApiUrl } from './deviceService';
 
@@ -115,7 +115,6 @@ export function parseRpcRosterRows(rpcUsers: any[]): {
   const registeredByCanon = new Map<string, AdminUserRecord>();
   const guestList: AdminUserRecord[] = [];
   const cloudProOverrides = new Map<string, { tier: 'pro' | 'free'; updatedAt: number; expiresAt?: string }>();
-  const founderCanon = canonicalizeAccountEmail('meet.sharma8c@gmail.com');
 
   // Pass 1: Extract latest cloud admin_pro_override records
   for (const u of rpcUsers) {
@@ -151,7 +150,8 @@ export function parseRpcRosterRows(rpcUsers: any[]): {
     const rawName = String(u?.name || meta?.full_name || meta?.name || '').trim();
     const rawLocation = String(u?.location || meta?.location || 'India').trim();
     const canon = canonicalizeAccountEmail(rawEmail);
-    const isFounder = canon === founderCanon || rawEmail === 'meet.sharma8c@gmail.com';
+    const isFounder = isFounderEmail(rawEmail);
+    const displayFounderEmail = canon === canonicalizeAccountEmail('meet.sharma8c@gmail.com') ? 'meet.sharma8c@gmail.com' : rawEmail;
     const provider = normalizeProviderLabel(
       meta?.auth_provider || u?.raw_app_meta_data?.provider || u?.provider,
       Boolean(u?.email)
@@ -175,7 +175,7 @@ export function parseRpcRosterRows(rpcUsers: any[]): {
     if (!existing) {
       registeredByCanon.set(canon, {
         id: u?.id || meta?.external_uid || `sb-${rawEmail}`,
-        email: isFounder ? 'meet.sharma8c@gmail.com' : rawEmail,
+        email: isFounder ? displayFounderEmail : rawEmail,
         name: displayName,
         createdAt,
         lastSignInAt,
@@ -272,7 +272,7 @@ export function parseRpcRosterRows(rpcUsers: any[]): {
 
 /**
  * Fetch all registered users + anonymous guest telemetry for the Founder Command Center.
- * Restricted strictly to authenticated VIP Founder (`meet.sharma8c@gmail.com`).
+ * Restricted strictly to authenticated VIP Founders (`meet.sharma8c@gmail.com`, `omwani18@outlook.com`).
  */
 export async function fetchFounderUserRoster(): Promise<{
   users: AdminUserRecord[];
@@ -281,13 +281,11 @@ export async function fetchFounderUserRoster(): Promise<{
 }> {
   const current = getCurrentUser();
   if (!isFounderVipUser(current)) {
-    throw new Error('Unauthorized: Access to Founder Command Center is restricted to meet.sharma8c@gmail.com');
+    throw new Error('Unauthorized: Access to Founder Command Center is restricted to authorized VIP Founders.');
   }
 
   let registeredByCanon = new Map<string, AdminUserRecord>();
   let guestList: AdminUserRecord[] = [];
-  const founderEmail = 'meet.sharma8c@gmail.com';
-  const founderCanon = canonicalizeAccountEmail(founderEmail);
   const supabase = getSupabaseClient();
 
   if (supabase) {
@@ -311,7 +309,8 @@ export async function fetchFounderUserRoster(): Promise<{
           const email = (p.email || '').toLowerCase().trim();
           if (!email) return;
           const canon = canonicalizeAccountEmail(email);
-          const isFounder = canon === founderCanon;
+          const isFounder = isFounderEmail(email);
+          const displayEmail = canon === canonicalizeAccountEmail('meet.sharma8c@gmail.com') ? 'meet.sharma8c@gmail.com' : email;
           const isPro = Boolean(p.subscription_tier === 'pro' || hasActiveLocalProOverride(email));
           const tier: 'vip_founder' | 'pro' | 'free' = isFounder ? 'vip_founder' : (isPro ? 'pro' : 'free');
           const pName = p.display_name || p.name || email.split('@')[0];
@@ -326,7 +325,7 @@ export async function fetchFounderUserRoster(): Promise<{
           } else {
             registeredByCanon.set(canon, {
               id: p.id || `p-${email}`,
-              email: isFounder ? founderEmail : email,
+              email: displayEmail,
               name: pName,
               createdAt: p.created_at || new Date().toISOString(),
               lastSignInAt: p.updated_at,
@@ -352,11 +351,12 @@ export async function fetchFounderUserRoster(): Promise<{
           if (!email || !email.includes('@')) return;
           const canon = canonicalizeAccountEmail(email);
           if (!registeredByCanon.has(canon)) {
-            const isFounder = canon === founderCanon;
+            const isFounder = isFounderEmail(email);
+            const displayEmail = canon === canonicalizeAccountEmail('meet.sharma8c@gmail.com') ? 'meet.sharma8c@gmail.com' : email;
             const isPro = hasActiveLocalProOverride(email);
             registeredByCanon.set(canon, {
               id: fb.user_id || fb.id || `fb-${email}`,
-              email: isFounder ? founderEmail : email,
+              email: displayEmail,
               name: email.split('@')[0],
               createdAt: fb.created_at || new Date().toISOString(),
               lastSignInAt: fb.created_at || new Date().toISOString(),
@@ -372,27 +372,39 @@ export async function fetchFounderUserRoster(): Promise<{
     } catch {}
   }
 
-  // 3. Ensure VIP Founder identity is always present & elevated
-  const existingFounder = registeredByCanon.get(founderCanon);
-  if (existingFounder) {
-    existingFounder.email = founderEmail;
-    existingFounder.tier = 'vip_founder';
-    existingFounder.isGenuine = true;
-    if (!existingFounder.name || existingFounder.name === 'meet.sharma8c') {
-      existingFounder.name = current?.displayName || 'Meet Sharma (VIP Founder)';
+  // 4. Ensure active VIP Founder + primary Founders are always present & elevated
+  const primaryFounders: Array<{ email: string; defaultName: string; provider: string }> = [
+    { email: 'meet.sharma8c@gmail.com', defaultName: 'Meet Sharma (VIP Founder)', provider: 'google' },
+    { email: 'omwani18@outlook.com', defaultName: 'Om Wani (VIP Founder)', provider: 'email' }
+  ];
+
+  for (const pf of primaryFounders) {
+    const fCanon = canonicalizeAccountEmail(pf.email);
+    const isCurrentActive = current?.email && canonicalizeAccountEmail(current.email) === fCanon;
+    const existingFounder = registeredByCanon.get(fCanon);
+    if (existingFounder) {
+      existingFounder.email = pf.email;
+      existingFounder.tier = 'vip_founder';
+      existingFounder.isGenuine = true;
+      if (!existingFounder.name || existingFounder.name === pf.email.split('@')[0]) {
+        existingFounder.name = (isCurrentActive && current?.displayName) || pf.defaultName;
+      }
+      if (isCurrentActive) {
+        existingFounder.lastSignInAt = new Date().toISOString();
+      }
+    } else if (pf.email === 'meet.sharma8c@gmail.com' || isCurrentActive) {
+      registeredByCanon.set(fCanon, {
+        id: (isCurrentActive && current?.uid) || `founder-${pf.email.split('@')[0]}`,
+        email: pf.email,
+        name: (isCurrentActive && current?.displayName) || pf.defaultName,
+        createdAt: (isCurrentActive && current?.createdAt) || '2026-09-01T00:00:00Z',
+        lastSignInAt: new Date().toISOString(),
+        location: (isCurrentActive && current?.location) || 'India',
+        provider: (isCurrentActive && current?.provider) || pf.provider,
+        tier: 'vip_founder',
+        isGenuine: true
+      });
     }
-  } else {
-    registeredByCanon.set(founderCanon, {
-      id: current?.uid || 'founder-primary-001',
-      email: founderEmail,
-      name: current?.displayName || 'Meet Sharma (VIP Founder)',
-      createdAt: current?.createdAt || '2026-09-01T00:00:00Z',
-      lastSignInAt: new Date().toISOString(),
-      location: current?.location || 'India',
-      provider: current?.provider || 'google',
-      tier: 'vip_founder',
-      isGenuine: true
-    });
   }
 
   const users = Array.from(registeredByCanon.values()).sort((a, b) => {
@@ -462,7 +474,7 @@ export async function adminGrantPro(targetEmail: string, durationDays: number = 
   }
 
   const cleanEmail = targetEmail.toLowerCase().trim();
-  if (canonicalizeAccountEmail(cleanEmail) === canonicalizeAccountEmail('meet.sharma8c@gmail.com')) {
+  if (isFounderEmail(cleanEmail)) {
     return true; // Already VIP Founder
   }
 
@@ -514,7 +526,7 @@ export async function adminRevokePro(targetEmail: string): Promise<boolean> {
   }
 
   const cleanEmail = targetEmail.toLowerCase().trim();
-  if (canonicalizeAccountEmail(cleanEmail) === canonicalizeAccountEmail('meet.sharma8c@gmail.com')) {
+  if (isFounderEmail(cleanEmail)) {
     return false; // Cannot revoke Founder VIP
   }
 

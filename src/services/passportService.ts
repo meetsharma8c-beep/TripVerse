@@ -49,8 +49,9 @@ export interface DigitalPassportProfile {
   totalKmTraveled: number;
 }
 
+import { isFounderEmail } from './authService';
+
 const STORAGE_KEY_PASSPORT_STAMPS = 'tripverse_passport_stamps_v1';
-const FOUNDER_EMAIL = 'meet.sharma8c@gmail.com';
 
 export const INITIAL_STAMPS: PassportStamp[] = [
   {
@@ -326,7 +327,7 @@ function loadRawPassportStamps(isFounder: boolean): PassportStamp[] {
 export function getPassportStamps(userEmail?: string): PassportStamp[] {
   if (typeof window === 'undefined') return INITIAL_STAMPS;
 
-  const isFounder = (userEmail || '').trim().toLowerCase() === FOUNDER_EMAIL;
+  const isFounder = isFounderEmail(userEmail);
 
   try {
     const stamps = loadRawPassportStamps(isFounder);
@@ -339,7 +340,7 @@ export function getPassportStamps(userEmail?: string): PassportStamp[] {
 export function unlockPassportStamp(stampId: string, userEmail?: string): PassportStamp[] {
   if (typeof window === 'undefined') return INITIAL_STAMPS;
 
-  const isFounder = (userEmail || '').trim().toLowerCase() === FOUNDER_EMAIL;
+  const isFounder = isFounderEmail(userEmail);
 
   try {
     const rawStamps = loadRawPassportStamps(isFounder);
@@ -357,7 +358,7 @@ export function unlockPassportStamp(stampId: string, userEmail?: string): Passpo
 }
 
 export function getPassportProfile(userEmail?: string, userName?: string): DigitalPassportProfile {
-  const isFounder = (userEmail || '').trim().toLowerCase() === FOUNDER_EMAIL;
+  const isFounder = isFounderEmail(userEmail);
   const stamps = getPassportStamps(userEmail);
   const unlocked = stamps.filter(s => !!s.unlockedAt);
 

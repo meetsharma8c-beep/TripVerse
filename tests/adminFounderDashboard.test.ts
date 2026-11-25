@@ -91,13 +91,37 @@ describe('Founder Command Center & Admin Service Unit Tests', () => {
     expect(metrics.totalRegistered).toBeGreaterThanOrEqual(1);
     expect(metrics.activeSignedUsers).toBeGreaterThanOrEqual(1);
     expect(metrics.genuineTravelers).toBeGreaterThanOrEqual(1);
-    expect(metrics.vipFounders).toBe(1);
+    expect(metrics.vipFounders).toBeGreaterThanOrEqual(1);
 
     // Verify user list contains Founder with VIP Founder tier
     const founder = users.find(u => u.email === 'meet.sharma8c@gmail.com');
     expect(founder).toBeDefined();
     expect(founder?.tier).toBe('vip_founder');
     expect(founder?.isGenuine).toBe(true);
+  });
+
+  it('permits omwani18@outlook.com as a full VIP Founder to view all users and manage Pro grants', async () => {
+    localStorage.setItem('tripverse_auth_session_v3', JSON.stringify({
+      user: {
+        uid: 'founder-002',
+        email: 'omwani18@outlook.com',
+        displayName: 'Om Wani',
+        subscriptionTier: 'vip_founder'
+      },
+      token: 'founder-om-valid-token',
+      expiresAt: Date.now() + 86400000
+    }));
+
+    const { users, metrics } = await fetchFounderUserRoster();
+    expect(metrics.totalRegistered).toBeGreaterThanOrEqual(2);
+    const omFounder = users.find(u => u.email === 'omwani18@outlook.com');
+    expect(omFounder).toBeDefined();
+    expect(omFounder?.tier).toBe('vip_founder');
+    expect(omFounder?.isGenuine).toBe(true);
+
+    // Cannot revoke another VIP Founder
+    expect(await adminRevokePro('meet.sharma8c@gmail.com')).toBe(false);
+    expect(await adminRevokePro('omwani18@outlook.com')).toBe(false);
   });
 
   it('allows founder to grant and revoke Pro membership for any traveler', async () => {

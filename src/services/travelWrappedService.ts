@@ -26,14 +26,14 @@ export interface TravelWrappedStats {
   isFounder: boolean;
 }
 
-const FOUNDER_EMAIL = 'meet.sharma8c@gmail.com';
+import { isFounderEmail } from './authService';
 
 export function computeTravelWrapped(
   trips: Trip[],
   userEmail?: string,
   year = 2026
 ): TravelWrappedStats {
-  const isFounder = (userEmail || '').trim().toLowerCase() === FOUNDER_EMAIL;
+  const isFounder = isFounderEmail(userEmail);
 
   // Only compute stats from the user's actual trips (never fabricate a default trip when trips is empty)
   const relevantTrips = Array.isArray(trips) ? trips.filter(Boolean) : [];

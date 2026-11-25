@@ -39,21 +39,32 @@ const VERIFICATION_STORAGE_KEY = 'tripverse_auth_verification_codes_v1';
 const AUTH_EVENT_KEY = 'tripverse_auth_state_change';
 
 /**
- * Recognized VIP Founder Account (Personal Lifetime Unlimited Access)
+ * Recognized VIP Founder Accounts (Personal Lifetime Unlimited Access & Command Center)
  */
 export const FOUNDER_VIP_EMAILS = new Set([
-  'meet.sharma8c@gmail.com'
+  'meet.sharma8c@gmail.com',
+  'meetsharma8c@gmail.com',
+  'omwani18@outlook.com'
 ]);
+
+export function isFounderEmail(rawEmail?: string | null): boolean {
+  const clean = (rawEmail || '').toLowerCase().trim();
+  if (!clean || !clean.includes('@')) return false;
+  if (FOUNDER_VIP_EMAILS.has(clean)) return true;
+  const [localPart, domain] = clean.split('@');
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    const canon = `${localPart.split('+')[0].replace(/\./g, '')}@gmail.com`;
+    return FOUNDER_VIP_EMAILS.has(canon);
+  }
+  return false;
+}
 
 export function isFounderVipUser(userParam?: AuthUser | UserProfile | { email?: string } | null): boolean {
   if (userParam && typeof (userParam as any).email === 'string') {
-    const emailNorm = (userParam as any).email.toLowerCase().trim();
-    if (FOUNDER_VIP_EMAILS.has(emailNorm)) return true;
+    if (isFounderEmail((userParam as any).email)) return true;
   }
   const user = userParam !== undefined ? (userParam as AuthUser | null) : getCurrentUser();
-  const emailNorm = user?.email ? user.email.toLowerCase().trim() : '';
-  if (!emailNorm) return false;
-  return FOUNDER_VIP_EMAILS.has(emailNorm);
+  return isFounderEmail(user?.email);
 }
 
 /**
@@ -77,7 +88,7 @@ function purgeLegacyMockSessions(): void {
         uid.startsWith('test-')
       ) {
         localStorage.removeItem(SESSION_STORAGE_KEY);
-      } else if (email && email !== 'meet.sharma8c@gmail.com') {
+      } else if (email && !isFounderEmail(email)) {
         // Strip accidental Pro/Founder bleed on non-founder accounts (like ms.concode@gmail.com)
         if (s.user?.subscriptionTier === 'pro' && (s.user.freeTripsRemaining === 9999 || (s.user.subscriptionExpiresAt && new Date(s.user.subscriptionExpiresAt).getFullYear() > 2030))) {
           s.user.subscriptionTier = 'free';
@@ -100,7 +111,7 @@ function purgeLegacyMockSessions(): void {
       );
       cleaned.forEach(a => {
         const email = a.user.email ? a.user.email.toLowerCase().trim() : '';
-        if (email && email !== 'meet.sharma8c@gmail.com') {
+        if (email && !isFounderEmail(email)) {
           if (a.user.subscriptionTier === 'pro' && (a.user.freeTripsRemaining === 9999 || (a.user.subscriptionExpiresAt && new Date(a.user.subscriptionExpiresAt).getFullYear() > 2030))) {
             a.user.subscriptionTier = 'free';
             a.user.freeTripsRemaining = 3;

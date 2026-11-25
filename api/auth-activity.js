@@ -8,6 +8,12 @@ const activityLog = [];
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'meet.sharma8c@gmail.com').toLowerCase().trim();
+const FOUNDER_EMAILS = new Set([
+  'meet.sharma8c@gmail.com',
+  'meetsharma8c@gmail.com',
+  'omwani18@outlook.com',
+  ADMIN_EMAIL
+]);
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const FIREBASE_API_KEY = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
@@ -60,16 +66,24 @@ function canonicalEmail(raw = '') {
   return `${localPart}@${domain}`;
 }
 
+function isAuthorizedFounderEmail(raw = '') {
+  const canon = canonicalEmail(raw);
+  if (!canon) return false;
+  for (const fe of FOUNDER_EMAILS) {
+    if (canonicalEmail(fe) === canon) return true;
+  }
+  return false;
+}
+
 async function verifyFounderIdentityToken(rawToken, sb) {
   const token = String(rawToken || '').replace(/^Bearer\s+/i, '').trim();
   if (!token || token.startsWith('session-')) return false;
-  const founderCanonical = canonicalEmail(ADMIN_EMAIL);
 
   // 1. Verify Supabase JWT if applicable
   if (sb) {
     try {
       const { data, error } = await sb.auth.getUser(token);
-      if (!error && data?.user?.email && canonicalEmail(data.user.email) === founderCanonical) {
+      if (!error && data?.user?.email && isAuthorizedFounderEmail(data.user.email)) {
         return true;
       }
     } catch {}
@@ -91,7 +105,7 @@ async function verifyFounderIdentityToken(rawToken, sb) {
             fbUser.email,
             ...(Array.isArray(fbUser.providerUserInfo) ? fbUser.providerUserInfo.map(p => p.email) : [])
           ].filter(Boolean);
-          if (candidateEmails.some(em => canonicalEmail(em) === founderCanonical)) {
+          if (candidateEmails.some(em => isAuthorizedFounderEmail(em))) {
             return true;
           }
         }
@@ -107,7 +121,7 @@ async function verifyFounderIdentityToken(rawToken, sb) {
       if (
         gJson?.email &&
         String(gJson.email_verified) === 'true' &&
-        canonicalEmail(gJson.email) === founderCanonical
+        isAuthorizedFounderEmail(gJson.email)
       ) {
         return true;
       }
