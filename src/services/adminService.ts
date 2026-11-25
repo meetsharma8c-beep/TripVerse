@@ -20,6 +20,7 @@ export interface AdminUserRecord {
 export interface AdminMetrics {
   totalRegistered: number;
   activeSignedUsers: number;
+  signedUpOnlyUsers?: number;
   genuineTravelers: number;
   proSubscribers: number;
   vipFounders: number;
@@ -135,33 +136,20 @@ export function parseRpcRosterRows(rpcUsers: any[]): {
     }
   }
 
-  // Pass 2: Extract all registered users (top-level email OR synced external OAuth metadata email) + Guest sessions
+  // Pass 2A: Extract all accounts with a real email (top-level email OR synced external OAuth metadata email)
+  const noEmailCandidates: any[] = [];
   for (const u of rpcUsers) {
     const meta = u?.metadata || u?.raw_user_meta_data || {};
     if (meta?.record_type === 'admin_pro_override') continue;
 
     const rawEmail = String(u?.email || meta?.user_email || meta?.email || '').toLowerCase().trim();
-    const rawName = String(u?.name || meta?.full_name || meta?.name || '').trim();
-    const rawLocation = String(u?.location || meta?.location || 'India').trim();
-
     if (!rawEmail) {
-      // Anonymous Guest Explorer session (`signInAsGuest`)
-      guestList.push({
-        id: u?.id || `guest-${guestList.length + 1}`,
-        email: 'guest@anonymous.local',
-        name: rawName || 'Guest Explorer',
-        createdAt: u?.created_at || new Date().toISOString(),
-        lastSignInAt: u?.last_sign_in_at || u?.created_at,
-        location: rawLocation || 'India',
-        provider: 'guest',
-        tier: 'free',
-        tripsCount: Number(meta?.lifetime_trips_created || 0),
-        isGenuine: Boolean(rawName && rawName.toLowerCase() !== 'explorer'),
-        isGuest: true
-      });
+      noEmailCandidates.push(u);
       continue;
     }
 
+    const rawName = String(u?.name || meta?.full_name || meta?.name || '').trim();
+    const rawLocation = String(u?.location || meta?.location || 'India').trim();
     const canon = canonicalizeAccountEmail(rawEmail);
     const isFounder = canon === founderCanon || rawEmail === 'meet.sharma8c@gmail.com';
     const provider = normalizeProviderLabel(
@@ -215,7 +203,67 @@ export function parseRpcRosterRows(rpcUsers: any[]): {
       if (rawLocation && (!existing.location || existing.location === 'India')) {
         existing.location = rawLocation;
       }
+      existing.tripsCount = Math.max(existing.tripsCount || 0, Number(meta?.lifetime_trips_created || 0));
       existing.isGenuine = existing.tier === 'vip_founder' ? true : !isTestEmail(existing.email, existing.name);
+    }
+  }
+
+  // Pass 2B: Classify no-email rows — promote real Google-verified (hidden-email) & custom-named human users
+  //          into the main roster; keep pure anonymous "Explorer" sessions in `guestList`.
+  const knownGenuineNames = new Set(
+    Array.from(registeredByCanon.values())
+      .filter(r => r.isGenuine)
+      .map(r => r.name.toLowerCase().trim())
+  );
+
+  for (const u of noEmailCandidates) {
+    const meta = u?.metadata || u?.raw_user_meta_data || {};
+    const rawName = String(u?.name || meta?.full_name || meta?.name || '').trim();
+    const lowerName = rawName.toLowerCase();
+    const rawLocation = String(u?.location || meta?.location || 'India').trim();
+    const isGoogleVerifiedNoEmail =
+      String(meta?.auth_provider || '').toLowerCase() === 'google' ||
+      String(meta?.avatar_url || '').includes('googleusercontent.com');
+    const isGenericGuestName =
+      !rawName ||
+      lowerName === 'explorer' ||
+      lowerName === 'guest explorer' ||
+      lowerName === 'traveler explorer' ||
+      lowerName === 'null';
+
+    if ((isGoogleVerifiedNoEmail || (!isGenericGuestName && !isTestEmail('', rawName))) && !knownGenuineNames.has(lowerName)) {
+      const syntheticKey = `uid:${meta?.external_uid || u?.id || lowerName}`;
+      const createdAt = meta?.original_created_at || u?.created_at || new Date().toISOString();
+      const lastSignInAt = u?.last_sign_in_at || meta?.last_sign_in_at || createdAt;
+      registeredByCanon.set(syntheticKey, {
+        id: u?.id || meta?.external_uid || syntheticKey,
+        email: isGoogleVerifiedNoEmail
+          ? 'Google Verified (Email Hidden by OAuth)'
+          : 'Profile Session (No Email Linked)',
+        name: rawName || 'Google Traveler',
+        createdAt,
+        lastSignInAt,
+        location: rawLocation || 'India',
+        provider: isGoogleVerifiedNoEmail ? 'google' : 'guest',
+        tier: 'free',
+        tripsCount: Number(meta?.lifetime_trips_created || 0),
+        isGenuine: true
+      });
+      if (lowerName) knownGenuineNames.add(lowerName);
+    } else {
+      guestList.push({
+        id: u?.id || `guest-${guestList.length + 1}`,
+        email: 'guest@anonymous.local',
+        name: rawName || 'Guest Explorer',
+        createdAt: u?.created_at || new Date().toISOString(),
+        lastSignInAt: u?.last_sign_in_at || u?.created_at,
+        location: rawLocation || 'India',
+        provider: 'guest',
+        tier: 'free',
+        tripsCount: Number(meta?.lifetime_trips_created || 0),
+        isGenuine: false,
+        isGuest: true
+      });
     }
   }
 
@@ -294,6 +342,34 @@ export async function fetchFounderUserRoster(): Promise<{
     } catch (err) {
       console.warn('[AdminService] Profiles notice:', err);
     }
+
+    // 3. Supplement from `user_feedback` table so feedback contributors with email are always included
+    try {
+      const { data: feedbackRows, error: fbErr } = await supabase.from('user_feedback').select('*');
+      if (!fbErr && Array.isArray(feedbackRows)) {
+        feedbackRows.forEach((fb: any) => {
+          const email = (fb.email || '').toLowerCase().trim();
+          if (!email || !email.includes('@')) return;
+          const canon = canonicalizeAccountEmail(email);
+          if (!registeredByCanon.has(canon)) {
+            const isFounder = canon === founderCanon;
+            const isPro = hasActiveLocalProOverride(email);
+            registeredByCanon.set(canon, {
+              id: fb.user_id || fb.id || `fb-${email}`,
+              email: isFounder ? founderEmail : email,
+              name: email.split('@')[0],
+              createdAt: fb.created_at || new Date().toISOString(),
+              lastSignInAt: fb.created_at || new Date().toISOString(),
+              location: 'India',
+              provider: 'email',
+              tier: isFounder ? 'vip_founder' : (isPro ? 'pro' : 'free'),
+              tripsCount: 0,
+              isGenuine: isFounder ? true : !isTestEmail(email, '')
+            });
+          }
+        });
+      }
+    } catch {}
   }
 
   // 3. Ensure VIP Founder identity is always present & elevated
@@ -333,6 +409,7 @@ export async function fetchFounderUserRoster(): Promise<{
 
   const totalRegistered = users.length;
   const activeSignedUsers = users.filter(u => u.lastSignInAt).length;
+  const signedUpOnlyUsers = Math.max(0, totalRegistered - activeSignedUsers);
   const genuineTravelers = users.filter(u => u.isGenuine).length;
   const proSubscribers = users.filter(u => u.tier === 'pro').length;
   const vipFounders = users.filter(u => u.tier === 'vip_founder').length;
@@ -346,6 +423,7 @@ export async function fetchFounderUserRoster(): Promise<{
     metrics: {
       totalRegistered,
       activeSignedUsers,
+      signedUpOnlyUsers,
       genuineTravelers,
       proSubscribers,
       vipFounders,

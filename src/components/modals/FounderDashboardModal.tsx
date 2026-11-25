@@ -198,12 +198,14 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
             <div className="p-4 rounded-2xl bg-slate-850/80 border border-slate-700/60 flex flex-col">
               <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-emerald-400" />
-                Total Registered
+                Total Sign-Up / In
               </span>
               <span className="text-2xl font-bold text-white mt-1">
                 {metrics ? metrics.totalRegistered : '...'}
               </span>
-              <span className="text-[10px] text-slate-500 mt-0.5">Email + Google OAuth</span>
+              <span className="text-[10px] text-slate-500 mt-0.5">
+                {metrics ? `${metrics.activeSignedUsers} signed in • ${metrics.signedUpOnlyUsers ?? 0} signup only` : 'Email + Google OAuth'}
+              </span>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-850/80 border border-slate-700/60 flex flex-col">
@@ -399,9 +401,13 @@ export const FounderDashboardModal: React.FC<FounderDashboardModalProps> = ({ is
                                 day: 'numeric'
                               })}
                             </div>
-                            {u.lastSignInAt && (
-                              <div className="text-[10px] text-slate-500">
-                                Active {new Date(u.lastSignInAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            {u.lastSignInAt ? (
+                              <div className="text-[10px] text-emerald-400/80">
+                                Signed in {new Date(u.lastSignInAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              </div>
+                            ) : (
+                              <div className="text-[10px] text-amber-400/80">
+                                Signed up only (0 logins)
                               </div>
                             )}
                           </td>
