@@ -5,7 +5,7 @@ import { UserProfile, CurrencyCode, LanguageCode } from '../../types/trip';
 import { getActiveCurrency, setActiveCurrency, CURRENCIES } from '../../services/currencyService';
 import { getActiveLanguage, setActiveLanguage, LANGUAGES, useLanguage } from '../../services/languageService';
 import { isStandalone } from '../../services/deviceService';
-import { getUserSubscriptionQuota } from '../../services/authService';
+import { getCurrentUser, getUserSubscriptionQuota } from '../../services/authService';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
 import { LiquidNavbar, LiquidTabs } from '../ui/liquid';
 
@@ -46,19 +46,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenEmergencySos,
   onOpenWrapped
 }) => {
-  const [quota, setQuota] = useState(() => {
-    return getUserSubscriptionQuota(userProfile ? {
-      email: userProfile.email,
-      displayName: userProfile.name
-    } as any : null);
-  });
+  const resolveNavbarQuota = () => {
+    const activeAuth = getCurrentUser();
+    const resolvedEmail = userProfile?.email || activeAuth?.email || '';
+    const resolvedName = userProfile?.name || activeAuth?.displayName || '';
+    return getUserSubscriptionQuota(
+      resolvedEmail ? ({ email: resolvedEmail, displayName: resolvedName } as any) : activeAuth
+    );
+  };
+
+  const [quota, setQuota] = useState(resolveNavbarQuota);
 
   useEffect(() => {
     const updateQuota = () => {
-      setQuota(getUserSubscriptionQuota(userProfile ? {
-        email: userProfile.email,
-        displayName: userProfile.name
-      } as any : null));
+      setQuota(resolveNavbarQuota());
     };
     updateQuota();
     window.addEventListener('tripverse_quota_updated', updateQuota);
@@ -651,6 +652,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             ) : (
               <div className="flex items-center gap-1.5 shrink-0">
+                {quota.isFounder && onOpenFounderDashboard && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenFounderDashboard();
+                    }}
+                    className="h-10 px-2.5 min-h-[40px] rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-amber-950 font-black text-[11px] shadow-xs ring-2 ring-amber-400/40 flex items-center gap-1 cursor-pointer active:scale-95 transition-transform shrink-0"
+                    title="Founder Command Center"
+                    aria-label="Founder Command Center"
+                  >
+                    <Crown className="w-3.5 h-3.5 fill-amber-950 shrink-0" />
+                    <span className="hidden sm:inline">Command</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onNavigate('profile')}
@@ -792,6 +808,33 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </div>
               <ChevronRight className={`w-4 h-4 shrink-0 ${quota.isPro ? 'text-amber-300' : 'text-slate-400 dark:text-slate-500'}`} />
+            </button>
+          )}
+
+          {/* Mobile VIP Founder Command Center Quick Launch */}
+          {quota.isFounder && onOpenFounderDashboard && (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenFounderDashboard();
+              }}
+              className="w-full flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-300 text-amber-950 font-black text-xs border border-amber-500/40 shadow-sm active:scale-[0.99] transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-8 h-8 rounded-xl bg-amber-950 text-amber-300 flex items-center justify-center shrink-0">
+                  <Crown className="w-4 h-4 fill-amber-300" />
+                </span>
+                <div className="text-left min-w-0">
+                  <div className="text-xs font-black tracking-tight truncate">
+                    {t('Founder Command Center')}
+                  </div>
+                  <div className="text-[10px] font-semibold text-amber-900/80 truncate">
+                    Live registered users, Google/Email telemetry &amp; Pro grants
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 shrink-0 text-amber-950" />
             </button>
           )}
 

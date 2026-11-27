@@ -33,6 +33,7 @@ interface ProfileViewProps {
   unreadNotificationCount?: number;
   onOpenLegal?: (tab: 'privacy' | 'terms' | 'advisory' | 'feedback') => void;
   onOpenProModal?: () => void;
+  onOpenFounderDashboard?: () => void;
 }
 
 const AVATAR_PRESETS = [
@@ -54,7 +55,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onOpenNotifications,
   unreadNotificationCount = 0,
   onOpenLegal,
-  onOpenProModal
+  onOpenProModal,
+  onOpenFounderDashboard
 }) => {
   const { t } = useLanguage();
   const [currency, setCurrency] = useState<Currency>(getStoredCurrency());
@@ -455,14 +457,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleOpenProModal}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs backdrop-blur-xs transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5 shrink-0"
-              >
-                <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-                <span>Manage Membership</span>
-              </button>
+              <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                {quota.isFounder && onOpenFounderDashboard && (
+                  <button
+                    type="button"
+                    onClick={onOpenFounderDashboard}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 hover:to-yellow-200 text-amber-950 font-black text-xs transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5 shrink-0"
+                  >
+                    <Crown className="w-3.5 h-3.5 text-amber-950 fill-amber-950" />
+                    <span>Founder Command Center</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleOpenProModal}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs backdrop-blur-xs transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                  <span>Manage Membership</span>
+                </button>
+              </div>
             </div>
           </div>
         ) : (

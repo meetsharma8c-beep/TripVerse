@@ -3343,6 +3343,7 @@ export function App() {
                 onSignOut={handleUserSignOut}
                 onOpenLegal={(tab) => setLegalModalState({ isOpen: true, tab })}
                 onOpenProModal={() => setIsProModalOpen(true)}
+                onOpenFounderDashboard={() => setIsFounderDashboardOpen(true)}
               />
             </div>
           )}
