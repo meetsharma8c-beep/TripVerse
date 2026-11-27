@@ -34,10 +34,43 @@ function formatSlugToTitle(slug: string): string {
     .trim();
 }
 
+export type TripDetailSubTab =
+  | 'itinerary'
+  | 'hub'
+  | 'packing'
+  | 'expenses'
+  | 'gems'
+  | 'deals'
+  | 'route'
+  | 'breakstops'
+  | 'budget'
+  | 'safety';
+
+const VALID_TRIP_SUB_TABS = new Set<TripDetailSubTab>([
+  'itinerary',
+  'hub',
+  'packing',
+  'expenses',
+  'gems',
+  'deals',
+  'route',
+  'breakstops',
+  'budget',
+  'safety',
+]);
+
+export function parseTripSubTab(raw: string | null | undefined): TripDetailSubTab | undefined {
+  if (!raw) return undefined;
+  const cleaned = raw.trim().toLowerCase() as TripDetailSubTab;
+  return VALID_TRIP_SUB_TABS.has(cleaned) ? cleaned : undefined;
+}
+
 export interface ResolvedRoute {
   tab: string;
   dest: Destination | null;
   tripId: string | null;
+  pendingTripId?: string | null;
+  subTab?: TripDetailSubTab;
   sharedTripId?: string | null;
   openBooking: boolean;
   openPlanner: boolean;
@@ -57,6 +90,7 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
   }
   const pathname = (window.location.pathname || '/').toLowerCase();
   const searchParams = new URLSearchParams(window.location.search);
+  const requestedSubTab = parseTripSubTab(searchParams.get('sub'));
   const rawHash = (window.location.hash || '').toLowerCase().replace('#', '');
 
   // 1. Direct pathname routing (/destination/:slug, /trip/:id, /itinerary/:id, /booking, /explore, /mytrips, /saved, /profile, /planner)
@@ -112,15 +146,26 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
   }
 
   if (pathname.startsWith('/trip/') || pathname.startsWith('/itinerary/')) {
-    const tripId = safeDecodeURIComponent(pathname.replace('/trip/', '').replace('/itinerary/', '')).replace(/\/+$/, '').trim();
+    const rawPathname = window.location.pathname || '/';
+    const rawSegment = rawPathname.replace(/^\/(?:trip|itinerary)\//i, '').replace(/\/+$/, '').trim();
+    const tripId = safeDecodeURIComponent(rawSegment);
     const found = loadedTrips.find(t => t.id.toLowerCase() === tripId.toLowerCase());
     if (found) {
-      return { tab: 'trip-detail', dest: null, tripId: found.id, openBooking: false, openPlanner: false };
+      return {
+        tab: 'trip-detail',
+        dest: null,
+        tripId: found.id,
+        subTab: requestedSubTab,
+        openBooking: false,
+        openPlanner: false
+      };
     }
     return {
       tab: 'trips',
       dest: null,
       tripId: null,
+      pendingTripId: tripId || null,
+      subTab: requestedSubTab,
       openBooking: false,
       openPlanner: false,
       routeNotice: tripId
@@ -217,7 +262,15 @@ export function resolveRouteFromBrowser(loadedTrips: Trip[]): ResolvedRoute {
   if (tripIdParam) {
     const found = loadedTrips.find(t => t.id === tripIdParam);
     if (found) {
-      return { tab: 'trip-detail', dest: null, tripId: found.id, openBooking: actionParam === 'book', openPlanner: false, openCollab: false };
+      return {
+        tab: 'trip-detail',
+        dest: null,
+        tripId: found.id,
+        subTab: requestedSubTab,
+        openBooking: actionParam === 'book',
+        openPlanner: false,
+        openCollab: false
+      };
     }
   }
   if (actionParam === 'pro' || actionParam === 'subscription') {

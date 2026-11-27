@@ -26,6 +26,7 @@ import { useLanguage } from '../../services/languageService';
 import type { PreciseLocation } from '../../services/locationService';
 import { Trip, Destination } from '../../types/trip';
 import { POPULAR_DESTINATIONS } from '../../data/destinations';
+import { isValidPlaceQuery } from '../../utils/routeResolver';
 import { ScrollReveal } from '../common/ScrollReveal';
 
 const InteractivePhoneDevice = lazy(() =>
@@ -380,10 +381,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const handleFloatingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const targetDest =
+    const rawTargetDest =
       showFloatingDropdown && highlightedIndex >= 0 && suggestions[highlightedIndex]
         ? suggestions[highlightedIndex].name
         : destination.trim();
+    const targetDest = isValidPlaceQuery(rawTargetDest) ? rawTargetDest : '';
 
     if (targetDest) {
       setDestination(targetDest);
@@ -392,9 +394,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     setHighlightedIndex(-1);
     const planParams = {
       destination: targetDest || undefined,
-      duration,
-      travelers,
-      budget,
+      duration: Math.min(30, Math.max(1, duration || 3)),
+      travelers: Math.min(30, Math.max(1, travelers || 2)),
+      budget: Math.max(500, budget || 8000),
       budgetMode,
     };
     if (onOpenPlanner) {
@@ -409,19 +411,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     setShowPlannerDropdown(false);
     setShowFloatingDropdown(false);
     setPlannerHighlightedIndex(-1);
-    const targetDest =
+    const rawTargetDest =
       showPlannerDropdown && plannerHighlightedIndex >= 0 && suggestions[plannerHighlightedIndex]
         ? suggestions[plannerHighlightedIndex].name
         : destination.trim();
+    const targetDest = isValidPlaceQuery(rawTargetDest) ? rawTargetDest : '';
 
     if (targetDest) {
       setDestination(targetDest);
     }
     const planParams = {
       destination: targetDest || undefined,
-      duration,
-      travelers,
-      budget,
+      duration: Math.min(30, Math.max(1, duration || 3)),
+      travelers: Math.min(30, Math.max(1, travelers || 2)),
+      budget: Math.max(500, budget || 8000),
       budgetMode,
     };
     if (onOpenPlanner) {

@@ -168,9 +168,9 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     {
       id: 'live_nav',
       label: t('Get Directions'),
-      desc: t('Open your route in an external navigation app'),
+      desc: t('Launch Live Turn-by-Turn GPS HUD & route guidance'),
       icon: Navigation,
-      iconColor: 'text-cyan-500',
+      iconColor: 'text-[#2D5A3D] dark:text-emerald-400',
       action: () => {
         onClose();
         onOpenLiveNav();
@@ -181,7 +181,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       label: t('Chat with AI Travel Assistant'),
       desc: t('Ask about weather, replanning, or vegetarian food'),
       icon: Sparkles,
-      iconColor: 'text-purple-500',
+      iconColor: 'text-emerald-600 dark:text-emerald-300',
       action: () => {
         onClose();
         onOpenChat();
@@ -192,7 +192,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       label: t('Explore Worldwide & Local Destinations'),
       desc: t('Search any city, island, mountain town, or landmark on Earth'),
       icon: Globe,
-      iconColor: 'text-amber-500',
+      iconColor: 'text-amber-600 dark:text-amber-400',
       action: () => {
         onClose();
         onNavigateTab('explore');
@@ -212,16 +212,16 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label="Search destinations and trips"
-      className="fixed inset-0 z-[130] bg-slate-900/60 backdrop-blur-sm flex items-start justify-center pt-16 sm:pt-24 px-4 overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-[130] bg-slate-950/60 backdrop-blur-sm flex items-start justify-center pt-14 sm:pt-24 px-3 sm:px-4 overflow-y-auto animate-fade-in"
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-xl overflow-hidden animate-scale-in"
+        className="glass-elevated liquid-rim rounded-[30px] w-full max-w-xl overflow-hidden animate-scale-in"
         onClick={e => e.stopPropagation()}
       >
         {/* Search Input Bar */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200">
-          <Search className="w-5 h-5 text-slate-400 shrink-0" />
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-[#E2EBE1] dark:border-white/10 bg-white/55 dark:bg-slate-900/45">
+          <Search className="w-5 h-5 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -236,19 +236,19 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               }
             }}
             placeholder={t('Search trips, destinations, or quick actions (⌘K)...')}
-            className="flex-1 bg-transparent text-sm sm:text-base font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none"
+            className="flex-1 bg-transparent text-sm sm:text-base font-semibold text-[#152A1C] dark:text-slate-100 placeholder:text-[#57685D] dark:placeholder:text-slate-400 focus:outline-none"
           />
           {query ? (
             <button 
               type="button"
               onClick={() => setQuery('')}
-              className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="min-h-0 p-1 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-[#EAF0E9]/70 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               aria-label={t('Clear search')}
             >
               <X className="w-4 h-4" />
             </button>
           ) : (
-            <kbd className="hidden sm:inline-block text-[10px] font-bold uppercase bg-slate-100 border border-slate-300 text-slate-500 px-2 py-0.5 rounded-md">
+            <kbd className="hidden sm:inline-block text-[10px] font-bold uppercase bg-[#EAF0E9] dark:bg-slate-800 border border-[#DCE7DB] dark:border-slate-700 text-[#2D5A3D] dark:text-slate-300 px-2 py-0.5 rounded-md">
               ESC
             </kbd>
           )}
@@ -260,7 +260,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {/* Quick Actions */}
           {quickActions.length > 0 && (
             <div className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 block">
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A7362] dark:text-slate-400 px-2 block">
                 {t('Quick Actions')}
               </span>
               <div className="space-y-1">
@@ -269,24 +269,25 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   return (
                     <button
                       key={act.id}
+                      type="button"
                       onClick={() => {
                         triggerHaptic('light');
                         act.action();
                       }}
-                      className="w-full flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-200 text-left transition-all cursor-pointer group"
+                      className="w-full flex items-center justify-between p-2.5 rounded-2xl hover:bg-[#EAF0E9]/75 dark:hover:bg-emerald-950/35 border border-transparent hover:border-[#DCE7DB] dark:hover:border-emerald-800/40 text-left transition-all cursor-pointer group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 group-hover:bg-white group-hover:shadow-2xs transition-all">
+                        <div className="w-8 h-8 rounded-xl bg-[#EAF0E9] dark:bg-slate-800/90 flex items-center justify-center shrink-0 group-hover:bg-white dark:group-hover:bg-slate-800 transition-all">
                           <Icon className={`w-4 h-4 ${act.iconColor}`} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-xs sm:text-sm font-bold text-slate-800 truncate group-hover:text-emerald-700 transition-colors">
+                          <h4 className="text-xs sm:text-sm font-bold text-[#152A1C] dark:text-slate-100 truncate group-hover:text-[#2D5A3D] dark:group-hover:text-emerald-300 transition-colors">
                             {act.label}
                           </h4>
-                          <p className="text-[11px] text-slate-500 truncate">{act.desc}</p>
+                          <p className="text-[11px] text-[#57685D] dark:text-slate-400 truncate">{act.desc}</p>
                         </div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 transition-transform group-hover:translate-x-0.5 shrink-0" />
+                      <ArrowRight className="w-4 h-4 text-[#8EA78D] group-hover:text-[#2D5A3D] dark:group-hover:text-emerald-400 transition-transform group-hover:translate-x-0.5 shrink-0" />
                     </button>
                   );
                 })}
@@ -298,49 +299,59 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {matchingDestinations.length > 0 && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between px-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A7362] dark:text-slate-400">
                   {t('Worldwide & Curated Destinations')}
                 </span>
                 {isSearchingGlobal && (
-                  <span className="text-[10px] font-semibold text-emerald-600 animate-pulse">
+                  <span className="text-[10px] font-semibold text-[#2D5A3D] dark:text-emerald-400 animate-pulse">
                     {t('Searching globally...')}
                   </span>
                 )}
               </div>
               <div className="space-y-1">
                 {matchingDestinations.map(dest => (
-                  <button
+                  <div
                     key={dest.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => {
                       triggerHaptic('light');
                       onClose();
                       onSelectDestination(dest);
                     }}
-                    className="w-full flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-200 text-left transition-all cursor-pointer group"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        triggerHaptic('light');
+                        onClose();
+                        onSelectDestination(dest);
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-2 rounded-2xl hover:bg-[#EAF0E9]/75 dark:hover:bg-emerald-950/35 border border-transparent hover:border-[#DCE7DB] dark:hover:border-emerald-800/40 text-left transition-all cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2D5A3D]"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <img 
                         src={dest.image} 
                         alt={dest.name}
                         onError={(e) => handleImageError(e, dest.name)}
-                        className="w-10 h-10 rounded-xl object-cover shrink-0"
+                        className="w-10 h-10 rounded-xl object-cover shrink-0 border border-white/50 dark:border-white/10"
                         loading="lazy"
                         decoding="async"
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <h4 className="text-xs sm:text-sm font-bold text-slate-800 truncate group-hover:text-emerald-700 transition-colors">
+                          <h4 className="text-xs sm:text-sm font-bold text-[#152A1C] dark:text-slate-100 truncate group-hover:text-[#2D5A3D] dark:group-hover:text-emerald-300 transition-colors">
                             {dest.name}
                           </h4>
-                          <span className="text-[10px] font-medium text-slate-400 shrink-0">
+                          <span className="text-[10px] font-medium text-[#5A7362] dark:text-slate-400 shrink-0">
                             • {dest.state}{dest.country && dest.country !== dest.state ? `, ${dest.country}` : ''}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 truncate">{dest.tagline}</p>
+                        <p className="text-[11px] text-[#57685D] dark:text-slate-400 truncate">{dest.tagline}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[11px] font-bold text-[#2D5A3D] flex items-center gap-1">
+                      <span className="text-[11px] font-bold text-[#2D5A3D] dark:text-emerald-300 flex items-center gap-1">
                         <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
                         <span>{dest.rating}</span>
                       </span>
@@ -352,13 +363,13 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                           onClose();
                           onOpenPlanner({ destination: dest.name });
                         }}
-                        className="px-2.5 py-1 rounded-xl bg-[#E8EFE7] text-[#2D5A3D] hover:bg-[#2D5A3D] hover:text-white text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                        className="min-h-0 px-2.5 py-1 rounded-xl bg-[#EAF0E9] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 hover:bg-[#2D5A3D] hover:text-white dark:hover:bg-emerald-600 dark:hover:text-white text-xs font-bold transition-all border border-[#DCE7DB] dark:border-emerald-800/60 cursor-pointer"
                         title={`Plan trip to ${dest.name}`}
                       >
                         {t('Plan')}
                       </button>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -367,34 +378,35 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {/* My Trips */}
           {matchingTrips.length > 0 && (
             <div className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 block">
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5A7362] dark:text-slate-400 px-2 block">
                 {t('My Trips')}
               </span>
               <div className="space-y-1">
                 {matchingTrips.map(trip => (
                   <button
                     key={trip.id}
+                    type="button"
                     onClick={() => {
                       triggerHaptic('light');
                       onClose();
                       onSelectTrip(trip.id);
                     }}
-                    className="w-full flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-200 text-left transition-all cursor-pointer group"
+                    className="w-full flex items-center justify-between p-2.5 rounded-2xl hover:bg-[#EAF0E9]/75 dark:hover:bg-emerald-950/35 border border-transparent hover:border-[#DCE7DB] dark:hover:border-emerald-800/40 text-left transition-all cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#2D5A3D] flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-xl bg-[#EAF0E9] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0">
                         <MapPin className="w-4 h-4" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-800 truncate group-hover:text-emerald-700 transition-colors">
+                        <h4 className="text-xs sm:text-sm font-bold text-[#152A1C] dark:text-slate-100 truncate group-hover:text-[#2D5A3D] dark:group-hover:text-emerald-300 transition-colors">
                           {trip.name}
                         </h4>
-                        <p className="text-[11px] text-slate-500 truncate">
+                        <p className="text-[11px] text-[#57685D] dark:text-slate-400 truncate">
                           {trip.origin} → {trip.destination} • {trip.durationDays} {t('Days')}
                         </p>
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#EAF0E9] dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-300 shrink-0">
                       {t('Open')}
                     </span>
                   </button>
@@ -406,14 +418,14 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           {/* Empty Search Results */}
           {quickActions.length === 0 && matchingDestinations.length === 0 && matchingTrips.length === 0 && (
             <div className="text-center py-8 space-y-2">
-              <p className="text-sm font-bold text-slate-700">{t('No matching results for')} "{query}"</p>
-              <p className="text-xs text-slate-400">{t('Try searching for destinations or activities')}</p>
+              <p className="text-sm font-bold text-[#152A1C] dark:text-slate-200">{t('No matching results for')} "{query}"</p>
+              <p className="text-xs text-[#57685D] dark:text-slate-400">{t('Try searching for destinations or activities')}</p>
             </div>
           )}
         </div>
 
         {/* Footer Shortcut Helper */}
-        <div className="bg-slate-50 px-5 py-2.5 border-t border-slate-200/80 flex items-center justify-between text-[11px] text-slate-400">
+        <div className="bg-[#F4F6F2]/80 dark:bg-slate-900/60 px-5 py-2.5 border-t border-[#E2EBE1] dark:border-white/10 flex items-center justify-between text-[11px] text-[#5A7362] dark:text-slate-400">
           <span>{t('Search everything across TripVerse')}</span>
           <span className="font-mono">{t('Press ESC to exit')}</span>
         </div>

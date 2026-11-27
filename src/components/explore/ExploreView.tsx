@@ -595,11 +595,11 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           const synthesized = liveResolvedDest || synthesizeDestination(trimmed);
           const isSaved = savedItemIds.includes(synthesized.id);
           return (
-            <div className="col-span-full bg-gradient-to-br from-emerald-50/80 via-white to-slate-50 rounded-3xl p-6 sm:p-8 border border-emerald-200/80 shadow-md">
+            <div className="col-span-full glass-frosted liquid-rim liquid-topo-wash rounded-[30px] p-6 sm:p-8">
               <div className="flex flex-col md:flex-row items-center gap-6">
                 <div 
                   onClick={() => setActiveModalDest(synthesized)}
-                  className="relative w-full md:w-72 h-52 rounded-2xl overflow-hidden flex-shrink-0 shadow-md cursor-pointer group"
+                  className="relative w-full md:w-72 h-52 rounded-2xl overflow-hidden flex-shrink-0 shadow-md cursor-pointer group border border-white/50 dark:border-white/10"
                 >
                   <img
                     src={synthesized.image}
@@ -617,7 +617,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                       e.stopPropagation();
                       onToggleSaved(synthesized.id);
                     }}
-                    className={`absolute top-2.5 right-2.5 p-2 rounded-full backdrop-blur-md transition-all shadow-xs ${
+                    className={`min-h-0 absolute top-2.5 right-2.5 p-2 rounded-full transition-all shadow-xs cursor-pointer ${
                       isSaved ? 'bg-[#2D5A3D] text-white' : 'bg-white/90 text-slate-700 hover:bg-white'
                     }`}
                     title={isSaved ? 'Saved' : 'Save Destination'}
@@ -628,21 +628,21 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
                 <div className="space-y-3 flex-1 text-left">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D] dark:text-emerald-300 bg-[#EAF0E9] dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-[#DCE7DB] dark:border-emerald-800/60">
                       {synthesized.country && synthesized.country !== 'Worldwide'
                         ? `${synthesized.state ? `${synthesized.state}, ` : ''}${synthesized.country}`
                         : 'Worldwide Destination Detected'}
                     </span>
-                    <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    <span className="text-xs font-mono font-semibold text-[#2D5A3D] dark:text-emerald-300 bg-white/80 dark:bg-slate-900/70 px-2 py-0.5 rounded-md border border-[#DCE7DB] dark:border-white/10">
                       {synthesized.coordinates.lat.toFixed(4)}°, {synthesized.coordinates.lng.toFixed(4)}°
                     </span>
-                    <span className="text-xs text-slate-400 font-medium">Ready for AI Itinerary</span>
+                    <span className="text-xs text-[#5A7362] dark:text-slate-400 font-medium">Ready for AI Itinerary</span>
                   </div>
 
-                  <h3 className="text-2xl font-display font-black text-[#0B2545]">
+                  <h3 className="text-2xl font-display font-black text-[#152A1C] dark:text-white tracking-tight">
                     Plan a Trip to {synthesized.name}
                   </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-3">
+                  <p className="text-xs sm:text-sm text-[#57685D] dark:text-slate-300 leading-relaxed line-clamp-3">
                     {synthesized.description}
                   </p>
 
@@ -650,31 +650,31 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                   {synthesized.popularActivities && synthesized.popularActivities.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-0.5">
                       {synthesized.popularActivities.slice(0, 5).map((act, idx) => (
-                        <span key={idx} className="text-[11px] font-semibold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs">
+                        <span key={idx} className="text-[11px] font-semibold text-[#152A1C] dark:text-slate-200 bg-white/85 dark:bg-slate-800/80 border border-[#DCE7DB] dark:border-slate-700 px-2.5 py-1 rounded-lg shadow-2xs">
                           {act}
                         </span>
                       ))}
                     </div>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-700 pt-1">
-                    <span>Est. Budget: <strong className="text-[#2D5A3D] font-display">{formatCurrency(synthesized.startBudget, currency)}</strong>/person</span>
-                    <span>Duration: <strong>{synthesized.recommendedDuration}</strong></span>
-                    <span>Best Season: <strong>{synthesized.bestTime}</strong></span>
+                  <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-[#57685D] dark:text-slate-300 pt-1">
+                    <span>Est. Budget: <strong className="text-[#2D5A3D] dark:text-emerald-400 font-display">{formatCurrency(synthesized.startBudget, currency)}</strong>/person</span>
+                    <span>Duration: <strong className="text-[#152A1C] dark:text-white">{synthesized.recommendedDuration}</strong></span>
+                    <span>Best Season: <strong className="text-[#152A1C] dark:text-white">{synthesized.bestTime}</strong></span>
                   </div>
 
                   <div className="pt-2 flex flex-wrap items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setActiveModalDest(synthesized)}
-                      className="px-5 py-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[#152A1C] dark:text-white border border-slate-300 dark:border-slate-700 font-bold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer"
+                      className="px-5 py-3 rounded-full glass-clear liquid-rim liquid-press text-[#152A1C] dark:text-white font-bold text-xs sm:text-sm cursor-pointer"
                     >
                       Explore {synthesized.name} Guide
                     </button>
                     <button
                       type="button"
                       onClick={() => onPlanTripForDestination(synthesized.name)}
-                      className="px-6 py-3 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white font-bold text-xs sm:text-sm shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                      className="px-6 py-3 rounded-full btn-liquid-primary text-white font-bold text-xs sm:text-sm flex items-center gap-2 cursor-pointer"
                     >
                       <Sparkles className="w-4 h-4" />
                       <span>Generate Complete Itinerary for {synthesized.name}</span>

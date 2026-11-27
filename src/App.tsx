@@ -185,7 +185,7 @@ import {
   Search
 } from 'lucide-react';
 
-import { resolveRouteFromBrowser } from './utils/routeResolver';
+import { resolveRouteFromBrowser, TripDetailSubTab } from './utils/routeResolver';
 import { fetchSharedTrip, cloneSharedTripForUser, SharedTripDocument } from './services/sharedTripService';
 import { POPULAR_DESTINATIONS } from './data/destinations';
 import { synthesizeDestination } from './utils/destinationImages';
@@ -232,21 +232,29 @@ export function App() {
   const [activeTripIdState, setActiveTripIdState] = useState<string>(() => initialRoute.tripId || getActiveTripId());
   const [sharedTripId, setSharedTripId] = useState<string | null>(() => initialRoute.sharedTripId || null);
   const [sharedTripDoc, setSharedTripDoc] = useState<SharedTripDocument | null>(null);
+  const [sharedTripError, setSharedTripError] = useState<string | null>(null);
+  const [sharedTripRetryKey, setSharedTripRetryKey] = useState<number>(0);
   const [isLoadingSharedTrip, setIsLoadingSharedTrip] = useState<boolean>(() => Boolean(initialRoute.sharedTripId));
   const [userProfile, setUserProfile] = useState<UserProfile>(loadUserProfile());
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(getCurrentUser());
   const [savedItemIds, setSavedItemIds] = useState<string[]>(() => loadSavedItemIds());
+  const pendingDeepLinkTripRef = useRef<{ tripId: string; subTab?: TripDetailSubTab } | null>(
+    initialRoute.pendingTripId && !isGuestUser(getCurrentUser())
+      ? { tripId: initialRoute.pendingTripId, subTab: initialRoute.subTab }
+      : null
+  );
   const [appNotice, setAppNotice] = useState<{
     message: string;
     tone?: 'info' | 'warning' | 'error';
     retryInput?: PlannerInput;
-  } | null>(() => (initialRoute.routeNotice ? { message: initialRoute.routeNotice, tone: 'info' } : null));
+  } | null>(() => {
+    if (initialRoute.pendingTripId && !isGuestUser(getCurrentUser())) return null;
+    return initialRoute.routeNotice ? { message: initialRoute.routeNotice, tone: 'info' } : null;
+  });
   const isGeneratingRef = useRef(false);
 
   // Sub-tab inside Trip Detail view
-  const [tripSubTab, setTripSubTab] = useState<
-    'itinerary' | 'hub' | 'packing' | 'expenses' | 'gems' | 'deals' | 'route' | 'breakstops' | 'budget' | 'safety'
-  >('itinerary');
+  const [tripSubTab, setTripSubTab] = useState<TripDetailSubTab>(() => initialRoute.subTab || 'itinerary');
   const [tripsViewMode, setTripsViewMode] = useState<'passes' | 'portfolio'>('portfolio');
   const [isTripIslandExpanded, setIsTripIslandExpanded] = useState(false);
 
@@ -545,7 +553,26 @@ export function App() {
 
           setTrips(mergedCloudTrips);
           saveTrips(mergedCloudTrips, user.uid, { skipCloudSync: true });
-          if (mergedCloudTrips.length > 0 && !mergedCloudTrips.some((t) => t.id === userActiveId)) {
+          const pendingDeepLink = pendingDeepLinkTripRef.current;
+          if (pendingDeepLink) {
+            pendingDeepLinkTripRef.current = null;
+            const matchedDeepTrip = mergedCloudTrips.find(
+              (t) => t.id.toLowerCase() === pendingDeepLink.tripId.toLowerCase()
+            );
+            if (matchedDeepTrip) {
+              setActiveTripIdState(matchedDeepTrip.id);
+              setActiveTripId(matchedDeepTrip.id, user.uid);
+              if (pendingDeepLink.subTab) {
+                setTripSubTab(pendingDeepLink.subTab);
+              }
+              setCurrentTab('trip-detail');
+            } else {
+              setAppNotice({
+                message: `Trip "${pendingDeepLink.tripId}" was not found in your saved portfolio. Showing your trips instead.`,
+                tone: 'info',
+              });
+            }
+          } else if (mergedCloudTrips.length > 0 && !mergedCloudTrips.some((t) => t.id === userActiveId)) {
             setActiveTripIdState(mergedCloudTrips[0].id);
             setActiveTripId(mergedCloudTrips[0].id, user.uid);
           }
@@ -771,22 +798,32 @@ export function App() {
 
   // Fetch public shared trip when navigating to /share/:shareId
   useEffect(() => {
-    if (currentTab !== 'shared-trip' || !sharedTripId) return;
+    if (currentTab !== 'shared-trip') return;
+    if (!sharedTripId) {
+      setIsLoadingSharedTrip(false);
+      setSharedTripDoc(null);
+      setSharedTripError('That shared itinerary link appears to be incomplete or malformed.');
+      return;
+    }
     let isMounted = true;
     setIsLoadingSharedTrip(true);
+    setSharedTripError(null);
     fetchSharedTrip(sharedTripId)
       .then((doc) => {
         if (!isMounted) return;
         if (doc) {
           setSharedTripDoc(doc);
+          setSharedTripError(null);
         } else {
           setSharedTripDoc(null);
-          setAppNotice({
-            message: 'This shared itinerary link has expired or could not be found. Explore destinations below.',
-            tone: 'info',
-          });
-          setCurrentTab('explore');
+          setSharedTripError('This shared itinerary link has expired or could not be found.');
         }
+      })
+      .catch((err: unknown) => {
+        if (!isMounted) return;
+        console.warn('[SharedTrip] Failed to load shared itinerary:', err);
+        setSharedTripDoc(null);
+        setSharedTripError('Unable to reach TripVerse cloud right now. Please check your connection and retry.');
       })
       .finally(() => {
         if (isMounted) setIsLoadingSharedTrip(false);
@@ -794,7 +831,7 @@ export function App() {
     return () => {
       isMounted = false;
     };
-  }, [currentTab, sharedTripId]);
+  }, [currentTab, sharedTripId, sharedTripRetryKey]);
 
   // URL Pathname, Dynamic Document Title & SEO Meta Sync for Browser, Crawler & History Navigation
   useEffect(() => {
@@ -893,15 +930,22 @@ export function App() {
     const ogUrl = document.querySelector('meta[property="og:url"]');
     if (ogUrl) ogUrl.setAttribute('content', canonicalUrl);
 
-    // Only update if path changed
-    if (window.location.pathname !== targetPath) {
-      window.history.pushState(
-        { tab: currentTab, tripId: activeTripIdState, destId: selectedDestinationForDetails?.id },
-        targetTitle,
-        targetPath
-      );
+    // Only update if path or trip sub-tab query changed (skip if waiting on pending deep-link hydration)
+    if (!pendingDeepLinkTripRef.current) {
+      let targetUrl = targetPath;
+      if (currentTab === 'trip-detail' && targetPath.startsWith('/trip/') && tripSubTab !== 'itinerary') {
+        targetUrl = `${targetPath}?sub=${encodeURIComponent(tripSubTab)}`;
+      }
+      const currentFullUrl = `${window.location.pathname}${window.location.search}`;
+      if (currentFullUrl !== targetUrl && !(window.location.search.includes('type=recovery') || window.location.search.includes('mode=resetPassword'))) {
+        window.history.pushState(
+          { tab: currentTab, tripId: activeTripIdState, subTab: tripSubTab, destId: selectedDestinationForDetails?.id },
+          targetTitle,
+          targetUrl
+        );
+      }
     }
-  }, [currentTab, activeTripIdState, selectedDestinationForDetails, trips]);
+  }, [currentTab, activeTripIdState, tripSubTab, selectedDestinationForDetails, trips, sharedTripId, sharedTripDoc]);
 
   const tripSubSectionRef = useRef<HTMLDivElement>(null);
 
@@ -1010,7 +1054,11 @@ export function App() {
     legalModalState.isOpen ||
     isBestDealModalOpen ||
     isPrintModalOpen ||
-    isCollabModalOpen
+    isCollabModalOpen ||
+    isFounderDashboardOpen ||
+    isPassportModalOpen ||
+    isEmergencySosOpen ||
+    isWrappedModalOpen
   );
 
   const modalHistoryPushedRef = useRef(false);
@@ -1117,6 +1165,22 @@ export function App() {
         setIsCollabModalOpen(false);
         return;
       }
+      if (isFounderDashboardOpen) {
+        setIsFounderDashboardOpen(false);
+        return;
+      }
+      if (isPassportModalOpen) {
+        setIsPassportModalOpen(false);
+        return;
+      }
+      if (isEmergencySosOpen) {
+        setIsEmergencySosOpen(false);
+        return;
+      }
+      if (isWrappedModalOpen) {
+        setIsWrappedModalOpen(false);
+        return;
+      }
 
       // Step 2: Sync route from window.location.pathname and query/hash
       const route = resolveRouteFromBrowser(trips);
@@ -1125,9 +1189,17 @@ export function App() {
       } else {
         setSelectedDestinationForDetails(null);
       }
+      if (route.sharedTripId) {
+        setSharedTripId(route.sharedTripId);
+      } else {
+        setSharedTripId(null);
+      }
       if (route.tripId) {
         setActiveTripIdState(route.tripId);
         setActiveTripId(route.tripId, currentUser?.uid);
+      }
+      if (route.tab === 'trip-detail') {
+        setTripSubTab(route.subTab || 'itinerary');
       }
       if (route.openBooking) {
         setIsBookingModalOpen(true);
@@ -1562,12 +1634,12 @@ export function App() {
     budget?: number;
     budgetMode?: 'per_person' | 'total';
   }) => {
-    if (params) {
+    if (params && typeof params === 'object' && !('nativeEvent' in (params as any))) {
       setPlannerPrefill(prev => ({
-        destination: params.destination ?? prev.destination,
-        duration: params.duration ?? prev.duration,
-        travelers: params.travelers ?? prev.travelers,
-        budget: params.budget ?? prev.budget,
+        destination: typeof params.destination === 'string' ? params.destination : prev.destination,
+        duration: typeof params.duration === 'number' ? params.duration : prev.duration,
+        travelers: typeof params.travelers === 'number' ? params.travelers : prev.travelers,
+        budget: typeof params.budget === 'number' ? params.budget : prev.budget,
         budgetMode: params.budgetMode ?? prev.budgetMode ?? 'total'
       }));
     }
@@ -2098,7 +2170,29 @@ export function App() {
         dayEstimatedCost: nextActivities.reduce((s, a) => s + (a.estimatedCost || 0), 0)
       };
     });
-    handleUpdateTrip({ ...activeTrip, itinerary: updatedDays });
+    const newActivitiesTotal = updatedDays.reduce((sum, d) => sum + d.dayEstimatedCost, 0);
+    handleUpdateTrip({
+      ...activeTrip,
+      itinerary: updatedDays,
+      estimatedTotal: computeUpdatedEstimatedTotal(activeTrip, newActivitiesTotal),
+      budgetBreakdown: {
+        ...activeTrip.budgetBreakdown,
+        activities: newActivitiesTotal
+      }
+    });
+  };
+
+  const computeSyncedEndDate = (startDateStr: string | undefined, durationDays: number): string | undefined => {
+    if (!startDateStr) return undefined;
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(startDateStr.trim());
+    if (!match) return undefined;
+    const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    if (Number.isNaN(d.getTime())) return undefined;
+    d.setDate(d.getDate() + Math.max(0, durationDays - 1));
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   };
 
   const handleToggleActivityComplete = (dayNumber: number, activityId: string) => {
@@ -2148,9 +2242,11 @@ export function App() {
       activities: []
     };
     const updatedDays = [...activeTrip.itinerary, newDay];
+    const nextEndDate = computeSyncedEndDate(activeTrip.startDate, newDayNumber);
     handleUpdateTrip({
       ...activeTrip,
       durationDays: newDayNumber,
+      ...(nextEndDate ? { endDate: nextEndDate } : {}),
       itinerary: updatedDays
     });
   };
@@ -2167,9 +2263,11 @@ export function App() {
         activities: day.activities.map(act => ({ ...act, dayNumber: idx + 1 }))
       }));
     const newActivitiesTotal = remaining.reduce((sum, d) => sum + d.dayEstimatedCost, 0);
+    const nextEndDate = computeSyncedEndDate(activeTrip.startDate, remaining.length);
     handleUpdateTrip({
       ...activeTrip,
       durationDays: remaining.length,
+      ...(nextEndDate ? { endDate: nextEndDate } : {}),
       itinerary: remaining,
       estimatedTotal: computeUpdatedEstimatedTotal(activeTrip, newActivitiesTotal),
       budgetBreakdown: {
@@ -2213,6 +2311,10 @@ export function App() {
     isOnboardingOpen ||
     legalModalState.isOpen ||
     isReviewModalOpen ||
+    isFounderDashboardOpen ||
+    isPassportModalOpen ||
+    isEmergencySosOpen ||
+    isWrappedModalOpen ||
     showSplash
   );
 
@@ -2602,14 +2704,14 @@ export function App() {
               <div className="hidden lg:flex items-center justify-between">
                 <button
                   onClick={() => handleNavigateTab('trips')}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#5A7362] dark:text-slate-400 hover:text-[#152A1C] dark:hover:text-white transition-colors cursor-pointer"
                 >
                   <span>← {t('itinerary.backToTrips')}</span>
                 </button>
 
                 <button
                   onClick={() => handleOpenAIChat()}
-                  className="flex items-center gap-1.5 text-xs font-bold text-[#2D5A3D] bg-[#EAF0E9] px-3 py-1.5 rounded-full border border-[#8EA78D]/40 cursor-pointer"
+                  className="spring-tap flex items-center gap-1.5 text-xs font-bold text-[#2D5A3D] dark:text-emerald-300 bg-[#EAF0E9] dark:bg-emerald-950/60 px-3.5 py-1.5 rounded-full border border-[#8EA78D]/40 dark:border-emerald-800/60 cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>{t('itinerary.aiAssistantAvailable')}</span>
@@ -2621,33 +2723,40 @@ export function App() {
                 <button
                   type="button"
                   onClick={() => handleNavigateTab('trips')}
-                  className="w-10 h-10 rounded-full bg-white border border-[#E2EBE1] text-[#2D5A3D] flex items-center justify-center shadow-2xs hover:bg-[#F8FAF7] active:scale-95 transition-all cursor-pointer"
+                  className="w-10 h-10 rounded-full glass-clear liquid-rim liquid-press text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center cursor-pointer"
                   title="Back"
                   aria-label="Back to trips"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
 
-                <h1 className="text-base font-display font-bold text-[#152A1C] text-center">
+                <h1 className="text-base font-display font-bold text-[#152A1C] dark:text-white text-center">
                   {t('itinerary.yourItinerary')}
                 </h1>
 
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => handleToggleSaved(activeTrip.id)}
-                    className="w-10 h-10 rounded-full bg-white border border-[#E2EBE1] text-[#2D5A3D] flex items-center justify-center shadow-2xs hover:bg-[#F8FAF7] active:scale-95 transition-all cursor-pointer"
-                    title="Bookmark Itinerary"
-                    aria-label="Bookmark Itinerary"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      handleToggleSaved(activeTrip.id);
+                    }}
+                    className={`w-10 h-10 rounded-full liquid-rim liquid-press flex items-center justify-center cursor-pointer transition-colors ${
+                      savedItemIds.includes(activeTrip.id)
+                        ? 'bg-[#2D5A3D] text-white'
+                        : 'glass-clear text-[#2D5A3D] dark:text-emerald-300'
+                    }`}
+                    title={savedItemIds.includes(activeTrip.id) ? 'Saved in Vault' : 'Bookmark Itinerary'}
+                    aria-label={savedItemIds.includes(activeTrip.id) ? 'Remove itinerary from saved vault' : 'Bookmark Itinerary'}
                   >
-                    <Bookmark className={`w-4 h-4 ${savedItemIds.includes(activeTrip.id) ? 'fill-[#2D5A3D]' : ''}`} />
+                    <Bookmark className={`w-4 h-4 ${savedItemIds.includes(activeTrip.id) ? 'fill-white' : ''}`} />
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsShareModalOpen(true)}
-                    className="w-10 h-10 rounded-full bg-white border border-[#E2EBE1] text-[#2D5A3D] flex items-center justify-center shadow-2xs hover:bg-[#F8FAF7] active:scale-95 transition-all cursor-pointer"
-                    title="Trip Options"
-                    aria-label="Trip Options"
+                    className="w-10 h-10 rounded-full glass-clear liquid-rim liquid-press text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center cursor-pointer"
+                    title="Share & Trip Options"
+                    aria-label="Share & Trip Options"
                   >
                     <MoreVertical className="w-4 h-4" />
                   </button>
@@ -3067,26 +3176,26 @@ export function App() {
               {/* Sub-Tab 3: Break Stop Catalog */}
               {tripSubTab === 'breakstops' && (
                 <div className="space-y-6">
-                  <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm">
+                  <div className="glass-frosted liquid-rim rounded-[30px] p-5 sm:p-7">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                       <div>
-                        <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Route-based listings')}</span>
-                        <h2 className="text-xl font-bold text-[#0B2545]">{t('Highway Break Stops & Waypoints')}</h2>
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D] dark:text-emerald-400">{t('Route-based listings')}</span>
+                        <h2 className="text-xl font-display font-bold text-[#152A1C] dark:text-white">{t('Highway Break Stops & Waypoints')}</h2>
+                        <p className="text-xs text-[#5A7362] dark:text-slate-400 mt-0.5">
                           {t('Geoapify place listings based on OpenStreetMap data near the driving route. Facilities, opening hours, and current availability are not confirmed.')}
                         </p>
                       </div>
 
-                      <span className="text-xs font-bold text-[#2D5A3D] bg-[#EAF0E9] px-3 py-1.5 rounded-full border border-[#8EA78D]/40 self-start sm:self-auto">
+                      <span className="text-xs font-bold text-[#2D5A3D] dark:text-emerald-300 bg-[#EAF0E9] dark:bg-emerald-950/60 px-3 py-1.5 rounded-full border border-[#8EA78D]/40 dark:border-emerald-800/60 self-start sm:self-auto">
                         {activeTrip.breakStops.length} {t('mapped listings')}
                       </span>
                     </div>
 
                     {activeTrip.travelDataStatus === 'loading' && (
-                      <p className="mb-4 text-sm text-slate-600" role="status">{t('Loading a driving route and nearby OpenStreetMap listings via Geoapify…')}</p>
+                      <p className="mb-4 text-sm text-[#57685D] dark:text-slate-300" role="status">{t('Loading a driving route and nearby OpenStreetMap listings via Geoapify…')}</p>
                     )}
                     {activeTrip.travelDataStatus === 'estimate' && (
-                      <p className="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3" role="status">
+                      <p className="mb-4 text-sm text-amber-900 dark:text-amber-200 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-3.5" role="status">
                         {t('Live route and place data is unavailable. The route and schedule are estimates; no pitstops or facilities are verified.')}
                         {activeTrip.travelDataError === 'ORIGIN_NOT_SET' && (' ' + t('Allow location access or enter a starting city in the full trip planner to request a live route.'))}
                         {activeTrip.travelDataError === 'GEOAPIFY_API_KEY_NOT_CONFIGURED' && (' ' + t('The server Geoapify API key is not configured. Set GEOAPIFY_API_KEY in Vercel Production.'))}
@@ -3095,14 +3204,14 @@ export function App() {
                         {' '}<button
                           type="button"
                           onClick={retryActiveTripRoute}
-                          className="ml-1 font-bold underline decoration-amber-700 underline-offset-2 hover:text-amber-950"
+                          className="ml-1 font-bold underline decoration-amber-700 dark:decoration-amber-400 underline-offset-2 hover:text-amber-950 dark:hover:text-amber-100 cursor-pointer"
                         >
                           {t('Retry live route')}
                         </button>
                       </p>
                     )}
                     {activeTrip.travelDataWarnings && activeTrip.travelDataWarnings.length > 0 && (
-                      <p className="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3" role="status">
+                      <p className="mb-4 text-sm text-amber-900 dark:text-amber-200 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-3.5" role="status">
                         Some map-provider category searches were unavailable: {activeTrip.travelDataWarnings.map(section =>
                           section === 'amenities' ? 'food/washroom/parking/rest area'
                             : section === 'ev_charging' ? 'EV charging'
@@ -3121,20 +3230,20 @@ export function App() {
                         getBreakStopSectionLocal(stop) === section.id
                       );
                       return (
-                        <details key={section.id} className="group mt-3 first:mt-0 rounded-2xl border border-slate-200 bg-white open:border-emerald-200 open:bg-emerald-50/20">
-                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-4 outline-none transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-emerald-500 [&::-webkit-details-marker]:hidden">
+                        <details key={section.id} className="group mt-3 first:mt-0 rounded-2xl border border-[#E2EBE1] dark:border-white/10 bg-white/75 dark:bg-slate-900/50 open:border-emerald-300 dark:open:border-emerald-700/60 open:bg-[#F8FAF7] dark:open:bg-emerald-950/20">
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-4 outline-none transition-colors hover:bg-[#F4F6F2] dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-[#2D5A3D] [&::-webkit-details-marker]:hidden">
                             <span className="min-w-0">
-                              <span className="block text-sm font-bold text-[#0B2545]">{t(section.title)}</span>
-                              <span className="mt-1 block text-xs text-slate-500">{t(section.detail)}</span>
+                              <span className="block text-sm font-bold text-[#152A1C] dark:text-white">{t(section.title)}</span>
+                              <span className="mt-1 block text-xs text-[#5A7362] dark:text-slate-400">{t(section.detail)}</span>
                             </span>
                             <span className="flex shrink-0 items-center gap-2">
-                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 group-open:bg-emerald-100 group-open:text-emerald-800">
+                              <span className="rounded-full bg-[#EAF0E9] dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-[#2D5A3D] dark:text-slate-300 group-open:bg-[#2D5A3D] group-open:text-white">
                                 {sectionStops.length} {sectionStops.length === 1 ? 'listing' : 'listings'}
                               </span>
-                              <ChevronDown aria-hidden="true" className="h-4 w-4 text-slate-500 transition-transform group-open:rotate-180" />
+                              <ChevronDown aria-hidden="true" className="h-4 w-4 text-[#5A7362] dark:text-slate-400 transition-transform group-open:rotate-180" />
                             </span>
                           </summary>
-                          <div className="border-t border-slate-200 px-4 py-4">
+                          <div className="border-t border-[#E2EBE1] dark:border-white/10 px-4 py-4">
                             {sectionStops.length > 0 ? (
                               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                                 {sectionStops.map(bs => (
@@ -3148,7 +3257,7 @@ export function App() {
                               </div>
                             ) : (
                               activeTrip.travelDataStatus !== 'loading' && (
-                                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                                <p className="rounded-xl border border-dashed border-[#DCE7DB] dark:border-slate-700 bg-[#F4F6F2] dark:bg-slate-900/60 px-4 py-3 text-sm text-[#5A7362] dark:text-slate-400">
                                   {activeTrip.travelDataStatus === 'estimate'
                                     ? 'Listings were not searched because live route data is unavailable.'
                                     : 'No map listings were returned for this section on the searched route. Check a maps provider before travelling.'}
@@ -3201,28 +3310,32 @@ export function App() {
 
           {/* VIEW 2 EMPTY STATE: When trip-detail is opened but user has no active trip */}
           {currentTab === 'trip-detail' && !activeTrip && (
-            <div key="trip-detail-empty" className="max-w-xl mx-auto px-4 py-20 text-center animate-fade-in">
-              <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-5 text-slate-400 border border-slate-200 shadow-sm">
-                <Compass className="w-8 h-8 text-[#2D5A3D]" />
-              </div>
-              <h2 className="text-xl font-bold text-slate-800 mb-2">{t('No Trip Selected')}</h2>
-              <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-                {t('No itinerary is currently active. Create your first journey with our AI Trip Planner or select an existing trip from your trips library.')}
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <button
-                  onClick={() => handleOpenPlannerWithPrefill()}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold bg-[#2D5A3D] text-white hover:bg-[#244931] transition-colors flex items-center justify-center gap-2 text-sm shadow-md shadow-[#2D5A3D]/20"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {t('Create New Trip')}
-                </button>
-                <button
-                  onClick={() => handleNavigateTab('trips')}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-sm"
-                >
-                  {t('View My Trips')}
-                </button>
+            <div key="trip-detail-empty" className="max-w-xl mx-auto px-4 py-16 animate-fade-in">
+              <div className="glass-frosted liquid-rim liquid-topo-wash rounded-[32px] p-8 sm:p-10 text-center space-y-5">
+                <div className="w-16 h-16 glass-elevated liquid-rim rounded-3xl flex items-center justify-center mx-auto text-[#2D5A3D] dark:text-emerald-300">
+                  <Compass className="w-8 h-8" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-display font-black text-[#152A1C] dark:text-white tracking-tight">{t('No Trip Selected')}</h2>
+                  <p className="text-xs sm:text-sm text-[#57685D] dark:text-slate-300 leading-relaxed max-w-md mx-auto">
+                    {t('No itinerary is currently active. Create your first journey with our AI Trip Planner or select an existing trip from your trips library.')}
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+                  <button
+                    onClick={() => handleOpenPlannerWithPrefill()}
+                    className="w-full sm:w-auto px-6 py-3 rounded-full font-bold btn-liquid-primary text-white flex items-center justify-center gap-2 text-sm cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {t('Create New Trip')}
+                  </button>
+                  <button
+                    onClick={() => handleNavigateTab('explore')}
+                    className="w-full sm:w-auto px-5 py-3 rounded-full font-bold glass-clear liquid-rim liquid-press text-[#152A1C] dark:text-slate-200 text-sm cursor-pointer"
+                  >
+                    {t('Destinations')}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -3232,13 +3345,13 @@ export function App() {
             <div key="trips" className="animate-fade-in space-y-5">
               {activeTrip && (
                 <div className="flex items-center justify-center pt-2">
-                  <div className="inline-flex p-1 rounded-full bg-white border border-[#E2EBE1] shadow-xs">
+                  <div className="inline-flex p-1 rounded-full glass-clear liquid-rim">
                     <button
                       onClick={() => handleSelectTripsViewMode('passes')}
                       className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                         tripsViewMode === 'passes'
-                          ? 'bg-[#2D5A3D] text-white shadow-xs'
-                          : 'text-[#5A7362] hover:text-[#152A1C] hover:bg-[#F8FAF7]'
+                          ? 'bg-[#2D5A3D] dark:bg-emerald-600 text-white shadow-xs'
+                          : 'text-[#5A7362] dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white'
                       }`}
                     >
                       {t('Digital Pass & Hub')}
@@ -3247,8 +3360,8 @@ export function App() {
                       onClick={() => handleSelectTripsViewMode('portfolio')}
                       className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                         tripsViewMode === 'portfolio'
-                          ? 'bg-[#2D5A3D] text-white shadow-xs'
-                          : 'text-[#5A7362] hover:text-[#152A1C] hover:bg-[#F8FAF7]'
+                          ? 'bg-[#2D5A3D] dark:bg-emerald-600 text-white shadow-xs'
+                          : 'text-[#5A7362] dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white'
                       }`}
                     >
                       {t('All Saved Trips')} ({trips.length})
@@ -3277,7 +3390,7 @@ export function App() {
                   onSelectTrip={(id) => {
                     handleSelectTrip(id);
                   }}
-                  onOpenPlanner={() => handleOpenPlannerWithPrefill()}
+                  onOpenPlanner={(prefill) => handleOpenPlannerWithPrefill(prefill)}
                   onDeleteTrip={handleDeleteTrip}
                   onShareTrip={(t) => {
                     setActiveTripIdState(t.id);
@@ -3321,6 +3434,7 @@ export function App() {
                 onSelectDestination={(dest) => {
                   setSelectedDestinationForDetails(dest);
                 }}
+                onExplore={() => handleNavigateTab('explore')}
               />
             </div>
           )}
@@ -3352,11 +3466,16 @@ export function App() {
           {currentTab === 'shared-trip' && (
             <div key="shared-trip" className="animate-fade-in">
               {isLoadingSharedTrip ? (
-                <div className="max-w-3xl mx-auto px-4 py-20 text-center space-y-3">
-                  <div className="w-10 h-10 mx-auto rounded-full border-2 border-[#2D5A3D] border-t-transparent animate-spin" />
-                  <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-                    Loading shared TripVerse itinerary...
-                  </p>
+                <div className="max-w-xl mx-auto px-4 py-20">
+                  <div className="glass-frosted liquid-rim rounded-[32px] p-10 text-center space-y-4">
+                    <div className="w-12 h-12 mx-auto rounded-full border-2 border-[#2D5A3D] dark:border-emerald-400 border-t-transparent animate-spin" />
+                    <p className="text-sm font-bold font-display text-[#152A1C] dark:text-slate-100">
+                      Loading shared TripVerse itinerary…
+                    </p>
+                    <p className="text-xs text-[#57685D] dark:text-slate-400">
+                      Fetching route stops, day schedule, and live clone options
+                    </p>
+                  </div>
                 </div>
               ) : sharedTripDoc ? (
                 <SharedTripPublicView
@@ -3370,6 +3489,7 @@ export function App() {
                     setActiveTripId(cloned.id, currentUser?.uid);
                     setSharedTripId(null);
                     setSharedTripDoc(null);
+                    setSharedTripError(null);
                     setCurrentTab('trip-detail');
                     setAppNotice({
                       message: `Cloned "${cloned.name}" (${cloned.origin} → ${cloned.destination}) into your TripVerse portfolio!`,
@@ -3380,10 +3500,52 @@ export function App() {
                   onGoHome={() => {
                     setSharedTripId(null);
                     setSharedTripDoc(null);
+                    setSharedTripError(null);
                     handleNavigateTab('home');
                   }}
                 />
-              ) : null}
+              ) : (
+                <div className="max-w-xl mx-auto px-4 py-16">
+                  <div className="glass-frosted liquid-rim liquid-topo-wash rounded-[32px] p-8 sm:p-10 text-center space-y-5">
+                    <div className="w-16 h-16 glass-elevated liquid-rim rounded-3xl flex items-center justify-center mx-auto text-[#2D5A3D] dark:text-emerald-300">
+                      <Compass className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-2">
+                      <span className="inline-block text-[11px] font-bold uppercase tracking-[0.15em] text-[#2D5A3D] dark:text-emerald-400">
+                        Shared Itinerary Unavailable
+                      </span>
+                      <h2 className="text-2xl font-display font-black text-[#152A1C] dark:text-white tracking-tight">
+                        We couldn’t open this shared trip
+                      </h2>
+                      <p className="text-xs sm:text-sm text-[#57685D] dark:text-slate-300 leading-relaxed max-w-md mx-auto">
+                        {sharedTripError || 'This shared itinerary link may have expired, been removed by its owner, or experienced a temporary connection issue.'}
+                      </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+                      {sharedTripId && (
+                        <button
+                          type="button"
+                          onClick={() => setSharedTripRetryKey((k) => k + 1)}
+                          className="w-full sm:w-auto px-5 py-2.5 rounded-full glass-clear liquid-rim liquid-press font-bold text-xs sm:text-sm text-[#2D5A3D] dark:text-emerald-300 cursor-pointer"
+                        >
+                          Retry Link
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSharedTripId(null);
+                          setSharedTripError(null);
+                          handleNavigateTab('explore');
+                        }}
+                        className="w-full sm:w-auto px-6 py-2.5 rounded-full btn-liquid-primary text-white font-bold text-xs sm:text-sm cursor-pointer"
+                      >
+                        Explore Curated Destinations
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

@@ -398,24 +398,24 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
   const canRenderInteractiveMap = hasLiveRoute || hasLocalPins;
 
   return (
-    <div id="smart-route-map" className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-4 scroll-mt-24">
+    <div id="smart-route-map" className="glass-frosted liquid-rim rounded-[30px] p-5 sm:p-7 space-y-4 scroll-mt-24">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D] dark:text-emerald-400">
             {isFlightTrip
               ? t('Flight & Destination Map')
               : isTrainTrip
                 ? t('Rail & Destination Map')
                 : t('Driving route')}
           </span>
-          <h2 className="text-xl font-bold text-[#0B2545] mt-0.5">
+          <h2 className="text-xl font-display font-bold text-[#152A1C] dark:text-white mt-0.5">
             {isFlightTrip
               ? t('Interactive sightseeing & flight map')
               : isTrainTrip
                 ? t('Interactive sightseeing & rail corridor map')
                 : t('Route and nearby places')}
           </h2>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[#5A7362] dark:text-slate-400 mt-1">
             {hasLiveRoute
               ? `Geoapify Routing · ${trip.routeDetails?.distanceKm} km · ${t('about')} ${trip.routeDetails?.durationHours} h`
               : isFlightTrip
@@ -429,14 +429,14 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
         </div>
         <div className="flex items-center flex-wrap gap-2">
           {isNonRoadTrip && !hasLiveRoute && (
-            <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+            <div className="inline-flex rounded-full glass-clear liquid-rim p-1">
               <button
                 type="button"
                 onClick={() => setFlightViewMode('local')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`min-h-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   flightViewMode === 'local'
-                    ? 'bg-white text-[#2D5A3D] shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#2D5A3D] dark:bg-emerald-600 text-white shadow-xs'
+                    : 'text-[#5A7362] dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white'
                 }`}
               >
                 <MapPin className="w-3.5 h-3.5" />
@@ -445,10 +445,10 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
               <button
                 type="button"
                 onClick={() => setFlightViewMode('corridor')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`min-h-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   flightViewMode === 'corridor'
-                    ? 'bg-white text-[#2D5A3D] shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#2D5A3D] dark:bg-emerald-600 text-white shadow-xs'
+                    : 'text-[#5A7362] dark:text-slate-300 hover:text-[#152A1C] dark:hover:text-white'
                 }`}
               >
                 {isTrainTrip ? <TrainFront className="w-3.5 h-3.5" /> : <Plane className="w-3.5 h-3.5" />}
@@ -459,7 +459,7 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
           {onOpenLiveNav && (
             <button
               onClick={onOpenLiveNav}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-trip-gradient text-white font-bold text-xs shadow-sm cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full btn-liquid-primary text-white font-bold text-xs cursor-pointer"
             >
               <Navigation className="w-3.5 h-3.5" />
               <span>{t('Get directions')}</span>
@@ -469,12 +469,12 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
       </div>
 
       {!canRenderInteractiveMap && (
-        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">
+        <p className="text-xs text-amber-900 dark:text-amber-200 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-3">
           {t('No live route is available to display. You can still enter the origin and destination in a navigation app to get directions.')}
         </p>
       )}
 
-      <div className="flex items-center justify-between text-xs text-slate-600">
+      <div className="flex items-center justify-between text-xs text-[#5A7362] dark:text-slate-300">
         <span>
           {hasLiveRoute
             ? t('Geoapify road geometry')
@@ -497,22 +497,22 @@ export const SmartRouteMap: React.FC<SmartRouteMapProps> = ({ trip, onOpenLiveNa
               map.setView([20, 0], 2);
             }
           }}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 cursor-pointer"
+          className="min-h-0 flex items-center gap-1 px-3 py-1.5 rounded-full glass-clear liquid-rim liquid-press text-xs font-bold text-[#152A1C] dark:text-slate-200 cursor-pointer"
         >
-          <Maximize2 className="w-3.5 h-3.5" />
+          <Maximize2 className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400" />
           {t('Recenter')}
         </button>
       </div>
 
-      <div className="relative w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-200">
+      <div className="relative w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-[#E2EBE1] dark:border-white/10">
         <div ref={mapContainerRef} className="w-full h-full" />
         {!canRenderInteractiveMap && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/75 p-6 text-center text-sm font-semibold text-slate-600">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-slate-950/80 p-6 text-center text-sm font-semibold text-[#57685D] dark:text-slate-300">
             {t('A live driving route is needed to draw an accurate map.')}
           </div>
         )}
       </div>
-      <p className="text-[11px] text-slate-500">
+      <p className="text-[11px] text-[#5A7362] dark:text-slate-400">
         {t('Route geometry and nearby place listings are provided through Geoapify using OpenStreetMap data. Listings do not confirm opening hours, facilities, safety, or availability. Map tiles © OpenStreetMap contributors.')}
       </p>
     </div>

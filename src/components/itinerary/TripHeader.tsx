@@ -157,11 +157,18 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
   const difference = Math.abs(trip.totalBudget - effectiveEstimatedTotal);
   const budgetUsagePercent = Math.min(100, Math.round((effectiveEstimatedTotal / Math.max(1, trip.totalBudget)) * 100));
 
-  // Calculate total distance in km from itinerary activities or default estimate
+  // Calculate total distance in km from live route geometry first, then itinerary activities or default estimate
   const calculatedDistance = trip.itinerary?.reduce((acc, day) => {
     return acc + (day.activities?.reduce((sum, act) => sum + (act.distanceKm || 0), 0) || 0);
   }, 0) || 0;
-  const totalDistanceKm = calculatedDistance > 0 ? Math.round(calculatedDistance) : Math.round(trip.durationDays * 35 + 24);
+  const totalDistanceKm = trip.routeDetails?.distanceKm && trip.routeDetails.distanceKm > 0
+    ? Math.round(trip.routeDetails.distanceKm)
+    : calculatedDistance > 0
+      ? Math.round(calculatedDistance)
+      : Math.round(trip.durationDays * 35 + 24);
+
+  const activeUser = getCurrentUser();
+  const leadInitial = (activeUser?.displayName || activeUser?.email || 'T').trim().charAt(0).toUpperCase();
 
   // Carbon savings calculation based on optimized routing and transit
   const co2SavedKg = Math.max(8, Math.round(totalDistanceKm * 0.12 + (trip.breakStops?.length || 1) * 2));
@@ -221,34 +228,43 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
               )}
             </div>
 
-            <p className="text-xs sm:text-sm text-[#5A7362] font-medium">
+            <p className="text-xs sm:text-sm text-[#5A7362] dark:text-slate-300 font-medium">
               {formatDateRange()}
             </p>
 
-            {/* Accurate Travelers Avatar Stack */}
+            {/* Authentic Traveler Monogram & Companion Stack */}
             <div className="flex items-center gap-2 pt-1">
               <div className="flex -space-x-2 overflow-hidden items-center">
-                {[
-                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-                  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
-                  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80'
-                ]
-                  .slice(0, Math.min(3, Math.max(1, trip.travelersCount)))
-                  .map((src, idx) => (
-                    <img
-                      key={src}
-                      className="inline-block h-7 w-7 rounded-full ring-2 ring-white object-cover"
-                      src={src}
-                      alt={`Traveler ${idx + 1}`}
-                    />
-                  ))}
+                {activeUser?.photoURL ? (
+                  <img
+                    className="inline-block h-7 w-7 rounded-full ring-2 ring-white dark:ring-slate-900 object-cover"
+                    src={activeUser.photoURL}
+                    alt={activeUser.displayName || 'Lead Traveler'}
+                  />
+                ) : (
+                  <span
+                    className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-gradient-to-br from-[#386B49] to-[#1E3E2B] text-white font-display font-bold text-xs ring-2 ring-white dark:ring-slate-900"
+                    title={activeUser?.displayName || 'Lead Traveler'}
+                  >
+                    {leadInitial}
+                  </span>
+                )}
+                {Array.from({ length: Math.min(2, Math.max(0, trip.travelersCount - 1)) }).map((_, idx) => (
+                  <span
+                    key={`companion-${idx}`}
+                    className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-[#EAF0E9] dark:bg-emerald-950/80 text-[#2D5A3D] dark:text-emerald-300 font-bold text-[10px] ring-2 ring-white dark:ring-slate-900 border border-[#DCE7DB] dark:border-emerald-800/60"
+                    title={`Companion ${idx + 2}`}
+                  >
+                    <Users className="w-3 h-3" />
+                  </span>
+                ))}
                 {trip.travelersCount > 3 && (
-                  <span className="flex items-center justify-center h-7 w-7 rounded-full bg-[#E8EFE7] text-[#2D5A3D] font-bold text-[10px] ring-2 ring-white">
+                  <span className="flex items-center justify-center h-7 w-7 rounded-full bg-[#E8EFE7] dark:bg-slate-800 text-[#2D5A3D] dark:text-emerald-300 font-bold text-[10px] ring-2 ring-white dark:ring-slate-900">
                     +{trip.travelersCount - 3}
                   </span>
                 )}
               </div>
-              <span className="text-xs text-[#5A7362] font-medium capitalize">
+              <span className="text-xs text-[#5A7362] dark:text-slate-300 font-medium capitalize">
                 {trip.travelersCount} {trip.travelersCount === 1 ? 'traveler' : 'travelers'} • {trip.travelerType}
               </span>
             </div>
@@ -256,8 +272,8 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
             {/* Pacing & Verified Stay Badges */}
             <div className="flex items-center gap-2 pt-1 flex-wrap">
               {trip.pacing && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#2D5A3D] bg-[#E8EFE7] px-2.5 py-0.5 rounded-full border border-[#8EA78D]/30">
-                  <Clock className="w-3 h-3 text-[#2D5A3D]" />
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#2D5A3D] dark:text-emerald-300 bg-[#E8EFE7] dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-[#8EA78D]/30 dark:border-emerald-800/60">
+                  <Clock className="w-3 h-3 text-[#2D5A3D] dark:text-emerald-400" />
                   {trip.pacing.replace('_', ' ')} Pace
                 </span>
               )}
@@ -265,10 +281,10 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
                 <button
                   type="button"
                   onClick={onOpenBooking}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200 cursor-pointer transition-colors"
+                  className="min-h-0 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60 cursor-pointer transition-colors"
                   title="Click to view stay & booking options"
                 >
-                  <Bed className="w-3 h-3 text-emerald-700" />
+                  <Bed className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
                   <span>Stay: {trip.selectedHotel.name} ({trip.selectedHotel.starRating}★)</span>
                 </button>
               )}
@@ -277,7 +293,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
 
           {/* Right Destination Thumbnail Photo */}
           <div className="shrink-0">
-            <div className="w-20 h-20 sm:w-28 sm:h-24 rounded-2xl overflow-hidden shadow-sm border border-[#E2EBE1] bg-[#E8EFE7]">
+            <div className="w-20 h-20 sm:w-28 sm:h-24 rounded-2xl overflow-hidden shadow-sm border border-[#E2EBE1] dark:border-white/15 bg-[#E8EFE7] dark:bg-slate-800">
               <img
                 src={destinationImg}
                 alt={trip.destination}
@@ -298,19 +314,19 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           
           <div className="space-y-1 min-w-0">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-[#E8EFE7] text-[#2D5A3D] flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-4 h-4 text-[#2D5A3D]" />
+              <div className="w-5 h-5 rounded-full bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400" />
               </div>
-              <h2 className="font-display font-bold text-sm sm:text-base text-[#152A1C] truncate">
+              <h2 className="font-display font-bold text-sm sm:text-base text-[#152A1C] dark:text-slate-100 truncate">
                 AI Route Optimized
               </h2>
             </div>
-            <p className="text-[11px] sm:text-xs text-[#5A7362] leading-tight">
+            <p className="text-[11px] sm:text-xs text-[#5A7362] dark:text-slate-400 leading-tight">
               Best time to visit • Less travel time • Scenic • Budget friendly
             </p>
           </div>
 
-          {/* Interactive Route Vector with Pins */}
+          {/* Interactive Route Vector with Animated Trace */}
           <button
             type="button"
             onClick={() => {
@@ -320,12 +336,11 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
                 onOpenLiveNav();
               }
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl bg-[#F8FAF7] hover:bg-[#E8EFE7] border border-[#E2EBE1] hover:border-[#8EA78D]/60 active:scale-95 transition-all text-[#2D5A3D] cursor-pointer shrink-0 group shadow-2xs"
+            className="min-h-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-900/60 hover:bg-[#E8EFE7] dark:hover:bg-emerald-950/50 border border-[#E2EBE1] dark:border-white/10 hover:border-[#8EA78D]/60 active:scale-95 transition-all text-[#2D5A3D] dark:text-emerald-300 cursor-pointer shrink-0 group shadow-2xs"
             title="View Route Map and Directions"
             aria-label="View Route Map and Directions"
           >
             <div className="relative w-16 h-8 sm:w-20 sm:h-9 flex items-center justify-center">
-              {/* Dotted bezier curve */}
               <svg className="w-full h-full overflow-visible" viewBox="0 0 80 36" fill="none">
                 <path
                   d="M 6 26 C 24 6, 56 32, 74 12"
@@ -333,6 +348,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
                   strokeWidth="2.5"
                   strokeDasharray="4 4"
                   strokeLinecap="round"
+                  className="liquid-route-trace"
                 />
                 <circle cx="6" cy="26" r="4.5" fill="#2D5A3D" />
                 <circle cx="6" cy="26" r="2" fill="white" />
@@ -340,7 +356,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
                 <circle cx="74" cy="12" r="2" fill="white" />
               </svg>
             </div>
-            <ChevronRight className="w-4 h-4 text-[#8EA78D] group-hover:text-[#2D5A3D] group-hover:translate-x-0.5 transition-all" />
+            <ChevronRight className="w-4 h-4 text-[#8EA78D] group-hover:text-[#2D5A3D] dark:group-hover:text-emerald-300 group-hover:translate-x-0.5 transition-all" />
           </button>
 
         </div>
@@ -349,39 +365,39 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
         <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1">
           
           {/* Distance */}
-          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE1]">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#E8EFE7] text-[#2D5A3D] flex items-center justify-center shrink-0">
-              <Navigation className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#2D5A3D]" />
+          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-2xl bg-[#F8FAF7] dark:bg-slate-900/55 border border-[#E2EBE1] dark:border-white/10">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0">
+              <Navigation className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] text-[#5A7362] block leading-tight font-medium">{t('Distance')}</span>
-              <span className="text-xs sm:text-sm font-bold text-[#152A1C] truncate block">
+              <span className="text-[10px] text-[#5A7362] dark:text-slate-400 block leading-tight font-medium">{t('Distance')}</span>
+              <span className="text-xs sm:text-sm font-bold text-[#152A1C] dark:text-slate-100 truncate block tabular-nums">
                 {totalDistanceKm} km
               </span>
             </div>
           </div>
 
           {/* Est. Cost */}
-          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE1]">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#E8EFE7] text-[#2D5A3D] flex items-center justify-center shrink-0">
-              <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#2D5A3D]" />
+          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-2xl bg-[#F8FAF7] dark:bg-slate-900/55 border border-[#E2EBE1] dark:border-white/10">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0">
+              <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] text-[#5A7362] block leading-tight font-medium">{t('Est. Cost')}</span>
-              <span className="text-xs sm:text-sm font-bold text-[#152A1C] truncate block">
+              <span className="text-[10px] text-[#5A7362] dark:text-slate-400 block leading-tight font-medium">{t('Est. Cost')}</span>
+              <span className="text-xs sm:text-sm font-bold text-[#152A1C] dark:text-slate-100 truncate block tabular-nums">
                 {formatCurrency(effectiveEstimatedTotal, currency)}
               </span>
             </div>
           </div>
 
           {/* CO2 Saved */}
-          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE1]">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#E8EFE7] text-[#2D5A3D] flex items-center justify-center shrink-0">
-              <Leaf className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#2D5A3D]" />
+          <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-2xl bg-[#F8FAF7] dark:bg-slate-900/55 border border-[#E2EBE1] dark:border-white/10">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0">
+              <Leaf className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] text-[#5A7362] block leading-tight font-medium">{t('CO₂ Saved')}</span>
-              <span className="text-xs sm:text-sm font-bold text-[#152A1C] truncate block">
+              <span className="text-[10px] text-[#5A7362] dark:text-slate-400 block leading-tight font-medium">{t('CO₂ Saved')}</span>
+              <span className="text-xs sm:text-sm font-bold text-[#152A1C] dark:text-slate-100 truncate block tabular-nums">
                 {co2SavedKg} kg
               </span>
             </div>
@@ -409,10 +425,10 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           {onOpenReplanning && (
             <button
               onClick={onOpenReplanning}
-              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium text-xs sm:text-sm border border-rose-200 transition-all cursor-pointer"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/45 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 font-medium text-xs sm:text-sm border border-rose-200 dark:border-rose-800/60 transition-all cursor-pointer"
               title="Handle flight/train cancellations, emergency stays & complete trip replanning"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
+              <RotateCcw className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
               <span>{t('itinerary.smartReplan')}</span>
             </button>
           )}
@@ -420,29 +436,29 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           {onOpenSafety && (
             <button
               onClick={onOpenSafety}
-              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold text-xs sm:text-sm border border-amber-200 transition-all cursor-pointer shadow-2xs"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/45 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-semibold text-xs sm:text-sm border border-amber-200 dark:border-amber-800/60 transition-all cursor-pointer shadow-2xs"
               title="View local scams, tourist traps, and emergency hotlines"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>Scam & Safety Radar</span>
             </button>
           )}
 
           <button
             onClick={onOpenChat}
-            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D] font-medium text-xs sm:text-sm border border-[#8EA78D]/30 transition-all cursor-pointer"
+            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#E8EFE7] dark:bg-emerald-950/55 hover:bg-[#dce7db] dark:hover:bg-emerald-900/60 text-[#2D5A3D] dark:text-emerald-300 font-medium text-xs sm:text-sm border border-[#8EA78D]/30 dark:border-emerald-800/60 transition-all cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#2D5A3D]" />
+            <Sparkles className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400" />
             <span>AI Assistant</span>
           </button>
 
           {onOpenMemories && (
             <button
               onClick={onOpenMemories}
-              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs sm:text-sm border border-[#E2EBE1] transition-all cursor-pointer"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900/60 hover:bg-[#F4F6F2] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium text-xs sm:text-sm border border-[#E2EBE1] dark:border-white/10 transition-all cursor-pointer"
               title="Trip Photo Scrapbook & Memories"
             >
-              <Camera className="w-3.5 h-3.5 text-slate-500" />
+              <Camera className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>Memories</span>
               {trip.photos && trip.photos.length > 0 && (
                 <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-[#2D5A3D] text-white">
@@ -455,7 +471,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           {onOpenReview && (
             <button
               onClick={onOpenReview}
-              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50/70 hover:bg-amber-100 text-amber-800 font-medium text-xs sm:text-sm border border-amber-200 transition-all cursor-pointer"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50/70 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/55 text-amber-800 dark:text-amber-200 font-medium text-xs sm:text-sm border border-amber-200 dark:border-amber-800/60 transition-all cursor-pointer"
               title={trip.review ? `Rated ${trip.review.rating} Stars` : "Rate & Review Trip"}
             >
               <Star className={`w-3.5 h-3.5 ${trip.review ? 'text-amber-500 fill-amber-500' : 'text-amber-500'}`} />
@@ -469,31 +485,31 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
           {onOpenCollaboration && (
             <button
               onClick={onOpenCollaboration}
-              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#E8EFE7] hover:bg-[#dce7db] text-[#2D5A3D] font-bold text-xs border border-[#8EA78D]/30 transition-all cursor-pointer"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#E8EFE7] dark:bg-emerald-950/55 hover:bg-[#dce7db] dark:hover:bg-emerald-900/60 text-[#2D5A3D] dark:text-emerald-300 font-bold text-xs border border-[#8EA78D]/30 dark:border-emerald-800/60 transition-all cursor-pointer"
               title="Plan together in real-time with friends"
             >
-              <Users className="w-3.5 h-3.5 text-[#2D5A3D]" />
+              <Users className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400" />
               <span>Collaborate</span>
-              <span className="w-2 h-2 rounded-full bg-[#2D5A3D] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[#2D5A3D] dark:bg-emerald-400 animate-pulse" />
             </button>
           )}
 
           <button
             onClick={onOpenShare}
-            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs border border-[#E2EBE1] transition-colors cursor-pointer"
+            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900/60 hover:bg-[#F4F6F2] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium text-xs border border-[#E2EBE1] dark:border-white/10 transition-colors cursor-pointer"
             title="Share Trip"
           >
-            <Share2 className="w-3.5 h-3.5 text-slate-500" />
+            <Share2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <span>Share</span>
           </button>
 
           {onOpenPrintDossier && (
             <button
               onClick={onOpenPrintDossier}
-              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs border border-[#E2EBE1] transition-colors cursor-pointer"
+              className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900/60 hover:bg-[#F4F6F2] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium text-xs border border-[#E2EBE1] dark:border-white/10 transition-colors cursor-pointer"
               title="Print or Save as PDF Dossier"
             >
-              <Download className="w-3.5 h-3.5 text-slate-500" />
+              <Download className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>PDF Guide</span>
             </button>
           )}
@@ -502,20 +518,20 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
             type="button"
             onClick={handleEmailItinerary}
             disabled={isEmailSending}
-            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs border border-[#E2EBE1] transition-colors cursor-pointer disabled:opacity-60"
+            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900/60 hover:bg-[#F4F6F2] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium text-xs border border-[#E2EBE1] dark:border-white/10 transition-colors cursor-pointer disabled:opacity-60"
             title="Email formatted HTML itinerary summary to your inbox"
           >
-            <Mail className="w-3.5 h-3.5 text-emerald-600" />
+            <Mail className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>{isEmailSending ? 'Sending...' : 'Email Summary'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => downloadTripCalendarIcs(trip)}
-            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#F4F6F2] text-slate-700 font-medium text-xs border border-[#E2EBE1] transition-colors cursor-pointer"
+            className="spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900/60 hover:bg-[#F4F6F2] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium text-xs border border-[#E2EBE1] dark:border-white/10 transition-colors cursor-pointer"
             title="Export itinerary to Apple, Google, or Outlook Calendar (.ics)"
           >
-            <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+            <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>Calendar (.ics)</span>
           </button>
 
@@ -525,19 +541,19 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
             disabled={offlineProgress !== null}
             className={`spring-tap flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium text-xs border transition-colors cursor-pointer ${
               isOfflineReady
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                : 'bg-white hover:bg-[#F4F6F2] text-slate-700 border-[#E2EBE1]'
+                ? 'bg-emerald-50 dark:bg-emerald-950/55 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+                : 'bg-white dark:bg-slate-900/60 hover:bg-[#F4F6F2] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-[#E2EBE1] dark:border-white/10'
             }`}
             title="Download corridor map tiles, turn-by-turn GPS route, passes & SOS contacts for Airplane Mode"
           >
             {offlineProgress !== null ? (
               <>
-                <WifiOff className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                <WifiOff className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
                 <span>Caching {offlineProgress}%...</span>
               </>
             ) : isOfflineReady ? (
               <>
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>
                   Offline Pack Ready
                   {offlineMeta && offlineMeta.cachedTiles > 0 ? ` (${offlineMeta.cachedTiles} tiles)` : ''}
@@ -545,54 +561,54 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
               </>
             ) : (
               <>
-                <WifiOff className="w-3.5 h-3.5 text-slate-500" />
+                <WifiOff className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                 <span>Airplane Pack</span>
               </>
             )}
           </button>
         </div>
         {emailStatusMsg && (
-          <div className="mt-2.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <div className="mt-2.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/55 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>{emailStatusMsg}</span>
           </div>
         )}
       </div>
 
       {/* Budget Card */}
-      <div className={`p-4 sm:p-5 rounded-3xl border transition-all ${
+      <div className={`p-4 sm:p-5 rounded-3xl transition-all ${
         isOverBudget 
-          ? 'bg-red-50/70 border-red-200 text-red-900' 
-          : 'bg-[#F8FAF7] border-[#E2EBE1] text-[#152A1C]'
+          ? 'bg-red-50/85 dark:bg-rose-950/35 border border-red-200 dark:border-rose-800/50 text-red-900 dark:text-rose-200' 
+          : 'glass-frosted liquid-rim text-[#152A1C] dark:text-slate-100'
       }`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
           
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-              isOverBudget ? 'bg-red-100 text-red-600' : 'bg-[#E8EFE7] text-[#2D5A3D]'
+              isOverBudget ? 'bg-red-100 dark:bg-rose-900/50 text-red-600 dark:text-rose-300' : 'bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300'
             }`}>
               <Wallet className="w-5 h-5" />
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#5A7362]">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#5A7362] dark:text-slate-300">
                   On-Ground Budget: {formatCurrency(trip.totalBudget, currency)}
                 </span>
-                <span className="text-xs font-bold text-slate-300 hidden sm:inline">|</span>
-                <span className="text-xs font-bold text-[#5A7362]">
-                  Estimated: <strong className="text-[#152A1C]">{formatCurrency(effectiveEstimatedTotal, currency)}</strong>
+                <span className="text-xs font-bold text-slate-300 dark:text-slate-600 hidden sm:inline">|</span>
+                <span className="text-xs font-bold text-[#5A7362] dark:text-slate-300">
+                  Estimated: <strong className="text-[#152A1C] dark:text-white">{formatCurrency(effectiveEstimatedTotal, currency)}</strong>
                 </span>
               </div>
 
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 {isOverBudget ? (
-                  <span className="flex items-center gap-1 text-sm font-extrabold text-red-600">
+                  <span className="flex items-center gap-1 text-sm font-extrabold text-red-600 dark:text-rose-300">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span>Your current plan is {formatCurrency(difference, currency)} over budget.</span>
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-sm font-bold text-[#2D5A3D]">
+                  <span className="flex items-center gap-1 text-sm font-bold text-[#2D5A3D] dark:text-emerald-400">
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
                     <span>Remaining Safety Buffer: {formatCurrency(difference, currency)}</span>
                   </span>
@@ -606,7 +622,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
               <button
                 type="button"
                 onClick={onOpenBooking}
-                className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-[#152A1C] hover:bg-[#234730] text-white font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-[#152A1C] hover:bg-[#234730] dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:border dark:border-emerald-700/60 text-white font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer"
                 title="Review verified stay, live flights/trains, and ticket booking options"
               >
                 <Ticket className="w-4 h-4 text-emerald-400" />
@@ -616,7 +632,7 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
 
             <button
               onClick={onOptimizeBudget}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all active:scale-95 shrink-0 ${
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all active:scale-95 shrink-0 cursor-pointer ${
                 isOverBudget 
                   ? 'bg-red-600 hover:bg-red-700 text-white' 
                   : 'bg-[#2D5A3D] hover:bg-[#234730] text-white'
@@ -642,21 +658,21 @@ export const TripHeader: React.FC<TripHeaderProps> = ({
         </div>
 
         {/* Breakdown chips */}
-        <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#E2EBE1] text-xs text-[#5A7362] flex-wrap">
-          <span>Transport: <strong className="text-[#152A1C]">{formatCurrency(trip.budgetBreakdown.transportation, currency)}</strong></span>
-          <span>Stay: <strong className="text-[#152A1C]">{formatCurrency(trip.budgetBreakdown.accommodation, currency)}</strong></span>
-          <span>Food: <strong className="text-[#152A1C]">{formatCurrency(trip.budgetBreakdown.food, currency)}</strong></span>
-          <span>Activities: <strong className="text-[#152A1C]">{formatCurrency(trip.budgetBreakdown.activities, currency)}</strong></span>
-          <span>Buffer: <strong className="text-[#152A1C]">{formatCurrency(trip.budgetBreakdown.miscellaneous, currency)}</strong></span>
+        <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#E2EBE1] dark:border-white/10 text-xs text-[#5A7362] dark:text-slate-300 flex-wrap tabular-nums">
+          <span>Transport: <strong className="text-[#152A1C] dark:text-white">{formatCurrency(trip.budgetBreakdown.transportation, currency)}</strong></span>
+          <span>Stay: <strong className="text-[#152A1C] dark:text-white">{formatCurrency(trip.budgetBreakdown.accommodation, currency)}</strong></span>
+          <span>Food: <strong className="text-[#152A1C] dark:text-white">{formatCurrency(trip.budgetBreakdown.food, currency)}</strong></span>
+          <span>Activities: <strong className="text-[#152A1C] dark:text-white">{formatCurrency(trip.budgetBreakdown.activities, currency)}</strong></span>
+          <span>Buffer: <strong className="text-[#152A1C] dark:text-white">{formatCurrency(trip.budgetBreakdown.miscellaneous, currency)}</strong></span>
         </div>
       </div>
 
       {/* AI Rationale Quote */}
       {trip.aiRationale && (
-        <div className="flex items-start gap-3 p-4 rounded-2xl bg-white border border-[#E2EBE1] text-xs text-[#5A7362]">
-          <MessageSquareQuote className="w-4 h-4 text-[#2D5A3D] shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 rounded-2xl glass-frosted liquid-rim text-xs text-[#5A7362] dark:text-slate-300">
+          <MessageSquareQuote className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400 shrink-0 mt-0.5" />
           <p className="leading-relaxed flex-1">
-            <strong className="text-[#152A1C]">TripVerse AI Rationale:</strong> {trip.aiRationale}
+            <strong className="text-[#152A1C] dark:text-white">TripVerse AI Rationale:</strong> {trip.aiRationale}
           </p>
         </div>
       )}

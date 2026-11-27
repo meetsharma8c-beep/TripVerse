@@ -203,8 +203,16 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
     setShowDestDropdown(false);
   };
 
+  const formatLocalIsoDate = (dateObj: Date): string => {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   const handleUseCurrentLocation = () => {
     if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+      setValidationError(null);
       setIsDetectingOrigin(true);
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
@@ -230,9 +238,12 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         () => {
           setIsDetectingOrigin(false);
           setOrigin(detectDefaultOriginHub());
+          setValidationError('Location permission was denied or unavailable. You can type your starting city directly above.');
         },
         { timeout: 8000 }
       );
+    } else {
+      setValidationError('Geolocation is not supported in this browser. Please enter your starting city manually.');
     }
   };
 
@@ -241,7 +252,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
-    return d.toISOString().split('T')[0];
+    return formatLocalIsoDate(d);
   });
   const [pacing, setPacing] = useState<'relaxed' | 'balanced' | 'fast_paced'>('balanced');
 
@@ -252,7 +263,9 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
   // Step 4: Budget
   const [budgetMode, setBudgetMode] = useState<'per_person' | 'total'>(initialBudgetMode);
   const [budgetAmount, setBudgetAmount] = useState<number>(initialBudget);
-  const hasManualBudgetRef = React.useRef<boolean>(initialBudget !== 8000);
+  const hasManualBudgetRef = React.useRef<boolean>(
+    Boolean(initialBudget && initialBudget !== 8000 && initialBudget !== 15000)
+  );
 
   // Synchronize dynamic prefilled parameters from search bar or explore modals
   useEffect(() => {
@@ -401,7 +414,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
         return 'Trip duration must be between 1 and 30 days.';
       }
       if (startDate) {
-        const todayIso = new Date().toISOString().split('T')[0];
+        const todayIso = formatLocalIsoDate(new Date());
         if (startDate < todayIso) {
           return 'Start date is in the past. Please choose today or a future departure date.';
         }
@@ -1069,7 +1082,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                   <input
                     type="date"
                     value={startDate}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={formatLocalIsoDate(new Date())}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="flex-1 px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-sm text-slate-800 focus:bg-white focus:outline-none focus:border-[#2D5A3D] focus:ring-4 focus:ring-[#2D5A3D]/15"
                   />
@@ -1081,7 +1094,7 @@ export const PlannerWizard: React.FC<PlannerWizardProps> = ({
                     ].map(preset => {
                       const d = new Date();
                       d.setDate(d.getDate() + preset.daysOffset);
-                      const iso = d.toISOString().split('T')[0];
+                      const iso = formatLocalIsoDate(d);
                       const isSel = startDate === iso;
                       return (
                         <button

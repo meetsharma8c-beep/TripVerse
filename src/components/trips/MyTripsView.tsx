@@ -10,7 +10,7 @@ interface MyTripsViewProps {
   trips: Trip[];
   activeTripId: string;
   onSelectTrip: (tripId: string) => void;
-  onOpenPlanner: () => void;
+  onOpenPlanner: (prefill?: { destination?: string; duration?: number }) => void;
   onDeleteTrip: (tripId: string) => void;
   onShareTrip: (trip: Trip) => void;
   onOpenMemories?: (trip: Trip) => void;
@@ -128,7 +128,7 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
               </div>
             </div>
 
-            <LiquidButton variant="accent" size="lg" onClick={onOpenPlanner}>
+            <LiquidButton variant="accent" size="lg" onClick={() => onOpenPlanner()}>
               <Sparkles className="w-4 h-4 text-emerald-200" />
               <span>{t('trips.planNew')}</span>
             </LiquidButton>
@@ -199,21 +199,25 @@ export const MyTripsView: React.FC<MyTripsViewProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-              {['Himalayan Alpine Loop', 'Amalfi Coastal Drive', 'Kyoto Heritage Trail'].map((idea) => (
+              {[
+                { label: 'Himalayan Alpine Loop', destination: 'Manali', duration: 6 },
+                { label: 'Amalfi Coastal Drive', destination: 'Amalfi Coast', duration: 5 },
+                { label: 'Kyoto Heritage Trail', destination: 'Kyoto', duration: 5 },
+              ].map((idea) => (
                 <button
-                  key={idea}
+                  key={idea.label}
                   type="button"
-                  onClick={onOpenPlanner}
+                  onClick={() => onOpenPlanner({ destination: idea.destination, duration: idea.duration })}
                   className="min-h-0 glass-clear liquid-rim liquid-press px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#152A1C] dark:text-slate-200 hover:text-[#2D5A3D] dark:hover:text-emerald-300 cursor-pointer inline-flex items-center gap-1.5"
                 >
                   <Route className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400" />
-                  <span>{idea}</span>
+                  <span>{idea.label}</span>
                 </button>
               ))}
             </div>
 
             <div className="pt-2">
-              <LiquidButton variant="accent" size="lg" onClick={onOpenPlanner}>
+              <LiquidButton variant="accent" size="lg" onClick={() => onOpenPlanner()}>
                 <Sparkles className="w-4 h-4 text-emerald-200" />
                 <span>{t('trips.planNew')}</span>
               </LiquidButton>

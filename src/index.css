@@ -1627,6 +1627,19 @@ div[style*="z-index: 2000000000"] {
   animation: tvLiquidProgressFlow 3.5s linear infinite;
 }
 
+@keyframes tvRouteDashTrace {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.liquid-route-trace {
+  animation: tvRouteDashTrace 2.8s linear infinite;
+}
+
 /* Respect OS Reduced Motion accessibility settings across all liquid/orbital/spring effects */
 @media (prefers-reduced-motion: reduce) {
   .animate-tv-float,
@@ -1635,6 +1648,7 @@ div[style*="z-index: 2000000000"] {
   .animate-tv-shimmer,
   .animate-tv-radar,
   .liquid-progress-bar,
+  .liquid-route-trace,
   .tv-hero-ambient-loop {
     animation: none !important;
   }
