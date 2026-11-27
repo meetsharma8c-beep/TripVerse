@@ -286,9 +286,37 @@ export async function fetchFounderUserRoster(): Promise<{
 
   let registeredByCanon = new Map<string, AdminUserRecord>();
   let guestList: AdminUserRecord[] = [];
+  let loadedViaServerGate = false;
   const supabase = getSupabaseClient();
 
-  if (supabase) {
+  // 0. Prefer server-verified VIP Founder endpoint (works even when `anon` RPC execute is revoked)
+  const procEnv = (globalThis as any).process?.env;
+  if (!(procEnv && (procEnv.VITEST || procEnv.NODE_ENV === 'test'))) {
+    try {
+      const founderToken = await resolveFounderBearerToken();
+      if (founderToken) {
+        const srvRes = await fetch(resolveApiUrl('/api/auth-activity'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${founderToken}`
+          },
+          body: JSON.stringify({ event: 'founder_roster' })
+        });
+        if (srvRes.ok) {
+          const srvJson = await srvRes.json();
+          if (srvJson?.success && Array.isArray(srvJson.rpcUsers) && srvJson.rpcUsers.length > 0) {
+            const parsed = parseRpcRosterRows(srvJson.rpcUsers);
+            registeredByCanon = parsed.registeredByCanon;
+            guestList = parsed.guestList;
+            loadedViaServerGate = true;
+          }
+        }
+      }
+    } catch {}
+  }
+
+  if (supabase && !loadedViaServerGate) {
     // 1. Fetch unified Supabase RPC (`auth.users` + synced Google/Firebase accounts + cloud Pro overrides)
     try {
       const { data: rpcUsers, error: rpcErr } = await supabase.rpc('get_all_registered_users');

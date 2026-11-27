@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tripverse-cache-v103';
+const CACHE_NAME = 'tripverse-cache-v104';
 const TILE_CACHE_NAME = 'tripverse-map-tiles-v3';
 const MAX_CACHED_TILES = 150;
 const PRECACHE_ASSETS = [

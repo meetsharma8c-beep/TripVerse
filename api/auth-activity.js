@@ -16,6 +16,7 @@ const FOUNDER_EMAILS = new Set([
 ]);
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
 const FIREBASE_API_KEY = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
 const VAULT_HMAC_SECRET = (process.env.VAULT_HMAC_SECRET || process.env.CONCODE_API_KEY || '').trim();
 
@@ -380,6 +381,43 @@ export default async function handler(req, res) {
       });
     }
 
+    // ── Server-Gated VIP Founder Roster Query (Uses SUPABASE_SERVICE_ROLE_KEY when anon RPC is revoked) ──
+    if (event === 'founder_roster') {
+      const dbKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+      if (!SUPABASE_URL || !dbKey) {
+        return res.status(503).json({ success: false, message: 'Supabase cloud backend unavailable' });
+      }
+      const sbAuthCheck = SUPABASE_ANON_KEY
+        ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
+        : null;
+      const authHeader = req.headers.authorization || req.body?.founderToken || '';
+      const verified = await verifyFounderIdentityToken(authHeader, sbAuthCheck);
+      if (!verified) {
+        return res.status(403).json({
+          success: false,
+          error: 'FORBIDDEN',
+          message: 'Verified VIP Founder identity token required.'
+        });
+      }
+
+      const sbAdmin = createClient(SUPABASE_URL, dbKey, {
+        auth: { persistSession: false, autoRefreshToken: false }
+      });
+
+      const [rpcRes, profilesRes, feedbackRes] = await Promise.all([
+        sbAdmin.rpc('get_all_registered_users'),
+        sbAdmin.from('profiles').select('*'),
+        sbAdmin.from('user_feedback').select('*')
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        rpcUsers: Array.isArray(rpcRes.data) ? rpcRes.data : [],
+        profiles: Array.isArray(profilesRes.data) ? profilesRes.data : [],
+        feedbackRows: Array.isArray(feedbackRes.data) ? feedbackRes.data : []
+      });
+    }
+
     // ── Special Founder Action: Cloud Pro Grant / Revoke ──
     if (event === 'admin_pro_override') {
       const cleanTarget = String(targetEmail || '').toLowerCase().trim();
@@ -464,8 +502,11 @@ export default async function handler(req, res) {
         const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
           auth: { persistSession: false, autoRefreshToken: false }
         });
+        const sbReader = SUPABASE_SERVICE_ROLE_KEY
+          ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
+          : sb;
 
-        const { data: existingUsers } = await sb.rpc('get_all_registered_users');
+        const { data: existingUsers } = await sbReader.rpc('get_all_registered_users');
         const targetCanon = canonicalEmail(cleanEmail);
         const existingRow = Array.isArray(existingUsers)
           ? existingUsers.find(r => {
