@@ -564,6 +564,7 @@ export function useLanguage() {
  * Global DOM Auto-Localization Observer.
  */
 const originalNodeTextMap = new WeakMap<Node, string>();
+const appliedNodeTextMap = new WeakMap<Node, string>();
 let domLocalizationObserver: MutationObserver | null = null;
 let domLocalizationTimer: any = null;
 let isLocalizingDom = false;
@@ -584,20 +585,25 @@ export function localizeDom(targetLang?: LanguageCode) {
       inputs.forEach(el => {
         const inputEl = el as HTMLInputElement | HTMLTextAreaElement;
         if (inputEl.closest('[data-no-translate], [translate="no"], .notranslate')) return;
-        if (!(inputEl as any).__origPlaceholder) {
-          const raw = inputEl.placeholder;
-          (inputEl as any).__origPlaceholder = translateText(raw, 'en') || raw;
+        const currentPlaceholder = inputEl.placeholder;
+        if (
+          !(inputEl as any).__origPlaceholder ||
+          ((inputEl as any).__appliedPlaceholder !== undefined && currentPlaceholder !== (inputEl as any).__appliedPlaceholder)
+        ) {
+          (inputEl as any).__origPlaceholder = translateText(currentPlaceholder, 'en') || currentPlaceholder;
         }
         const orig = (inputEl as any).__origPlaceholder;
         if (lang === 'en') {
           if (orig && inputEl.placeholder !== orig) {
             inputEl.placeholder = orig;
           }
+          (inputEl as any).__appliedPlaceholder = inputEl.placeholder;
         } else {
           const tr = translateText(orig, lang);
           if (tr && tr !== orig && inputEl.placeholder !== tr) {
             inputEl.placeholder = tr;
           }
+          (inputEl as any).__appliedPlaceholder = inputEl.placeholder;
         }
       });
     } catch {}
@@ -608,20 +614,25 @@ export function localizeDom(targetLang?: LanguageCode) {
       titledEls.forEach(el => {
         const htmlEl = el as HTMLElement;
         if (htmlEl.closest('[data-no-translate], [translate="no"], .notranslate')) return;
-        if (!(htmlEl as any).__origTitle) {
-          const raw = htmlEl.title;
-          (htmlEl as any).__origTitle = translateText(raw, 'en') || raw;
+        const currentTitle = htmlEl.title;
+        if (
+          !(htmlEl as any).__origTitle ||
+          ((htmlEl as any).__appliedTitle !== undefined && currentTitle !== (htmlEl as any).__appliedTitle)
+        ) {
+          (htmlEl as any).__origTitle = translateText(currentTitle, 'en') || currentTitle;
         }
         const orig = (htmlEl as any).__origTitle;
         if (lang === 'en') {
           if (orig && htmlEl.title !== orig) {
             htmlEl.title = orig;
           }
+          (htmlEl as any).__appliedTitle = htmlEl.title;
         } else {
           const tr = translateText(orig, lang);
           if (tr && tr !== orig && htmlEl.title !== tr) {
             htmlEl.title = tr;
           }
+          (htmlEl as any).__appliedTitle = htmlEl.title;
         }
       });
     } catch {}
@@ -632,25 +643,30 @@ export function localizeDom(targetLang?: LanguageCode) {
       ariaEls.forEach(el => {
         const htmlEl = el as HTMLElement;
         if (htmlEl.closest('[data-no-translate], [translate="no"], .notranslate')) return;
-        if (!(htmlEl as any).__origAriaLabel) {
-          const raw = htmlEl.getAttribute('aria-label') || '';
-          (htmlEl as any).__origAriaLabel = translateText(raw, 'en') || raw;
+        const currentAria = htmlEl.getAttribute('aria-label') || '';
+        if (
+          !(htmlEl as any).__origAriaLabel ||
+          ((htmlEl as any).__appliedAriaLabel !== undefined && currentAria !== (htmlEl as any).__appliedAriaLabel)
+        ) {
+          (htmlEl as any).__origAriaLabel = translateText(currentAria, 'en') || currentAria;
         }
         const orig = (htmlEl as any).__origAriaLabel;
         if (lang === 'en') {
           if (orig && htmlEl.getAttribute('aria-label') !== orig) {
             htmlEl.setAttribute('aria-label', orig);
           }
+          (htmlEl as any).__appliedAriaLabel = htmlEl.getAttribute('aria-label') || '';
         } else {
           const tr = translateText(orig, lang);
           if (tr && tr !== orig && htmlEl.getAttribute('aria-label') !== tr) {
             htmlEl.setAttribute('aria-label', tr);
           }
+          (htmlEl as any).__appliedAriaLabel = htmlEl.getAttribute('aria-label') || '';
         }
       });
     } catch {}
 
-    // 4. Localize or restore visible DOM Text Nodes
+    // 4. Localize or restore visible DOM Text Nodes (preserving fresh React state updates)
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
         const parent = node.parentElement;
@@ -676,22 +692,29 @@ export function localizeDom(targetLang?: LanguageCode) {
 
     let currentNode = walker.nextNode();
     while (currentNode) {
+      const currentVal = currentNode.nodeValue || '';
+      const lastApplied = appliedNodeTextMap.get(currentNode);
       let orig = originalNodeTextMap.get(currentNode);
-      if (!orig) {
-        const raw = currentNode.nodeValue || '';
-        orig = translateText(raw, 'en') || raw;
+
+      // If this node is new OR React mutated its text since our last localization pass,
+      // refresh the canonical source text instead of clobbering React's update!
+      if (!orig || (lastApplied !== undefined && currentVal !== lastApplied)) {
+        orig = translateText(currentVal, 'en') || currentVal;
         originalNodeTextMap.set(currentNode, orig);
       }
 
       if (lang === 'en') {
-        if (currentNode.nodeValue !== orig) {
-          currentNode.nodeValue = enforceBrandInvariance(orig);
+        const enforced = enforceBrandInvariance(orig);
+        if (currentNode.nodeValue !== enforced) {
+          currentNode.nodeValue = enforced;
         }
+        appliedNodeTextMap.set(currentNode, currentNode.nodeValue || '');
       } else {
         const translated = enforceBrandInvariance(translateText(orig, lang));
         if (translated && translated !== orig && currentNode.nodeValue !== translated) {
           currentNode.nodeValue = translated;
         }
+        appliedNodeTextMap.set(currentNode, currentNode.nodeValue || '');
       }
       currentNode = walker.nextNode();
     }
