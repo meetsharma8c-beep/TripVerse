@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trip, ItineraryActivity, LocalFoodGem, HiddenGem } from '../../types/trip';
 import { fetchGenuineDestinationGems, DestinationGems } from '../../services/localGemsService';
 import { triggerHaptic } from '../../services/deviceService';
+import { handleImageError } from '../../utils/destinationImages';
 import { getStoredCurrency, formatCurrency, Currency } from '../../services/currencyService';
 import confetti from 'canvas-confetti';
 import { Utensils, Sparkles, MapPin, Star, Plus, Check, Compass, Clock, Leaf, ExternalLink, ShieldCheck, RefreshCw } from 'lucide-react';
@@ -28,6 +29,19 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
   );
   const [targetDay, setTargetDay] = useState<number>(1);
   const [addedIds, setAddedIds] = useState<string[]>([]);
+  const maxDayNumber = Math.max(1, trip.itinerary?.length || 1);
+  const effectiveTargetDay = Math.min(targetDay, maxDayNumber);
+
+  useEffect(() => {
+    setAddedIds([]);
+    setTargetDay(1);
+  }, [trip.id]);
+
+  useEffect(() => {
+    if (targetDay > maxDayNumber) {
+      setTargetDay(maxDayNumber);
+    }
+  }, [targetDay, maxDayNumber]);
 
   useEffect(() => {
     setVegOnly(trip.foodPreference === 'veg' || trip.foodPreference === 'vegan');
@@ -39,12 +53,18 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
     fetchGenuineDestinationGems(trip.destination, {
       coordinates: trip.destinationDetails?.coordinates,
       foodPreference: trip.foodPreference || trip.preferences?.join(', ')
-    }).then(data => {
-      if (isMounted) {
-        setGemsData(data);
-        setIsLoadingGems(false);
-      }
-    });
+    })
+      .then(data => {
+        if (isMounted) {
+          setGemsData(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingGems(false);
+        }
+      });
 
     return () => {
       isMounted = false;
@@ -84,7 +104,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
       trip.itinerary?.[0]?.activities?.[0]?.coordinates ||
       { lat: 24.5854, lng: 73.7125 };
 
-    onAddActivity(targetDay, {
+    onAddActivity(effectiveTargetDay, {
       title,
       type,
       location: gem.location,
@@ -118,7 +138,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
     <div className="space-y-6">
       
       {/* Hero Header */}
-      <div className="bg-gradient-to-r from-[#0B2545] via-[#102E54] to-[#1E3A8A] rounded-3xl p-6 sm:p-8 text-white shadow-md border border-slate-700/50">
+      <div className="bg-gradient-to-br from-[#102317] via-[#1E422B] to-[#152A1C] rounded-[30px] p-6 sm:p-8 text-white shadow-[0_20px_50px_-14px_rgba(21,42,28,0.4)] border border-white/15 liquid-rim">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -136,7 +156,7 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
                 type="button"
                 onClick={handleRefreshGems}
                 disabled={isLoadingGems}
-                className="text-[10px] font-bold text-slate-200 hover:text-white bg-white/15 hover:bg-white/25 px-2.5 py-0.5 rounded-full border border-white/25 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                className="min-h-0 text-[10px] font-bold text-emerald-100 hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-0.5 rounded-full border border-white/20 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
                 title="Re-scan destination for new authentic hidden spots"
               >
                 <RefreshCw className={`w-2.5 h-2.5 ${isLoadingGems ? 'animate-spin' : ''}`} />
@@ -146,22 +166,22 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
             <h2 className="text-xl sm:text-2xl font-bold font-display mt-2">
               Culinary Trails & Hidden Spots • {gemsData.destination}
             </h2>
-            <p className="text-xs text-slate-300 mt-1 max-w-2xl">
+            <p className="text-xs text-[#DCEAD9] mt-1 max-w-2xl">
               Authentic heritage food stalls, legendary neighborhood dhabas, and secret viewpoints tailored specifically to {gemsData.destination}.
             </p>
           </div>
 
           {/* Target Day Selector for 1-Click Addition */}
           <div className="bg-white/10 p-3 rounded-2xl border border-white/15 backdrop-blur-xs flex items-center gap-2.5 self-start sm:self-auto">
-            <span className="text-xs font-semibold text-slate-300">Add stops to:</span>
+            <span className="text-xs font-semibold text-emerald-100">Add stops to:</span>
             <select
-              value={targetDay}
-              onChange={e => setTargetDay(parseInt(e.target.value))}
-              className="bg-[#0B2545] text-white border border-emerald-400/50 rounded-xl px-2.5 py-1.5 text-xs font-bold focus:outline-none"
+              value={effectiveTargetDay}
+              onChange={e => setTargetDay(parseInt(e.target.value, 10) || 1)}
+              className="bg-[#102317] text-white border border-emerald-400/50 rounded-xl px-2.5 py-1.5 text-xs font-bold focus:outline-none"
             >
               {trip.itinerary.map(day => (
                 <option key={day.dayNumber} value={day.dayNumber}>
-                  Day {day.dayNumber} ({day.theme.slice(0, 18)}...)
+                  Day {day.dayNumber} ({(day.theme || '').slice(0, 18)}...)
                 </option>
               ))}
             </select>
@@ -240,14 +260,15 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
             return (
               <div
                 key={food.id}
-                className="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
+                className="glass-frosted liquid-rim rounded-[28px] overflow-hidden transition-shadow flex flex-col justify-between group"
               >
                 <div>
                   {/* Photo Banner */}
-                  <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
+                  <div className="relative h-44 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <img
                       src={food.image}
                       alt={food.name}
+                      onError={handleImageError}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
@@ -334,11 +355,11 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
                 </div>
 
                 {/* Footer Action */}
-                <div className="p-5 pt-0 border-t border-slate-100 mt-2 flex items-center justify-between gap-2">
+                <div className="p-5 pt-0 border-t border-[#E2EBE1] dark:border-white/10 mt-2 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <span className="text-[10px] uppercase font-medium text-slate-400 block tracking-wider">Avg Cost</span>
-                    <span className="text-sm font-semibold text-[#0B2545] truncate block">
-                      ~{formatCurrency(food.pricePerPerson, currency)} <span className="text-[10px] font-normal text-slate-500">/ person</span>
+                    <span className="text-sm font-semibold text-[#152A1C] dark:text-white truncate block">
+                      ~{formatCurrency(food.pricePerPerson, currency)} <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">/ person</span>
                     </span>
                   </div>
 
@@ -347,19 +368,19 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
                     disabled={isAdded}
                     className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                       isAdded
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 cursor-default'
                         : 'bg-[#2D5A3D] hover:bg-[#244931] text-white shadow-xs active:scale-95'
                     }`}
                   >
                     {isAdded ? (
                       <>
                         <Check className="w-3.5 h-3.5" />
-                        <span>Added to Day {targetDay}</span>
+                        <span>Added to Day {effectiveTargetDay}</span>
                       </>
                     ) : (
                       <>
                         <Plus className="w-3.5 h-3.5" />
-                        <span>Add to Day {targetDay}</span>
+                        <span>Add to Day {effectiveTargetDay}</span>
                       </>
                     )}
                   </button>
@@ -379,14 +400,15 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
             return (
               <div
                 key={gem.id}
-                className="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
+                className="glass-frosted liquid-rim rounded-[28px] overflow-hidden transition-shadow flex flex-col justify-between group"
               >
                 <div>
-                  <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
+                  <div className="relative h-44 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <img
                       src={gem.image}
                       alt={gem.title}
-                      className="w-full h-full object-cover"
+                      onError={handleImageError}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
                     
@@ -449,27 +471,27 @@ export function LocalGemsView({ trip, onAddActivity }: LocalGemsViewProps) {
                   </div>
                 </div>
 
-                <div className="p-5 pt-0 border-t border-slate-100 mt-2 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500">Free Natural Landmark</span>
+                <div className="p-5 pt-0 border-t border-[#E2EBE1] dark:border-white/10 mt-2 flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#5A7362] dark:text-slate-400">Free Natural Landmark</span>
 
                   <button
                     onClick={() => handleAddGemToItinerary(gem, false)}
                     disabled={isAdded}
                     className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                       isAdded
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 cursor-default'
                         : 'bg-[#2D5A3D] hover:bg-[#244931] text-white shadow-xs active:scale-95'
                     }`}
                   >
                     {isAdded ? (
                       <>
                         <Check className="w-3.5 h-3.5" />
-                        <span>Added to Day {targetDay}</span>
+                        <span>Added to Day {effectiveTargetDay}</span>
                       </>
                     ) : (
                       <>
                         <Plus className="w-3.5 h-3.5" />
-                        <span>Add to Day {targetDay}</span>
+                        <span>Add to Day {effectiveTargetDay}</span>
                       </>
                     )}
                   </button>

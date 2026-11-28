@@ -139,6 +139,7 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
           setLiveWeatherByOptionId((prev) => ({ ...prev, ...results }));
         }
       })
+      .catch(() => {})
       .finally(() => {
         if (isMounted) setIsLoadingWeather(false);
       });
@@ -225,7 +226,13 @@ export const TripReplanningModal: React.FC<TripReplanningModalProps> = ({
     return <Car className="w-4 h-4 text-[#2D5A3D]" />;
   };
 
-  const minDateIso = new Date().toISOString().split('T')[0];
+  const minDateIso = (() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  })();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200">

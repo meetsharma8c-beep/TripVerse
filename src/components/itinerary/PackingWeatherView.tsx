@@ -63,7 +63,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
           }
         }
       }
-    });
+    }).catch(() => {});
     return () => {
       isMounted = false;
     };
@@ -75,6 +75,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
   const [newCustomItemName, setNewCustomItemName] = useState('');
   const [newCustomItemCat, setNewCustomItemCat] = useState<PackingCategory>('essentials');
   const [isAddingItem, setIsAddingItem] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
   const [selectedAirline, setSelectedAirline] = useState<string>('INDIGO');
 
@@ -155,12 +156,11 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
   };
 
   const handleResetList = () => {
-    if (window.confirm('Reset packing list to default recommendations?')) {
-      const fresh = generateSmartPackingList(trip);
-      setPackingItems(fresh);
-      saveTripPacking(trip.id, fresh);
-      triggerHaptic('medium');
-    }
+    const fresh = generateSmartPackingList(trip);
+    setPackingItems(fresh);
+    saveTripPacking(trip.id, fresh);
+    setConfirmReset(false);
+    triggerHaptic('medium');
   };
 
   // 1-Tap Seasonal Presets
@@ -279,16 +279,21 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
 
   const selectedDay: WeatherDay = weather.forecastDays[selectedDayIndex] || weather.forecastDays[0] || {
     dayNumber: 1,
-    dateLabel: 'Day 1',
+    date: 'Day 1',
+    tempC: 24,
     condition: 'Sunny',
+    icon: 'sun',
     maxTempC: 26,
     minTempC: 18,
     humidityPercent: 50,
     windKmh: 12,
     rainProbPercent: 10,
-    uvIndex: 5,
-    advisory: 'Pleasant weather conditions expected.'
+    uvi: 5,
+    aqi: 42,
+    clothingTip: 'Pleasant weather conditions expected.'
   };
+  const resolvedUvi = Number.isFinite(selectedDay.uvi) ? selectedDay.uvi : 5;
+  const uviLabel = resolvedUvi >= 8 ? 'Very High' : resolvedUvi >= 6 ? 'High' : resolvedUvi >= 3 ? 'Moderate' : 'Low';
 
   // Dynamic tourist wardrobe & sightseeing recommendation
   const getTravelerAdvice = (day: WeatherDay) => {
@@ -458,7 +463,7 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
             <Sun className="w-4 h-4 text-amber-300 shrink-0" />
             <div>
               <span className="text-[10px] text-slate-300 uppercase tracking-wider font-medium block">UV Intensity</span>
-              <span className="font-semibold text-white text-sm tracking-tight">{selectedDay.uvi} (Moderate)</span>
+              <span className="font-semibold text-white text-sm tracking-tight">{resolvedUvi} ({uviLabel})</span>
             </div>
           </div>
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5">
@@ -491,25 +496,25 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
       </div>
 
       {/* 2. THE TRAVELER'S LUGGAGE & GEAR HUB */}
-      <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-6">
+      <div className="glass-frosted liquid-rim rounded-[30px] p-5 sm:p-7 space-y-6">
         
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2EBE1] dark:border-white/10 pb-5">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-medium tracking-wider uppercase text-[#2D5A3D] bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200/80 inline-flex items-center gap-1.5">
-                <Luggage className="w-3.5 h-3.5 text-[#2D5A3D]" />
+              <span className="text-[11px] font-medium tracking-wider uppercase text-[#2D5A3D] dark:text-emerald-300 bg-[#EAF0E9] dark:bg-emerald-950/60 px-3 py-0.5 rounded-full border border-[#DCE7DB] dark:border-emerald-800/60 inline-flex items-center gap-1.5">
+                <Luggage className="w-3.5 h-3.5" />
                 <span>Luggage & Gear Hub</span>
               </span>
-              <span className="text-xs text-slate-300 font-bold">•</span>
-              <span className="text-xs font-serif italic text-slate-500">
+              <span className="text-xs text-slate-300 dark:text-slate-600 font-bold">•</span>
+              <span className="text-xs font-serif italic text-[#5A7362] dark:text-slate-400">
                 Personalized for {trip.destination} ({trip.durationDays} Days)
               </span>
             </div>
-            <h3 className="text-xl sm:text-2xl font-display font-semibold text-[#0B2545] mt-1.5">
+            <h3 className="text-xl sm:text-2xl font-display font-bold text-[#152A1C] dark:text-white mt-1.5">
               The Traveler’s Packing Checklist
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5 font-normal">
+            <p className="text-xs text-[#5A7362] dark:text-slate-400 mt-0.5 font-normal">
               Travel light, stay prepared. Track checked items, monitor luggage weight, and tap seasonal kits below.
             </p>
           </div>
@@ -517,28 +522,49 @@ export function PackingWeatherView({ trip }: PackingWeatherViewProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={handleShareList}
-              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-[#EAF0E9] dark:bg-slate-800 hover:bg-[#dce7db] dark:hover:bg-slate-700 text-[#152A1C] dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Share checklist on WhatsApp"
             >
-              {copiedShare ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-slate-500" />}
+              {copiedShare ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-[#2D5A3D] dark:text-emerald-400" />}
               <span>{copiedShare ? 'Copied to Clipboard!' : 'Share / WhatsApp'}</span>
             </button>
 
             <button
               onClick={() => setIsAddingItem(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-xs hover:shadow-sm cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-[#2D5A3D] hover:bg-[#244931] text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>+ Add Gear</span>
             </button>
 
-            <button
-              onClick={handleResetList}
-              className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-500 transition-colors"
-              title="Reset to default suggestions"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
+            {confirmReset ? (
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-900 border border-rose-300 dark:border-rose-700/60">
+                <button
+                  type="button"
+                  onClick={handleResetList}
+                  className="min-h-0 px-2.5 py-1 rounded-lg bg-rose-600 text-white text-xs font-bold cursor-pointer"
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmReset(false)}
+                  className="min-h-0 px-2 py-1 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmReset(true)}
+                className="p-2 rounded-xl border border-[#DCE7DB] dark:border-white/10 hover:bg-[#F4F6F2] dark:hover:bg-slate-800 text-[#5A7362] dark:text-slate-300 transition-colors cursor-pointer"
+                title="Reset to default suggestions"
+                aria-label="Reset packing list"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 

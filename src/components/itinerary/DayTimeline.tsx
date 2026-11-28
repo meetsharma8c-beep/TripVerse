@@ -63,11 +63,13 @@ const DayThumbnailImage: React.FC<{
     
     // Fetch original photo live once per day/destination when no custom day image is set
     if (!day.image) {
-      fetchOriginalPhoto(targetQuery, destination).then(photo => {
-        if (isMounted && photo && photo !== DEFAULT_TRAVEL_FALLBACK_IMAGE) {
-          setImgSrc(photo);
-        }
-      });
+      fetchOriginalPhoto(targetQuery, destination)
+        .then(photo => {
+          if (isMounted && photo && photo !== DEFAULT_TRAVEL_FALLBACK_IMAGE) {
+            setImgSrc(photo);
+          }
+        })
+        .catch(() => {});
     }
     return () => { isMounted = false; };
   }, [day.image, day.title, day.theme, primaryActivity?.title, destination]);
@@ -108,6 +110,8 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
 }) => {
   const { t } = useLanguage();
   const [selectedDay, setSelectedDay] = useState<number>(1);
+  const effectiveSelectedDay = Math.min(selectedDay, Math.max(1, itinerary?.length || 1));
+  const [confirmDayAction, setConfirmDayAction] = useState<{ dayNumber: number; action: 'clear' | 'delete' } | null>(null);
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({ 1: true });
   const [currency, setCurrency] = useState<CurrencyCode>(getActiveCurrency());
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -333,9 +337,9 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
     <div className="space-y-6 font-sans pb-28 md:pb-8">
       
       {/* Itinerary Control Bar: Advisory, Live GPS & Flexibility Switch */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-[#E8EFE7]/70 border border-[#8EA78D]/30">
-        <div className="flex items-center gap-2 text-xs text-[#2D5A3D]">
-          <Compass className="w-4 h-4 text-[#2D5A3D] shrink-0" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-2xl glass-frosted liquid-rim">
+        <div className="flex items-center gap-2 text-xs text-[#2D5A3D] dark:text-emerald-300">
+          <Compass className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400 shrink-0" />
           <span className="font-semibold">
             {userCoords
               ? t('Live GPS Active: Real-time distance and ETA calculated from your current location')
@@ -354,7 +358,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               userCoords
                 ? 'bg-emerald-700 text-white shadow-xs hover:bg-emerald-800'
-                : 'bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50'
+                : 'bg-white dark:bg-slate-900/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/50'
             }`}
             title={userCoords ? t('Click to turn off live GPS mode') : t('Detect your GPS location to calculate real-time distance to every activity')}
           >
@@ -377,7 +381,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               isFlexiblePacing
                 ? 'bg-[#2D5A3D] text-white shadow-xs'
-                : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300'
+                : 'bg-white dark:bg-slate-900/70 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 hover:border-slate-300'
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -414,35 +418,35 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
               <button
                 type="button"
                 onClick={() => toggleDayExpanded(day.dayNumber)}
-                className="w-10 sm:w-11 h-10 sm:h-11 rounded-full bg-[#2D5A3D] text-white font-display font-bold flex flex-col items-center justify-center shrink-0 shadow-[0_2px_10px_rgba(45,90,61,0.2)] transition-transform group-hover:scale-105 cursor-pointer ring-4 ring-[#F4F6F2]"
+                className="w-10 sm:w-11 h-10 sm:h-11 rounded-full bg-[#2D5A3D] text-white font-display font-bold flex flex-col items-center justify-center shrink-0 shadow-[0_2px_10px_rgba(45,90,61,0.2)] transition-transform group-hover:scale-105 cursor-pointer ring-4 ring-[#F4F6F2] dark:ring-[#070C16]"
               >
                 <span className="text-[9px] uppercase tracking-wider text-[#A8C7A5] font-semibold leading-none">{t('itinerary.day')}</span>
                 <span className="text-sm font-black leading-none mt-0.5">{day.dayNumber}</span>
               </button>
 
               {/* Day Card */}
-              <div className="flex-1 rounded-3xl bg-white border border-[#E2EBE1] shadow-[0_4px_24px_rgba(45,90,61,0.05)] overflow-hidden transition-all duration-200 hover:border-[#8EA78D]">
+              <div className="flex-1 rounded-3xl glass-frosted liquid-rim overflow-hidden transition-all duration-200 hover:border-[#8EA78D] dark:hover:border-emerald-700/60">
                 
                 {/* Header Row */}
                 <div 
                   onClick={() => toggleDayExpanded(day.dayNumber)}
-                  className="p-4 sm:p-5 flex items-start justify-between gap-3 cursor-pointer select-none bg-white hover:bg-[#F8FAF7]/80 transition-colors"
+                  className="p-4 sm:p-5 flex items-start justify-between gap-3 cursor-pointer select-none hover:bg-[#F8FAF7]/60 dark:hover:bg-slate-800/40 transition-colors"
                 >
                   <div className="flex-1 min-w-0 space-y-2">
                     
                     {/* Title & Chevron */}
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-lg bg-[#E8EFE7] text-[#2D5A3D] flex items-center justify-center shrink-0">
-                        <Sparkles className="w-3 h-3 text-[#2D5A3D]" />
+                      <div className="w-5 h-5 rounded-lg bg-[#E8EFE7] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-3 h-3" />
                       </div>
-                      <h3 className="font-display font-bold text-base sm:text-lg text-[#152A1C] tracking-tight truncate">
+                      <h3 className="font-display font-bold text-base sm:text-lg text-[#152A1C] dark:text-white tracking-tight truncate">
                         {t(day.title)}
                       </h3>
                       <ChevronDown className={`w-4 h-4 text-[#8EA78D] transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
 
                     {/* Summary Bullet Points matching Reference Screen 2 */}
-                    <div className="space-y-1 text-xs text-[#5A7362] font-normal pl-1">
+                    <div className="space-y-1 text-xs text-[#5A7362] dark:text-slate-300 font-normal pl-1">
                       {topActivities.length > 0 ? (
                         topActivities.slice(0, 3).map((act) => (
                           <div key={act.id} className="flex items-center gap-1.5 truncate">
@@ -459,8 +463,8 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                     </div>
 
                     {/* Cost & Theme footer */}
-                    <div className="flex items-center gap-3 pt-1 text-[11px] text-[#5A7362] flex-wrap">
-                      <span className="font-semibold text-[#2D5A3D] bg-[#E8EFE7] px-2 py-0.5 rounded-full">
+                    <div className="flex items-center gap-3 pt-1 text-[11px] text-[#5A7362] dark:text-slate-300 flex-wrap">
+                      <span className="font-semibold text-[#2D5A3D] dark:text-emerald-300 bg-[#E8EFE7] dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
                         {t('Est.')} {formatCurrency(Number(day.dayEstimatedCost || 0), currency)}
                       </span>
                       {day.theme && (
@@ -473,40 +477,60 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                   {/* Right Controls & Thumbnail Image */}
                   <div className="shrink-0 flex items-center gap-2">
                     {isExpanded && (
-                      <div className="flex flex-col gap-1 items-end">
-                        {onClearDay && activeDay.activities.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              triggerHaptic('warning');
-                              if (window.confirm(`Clear all activities in Day ${day.dayNumber} to start with a blank day?`)) {
-                                onClearDay(day.dayNumber);
-                              }
-                            }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer text-[10px] font-bold flex items-center gap-1"
-                            title={`Clear Day ${day.dayNumber} activities`}
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Clear</span>
-                          </button>
-                        )}
-                        {onDeleteDay && itinerary.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              triggerHaptic('warning');
-                              if (window.confirm(`Remove Day ${day.dayNumber} from this itinerary?`)) {
-                                onDeleteDay(day.dayNumber);
-                              }
-                            }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-[10px] font-bold flex items-center gap-1"
-                            title={`Remove Day ${day.dayNumber}`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Delete Day</span>
-                          </button>
+                      <div className="flex flex-col gap-1 items-end" onClick={(e) => e.stopPropagation()}>
+                        {confirmDayAction?.dayNumber === day.dayNumber ? (
+                          <div className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white/95 dark:bg-slate-900 border border-rose-300 dark:border-rose-700/60 shadow-xs">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const actType = confirmDayAction.action;
+                                setConfirmDayAction(null);
+                                if (actType === 'clear') onClearDay?.(day.dayNumber);
+                                if (actType === 'delete') onDeleteDay?.(day.dayNumber);
+                              }}
+                              className="min-h-0 px-2 py-0.5 rounded-lg bg-rose-600 text-white text-[10px] font-bold cursor-pointer"
+                            >
+                              {confirmDayAction.action === 'clear' ? 'Clear' : 'Delete'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDayAction(null)}
+                              className="min-h-0 px-1.5 py-0.5 rounded-lg text-[10px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            {onClearDay && activeDay.activities.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  triggerHaptic('warning');
+                                  setConfirmDayAction({ dayNumber: day.dayNumber, action: 'clear' });
+                                }}
+                                className="min-h-0 p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors cursor-pointer text-[10px] font-bold flex items-center gap-1"
+                                title={`Clear Day ${day.dayNumber} activities`}
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Clear</span>
+                              </button>
+                            )}
+                            {onDeleteDay && itinerary.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  triggerHaptic('warning');
+                                  setConfirmDayAction({ dayNumber: day.dayNumber, action: 'delete' });
+                                }}
+                                className="min-h-0 p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer text-[10px] font-bold flex items-center gap-1"
+                                title={`Remove Day ${day.dayNumber}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Delete Day</span>
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     )}
@@ -517,7 +541,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
 
                 {/* Expanded Detailed Interactive Activities */}
                 {isExpanded && (
-                  <div className="border-t border-[#E2EBE1] bg-[#F8FAF7]/50 p-4 sm:p-5 space-y-4 animate-fade-in">
+                  <div className="border-t border-[#E2EBE1] dark:border-white/10 bg-[#F8FAF7]/50 dark:bg-slate-950/35 p-4 sm:p-5 space-y-4 animate-fade-in">
                     
                     {/* Live Weather-Triggered Rain / Extreme Heat Smart Reschedule Banner */}
                     {(() => {
@@ -1266,7 +1290,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                 type="button"
                 onClick={() => {
                   triggerHaptic('light');
-                  onAddActivity(selectedDay);
+                  onAddActivity(effectiveSelectedDay);
                 }}
                 className="flex-1 py-3.5 px-5 rounded-2xl border-2 border-dashed border-[#8EA78D]/50 hover:border-[#2D5A3D] bg-[#F8FAF7] hover:bg-[#E8EFE7]/50 text-[#2D5A3D] font-display font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer group shadow-2xs active:scale-[0.99]"
               >
@@ -1322,7 +1346,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
                 type="button"
                 onClick={() => {
                   triggerHaptic('light');
-                  onAddActivity(selectedDay);
+                  onAddActivity(effectiveSelectedDay);
                 }}
                 className="w-full py-3.5 rounded-2xl border-2 border-dashed border-[#8EA78D]/50 hover:border-[#2D5A3D] bg-[#F8FAF7] hover:bg-[#E8EFE7]/50 text-[#2D5A3D] font-display font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer group shadow-2xs active:scale-[0.99]"
               >

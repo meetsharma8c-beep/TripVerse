@@ -82,7 +82,7 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
       if (isMounted) {
         setWeather(liveWeather);
       }
-    });
+    }).catch(() => {});
     return () => {
       isMounted = false;
     };
@@ -186,7 +186,10 @@ export const TripPassesHubView: React.FC<TripPassesHubViewProps> = ({
 
   // Format dates
   const formatDateHeader = () => {
-    if (!trip.startDate) return `${trip.durationDays} Days • ${Math.max(1, trip.durationDays - 1)} Nights`;
+    const nights = Math.max(0, trip.durationDays - 1);
+    if (!trip.startDate) {
+      return nights === 0 ? `${trip.durationDays} Day • Same-Day Trip` : `${trip.durationDays} Days • ${nights} ${nights === 1 ? 'Night' : 'Nights'}`;
+    }
     try {
       const start = new Date(trip.startDate);
       const end = new Date(start);

@@ -48,7 +48,7 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
       destCoords: trip.destinationDetails?.coordinates,
     }).then((res) => {
       if (isMounted) setLiveQuotes(res);
-    });
+    }).catch(() => {});
     return () => {
       isMounted = false;
     };
@@ -92,17 +92,19 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
 
   const travelers = Math.max(1, trip.travelersCount || 1);
   const duration = Math.max(1, trip.durationDays || 3);
-  const nights = Math.max(1, duration - 1);
+  const nights = Math.max(0, duration - 1);
   const rooms = Math.ceil(travelers / 2);
   const mode = trip.transportMode || 'car';
   const isFlightMode = mode === 'flight';
   const isTrainMode = mode === 'train';
   const isRoadMode = mode === 'car' || mode === 'bike';
 
-  // Benchmark market figures (6-vertical seasonal model)
-  const marketStayCost = trip.selectedHotel?.nightlyRate
-    ? trip.selectedHotel.nightlyRate * nights * rooms
-    : (liveMarketReport?.hotelTotalGroupINR || 9500);
+  // Benchmark market figures (6-vertical seasonal model; 0 stay nights on 1-day same-day excursions)
+  const marketStayCost = nights === 0
+    ? 0
+    : trip.selectedHotel?.nightlyRate
+      ? trip.selectedHotel.nightlyRate * nights * rooms
+      : (liveMarketReport?.hotelTotalGroupINR || 9500);
 
   const marketTransportCost = isFlightMode
     ? (liveMarketReport.smartHubArbitrage
@@ -155,9 +157,11 @@ export const BudgetOptimizer: React.FC<BudgetOptimizerProps> = ({
   useEffect(() => {
     setFormalProof(localProof);
     let active = true;
-    verifyTripBudgetWithApex({ ...trip, budgetBreakdown: activeBreakdownForProof }, liveQuotes).then((verified) => {
-      if (active) setFormalProof(verified);
-    });
+    verifyTripBudgetWithApex({ ...trip, budgetBreakdown: activeBreakdownForProof }, liveQuotes)
+      .then((verified) => {
+        if (active) setFormalProof(verified);
+      })
+      .catch(() => {});
     return () => { active = false; };
   }, [localProof, trip, activeBreakdownForProof, liveQuotes]);
 

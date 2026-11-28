@@ -64,7 +64,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
       trip.destinationDetails?.coordinates
     ).then(liveWeather => {
       if (isMounted) setWeather(liveWeather);
-    });
+    }).catch(() => {});
     return () => {
       isMounted = false;
     };
@@ -204,6 +204,7 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
       .then((res) => {
         if (isMounted) setRailScheduleData(res);
       })
+      .catch(() => {})
       .finally(() => {
         if (isMounted) setIsLoadingSchedules(false);
       });

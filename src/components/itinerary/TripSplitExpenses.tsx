@@ -83,6 +83,7 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
   // New Expense Form State
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
+  const [expenseFormError, setExpenseFormError] = useState<string | null>(null);
   const [category, setCategory] = useState<ExpenseCategory>('food');
   const [paidBy, setPaidBy] = useState(travelers[0]);
   const [splitAmong, setSplitAmong] = useState<string[]>(travelers);
@@ -195,7 +196,15 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
   const handleAddExpense = (e: React.FormEvent) => {
     e.preventDefault();
     const parsedAmount = parseFloat(amount);
-    if (!title.trim() || isNaN(parsedAmount) || parsedAmount <= 0) return;
+    if (!title.trim()) {
+      setExpenseFormError('Please enter an expense title.');
+      return;
+    }
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      setExpenseFormError('Please enter a positive expense amount greater than 0.');
+      return;
+    }
+    setExpenseFormError(null);
 
     const newExpense: ExpenseItem = {
       id: `exp-${Date.now()}`,
@@ -306,48 +315,48 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
         {/* Card 1: Total Spent */}
-        <div className="bg-white rounded-3xl p-5 border border-[#E2EBE1] shadow-xs flex flex-col justify-between">
+        <div className="glass-frosted liquid-rim rounded-3xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="badge-caps text-[#5A7362]">{t('Total Spent')}</span>
-            <div className="w-8 h-8 rounded-xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center">
+            <span className="badge-caps text-[#5A7362] dark:text-slate-400">{t('Total Spent')}</span>
+            <div className="w-8 h-8 rounded-xl bg-[#EAF0E9] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black font-display text-[#152A1C]">
+            <div className="text-2xl sm:text-3xl font-black font-display text-[#152A1C] dark:text-white tabular-nums">
               {formatCurrency(summary.totalSpent, currency)}
             </div>
-            <div className="text-xs font-semibold text-[#5A7362] mt-1">
+            <div className="text-xs font-semibold text-[#5A7362] dark:text-slate-400 mt-1">
               {t('Planned Budget')}: {formatCurrency(summary.plannedBudget, currency)}
             </div>
           </div>
-          <div className="mt-3 w-full bg-[#EAF0E9] h-2 rounded-full overflow-hidden">
+          <div className="mt-3 w-full bg-[#EAF0E9] dark:bg-slate-800 h-2 rounded-full overflow-hidden">
             <div 
               className={`h-full rounded-full transition-all ${
                 summary.totalSpent > summary.plannedBudget ? 'bg-rose-500' : 'bg-[#2D5A3D]'
               }`}
-              style={{ width: `${Math.min(100, (summary.totalSpent / summary.plannedBudget) * 100)}%` }}
+              style={{ width: `${Math.min(100, (summary.totalSpent / Math.max(1, summary.plannedBudget)) * 100)}%` }}
             />
           </div>
         </div>
 
         {/* Card 2: Per Person Average */}
-        <div className="bg-white rounded-3xl p-5 border border-[#E2EBE1] shadow-xs flex flex-col justify-between">
+        <div className="glass-frosted liquid-rim rounded-3xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="badge-caps text-[#5A7362]">{t('Cost Per Traveler')}</span>
-            <div className="w-8 h-8 rounded-xl bg-[#EAF0E9] text-[#2D5A3D] flex items-center justify-center">
+            <span className="badge-caps text-[#5A7362] dark:text-slate-400">{t('Cost Per Traveler')}</span>
+            <div className="w-8 h-8 rounded-xl bg-[#EAF0E9] dark:bg-emerald-950/60 text-[#2D5A3D] dark:text-emerald-300 flex items-center justify-center">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black font-display text-[#152A1C]">
-              {formatCurrency(Math.round(summary.totalSpent / travelers.length), currency)}
+            <div className="text-2xl sm:text-3xl font-black font-display text-[#152A1C] dark:text-white tabular-nums">
+              {formatCurrency(Math.round(summary.totalSpent / Math.max(1, travelers.length)), currency)}
             </div>
-            <div className="text-xs font-semibold text-[#5A7362] mt-1">
+            <div className="text-xs font-semibold text-[#5A7362] dark:text-slate-400 mt-1">
               {t('Split across')} {travelers.length} {t('companions')}
             </div>
           </div>
-          <div className="mt-3 text-xs font-bold text-[#5A7362]">
+          <div className="mt-3 text-xs font-bold text-[#5A7362] dark:text-slate-400">
             {expenses.length} {t('individual bills logged')}
           </div>
         </div>
@@ -392,15 +401,18 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left 2 Cols: Expenses Ledger */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-5 sm:p-7 border border-[#E2EBE1] shadow-xs">
-          <div className="flex items-center justify-between gap-4 border-b border-[#E2EBE1] pb-4">
+        <div className="lg:col-span-2 glass-frosted liquid-rim rounded-3xl p-5 sm:p-7">
+          <div className="flex items-center justify-between gap-4 border-b border-[#E2EBE1] dark:border-white/10 pb-4">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D]">{t('Group Ledger')}</span>
-              <h3 className="text-xl font-bold text-[#152A1C]">{t('Trip Expenses')}</h3>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#2D5A3D] dark:text-emerald-400">{t('Group Ledger')}</span>
+              <h3 className="text-xl font-bold text-[#152A1C] dark:text-white">{t('Trip Expenses')}</h3>
             </div>
 
             <button
-              onClick={() => setIsAddExpenseOpen(true)}
+              onClick={() => {
+                setExpenseFormError(null);
+                setIsAddExpenseOpen(true);
+              }}
               className="px-4 py-2 rounded-xl bg-trip-gradient hover:bg-trip-gradient-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -410,43 +422,57 @@ export function TripSplitExpenses({ trip }: TripSplitExpensesProps) {
 
           {/* Add Expense Drawer/Form Modal */}
           {isAddExpenseOpen && (
-            <div className="bg-white rounded-3xl p-6 border border-[#2D5A3D]/30 shadow-xl mt-4 animate-in fade-in">
-              <div className="flex items-center justify-between pb-3 border-b border-[#E2EBE1]">
-                <div className="flex items-center gap-2 font-bold text-[#152A1C]">
-                  <Plus className="w-4 h-4 text-[#2D5A3D]" />
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-[#2D5A3D]/30 dark:border-emerald-700/50 shadow-xl mt-4 animate-in fade-in">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E2EBE1] dark:border-white/10">
+                <div className="flex items-center gap-2 font-bold text-[#152A1C] dark:text-white">
+                  <Plus className="w-4 h-4 text-[#2D5A3D] dark:text-emerald-400" />
                   <span>{t('Log Group Expense')}</span>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setIsAddExpenseOpen(false)}
-                  className="text-xs font-semibold text-slate-400 hover:text-[#152A1C]"
+                  className="text-xs font-semibold text-slate-400 hover:text-[#152A1C] dark:hover:text-white cursor-pointer"
                 >
                   {t('Cancel')}
                 </button>
               </div>
 
               <form onSubmit={handleAddExpense} className="mt-4 space-y-4">
+                {expenseFormError && (
+                  <p role="alert" className="text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 rounded-xl px-3 py-2">
+                    {expenseFormError}
+                  </p>
+                )}
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Expense Title')}</label>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">{t('Expense Title')}</label>
                     <input
                       type="text"
                       placeholder="e.g., Highway Dhaba Dinner, Toll Plaza, Jeep Safari"
                       value={title}
-                      onChange={e => setTitle(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-[#2D5A3D] focus:outline-none font-medium"
+                      onChange={e => {
+                        setTitle(e.target.value);
+                        if (expenseFormError) setExpenseFormError(null);
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs text-[#152A1C] dark:text-white focus:ring-2 focus:ring-[#2D5A3D] focus:outline-none font-medium"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('Amount')} ({currency})</label>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">{t('Amount')} ({currency})</label>
                     <input
                       type="number"
+                      min={1}
+                      step="any"
                       placeholder="e.g., 1450"
                       value={amount}
-                      onChange={e => setAmount(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-[#2D5A3D] focus:outline-none font-bold"
+                      onChange={e => {
+                        setAmount(e.target.value);
+                        if (expenseFormError) setExpenseFormError(null);
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs text-[#152A1C] dark:text-white focus:ring-2 focus:ring-[#2D5A3D] focus:outline-none font-bold"
                       required
                     />
                   </div>
