@@ -148,6 +148,164 @@ export const OTHER_BANKS: BankInfo[] = [
 ];
 
 const STORAGE_KEY_BOOKINGS = 'tripverse_confirmed_bookings';
+const STORAGE_KEY_REAL_PASS_REFS = 'tripverse_real_pass_refs_v1';
+
+export interface RealTripBookingRefs {
+  tripId: string;
+  transitProvider?: string;
+  transitPnr?: string;
+  seatOrCoach?: string;
+  hotelName?: string;
+  hotelConfirmationCode?: string;
+  activityPassRef?: string;
+  updatedAt: string;
+}
+
+let memoryRealPassRefs: Record<string, RealTripBookingRefs> = {};
+
+function hasUsableLocalStorage(): boolean {
+  try {
+    return typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function' && typeof localStorage.setItem === 'function';
+  } catch {
+    return false;
+  }
+}
+
+function loadAllRealTripBookingRefs(): Record<string, RealTripBookingRefs> {
+  if (!hasUsableLocalStorage()) return { ...memoryRealPassRefs };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_REAL_PASS_REFS);
+    if (!raw) return { ...memoryRealPassRefs };
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : { ...memoryRealPassRefs };
+  } catch {
+    return { ...memoryRealPassRefs };
+  }
+}
+
+/**
+ * Retrieve user-entered official carrier PNR & hotel confirmation references for a trip
+ */
+export function getRealTripBookingRefs(tripId: string): RealTripBookingRefs | null {
+  if (!tripId) return null;
+  const all = loadAllRealTripBookingRefs();
+  const entry = all[tripId];
+  if (!entry) return null;
+  const hasAny = Boolean(
+    entry.transitPnr?.trim() ||
+    entry.hotelConfirmationCode?.trim() ||
+    entry.activityPassRef?.trim()
+  );
+  return hasAny ? entry : null;
+}
+
+/**
+ * Persist user-entered official carrier PNR & hotel confirmation references for offline wallet access
+ */
+export function saveRealTripBookingRefs(input: Omit<RealTripBookingRefs, 'updatedAt'>): RealTripBookingRefs | null {
+  if (!input.tripId) return null;
+  const cleaned: RealTripBookingRefs = {
+    tripId: input.tripId,
+    transitProvider: input.transitProvider?.trim().slice(0, 60) || undefined,
+    transitPnr: input.transitPnr?.trim().toUpperCase().slice(0, 32) || undefined,
+    seatOrCoach: input.seatOrCoach?.trim().toUpperCase().slice(0, 24) || undefined,
+    hotelName: input.hotelName?.trim().slice(0, 80) || undefined,
+    hotelConfirmationCode: input.hotelConfirmationCode?.trim().slice(0, 40) || undefined,
+    activityPassRef: input.activityPassRef?.trim().slice(0, 40) || undefined,
+    updatedAt: new Date().toISOString()
+  };
+
+  const hasAny = Boolean(cleaned.transitPnr || cleaned.hotelConfirmationCode || cleaned.activityPassRef);
+  if (!hasAny) {
+    clearRealTripBookingRefs(input.tripId);
+    return null;
+  }
+
+  memoryRealPassRefs[input.tripId] = cleaned;
+  try {
+    if (hasUsableLocalStorage()) {
+      const all = loadAllRealTripBookingRefs();
+      all[input.tripId] = cleaned;
+      localStorage.setItem(STORAGE_KEY_REAL_PASS_REFS, JSON.stringify(all));
+    }
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('tripverse_real_pass_updated', { detail: { tripId: input.tripId, refs: cleaned } }));
+    }
+    return cleaned;
+  } catch (err) {
+    console.warn('Failed to persist real booking references', err);
+    return cleaned;
+  }
+}
+
+/**
+ * Clear saved booking references for a trip
+ */
+export function clearRealTripBookingRefs(tripId: string): void {
+  if (!tripId) return;
+  delete memoryRealPassRefs[tripId];
+  try {
+    if (hasUsableLocalStorage()) {
+      const all = loadAllRealTripBookingRefs();
+      if (all[tripId]) {
+        delete all[tripId];
+        localStorage.setItem(STORAGE_KEY_REAL_PASS_REFS, JSON.stringify(all));
+      }
+    }
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('tripverse_real_pass_updated', { detail: { tripId, refs: null } }));
+    }
+  } catch (err) {
+    console.warn('Failed to clear real booking references', err);
+  }
+}
+
+/**
+ * Generate a clean offline text summary of user-entered official carrier & hotel booking references
+ */
+export function generatePassWalletSummaryText(
+  trip: {
+    name?: string;
+    origin?: string;
+    destination?: string;
+    startDate?: string;
+    durationDays?: number;
+    travelersCount?: number;
+  },
+  refs: RealTripBookingRefs
+): string {
+  const lines = [
+    '====================================================',
+    '        TRIPVERSE OFFLINE PASS & PNR SUMMARY        ',
+    '====================================================',
+    `Trip:        ${trip.name || trip.destination || 'Planned Journey'}`,
+    `Route:       ${trip.origin || 'Origin'} -> ${trip.destination || 'Destination'}`,
+    `Start Date:  ${trip.startDate ? trip.startDate.split('T')[0] : 'Flexible'}`,
+    `Duration:    ${trip.durationDays || 1} Day(s) • ${trip.travelersCount || 1} Traveler(s)`,
+    '----------------------------------------------------',
+    'SAVED OFFICIAL BOOKING REFERENCES (USER-ENTERED)',
+  ];
+  if (refs.transitPnr) {
+    lines.push(`Transit PNR: ${refs.transitPnr}${refs.transitProvider ? ` (${refs.transitProvider})` : ''}`);
+  }
+  if (refs.seatOrCoach) {
+    lines.push(`Seat/Coach:  ${refs.seatOrCoach}`);
+  }
+  if (refs.hotelConfirmationCode) {
+    lines.push(`Hotel Conf:  ${refs.hotelConfirmationCode}${refs.hotelName ? ` (${refs.hotelName})` : ''}`);
+  }
+  if (refs.activityPassRef) {
+    lines.push(`Pass/Tour:   ${refs.activityPassRef}`);
+  }
+  lines.push(
+    '----------------------------------------------------',
+    `Last Saved:  ${new Date(refs.updatedAt).toLocaleString()}`,
+    'Note: Present your official airline, railway, or hotel',
+    'confirmation email/ticket alongside valid government ID.',
+    '===================================================='
+  );
+  return lines.join('\n');
+}
 
 /**
  * Load all saved bookings from localStorage

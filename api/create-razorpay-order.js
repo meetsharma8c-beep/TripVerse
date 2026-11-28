@@ -70,6 +70,16 @@ export default async function handler(req, res) {
     }
   }
 
+  // Strictly restrict in-app Razorpay checkout to TripVerse Pro memberships only.
+  // Flights, trains, buses, hotels, and experiences are booked directly via official external partners.
+  if (safeNotes.packageType !== 'pro_subscription') {
+    return res.status(400).json({
+      ok: false,
+      error: 'UNSUPPORTED_PACKAGE_TYPE',
+      message: 'In-app Razorpay checkout is exclusively enabled for TripVerse Pro memberships. Book flights, trains, and stays directly via official partner links.'
+    });
+  }
+
   // Server-side integrity guard for TripVerse Pro subscription orders (prevents ₹1 price spoofing)
   if (safeNotes.packageType === 'pro_subscription' && cleanCurrency === 'INR') {
     const minProAmountINR = safeNotes.billingCycle === 'annual' ? 800 : 100; // Accounts for valid promo codes (e.g. PRO50, EARLYBIRD)

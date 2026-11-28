@@ -6,7 +6,7 @@ import { fetchLiveDestinationWeather, getDestinationWeather } from '../../servic
 import { loadTripPacking, saveTripPacking } from '../../services/storageService';
 import { generateSmartPackingList } from '../../services/packingService';
 import { resolveTransitContext, getFeasibleTransportModes } from '../../services/transportFeasibilityEngine';
-import { getBookingForTrip } from '../../services/paymentGatewayService';
+import { getRealTripBookingRefs, RealTripBookingRefs } from '../../services/paymentGatewayService';
 import { getTravelReadinessInfo } from '../../services/travelReadinessService';
 import { fetchTransitSchedules, TransitScheduleResponse } from '../../services/liveTransitScheduleService';
 import { useLanguage } from '../../services/languageService';
@@ -76,7 +76,23 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
   const originCoords = trip.routeDetails?.originCoordinates;
   const destCoords = trip.destinationDetails?.coordinates || trip.routeDetails?.destinationCoordinates;
   const transitCtx = resolveTransitContext(trip.destination, destCoords);
-  const booking = getBookingForTrip(trip.id);
+  const [savedRefs, setSavedRefs] = useState<RealTripBookingRefs | null>(() =>
+    getRealTripBookingRefs(trip.id)
+  );
+
+  useEffect(() => {
+    setSavedRefs(getRealTripBookingRefs(trip.id));
+    const handleRefsUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ tripId: string; refs: RealTripBookingRefs | null }>;
+      if (customEvent.detail && customEvent.detail.tripId === trip.id) {
+        setSavedRefs(customEvent.detail.refs);
+      } else {
+        setSavedRefs(getRealTripBookingRefs(trip.id));
+      }
+    };
+    window.addEventListener('tripverse_real_pass_updated', handleRefsUpdate);
+    return () => window.removeEventListener('tripverse_real_pass_updated', handleRefsUpdate);
+  }, [trip.id]);
 
   // Geographic feasibility check: evaluate which transport modes are physically available
   const feasibility = React.useMemo(() => {
@@ -307,15 +323,15 @@ export const TransportDealsView: React.FC<TransportDealsViewProps> = ({
           <div className="flex items-center gap-2">
             <Ticket className="w-4 h-4 text-emerald-300" />
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-emerald-100">
-              {booking ? `Verified Transit Pass • ${booking.pnr}` : 'Transit & Route Estimate (Not a Ticket)'}
+              {savedRefs?.transitPnr ? `Saved Carrier Pass • PNR ${savedRefs.transitPnr}` : 'Transit & Route Estimate (Not a Ticket)'}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
               <span>
-                {booking
-                  ? 'Confirmed'
+                {savedRefs?.transitPnr
+                  ? 'PNR Saved'
                   : `${(
                       trip.transportMode && feasibility.availableModes.includes(trip.transportMode as any)
                         ? trip.transportMode
